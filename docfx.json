@@ -1,0 +1,8 @@
+{
+  "metadata": [{"src": [{"files": ["src/**/*.csproj"]}], "dest": "api"}],
+  "build": {
+    "content": [{"files": ["docs/**/*.md", "api/*.yml"]}, {"files": ["README.md", "CHANGELOG.md"]}],
+    "dest": "publish/docs",
+    "template": ["default", "modern"]
+  }
+}
