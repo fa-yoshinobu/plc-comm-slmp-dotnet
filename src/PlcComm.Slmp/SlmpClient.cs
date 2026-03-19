@@ -4,6 +4,10 @@ using System.Text;
 
 namespace PlcComm.Slmp;
 
+/// <summary>
+/// A high-performance, asynchronous SLMP (MC Protocol) client for .NET.
+/// Supports 3E and 4E frame formats over TCP and UDP.
+/// </summary>
 public sealed class SlmpClient : IDisposable
 {
     private readonly string _host;
@@ -14,6 +18,12 @@ public sealed class SlmpClient : IDisposable
     private UdpClient? _udp;
     private ushort _serial;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SlmpClient"/> class.
+    /// </summary>
+    /// <param name="host">The IP address or hostname of the PLC.</param>
+    /// <param name="port">The port number. Defaults to 5000 (standard SLMP) or 1025 (custom).</param>
+    /// <param name="transportMode">The transport protocol (TCP or UDP).</param>
     public SlmpClient(string host, int port = 1025, SlmpTransportMode transportMode = SlmpTransportMode.Tcp)
     {
         _host = host;
@@ -21,16 +31,29 @@ public sealed class SlmpClient : IDisposable
         _transportMode = transportMode;
     }
 
+    /// <summary>Gets or sets the SLMP frame format (3E or 4E).</summary>
     public SlmpFrameType FrameType { get; set; } = SlmpFrameType.Frame4E;
+    /// <summary>Gets or sets the device access compatibility mode (Legacy or iQ-R).</summary>
     public SlmpCompatibilityMode CompatibilityMode { get; set; } = SlmpCompatibilityMode.Iqr;
+    /// <summary>Gets or sets the destination routing information.</summary>
     public SlmpTargetAddress TargetAddress { get; set; } = new();
+    /// <summary>Gets or sets the monitoring timer value (multiples of 250ms). Default is 0x0010 (4s).</summary>
     public ushort MonitoringTimer { get; set; } = 0x0010;
+    /// <summary>Gets or sets the communication timeout.</summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(3);
+    /// <summary>Gets the raw binary content of the last sent request frame.</summary>
     public byte[] LastRequestFrame { get; private set; } = [];
+    /// <summary>Gets the raw binary content of the last received response frame.</summary>
     public byte[] LastResponseFrame { get; private set; } = [];
 
+    /// <summary>Gets a value indicating whether the client is currently connected.</summary>
     public bool IsOpen => _transportMode == SlmpTransportMode.Tcp ? _tcp?.Connected == true : _udp is not null;
 
+    /// <summary>
+    /// Opens the connection to the PLC asynchronously.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public async Task OpenAsync(CancellationToken cancellationToken = default)
     {
         if (IsOpen) return;
@@ -52,8 +75,10 @@ public sealed class SlmpClient : IDisposable
         _udp.Connect(_host, _port);
     }
 
+    /// <summary>Opens the connection to the PLC synchronously.</summary>
     public void Open() => OpenAsync().GetAwaiter().GetResult();
 
+    /// <summary>Closes the connection to the PLC.</summary>
     public void Close()
     {
         _tcpStream?.Dispose();
@@ -64,8 +89,14 @@ public sealed class SlmpClient : IDisposable
         _udp = null;
     }
 
+    /// <summary>Disposes the client and closes the connection.</summary>
     public void Dispose() => Close();
 
+    /// <summary>
+    /// Reads the PLC model and type name info asynchronously.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>An object containing model name and code.</returns>
     public async Task<SlmpTypeNameInfo> ReadTypeNameAsync(CancellationToken cancellationToken = default)
     {
         var payload = await RequestAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty, true, cancellationToken).ConfigureAwait(false);
@@ -78,6 +109,11 @@ public sealed class SlmpClient : IDisposable
         return new SlmpTypeNameInfo(model, 0, false);
     }
 
+    /// <summary>
+    /// Attempts to automatically detect the optimal protocol settings (3E/4E, iQ-R/Legacy) for the target PLC.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>Recommended settings based on heuristic checks.</returns>
     public async Task<SlmpProfileRecommendation> ResolveProfileAsync(CancellationToken cancellationToken = default)
     {
         var candidates = new[]
@@ -119,6 +155,13 @@ public sealed class SlmpClient : IDisposable
         return new SlmpProfileRecommendation(FrameType, CompatibilityMode, SlmpProfileClass.Unknown, false);
     }
 
+    /// <summary>
+    /// Reads word device values asynchronously.
+    /// </summary>
+    /// <param name="device">The starting device address.</param>
+    /// <param name="points">Number of words to read.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>An array of word values (ushort).</returns>
     public async Task<ushort[]> ReadWordsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
     {
         var payload = BuildReadWritePayload(device, points, null, bitUnit: false);

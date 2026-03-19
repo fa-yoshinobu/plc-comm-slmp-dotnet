@@ -1,30 +1,44 @@
-﻿namespace PlcComm.Slmp;
+namespace PlcComm.Slmp;
 
+/// <summary>Specifies the transport protocol used for SLMP communication.</summary>
 public enum SlmpTransportMode
 {
+    /// <summary>Transmission Control Protocol (Connection-oriented).</summary>
     Tcp,
+    /// <summary>User Datagram Protocol (Connectionless).</summary>
     Udp,
 }
 
+/// <summary>Specifies the SLMP frame format header.</summary>
 public enum SlmpFrameType : byte
 {
+    /// <summary>3E Frame (Standard subheader 0x5000).</summary>
     Frame3E = 0,
+    /// <summary>4E Frame (Serial-based subheader 0x5400).</summary>
     Frame4E = 1,
 }
 
+/// <summary>Specifies the device access subcommand compatibility mode.</summary>
 public enum SlmpCompatibilityMode : byte
 {
+    /// <summary>Legacy Q/L series subcommands (0x0000/0x0001).</summary>
     Legacy = 0,
+    /// <summary>Modern iQ-R series subcommands (0x0002/0x0003).</summary>
     Iqr = 1,
 }
 
+/// <summary>Categorizes PLC series based on their protocol capabilities.</summary>
 public enum SlmpProfileClass : byte
 {
+    /// <summary>Unknown or unrecognized model.</summary>
     Unknown = 0,
+    /// <summary>Standard MELSEC Q or L series.</summary>
     LegacyQl = 1,
+    /// <summary>Modern MELSEC iQ-R or iQ-L series.</summary>
     ModernIqr = 2,
 }
 
+/// <summary>Standard SLMP command codes.</summary>
 public enum SlmpCommand : ushort
 {
     DeviceRead = 0x0401,
@@ -51,43 +65,81 @@ public enum SlmpCommand : ushort
     ClearError = 0x1617,
 }
 
+/// <summary>Standard SLMP binary device codes.</summary>
 public enum SlmpDeviceCode : ushort
 {
+    /// <summary>Special Relay</summary>
     SM = 0x0091,
+    /// <summary>Special Register</summary>
     SD = 0x00A9,
+    /// <summary>Input</summary>
     X = 0x009C,
+    /// <summary>Output</summary>
     Y = 0x009D,
+    /// <summary>Internal Relay</summary>
     M = 0x0090,
+    /// <summary>Latch Relay</summary>
     L = 0x0092,
+    /// <summary>Annunciator</summary>
     V = 0x0094,
+    /// <summary>Link Relay</summary>
     B = 0x00A0,
+    /// <summary>Data Register</summary>
     D = 0x00A8,
+    /// <summary>Link Register</summary>
     W = 0x00B4,
+    /// <summary>Timer Contact</summary>
     TS = 0x00C1,
+    /// <summary>Timer Coil</summary>
     TC = 0x00C0,
+    /// <summary>Timer Current Value</summary>
     TN = 0x00C2,
+    /// <summary>Long Timer Contact</summary>
     LTS = 0x0051,
+    /// <summary>Long Timer Coil</summary>
     LTC = 0x0050,
+    /// <summary>Long Timer Current Value</summary>
     LTN = 0x0052,
+    /// <summary>Retentive Timer Contact</summary>
     STS = 0x00C7,
+    /// <summary>Retentive Timer Coil</summary>
     STC = 0x00C6,
+    /// <summary>Retentive Timer Current Value</summary>
     STN = 0x00C8,
+    /// <summary>Long Retentive Timer Contact</summary>
     LSTS = 0x0059,
+    /// <summary>Long Retentive Timer Coil</summary>
     LSTC = 0x0058,
+    /// <summary>Long Retentive Timer Current Value</summary>
     LSTN = 0x005A,
+    /// <summary>Counter Contact</summary>
     CS = 0x00C4,
+    /// <summary>Counter Coil</summary>
     CC = 0x00C3,
+    /// <summary>Counter Current Value</summary>
     CN = 0x00C5,
+    /// <summary>Link Special Relay</summary>
     SB = 0x00A1,
+    /// <summary>Link Special Register</summary>
     SW = 0x00B5,
+    /// <summary>Step Relay</summary>
     S = 0x0098,
+    /// <summary>Direct Input</summary>
     DX = 0x00A2,
+    /// <summary>Direct Output</summary>
     DY = 0x00A3,
+    /// <summary>Index Register</summary>
     Z = 0x00CC,
+    /// <summary>Long Index Register</summary>
     LZ = 0x0062,
+    /// <summary>File Register</summary>
     R = 0x00AF,
+    /// <summary>File Register (Continuous)</summary>
     ZR = 0x00B0,
+    /// <summary>Refresh Data Register</summary>
     RD = 0x002C,
+    /// <summary>Buffer Memory</summary>
     G = 0x00AB,
+    /// <summary>Long Buffer Memory</summary>
     HG = 0x002E,
 }

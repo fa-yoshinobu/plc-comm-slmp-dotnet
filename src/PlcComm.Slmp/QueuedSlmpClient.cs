@@ -2,50 +2,68 @@ using System.Threading;
 
 namespace PlcComm.Slmp;
 
+/// <summary>
+/// A wrapper for <see cref="SlmpClient"/> that serializes all operations using a semaphore.
+/// Useful for environments where a single shared connection must handle multiple concurrent callers.
+/// </summary>
 public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
 {
     private readonly SlmpClient _client;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="QueuedSlmpClient"/> class.
+    /// </summary>
+    /// <param name="client">The underlying <see cref="SlmpClient"/> to wrap.</param>
     public QueuedSlmpClient(SlmpClient client)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
     }
 
+    /// <summary>Gets the underlying client.</summary>
     public SlmpClient InnerClient => _client;
 
+    /// <summary>Gets or sets the SLMP frame format (3E or 4E).</summary>
     public SlmpFrameType FrameType
     {
         get => _client.FrameType;
         set => _client.FrameType = value;
     }
 
+    /// <summary>Gets or sets the device access compatibility mode (Legacy or iQ-R).</summary>
     public SlmpCompatibilityMode CompatibilityMode
     {
         get => _client.CompatibilityMode;
         set => _client.CompatibilityMode = value;
     }
 
+    /// <summary>Gets or sets the destination routing information.</summary>
     public SlmpTargetAddress TargetAddress
     {
         get => _client.TargetAddress;
         set => _client.TargetAddress = value;
     }
 
+    /// <summary>Gets or sets the monitoring timer value (multiples of 250ms).</summary>
     public ushort MonitoringTimer
     {
         get => _client.MonitoringTimer;
         set => _client.MonitoringTimer = value;
     }
 
+    /// <summary>Gets or sets the communication timeout.</summary>
     public TimeSpan Timeout
     {
         get => _client.Timeout;
         set => _client.Timeout = value;
     }
 
+    /// <summary>Gets a value indicating whether the client is currently connected.</summary>
     public bool IsOpen => _client.IsOpen;
 
+    /// <summary>
+    /// Opens the connection asynchronously, ensuring exclusive access during the operation.
+    /// </summary>
     public async Task OpenAsync(CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -59,6 +77,9 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
         }
     }
 
+    /// <summary>
+    /// Executes a custom operation on the underlying client with exclusive access.
+    /// </summary>
     public async Task<T> ExecuteAsync<T>(Func<SlmpClient, Task<T>> operation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);
@@ -73,6 +94,9 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
         }
     }
 
+    /// <summary>
+    /// Executes a custom action on the underlying client with exclusive access.
+    /// </summary>
     public async Task ExecuteAsync(Func<SlmpClient, Task> operation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);
@@ -87,30 +111,39 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
         }
     }
 
+    /// <inheritdoc cref="SlmpClient.ResolveProfileAsync"/>
     public Task<SlmpProfileRecommendation> ResolveProfileAsync(CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.ResolveProfileAsync(cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.ReadTypeNameAsync"/>
     public Task<SlmpTypeNameInfo> ReadTypeNameAsync(CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.ReadTypeNameAsync(cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.ReadWordsAsync"/>
     public Task<ushort[]> ReadWordsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.ReadWordsAsync(device, points, cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.WriteWordsAsync"/>
     public Task WriteWordsAsync(SlmpDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.WriteWordsAsync(device, values, cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.ReadBitsAsync"/>
     public Task<bool[]> ReadBitsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.ReadBitsAsync(device, points, cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.WriteBitsAsync"/>
     public Task WriteBitsAsync(SlmpDeviceAddress device, IReadOnlyList<bool> values, CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.WriteBitsAsync(device, values, cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.ReadDWordsAsync"/>
     public Task<uint[]> ReadDWordsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.ReadDWordsAsync(device, points, cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.WriteDWordsAsync"/>
     public Task WriteDWordsAsync(SlmpDeviceAddress device, IReadOnlyList<uint> values, CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.WriteDWordsAsync(device, values, cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.ReadRandomAsync"/>
     public Task<(ushort[] WordValues, uint[] DwordValues)> ReadRandomAsync(
         IReadOnlyList<SlmpDeviceAddress> wordDevices,
         IReadOnlyList<SlmpDeviceAddress> dwordDevices,
@@ -118,6 +151,7 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     )
         => ExecuteAsync(client => client.ReadRandomAsync(wordDevices, dwordDevices, cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.WriteRandomWordsAsync"/>
     public Task WriteRandomWordsAsync(
         IReadOnlyList<(SlmpDeviceAddress Device, ushort Value)> wordEntries,
         IReadOnlyList<(SlmpDeviceAddress Device, uint Value)> dwordEntries,
@@ -125,12 +159,14 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     )
         => ExecuteAsync(client => client.WriteRandomWordsAsync(wordEntries, dwordEntries, cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.WriteRandomBitsAsync"/>
     public Task WriteRandomBitsAsync(
         IReadOnlyList<(SlmpDeviceAddress Device, bool Value)> bitEntries,
         CancellationToken cancellationToken = default
     )
         => ExecuteAsync(client => client.WriteRandomBitsAsync(bitEntries, cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.ReadBlockAsync"/>
     public Task<(ushort[] WordValues, ushort[] BitWordValues)> ReadBlockAsync(
         IReadOnlyList<SlmpBlockRead> wordBlocks,
         IReadOnlyList<SlmpBlockRead> bitBlocks,
@@ -138,6 +174,7 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     )
         => ExecuteAsync(client => client.ReadBlockAsync(wordBlocks, bitBlocks, cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.WriteBlockAsync"/>
     public Task WriteBlockAsync(
         IReadOnlyList<SlmpBlockWrite> wordBlocks,
         IReadOnlyList<SlmpBlockWrite> bitBlocks,
@@ -146,12 +183,14 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     )
         => ExecuteAsync(client => client.WriteBlockAsync(wordBlocks, bitBlocks, options, cancellationToken), cancellationToken);
 
+    /// <summary>Disposes the client and releases resources.</summary>
     public void Dispose()
     {
         _gate.Dispose();
         _client.Dispose();
     }
 
+    /// <summary>Disposes the client asynchronously.</summary>
     public ValueTask DisposeAsync()
     {
         Dispose();

@@ -1,16 +1,40 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace PlcComm.Slmp;
 
+/// <summary>
+/// Represents the destination routing fields for an SLMP frame.
+/// </summary>
+/// <param name="Network">Network number (0x00 for local network).</param>
+/// <param name="Station">Station number (0xFF for control CPU).</param>
+/// <param name="ModuleIo">Module I/O number (0x03FF for own station).</param>
+/// <param name="Multidrop">Multidrop station number (0x00 for no multidrop).</param>
 public readonly record struct SlmpTargetAddress(byte Network = 0x00, byte Station = 0xFF, ushort ModuleIo = 0x03FF, byte Multidrop = 0x00);
 
+/// <summary>
+/// Represents a specific PLC device and its numeric address.
+/// </summary>
+/// <param name="Code">The device type code (e.g., D, M, X, Y).</param>
+/// <param name="Number">The numeric address of the device.</param>
 public readonly record struct SlmpDeviceAddress(SlmpDeviceCode Code, uint Number)
 {
+    /// <summary>
+    /// Returns the string representation of the device address (e.g., "D100").
+    /// </summary>
     public override string ToString() => $"{Code}{Number}";
 }
 
+/// <summary>
+/// Information about the PLC model and type name.
+/// </summary>
+/// <param name="Model">The model name string.</param>
+/// <param name="ModelCode">Internal model code.</param>
+/// <param name="HasModelCode">True if the model code is valid.</param>
 public sealed record SlmpTypeNameInfo(string Model, ushort ModelCode, bool HasModelCode);
 
+/// <summary>
+/// Recommended protocol settings based on the target PLC model.
+/// </summary>
 public sealed record SlmpProfileRecommendation(
     SlmpFrameType FrameType,
     SlmpCompatibilityMode CompatibilityMode,
@@ -18,12 +42,24 @@ public sealed record SlmpProfileRecommendation(
     bool Confident
 );
 
+/// <summary>
+/// Description for a contiguous block of devices to read.
+/// </summary>
 public sealed record SlmpBlockRead(SlmpDeviceAddress Device, ushort Points);
 
+/// <summary>
+/// Description for a contiguous block of devices to write.
+/// </summary>
 public sealed record SlmpBlockWrite(SlmpDeviceAddress Device, IReadOnlyList<ushort> Values);
 
+/// <summary>
+/// Configuration for block write operations.
+/// </summary>
 public sealed record SlmpBlockWriteOptions(bool SplitMixedBlocks = false, bool RetryMixedOnError = false);
 
+/// <summary>
+/// Exception thrown when an SLMP protocol error occurs or the PLC returns an error code.
+/// </summary>
 public sealed class SlmpException : Exception
 {
     public SlmpException(string message, ushort? endCode = null, SlmpCommand? command = null, ushort? subcommand = null, Exception? innerException = null)
@@ -34,13 +70,25 @@ public sealed class SlmpException : Exception
         Subcommand = subcommand;
     }
 
+    /// <summary>
+    /// The end code returned by the PLC (0x0000 for success).
+    /// </summary>
     public ushort? EndCode { get; }
 
+    /// <summary>
+    /// The SLMP command that triggered the error.
+    /// </summary>
     public SlmpCommand? Command { get; }
 
+    /// <summary>
+    /// The SLMP subcommand that triggered the error.
+    /// </summary>
     public ushort? Subcommand { get; }
 }
 
+/// <summary>
+/// Utility for parsing device address strings into <see cref="SlmpDeviceAddress"/>.
+/// </summary>
 public static class SlmpDeviceParser
 {
     private static readonly (string Prefix, SlmpDeviceCode Code, bool HexAddress)[] Prefixes =
@@ -84,6 +132,13 @@ public static class SlmpDeviceParser
         ("G", SlmpDeviceCode.G, false),
     ];
 
+    /// <summary>
+    /// Parses a device string (e.g., "D100", "X1F") into a <see cref="SlmpDeviceAddress"/>.
+    /// </summary>
+    /// <param name="text">The device string to parse.</param>
+    /// <returns>A parsed device address object.</returns>
+    /// <exception cref="ArgumentException">Thrown when text is null or whitespace.</exception>
+    /// <exception cref="FormatException">Thrown when the device format is invalid.</exception>
     public static SlmpDeviceAddress Parse(string text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -99,75 +154,13 @@ public static class SlmpDeviceParser
                 continue;
             }
 
-            var numberText = token[prefix.Length..];
-            if (numberText.Length == 0)
+            var numberPart = token[prefix.Length..];
+            if (uint.TryParse(numberPart, hexAddress ? NumberStyles.HexNumber : NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
             {
-                throw new FormatException($"Device number is missing: {text}");
-            }
-
-            var style = NumberStyles.AllowHexSpecifier;
-            var culture = CultureInfo.InvariantCulture;
-            uint number;
-            if (hexAddress)
-            {
-                if (!uint.TryParse(numberText, style, culture, out number))
-                {
-                    throw new FormatException($"Invalid hex device number: {text}");
-                }
-            }
-            else
-            {
-                if (!uint.TryParse(numberText, NumberStyles.Integer, culture, out number))
-                {
-                    throw new FormatException($"Invalid decimal device number: {text}");
-                }
-            }
-
-            return new SlmpDeviceAddress(code, number);
-        }
-
-        throw new FormatException($"Unsupported device prefix: {text}");
-    }
-}
-
-public static class SlmpProfileHeuristics
-{
-    public static SlmpProfileRecommendation Recommend(SlmpTypeNameInfo info)
-    {
-        if (info.HasModelCode)
-        {
-            if (IsLegacyQlByModelCode(info.ModelCode))
-            {
-                return new SlmpProfileRecommendation(SlmpFrameType.Frame3E, SlmpCompatibilityMode.Legacy, SlmpProfileClass.LegacyQl, true);
-            }
-
-            if (IsModernIqrByModelCode(info.ModelCode))
-            {
-                return new SlmpProfileRecommendation(SlmpFrameType.Frame4E, SlmpCompatibilityMode.Iqr, SlmpProfileClass.ModernIqr, true);
+                return new SlmpDeviceAddress(code, number);
             }
         }
 
-        var model = info.Model?.Trim().ToUpperInvariant() ?? string.Empty;
-        if (model.StartsWith("Q", StringComparison.Ordinal) || model.StartsWith("L02", StringComparison.Ordinal) || model.StartsWith("L06", StringComparison.Ordinal) || model.StartsWith("L26", StringComparison.Ordinal))
-        {
-            return new SlmpProfileRecommendation(SlmpFrameType.Frame3E, SlmpCompatibilityMode.Legacy, SlmpProfileClass.LegacyQl, true);
-        }
-
-        if (model.StartsWith("R", StringComparison.Ordinal) || model.StartsWith("RJ", StringComparison.Ordinal) || model.StartsWith("FX5", StringComparison.Ordinal) || model.StartsWith("L16H", StringComparison.Ordinal))
-        {
-            return new SlmpProfileRecommendation(SlmpFrameType.Frame4E, SlmpCompatibilityMode.Iqr, SlmpProfileClass.ModernIqr, true);
-        }
-
-        return new SlmpProfileRecommendation(SlmpFrameType.Frame4E, SlmpCompatibilityMode.Iqr, SlmpProfileClass.Unknown, false);
-    }
-
-    private static bool IsLegacyQlByModelCode(ushort code)
-    {
-        return code is >= 0x0041 and <= 0x036C or 0x0250 or 0x0251 or 0x0252;
-    }
-
-    private static bool IsModernIqrByModelCode(ushort code)
-    {
-        return code is >= 0x4800 and <= 0x4894 or >= 0x48A0 and <= 0x48AF or 0x4860 or 0x4861 or 0x4862;
+        throw new FormatException($"Invalid SLMP device format: {text}");
     }
 }

@@ -3,8 +3,14 @@ using System.Text.RegularExpressions;
 
 namespace PlcComm.Slmp;
 
+/// <summary>
+/// Represents a target station with a human-readable name.
+/// </summary>
 public readonly record struct SlmpNamedTarget(string Name, SlmpTargetAddress Target);
 
+/// <summary>
+/// Represents Appendix 1 extension fields for device access.
+/// </summary>
 public readonly record struct SlmpExtensionSpec(
     ushort ExtensionSpecification = 0x0000,
     byte ExtensionSpecificationModification = 0x00,
@@ -13,12 +19,21 @@ public readonly record struct SlmpExtensionSpec(
     byte DirectMemorySpecification = 0x00
 );
 
+/// <summary>
+/// Represents a device address that may include an explicit Appendix 1 extension specification.
+/// </summary>
 public readonly record struct SlmpQualifiedDeviceAddress(SlmpDeviceAddress Device, ushort? ExtensionSpecification);
 
+/// <summary>
+/// Utility for parsing qualified device strings (e.g., "U01\G10") into <see cref="SlmpQualifiedDeviceAddress"/>.
+/// </summary>
 public static class SlmpQualifiedDeviceParser
 {
     private static readonly Regex QualifiedPattern = new(@"^U([0-9A-F]+)[\\/](.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    /// <summary>
+    /// Parses a qualified device string into a <see cref="SlmpQualifiedDeviceAddress"/>.
+    /// </summary>
     public static SlmpQualifiedDeviceAddress Parse(string text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -39,6 +54,9 @@ public static class SlmpQualifiedDeviceParser
     }
 }
 
+/// <summary>
+/// Utility for parsing target station descriptions into <see cref="SlmpNamedTarget"/>.
+/// </summary>
 public static class SlmpTargetParser
 {
     private static readonly Regex NwStationPattern = new(@"^NW(?<network>\d+)-ST(?<station>\d+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -48,6 +66,10 @@ public static class SlmpTargetParser
     private const ushort DefaultModuleIo = 0x03FF;
     private const byte DefaultMultidrop = 0x00;
 
+    /// <summary>
+    /// Parses a single target string. 
+    /// Supports "SELF", "SELF-CPU1..4", "NWx-STy", or "NAME,NETWORK,STATION,MODULE_IO,MULTIDROP".
+    /// </summary>
     public static SlmpNamedTarget ParseNamed(string text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -79,6 +101,9 @@ public static class SlmpTargetParser
         return new SlmpNamedTarget(name, new SlmpTargetAddress(network, station, moduleIo, multidrop));
     }
 
+    /// <summary>
+    /// Parses a list of target strings.
+    /// </summary>
     public static IReadOnlyList<SlmpNamedTarget> ParseMany(IReadOnlyList<string> values)
     {
         if (values.Count == 0)
@@ -116,6 +141,9 @@ public static class SlmpTargetParser
         throw new ArgumentException("target must be SELF, SELF-CPU1..4, NWx-STy, or NAME,NETWORK,STATION,MODULE_IO,MULTIDROP");
     }
 
+    /// <summary>
+    /// Parses a number string, supporting both decimal and "0x" hexadecimal notation.
+    /// </summary>
     public static int ParseAutoNumber(string text)
     {
         if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))

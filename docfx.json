@@ -1,7 +1,28 @@
 {
-  "metadata": [{"src": [{"files": ["src/**/*.csproj"]}], "dest": "api"}],
+  "metadata": [
+    {
+      "src": [
+        {
+          "files": ["src/**/*.csproj"]
+        }
+      ],
+      "dest": "api"
+    }
+  ],
   "build": {
-    "content": [{"files": ["docs/**/*.md", "api/*.yml"]}, {"files": ["README.md", "CHANGELOG.md"]}],
+    "content": [
+      {
+        "files": ["docs/**/*.md", "api/*.yml"]
+      },
+      {
+        "files": ["README.md", "CHANGELOG.md", "TODO.md"]
+      }
+    ],
+    "resource": [
+      {
+        "files": ["LICENSE"]
+      }
+    ],
     "dest": "publish/docs",
     "template": ["default", "modern"]
   }
