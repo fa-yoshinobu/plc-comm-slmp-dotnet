@@ -39,4 +39,23 @@ public sealed class SlmpParserTests
         Assert.Equal(SlmpCompatibilityMode.Legacy, recommendation.CompatibilityMode);
         Assert.True(recommendation.Confident);
     }
+
+    [Fact]
+    public void ParseNamedTarget_SelfCpu_Succeeds()
+    {
+        var target = SlmpTargetParser.ParseNamed("SELF-CPU2");
+        Assert.Equal("SELF-CPU2", target.Name);
+        Assert.Equal((ushort)0x03E1, target.Target.ModuleIo);
+        Assert.Equal((byte)0x00, target.Target.Network);
+        Assert.Equal((byte)0xFF, target.Target.Station);
+    }
+
+    [Fact]
+    public void ParseQualifiedDevice_UsesExtensionSpec()
+    {
+        var qualified = SlmpQualifiedDeviceParser.Parse(@"U3E0\G10");
+        Assert.Equal((ushort)0x03E0, qualified.ExtensionSpecification);
+        Assert.Equal(SlmpDeviceCode.G, qualified.Device.Code);
+        Assert.Equal((uint)10, qualified.Device.Number);
+    }
 }

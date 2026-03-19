@@ -13,10 +13,11 @@
   - [ ] on-demand receive/request
 - [ ] Add async + sync API parity wrappers for all supported operations.
 - [ ] Add CLI parity scripts equivalent to Python probes:
-  - [ ] compatibility probe
+  - [x] compatibility probe
+  - [x] g/hg appendix1 coverage
   - [ ] matrix renderer
   - [ ] appendix recheck tools
   - [ ] soak / mixed-read-load / tcp-concurrency probes
 - [ ] Add hardware evidence reports under `docs/validation/reports/`.
-- [ ] Add CI workflow (`.github/workflows/ci.yml`) for build + test + format + docs link check.
+- [x] Add CI workflow (`.github/workflows/ci.yml`) for build + test + format + docs link check.
 - [ ] Tighten package distribution rules to exclude repository-only docs and tests from NuGet outputs.

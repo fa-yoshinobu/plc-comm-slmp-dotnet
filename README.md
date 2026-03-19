@@ -23,6 +23,9 @@ Implemented core features:
 - Read type name
 - Remote controls (`run/stop/pause/latch clear/reset`) and `clear error`
 - Auto profile resolution (`3E/4E` + `legacy/iqr`) with simple probing
+- Target parser (`SELF`, `SELF-CPU1..4`, `NWx-STy`, `NAME,NETWORK,STATION,MODULE_IO,MULTIDROP`)
+- Compatibility probe CLI report output (`markdown` + `json`)
+- G/HG Appendix 1 coverage CLI (read/write-check)
 
 ## Quick Start
 
@@ -33,6 +36,24 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- connection-check --host 192.168
 
 ```bash
 dotnet run --project samples/PlcComm.Slmp.Cli -- other-station-check --host 192.168.250.101 --port 1025 --transport tcp --target NW1-ST2
+```
+
+```bash
+dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-probe --host 192.168.250.101 --port 1025 --transport tcp --target SELF --write-check
+dotnet run --project samples/PlcComm.Slmp.Cli -- g-hg-appendix1-coverage --host 192.168.250.101 --port 1025 --transport tcp --target SELF-CPU1 --device U3E0\\G10 --points 1 --write-check
+```
+
+## Library Auto-Recommend Example
+
+```csharp
+using var client = new SlmpClient("192.168.250.101", 1025, SlmpTransportMode.Tcp)
+{
+    TargetAddress = SlmpTargetParser.ParseNamed("SELF").Target,
+};
+
+await client.OpenAsync();
+var profile = await client.ResolveProfileAsync();
+Console.WriteLine($"frame={profile.FrameType}, series={profile.CompatibilityMode}, class={profile.ProfileClass}");
 ```
 
 ## Documentation

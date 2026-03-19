@@ -154,6 +154,36 @@ public sealed class SlmpClient : IDisposable
         return result;
     }
 
+    public async Task<ushort[]> ReadWordsExtendedAsync(
+        SlmpQualifiedDeviceAddress device,
+        ushort points,
+        SlmpExtensionSpec extension,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var effectiveExtension = ResolveEffectiveExtension(device, extension);
+        var payload = BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: false);
+        var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
+        var data = await RequestAsync(SlmpCommand.DeviceRead, sub, payload, true, cancellationToken).ConfigureAwait(false);
+        if (data.Length != points * 2) throw new SlmpException("read_words_ext payload size mismatch");
+        var values = new ushort[points];
+        for (var i = 0; i < points; i++) values[i] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(i * 2, 2));
+        return values;
+    }
+
+    public async Task WriteWordsExtendedAsync(
+        SlmpQualifiedDeviceAddress device,
+        IReadOnlyList<ushort> values,
+        SlmpExtensionSpec extension,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var effectiveExtension = ResolveEffectiveExtension(device, extension);
+        var payload = BuildReadWritePayloadExtended(device.Device, checked((ushort)values.Count), values, effectiveExtension, bitUnit: false);
+        var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
+        _ = await RequestAsync(SlmpCommand.DeviceWrite, sub, payload, true, cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task WriteBitsAsync(SlmpDeviceAddress device, IReadOnlyList<bool> values, CancellationToken cancellationToken = default)
     {
         var wordValues = new ushort[values.Count];
@@ -667,6 +697,90 @@ public sealed class SlmpClient : IDisposable
         }
 
         return payload;
+    }
+
+    private SlmpExtensionSpec ResolveEffectiveExtension(SlmpQualifiedDeviceAddress device, SlmpExtensionSpec extension)
+    {
+        if (device.ExtensionSpecification is null || device.ExtensionSpecification.Value == extension.ExtensionSpecification)
+        {
+            return extension;
+        }
+
+        return extension with { ExtensionSpecification = device.ExtensionSpecification.Value };
+    }
+
+    private byte[] BuildReadWritePayloadExtended(
+        SlmpDeviceAddress device,
+        ushort points,
+        IReadOnlyList<ushort>? values,
+        SlmpExtensionSpec extension,
+        bool bitUnit
+    )
+    {
+        var extendedSpec = EncodeExtendedDeviceSpec(device, extension);
+        var writeBytes = values is null ? 0 : bitUnit ? (values.Count + 1) / 2 : values.Count * 2;
+        var payload = new byte[extendedSpec.Length + 2 + writeBytes];
+        extendedSpec.CopyTo(payload, 0);
+        var offset = extendedSpec.Length;
+        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), points);
+        offset += 2;
+        if (values is null) return payload;
+
+        if (bitUnit)
+        {
+            var idx = 0;
+            while (idx < values.Count)
+            {
+                var high = values[idx] != 0 ? 0x10 : 0x00;
+                idx++;
+                var low = idx < values.Count && values[idx] != 0 ? 0x01 : 0x00;
+                if (idx < values.Count) idx++;
+                payload[offset++] = (byte)(high | low);
+            }
+            return payload;
+        }
+
+        foreach (var value in values)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), value);
+            offset += 2;
+        }
+
+        return payload;
+    }
+
+    private byte[] EncodeExtendedDeviceSpec(SlmpDeviceAddress device, SlmpExtensionSpec extension)
+    {
+        var captureAligned = (device.Code is SlmpDeviceCode.G or SlmpDeviceCode.HG) && (extension.DirectMemorySpecification is 0xF8 or 0xFA);
+        var deviceSpec = new byte[DeviceSpecSize()];
+        _ = EncodeDeviceSpec(device, deviceSpec);
+        if (captureAligned)
+        {
+            var payload = new byte[2 + deviceSpec.Length + 1 + 1 + 2 + 1];
+            var offset = 0;
+            payload[offset++] = extension.ExtensionSpecificationModification;
+            payload[offset++] = extension.DeviceModificationIndex;
+            deviceSpec.CopyTo(payload, offset);
+            offset += deviceSpec.Length;
+            payload[offset++] = extension.DeviceModificationFlags;
+            payload[offset++] = 0x00;
+            BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), extension.ExtensionSpecification);
+            offset += 2;
+            payload[offset] = extension.DirectMemorySpecification;
+            return payload;
+        }
+
+        var data = new byte[2 + 1 + 1 + 1 + deviceSpec.Length + 1];
+        var cursor = 0;
+        BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(cursor, 2), extension.ExtensionSpecification);
+        cursor += 2;
+        data[cursor++] = extension.ExtensionSpecificationModification;
+        data[cursor++] = extension.DeviceModificationIndex;
+        data[cursor++] = extension.DeviceModificationFlags;
+        deviceSpec.CopyTo(data, cursor);
+        cursor += deviceSpec.Length;
+        data[cursor] = extension.DirectMemorySpecification;
+        return data;
     }
 
     private static byte[] EncodePassword(string password)
