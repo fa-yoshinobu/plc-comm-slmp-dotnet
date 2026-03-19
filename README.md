@@ -45,6 +45,7 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- other-station-check --host 192.
 dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-probe --host 192.168.250.101 --port 1025 --transport tcp --target SELF --write-check
 dotnet run --project samples/PlcComm.Slmp.Cli -- g-hg-appendix1-coverage --host 192.168.250.101 --port 1025 --transport tcp --target SELF-CPU1 --device U3E0\\G10 --points 1 --write-check
 dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-matrix-render --input docs/validation/reports/compatibility_probe_latest.json
+dotnet run --project samples/PlcComm.Slmp.QueuedSample -- 192.168.250.101 1025 4 10
 ```
 
 `docs/validation/reports/PLC_COMPATIBILITY.md` remains Python-source-of-truth and should be regenerated from `plc-comm-slmp-python` probe JSON.

@@ -97,6 +97,12 @@ Practical note for the currently verified environment: direct multi-connection T
 
 For app-side reuse, use `QueuedSlmpClient` to share one `SlmpClient` across multiple tasks while serializing requests on that one connection.
 
+Standalone sample:
+
+```bash
+dotnet run --project samples/PlcComm.Slmp.QueuedSample -- 192.168.250.101 1025 4 10
+```
+
 ## Library Example
 
 ```csharp
