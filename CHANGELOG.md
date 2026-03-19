@@ -12,6 +12,8 @@
 - expand `other-station-check` target parsing to support `SELF-CPU1..4` and repeatable `--target`
 - add `compatibility-probe` CLI command with markdown/json latest report output
 - add `g-hg-appendix1-coverage` CLI command with optional write-check flow
+- add `compatibility-matrix-render` command for dotnet probe outputs
+- add `appendix1-device-recheck`, `read-soak`, `mixed-read-load`, and `tcp-concurrency` CLI probes
 - add Appendix 1 extended device read/write support in `.NET` client
 - add GitHub Actions CI workflow (`.github/workflows/ci.yml`)
 - add initial user/maintainer/validation documents

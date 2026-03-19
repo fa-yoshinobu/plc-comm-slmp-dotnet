@@ -25,7 +25,9 @@ Implemented core features:
 - Auto profile resolution (`3E/4E` + `legacy/iqr`) with simple probing
 - Target parser (`SELF`, `SELF-CPU1..4`, `NWx-STy`, `NAME,NETWORK,STATION,MODULE_IO,MULTIDROP`)
 - Compatibility probe CLI report output (`markdown` + `json`)
+- Compatibility matrix renderer (`compatibility-matrix-render`)
 - G/HG Appendix 1 coverage CLI (read/write-check)
+- Appendix1 device recheck + read-soak + mixed-read-load + tcp-concurrency probes
 
 ## Quick Start
 
@@ -41,7 +43,10 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- other-station-check --host 192.
 ```bash
 dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-probe --host 192.168.250.101 --port 1025 --transport tcp --target SELF --write-check
 dotnet run --project samples/PlcComm.Slmp.Cli -- g-hg-appendix1-coverage --host 192.168.250.101 --port 1025 --transport tcp --target SELF-CPU1 --device U3E0\\G10 --points 1 --write-check
+dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-matrix-render --input docs/validation/reports/compatibility_probe_latest.json
 ```
+
+`docs/validation/reports/PLC_COMPATIBILITY.md` remains Python-source-of-truth and should be regenerated from `plc-comm-slmp-python` probe JSON.
 
 ## Library Auto-Recommend Example
 

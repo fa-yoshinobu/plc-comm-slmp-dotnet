@@ -407,6 +407,223 @@ static async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
     return rows.Any(x => x.Status == "NG") ? 1 : 0;
 }
 
+static async Task<int> RunCompatibilityMatrixRenderAsync(IReadOnlyList<string> args)
+{
+    var inputPaths = GetOptions(args, "--input");
+    if (inputPaths.Count == 0)
+    {
+        inputPaths.Add("docs/validation/reports/compatibility_probe_latest.json");
+    }
+
+    var loaded = new List<ProbeItemResult>();
+    foreach (var input in inputPaths)
+    {
+        var text = await File.ReadAllTextAsync(input, Encoding.UTF8).ConfigureAwait(false);
+        var items = JsonSerializer.Deserialize<List<ProbeItemResult>>(text) ?? [];
+        loaded.AddRange(items);
+    }
+
+    var commands = loaded.Select(x => x.Name).Distinct(StringComparer.Ordinal).OrderBy(x => x, StringComparer.Ordinal).ToArray();
+    var targets = loaded.Select(x => x.Target).Distinct(StringComparer.Ordinal).OrderBy(x => x, StringComparer.Ordinal).ToArray();
+    var statusMap = new Dictionary<(string Target, string Command), string>();
+    foreach (var row in loaded)
+    {
+        var key = (row.Target, row.Name);
+        if (!statusMap.TryGetValue(key, out var existing))
+        {
+            statusMap[key] = row.Status;
+            continue;
+        }
+
+        if (existing != "NG" && row.Status == "NG")
+        {
+            statusMap[key] = "NG";
+        }
+    }
+
+    var outputPath = GetOption(args, "--output", "docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md");
+    Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? ".");
+    var sb = new StringBuilder();
+    sb.AppendLine("# PLC Compatibility (Dotnet Probe)");
+    sb.AppendLine();
+    sb.AppendLine($"- Timestamp: {GetTimestamp()}");
+    sb.AppendLine($"- Sources: {string.Join(", ", inputPaths)}");
+    sb.AppendLine();
+    sb.Append("| Target |");
+    foreach (var command in commands) sb.Append($" {command} |");
+    sb.AppendLine();
+    sb.Append("|---|");
+    foreach (var _unused in commands) sb.Append("---|");
+    sb.AppendLine();
+    foreach (var target in targets)
+    {
+        sb.Append($"| {target} |");
+        foreach (var command in commands)
+        {
+            var status = statusMap.TryGetValue((target, command), out var s) ? s : "PENDING";
+            sb.Append($" {status} |");
+        }
+        sb.AppendLine();
+    }
+
+    await File.WriteAllTextAsync(outputPath, sb.ToString(), Encoding.UTF8).ConfigureAwait(false);
+    Console.WriteLine($"[DONE] output={outputPath}");
+    return 0;
+}
+
+static async Task<int> RunAppendix1DeviceRecheckAsync(IReadOnlyList<string> args)
+{
+    var target = ParseTargets(args)[0];
+    var deviceText = GetOption(args, "--device", @"U3E0\G10");
+    var points = checked((ushort)SlmpTargetParser.ParseAutoNumber(GetOption(args, "--points", "1")));
+    var directMemory = checked((byte)SlmpTargetParser.ParseAutoNumber(GetOption(args, "--direct-memory", "0xFA")));
+    var writeCheck = HasFlag(args, "--write-check");
+    using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
+    var qualified = SlmpQualifiedDeviceParser.Parse(deviceText);
+    var ext = new SlmpExtensionSpec(DirectMemorySpecification: directMemory);
+    var before = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+    var status = "OK";
+    var detail = $"device={deviceText}, points={points}, before=[{string.Join(", ", before.Select(x => $"0x{x:X4}"))}], mode=read_only";
+    if (writeCheck)
+    {
+        var write = Enumerable.Range(0, points).Select(i => (ushort)(0x001E + i)).ToArray();
+        await client.WriteWordsExtendedAsync(qualified, write, ext).ConfigureAwait(false);
+        var readback = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+        await client.WriteWordsExtendedAsync(qualified, before, ext).ConfigureAwait(false);
+        var mismatch = !readback.SequenceEqual(write);
+        status = mismatch ? "NG" : "OK";
+        detail = $"device={deviceText}, points={points}, before=[{string.Join(", ", before.Select(x => $"0x{x:X4}"))}], write=[{string.Join(", ", write.Select(x => $"0x{x:X4}"))}], readback=[{string.Join(", ", readback.Select(x => $"0x{x:X4}"))}]";
+    }
+
+    var reportDir = GetOption(args, "--report-dir", "docs/validation/reports");
+    Directory.CreateDirectory(reportDir);
+    var reportPath = Path.Combine(reportDir, "appendix1_device_recheck_latest.md");
+    var report = new StringBuilder();
+    report.AppendLine("# Appendix1 Device Recheck Latest");
+    report.AppendLine();
+    report.AppendLine($"- Timestamp: {GetTimestamp()}");
+    report.AppendLine($"- Target: {target.Name}");
+    report.AppendLine($"- Transport: {GetOption(args, "--transport", "tcp")}");
+    report.AppendLine($"- Result: {status}");
+    report.AppendLine();
+    report.AppendLine(detail);
+    await File.WriteAllTextAsync(reportPath, report.ToString(), Encoding.UTF8).ConfigureAwait(false);
+    Console.WriteLine($"[{status}] {detail}");
+    Console.WriteLine($"[DONE] report={reportPath}");
+    return status == "OK" ? 0 : 1;
+}
+
+static async Task<int> RunReadSoakAsync(IReadOnlyList<string> args)
+{
+    var target = ParseTargets(args)[0];
+    var iterations = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--iterations", "100"));
+    var device = SlmpDeviceParser.Parse(GetOption(args, "--device", "D1000"));
+    var points = checked((ushort)SlmpTargetParser.ParseAutoNumber(GetOption(args, "--points", "1")));
+    var intervalMs = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--interval-ms", "0"));
+    using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
+    var failures = 0;
+    var latencies = new List<long>(iterations);
+    for (var i = 0; i < iterations; i++)
+    {
+        var started = DateTimeOffset.UtcNow;
+        try
+        {
+            _ = await client.ReadWordsAsync(device, points).ConfigureAwait(false);
+        }
+        catch
+        {
+            failures++;
+        }
+        var elapsed = (DateTimeOffset.UtcNow - started).TotalMilliseconds;
+        latencies.Add((long)elapsed);
+        if (intervalMs > 0) await Task.Delay(intervalMs).ConfigureAwait(false);
+    }
+
+    var reportDir = GetOption(args, "--report-dir", "docs/validation/reports");
+    Directory.CreateDirectory(reportDir);
+    var reportPath = Path.Combine(reportDir, "read_soak_latest.md");
+    var report = new StringBuilder();
+    report.AppendLine("# Read Soak Latest");
+    report.AppendLine();
+    report.AppendLine($"- Timestamp: {GetTimestamp()}");
+    report.AppendLine($"- Iterations: {iterations}");
+    report.AppendLine($"- Failures: {failures}");
+    report.AppendLine($"- Min/Avg/Max latency (ms): {latencies.Min()}/{(long)latencies.Average()}/{latencies.Max()}");
+    await File.WriteAllTextAsync(reportPath, report.ToString(), Encoding.UTF8).ConfigureAwait(false);
+    Console.WriteLine($"[DONE] report={reportPath}");
+    return failures == 0 ? 0 : 1;
+}
+
+static async Task<int> RunMixedReadLoadAsync(IReadOnlyList<string> args)
+{
+    var target = ParseTargets(args)[0];
+    var iterations = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--iterations", "100"));
+    using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
+    var failures = 0;
+    for (var i = 0; i < iterations; i++)
+    {
+        try
+        {
+            _ = await client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400), 1).ConfigureAwait(false);
+            _ = await client.ReadRandomAsync([new SlmpDeviceAddress(SlmpDeviceCode.D, 100)], [new SlmpDeviceAddress(SlmpDeviceCode.D, 200)]).ConfigureAwait(false);
+            _ = await client.ReadBlockAsync([new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 300), 2)], [new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.M, 200), 1)]).ConfigureAwait(false);
+        }
+        catch
+        {
+            failures++;
+        }
+    }
+
+    var reportDir = GetOption(args, "--report-dir", "docs/validation/reports");
+    Directory.CreateDirectory(reportDir);
+    var reportPath = Path.Combine(reportDir, "mixed_read_load_latest.md");
+    var report = $"# Mixed Read Load Latest{Environment.NewLine}{Environment.NewLine}- Timestamp: {GetTimestamp()}{Environment.NewLine}- Iterations: {iterations}{Environment.NewLine}- Failures: {failures}{Environment.NewLine}";
+    await File.WriteAllTextAsync(reportPath, report, Encoding.UTF8).ConfigureAwait(false);
+    Console.WriteLine($"[DONE] report={reportPath}");
+    return failures == 0 ? 0 : 1;
+}
+
+static async Task<int> RunTcpConcurrencyAsync(IReadOnlyList<string> args)
+{
+    var target = ParseTargets(args)[0];
+    var clients = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--clients", "4"));
+    var iterations = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--iterations", "50"));
+    var failures = 0;
+
+    var tasks = Enumerable.Range(0, clients).Select(async _clientIndex =>
+    {
+        using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
+        var localFailures = 0;
+        for (var i = 0; i < iterations; i++)
+        {
+            try
+            {
+                _ = await client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400), 1).ConfigureAwait(false);
+                _ = await client.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000), 1).ConfigureAwait(false);
+            }
+            catch
+            {
+                localFailures++;
+            }
+        }
+
+        return localFailures;
+    }).ToArray();
+
+    foreach (var result in await Task.WhenAll(tasks).ConfigureAwait(false))
+    {
+        failures += result;
+    }
+
+    var reportDir = GetOption(args, "--report-dir", "docs/validation/reports");
+    Directory.CreateDirectory(reportDir);
+    var reportPath = Path.Combine(reportDir, "tcp_concurrency_latest.md");
+    var report = $"# TCP Concurrency Latest{Environment.NewLine}{Environment.NewLine}- Timestamp: {GetTimestamp()}{Environment.NewLine}- Clients: {clients}{Environment.NewLine}- Iterations per client: {iterations}{Environment.NewLine}- Failures: {failures}{Environment.NewLine}";
+    await File.WriteAllTextAsync(reportPath, report, Encoding.UTF8).ConfigureAwait(false);
+    Console.WriteLine($"[DONE] report={reportPath}");
+    return failures == 0 ? 0 : 1;
+}
+
 if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
 {
     Console.WriteLine("SLMP .NET CLI");
@@ -415,7 +632,12 @@ if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
     Console.WriteLine("  random-check [--host ... --port ... --transport tcp|udp --target ... --write-check]");
     Console.WriteLine("  block-check [--host ... --port ... --transport tcp|udp --target ... --write-check]");
     Console.WriteLine("  compatibility-probe [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --write-check --report-dir docs/validation/reports]");
+    Console.WriteLine("  compatibility-matrix-render [--input ... (repeatable) --output docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md]");
+    Console.WriteLine(@"  appendix1-device-recheck [--host ... --port ... --transport tcp|udp --target SELF --device U3E0\G10 --points 1 --direct-memory 0xFA --write-check --report-dir docs/validation/reports]");
     Console.WriteLine(@"  g-hg-appendix1-coverage [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --device U3E0\G10 (repeatable) --points 1 (repeatable) --direct-memory 0xFA (repeatable) --write-check --report-dir docs/validation/reports]");
+    Console.WriteLine("  read-soak [--host ... --port ... --transport tcp|udp --target SELF --device D1000 --points 1 --iterations 100 --interval-ms 0 --report-dir docs/validation/reports]");
+    Console.WriteLine("  mixed-read-load [--host ... --port ... --transport tcp|udp --target SELF --iterations 100 --report-dir docs/validation/reports]");
+    Console.WriteLine("  tcp-concurrency [--host ... --port ... --transport tcp --target SELF --clients 4 --iterations 50 --report-dir docs/validation/reports]");
     return;
 }
 
@@ -431,7 +653,12 @@ try
         "random-check" => await RunRandomCheckAsync(argList).ConfigureAwait(false),
         "block-check" => await RunBlockCheckAsync(argList).ConfigureAwait(false),
         "compatibility-probe" => await RunCompatibilityProbeAsync(argList).ConfigureAwait(false),
+        "compatibility-matrix-render" => await RunCompatibilityMatrixRenderAsync(argList).ConfigureAwait(false),
+        "appendix1-device-recheck" => await RunAppendix1DeviceRecheckAsync(argList).ConfigureAwait(false),
         "g-hg-appendix1-coverage" => await RunGhCoverageAsync(argList).ConfigureAwait(false),
+        "read-soak" => await RunReadSoakAsync(argList).ConfigureAwait(false),
+        "mixed-read-load" => await RunMixedReadLoadAsync(argList).ConfigureAwait(false),
+        "tcp-concurrency" => await RunTcpConcurrencyAsync(argList).ConfigureAwait(false),
         _ => 2,
     };
 

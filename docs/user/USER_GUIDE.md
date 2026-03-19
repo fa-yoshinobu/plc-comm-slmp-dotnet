@@ -62,6 +62,37 @@ Output:
 
 - `docs/validation/reports/g_hg_appendix1_coverage_latest.md`
 
+### compatibility-matrix-render
+
+```bash
+dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-matrix-render \
+  --input docs/validation/reports/compatibility_probe_latest.json
+```
+
+Output:
+
+- `docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md`
+
+### appendix1-device-recheck
+
+```bash
+dotnet run --project samples/PlcComm.Slmp.Cli -- appendix1-device-recheck \
+  --host 192.168.250.101 --port 1025 --transport tcp \
+  --target SELF-CPU1 --device U3E0\\G10 --points 1 --direct-memory 0xFA --write-check
+```
+
+Output:
+
+- `docs/validation/reports/appendix1_device_recheck_latest.md`
+
+### read-soak / mixed-read-load / tcp-concurrency
+
+```bash
+dotnet run --project samples/PlcComm.Slmp.Cli -- read-soak --host 192.168.250.101 --target SELF --iterations 1000
+dotnet run --project samples/PlcComm.Slmp.Cli -- mixed-read-load --host 192.168.250.101 --target SELF --iterations 1000
+dotnet run --project samples/PlcComm.Slmp.Cli -- tcp-concurrency --host 192.168.250.101 --target SELF --clients 8 --iterations 200
+```
+
 ## Library Example
 
 ```csharp
