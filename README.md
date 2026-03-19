@@ -10,7 +10,7 @@ A modern .NET SLMP client for Mitsubishi PLC communication over Binary 3E/4E fra
 - Fast binary 3E/4E transport with auto profile resolution
 - End-user friendly API + CLI for quick validation
 - Single-connection queue (`QueuedSlmpClient`) for unstable TCP environments
-- Hardware-verified compatibility snapshot (see table below)
+- Clear device-code support list (see below)
 
 ## Quick Start (Copy/Paste)
 
@@ -42,23 +42,17 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- connection-check --host 192.168
 - Appendix1 device recheck + read-soak + mixed-read-load + tcp-concurrency probes
 - `QueuedSlmpClient` for single-connection serialized app-side reuse
 
-## Device Compatibility Snapshot (Hardware-Verified)
+## Device Support (PLC Device Codes)
 
-This table is a readable snapshot. The full matrix lives in `docs/validation/reports/PLC_COMPATIBILITY.md` (Python is the source of truth).
+This list reflects device codes accepted by the parser and typed APIs. Actual availability depends on PLC model, firmware, and access settings.
 
-| Family | Verified Models | Status | Recommended Profile |
+| Group | Codes | Status | Notes |
 | --- | --- | --- | --- |
-| iQ-R | R00CPU, R08CPU, R08PCPU, R120PCPU, RJ71EN71 | YES (core commands) | 3e/ql, 3e/iqr, 4e/ql, 4e/iqr |
-| iQ-L | L16HCPU | YES (core commands) | 3e/ql, 3e/iqr, 4e/ql, 4e/iqr |
-| MELSEC-Q | Q06UDVCPU, Q26UDEHCPU, QJ71E71-100 | PARTIAL | 3e/ql (4e/ql for QJ71E71) |
-| MELSEC-L | L26CPU-BT | PARTIAL | 3e/ql |
-| iQ-F | FX5U, FX5UC | PARTIAL | 3e/ql (4e/ql for FX5U) |
-| Third-Party MC | KV-7500, KV-XLE02 | PARTIAL (MC compatible) | 3e/ql, 4e/ql |
-
-Notes:
-
-- Q/L series often reject `0101` (type name) and may require 3E/QL.
-- Third-party MC-compatible endpoints are not Mitsubishi native; results describe MC compatibility.
+| Bit devices (direct) | SM, X, Y, M, L, F, V, B, TS, TC, STS, STC, CS, CC, SB, DX, DY | Supported | `X/Y/B/SB/DX/DY` use hexadecimal numbering. |
+| Word devices (direct) | SD, D, W, SW, TN, STN, CN, Z, LZ, R, ZR, RD | Supported | `W/SW` use hexadecimal numbering. |
+| Long timer / counter families | LTS, LTC, LTN, LSTS, LSTC, LSTN, LCS, LCC, LCN | Supported (direct) | Some PLCs reject direct access; validate on the target. |
+| Appendix 1 qualified devices | `Uxx\\Gyy`, `Uxx\\HGyy` | Supported via Appendix 1 APIs | Direct `G/HG` access is not supported. |
+| Not supported | S, `Jn\\Xn` | Not supported | `S` is intentionally disabled; linked direct devices are out of scope. |
 
 ## Use Cases
 
