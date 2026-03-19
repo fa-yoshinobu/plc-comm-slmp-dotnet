@@ -21,3 +21,7 @@
 - [ ] Add hardware evidence reports under `docs/validation/reports/`.
 - [x] Add CI workflow (`.github/workflows/ci.yml`) for build + test + format + docs link check.
 - [ ] Tighten package distribution rules to exclude repository-only docs and tests from NuGet outputs.
+
+## Known Limitations
+
+- Linked direct devices (`Jn\Xn` style) are not supported yet.
