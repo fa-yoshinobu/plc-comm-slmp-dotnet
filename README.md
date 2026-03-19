@@ -48,6 +48,8 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-matrix-render --i
 
 `docs/validation/reports/PLC_COMPATIBILITY.md` remains Python-source-of-truth and should be regenerated from `plc-comm-slmp-python` probe JSON.
 
+TCP concurrency practical note (current environment): use `clients <= 2` on TCP/1025.
+
 ## Library Auto-Recommend Example
 
 ```csharp

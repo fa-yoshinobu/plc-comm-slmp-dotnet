@@ -93,6 +93,8 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- mixed-read-load --host 192.168.
 dotnet run --project samples/PlcComm.Slmp.Cli -- tcp-concurrency --host 192.168.250.101 --target SELF --clients 8 --iterations 200
 ```
 
+Practical note for the currently verified environment: keep `tcp-concurrency` at `--clients 2` or lower on TCP/1025.
+
 ## Library Example
 
 ```csharp
