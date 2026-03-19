@@ -718,6 +718,55 @@ async Task<int> RunTcpConcurrencyAsync(IReadOnlyList<string> args)
     return totalFailures == 0 ? 0 : 1;
 }
 
+async Task<int> RunSingleConnectionLoadAsync(IReadOnlyList<string> args)
+{
+    var target = ParseTargets(args)[0];
+    var workers = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--workers", "4"));
+    var iterations = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--iterations", "200"));
+    var quiet = HasFlag(args, "--quiet");
+    var readFailures = 0;
+
+    using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
+    await using var queuedClient = new QueuedSlmpClient(client);
+    await queuedClient.OpenAsync().ConfigureAwait(false);
+
+    var tasks = Enumerable.Range(0, workers).Select(async workerIndex =>
+    {
+        var localFailures = 0;
+        for (var i = 0; i < iterations; i++)
+        {
+            try
+            {
+                _ = await queuedClient.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400), 1).ConfigureAwait(false);
+                _ = await queuedClient.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000), 1).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                localFailures++;
+                if (!quiet)
+                {
+                    Console.WriteLine($"[INFO] single-connection-load read failed worker={workerIndex + 1}: {ex.Message}");
+                }
+            }
+        }
+
+        return localFailures;
+    }).ToArray();
+
+    foreach (var result in await Task.WhenAll(tasks).ConfigureAwait(false))
+    {
+        readFailures += result;
+    }
+
+    var reportDir = GetOption(args, "--report-dir", "docs/validation/reports");
+    Directory.CreateDirectory(reportDir);
+    var reportPath = Path.Combine(reportDir, "single_connection_load_latest.md");
+    var report = $"# Single Connection Load Latest{Environment.NewLine}{Environment.NewLine}- Timestamp: {GetTimestamp()}{Environment.NewLine}- Workers: {workers}{Environment.NewLine}- Iterations per worker: {iterations}{Environment.NewLine}- Read failures: {readFailures}{Environment.NewLine}";
+    await File.WriteAllTextAsync(reportPath, report, Encoding.UTF8).ConfigureAwait(false);
+    Console.WriteLine($"[DONE] report={reportPath}");
+    return readFailures == 0 ? 0 : 1;
+}
+
 if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
 {
     Console.WriteLine("SLMP .NET CLI");
@@ -732,6 +781,7 @@ if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
     Console.WriteLine("  read-soak [--host ... --port ... --transport tcp|udp --target SELF --device D1000 --points 1 --iterations 100 --interval-ms 0 --report-dir docs/validation/reports --quiet]");
     Console.WriteLine("  mixed-read-load [--host ... --port ... --transport tcp|udp --target SELF --iterations 100 --report-dir docs/validation/reports --quiet]");
     Console.WriteLine("  tcp-concurrency [--host ... --port ... --transport tcp --target SELF --clients 4 --iterations 50 --stagger-ms 50 --report-dir docs/validation/reports --quiet]");
+    Console.WriteLine("  single-connection-load [--host ... --port ... --transport tcp --target SELF --workers 4 --iterations 200 --report-dir docs/validation/reports --quiet]");
     return;
 }
 
@@ -753,6 +803,7 @@ try
         "read-soak" => await RunReadSoakAsync(argList).ConfigureAwait(false),
         "mixed-read-load" => await RunMixedReadLoadAsync(argList).ConfigureAwait(false),
         "tcp-concurrency" => await RunTcpConcurrencyAsync(argList).ConfigureAwait(false),
+        "single-connection-load" => await RunSingleConnectionLoadAsync(argList).ConfigureAwait(false),
         _ => 2,
     };
 

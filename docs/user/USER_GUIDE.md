@@ -93,7 +93,9 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- mixed-read-load --host 192.168.
 dotnet run --project samples/PlcComm.Slmp.Cli -- tcp-concurrency --host 192.168.250.101 --target SELF --clients 8 --iterations 200
 ```
 
-Practical note for the currently verified environment: keep `tcp-concurrency` at `--clients 1` on TCP/1025. The CLI now caches auto profile resolution per process, so repeated operations can keep `--series auto --frame-type auto` without re-probing every client.
+Practical note for the currently verified environment: direct multi-connection TCP is unstable beyond one connection on TCP/1025. Prefer `single-connection-load` for parallel work on one PLC path. The CLI now caches auto profile resolution per process, so repeated operations can keep `--series auto --frame-type auto` without re-probing every client.
+
+For app-side reuse, use `QueuedSlmpClient` to share one `SlmpClient` across multiple tasks while serializing requests on that one connection.
 
 ## Library Example
 
@@ -112,4 +114,21 @@ await client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), new u
 
 var profile = await client.ResolveProfileAsync();
 Console.WriteLine($"recommended frame={profile.FrameType}, series={profile.CompatibilityMode}");
+```
+
+```csharp
+using var rawClient = new SlmpClient("192.168.250.101", 1025, SlmpTransportMode.Tcp)
+{
+    TargetAddress = SlmpTargetParser.ParseNamed("SELF").Target,
+};
+await using var queuedClient = new QueuedSlmpClient(rawClient);
+
+var profile = await queuedClient.ResolveProfileAsync();
+queuedClient.FrameType = profile.FrameType;
+queuedClient.CompatibilityMode = profile.CompatibilityMode;
+await queuedClient.OpenAsync();
+
+var readTasks = Enumerable.Range(0, 4)
+    .Select(_ => queuedClient.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000), 1));
+var reads = await Task.WhenAll(readTasks);
 ```

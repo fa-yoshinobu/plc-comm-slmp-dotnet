@@ -22,9 +22,10 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- tcp-concurrency --host 192.168.
 - `clients=1`: stable (`Connect failures: 0`, `Read failures: 0`).
 - `clients=2`: connection reject still observed on this endpoint.
 - `clients=4`: connection reject observed.
+- `single-connection-load` with `workers=4`: stable (`Read failures: 0`).
 
 ## Operational Recommendation
 
-- Use `clients <= 1` for this environment.
-- If higher parallelism is required, use connection pooling or single-connection multiplexing.
+- Do not rely on direct multi-connection TCP for parallel work on this endpoint.
+- If higher parallelism is required, use single-connection multiplexing / request queueing.
 - Auto profile resolution is now cached per process, so `--series auto --frame-type auto` can remain enabled without repeated per-client probe overhead.

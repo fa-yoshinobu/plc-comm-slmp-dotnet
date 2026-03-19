@@ -28,6 +28,7 @@ Implemented core features:
 - Compatibility matrix renderer (`compatibility-matrix-render`)
 - G/HG Appendix 1 coverage CLI (read/write-check)
 - Appendix1 device recheck + read-soak + mixed-read-load + tcp-concurrency probes
+- `QueuedSlmpClient` for single-connection serialized app-side reuse
 
 ## Quick Start
 
@@ -48,7 +49,7 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-matrix-render --i
 
 `docs/validation/reports/PLC_COMPATIBILITY.md` remains Python-source-of-truth and should be regenerated from `plc-comm-slmp-python` probe JSON.
 
-TCP concurrency practical note (current environment): use `clients <= 1` on TCP/1025. Auto profile resolution is cached per process, so `--series auto --frame-type auto` no longer adds repeated probe overhead within one run.
+TCP concurrency practical note (current environment): direct multi-connection TCP is unstable beyond one connection on TCP/1025. Prefer single-connection sharing. Auto profile resolution is cached per process, so `--series auto --frame-type auto` no longer adds repeated probe overhead within one run.
 
 ## Library Auto-Recommend Example
 
@@ -61,6 +62,28 @@ using var client = new SlmpClient("192.168.250.101", 1025, SlmpTransportMode.Tcp
 await client.OpenAsync();
 var profile = await client.ResolveProfileAsync();
 Console.WriteLine($"frame={profile.FrameType}, series={profile.CompatibilityMode}, class={profile.ProfileClass}");
+```
+
+## Library Single-Connection Queue Example
+
+```csharp
+using var client = new SlmpClient("192.168.250.101", 1025, SlmpTransportMode.Tcp)
+{
+    TargetAddress = SlmpTargetParser.ParseNamed("SELF").Target,
+};
+await using var queued = new QueuedSlmpClient(client);
+
+var profile = await queued.ResolveProfileAsync();
+queued.FrameType = profile.FrameType;
+queued.CompatibilityMode = profile.CompatibilityMode;
+await queued.OpenAsync();
+
+var workers = Enumerable.Range(0, 4).Select(async _ =>
+{
+    var sm400 = await queued.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400), 1);
+    var d1000 = await queued.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000), 1);
+});
+await Task.WhenAll(workers);
 ```
 
 ## Documentation

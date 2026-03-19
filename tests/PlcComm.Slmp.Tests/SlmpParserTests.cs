@@ -58,4 +58,32 @@ public sealed class SlmpParserTests
         Assert.Equal(SlmpDeviceCode.G, qualified.Device.Code);
         Assert.Equal((uint)10, qualified.Device.Number);
     }
+
+    [Fact]
+    public void QueuedClient_ConstructsWithInnerClient()
+    {
+        using var inner = new SlmpClient("127.0.0.1");
+        using var queued = new QueuedSlmpClient(inner);
+        Assert.Same(inner, queued.InnerClient);
+    }
+
+    [Fact]
+    public void QueuedClient_ExposesConfigurationProperties()
+    {
+        using var inner = new SlmpClient("127.0.0.1");
+        using var queued = new QueuedSlmpClient(inner)
+        {
+            FrameType = SlmpFrameType.Frame3E,
+            CompatibilityMode = SlmpCompatibilityMode.Legacy,
+            TargetAddress = new SlmpTargetAddress(0x01, 0x02, 0x03E0, 0x00),
+            MonitoringTimer = 0x0020,
+            Timeout = TimeSpan.FromSeconds(5),
+        };
+
+        Assert.Equal(SlmpFrameType.Frame3E, inner.FrameType);
+        Assert.Equal(SlmpCompatibilityMode.Legacy, inner.CompatibilityMode);
+        Assert.Equal((byte)0x01, inner.TargetAddress.Network);
+        Assert.Equal((ushort)0x0020, inner.MonitoringTimer);
+        Assert.Equal(TimeSpan.FromSeconds(5), inner.Timeout);
+    }
 }
