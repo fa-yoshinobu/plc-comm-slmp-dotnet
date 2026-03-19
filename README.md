@@ -5,15 +5,27 @@
 
 A modern .NET SLMP client for Mitsubishi PLC communication over Binary 3E/4E frames.
 
-## Current Scope
+## Why This Library
 
-This repository now contains a working bootstrap implementation with:
+- Fast binary 3E/4E transport with auto profile resolution
+- End-user friendly API + CLI for quick validation
+- Single-connection queue (`QueuedSlmpClient`) for unstable TCP environments
+- Hardware-verified compatibility snapshot (see table below)
 
-- Core library: `src/PlcComm.Slmp`
-- CLI sample: `samples/PlcComm.Slmp.Cli`
-- Unit tests: `tests/PlcComm.Slmp.Tests`
+## Quick Start (Copy/Paste)
 
-Implemented core features:
+```bash
+dotnet build PlcCommSlmp.sln
+dotnet run --project samples/PlcComm.Slmp.Cli -- connection-check --host 192.168.250.101 --series auto --frame-type auto
+```
+
+Optional UDP check:
+
+```bash
+dotnet run --project samples/PlcComm.Slmp.Cli -- connection-check --host 192.168.250.101 --port 1027 --transport udp --series auto --frame-type auto
+```
+
+## Core Features
 
 - TCP / UDP transport
 - Binary 3E / 4E request-response framing
@@ -30,25 +42,29 @@ Implemented core features:
 - Appendix1 device recheck + read-soak + mixed-read-load + tcp-concurrency probes
 - `QueuedSlmpClient` for single-connection serialized app-side reuse
 
-## Quick Start
+## Device Compatibility Snapshot (Hardware-Verified)
 
-```bash
-dotnet build PlcCommSlmp.sln
-dotnet run --project samples/PlcComm.Slmp.Cli -- connection-check --host 192.168.250.101 --port 1025 --transport tcp --series auto --frame-type auto
-```
+This table is a readable snapshot. The full matrix lives in `docs/validation/reports/PLC_COMPATIBILITY.md` (Python is the source of truth).
 
-```bash
-dotnet run --project samples/PlcComm.Slmp.Cli -- other-station-check --host 192.168.250.101 --port 1025 --transport tcp --target NW1-ST2
-```
+| Family | Verified Models | Status | Recommended Profile |
+| --- | --- | --- | --- |
+| iQ-R | R00CPU, R08CPU, R08PCPU, R120PCPU, RJ71EN71 | YES (core commands) | 3e/ql, 3e/iqr, 4e/ql, 4e/iqr |
+| iQ-L | L16HCPU | YES (core commands) | 3e/ql, 3e/iqr, 4e/ql, 4e/iqr |
+| MELSEC-Q | Q06UDVCPU, Q26UDEHCPU, QJ71E71-100 | PARTIAL | 3e/ql (4e/ql for QJ71E71) |
+| MELSEC-L | L26CPU-BT | PARTIAL | 3e/ql |
+| iQ-F | FX5U, FX5UC | PARTIAL | 3e/ql (4e/ql for FX5U) |
+| Third-Party MC | KV-7500, KV-XLE02 | PARTIAL (MC compatible) | 3e/ql, 4e/ql |
 
-```bash
-dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-probe --host 192.168.250.101 --port 1025 --transport tcp --target SELF --write-check
-dotnet run --project samples/PlcComm.Slmp.Cli -- g-hg-appendix1-coverage --host 192.168.250.101 --port 1025 --transport tcp --target SELF-CPU1 --device U3E0\\G10 --points 1 --write-check
-dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-matrix-render --input docs/validation/reports/compatibility_probe_latest.json
-dotnet run --project samples/PlcComm.Slmp.QueuedSample -- 192.168.250.101 1025 4 10
-```
+Notes:
 
-`docs/validation/reports/PLC_COMPATIBILITY.md` remains Python-source-of-truth and should be regenerated from `plc-comm-slmp-python` probe JSON.
+- Q/L series often reject `0101` (type name) and may require 3E/QL.
+- Third-party MC-compatible endpoints are not Mitsubishi native; results describe MC compatibility.
+
+## Use Cases
+
+- Quick on-site health check of PLCs (SM/D reads, type name when supported).
+- Gateway services that normalize SLMP data for MES/SCADA or data lakes.
+- Multi-station diagnostics with a single shared connection (`QueuedSlmpClient`) for unstable TCP environments.
 
 TCP concurrency practical note (current environment): direct multi-connection TCP is unstable beyond one connection on TCP/1025. Prefer single-connection sharing. Auto profile resolution is cached per process, so `--series auto --frame-type auto` no longer adds repeated probe overhead within one run.
 
