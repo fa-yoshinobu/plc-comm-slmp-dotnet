@@ -1,15 +1,22 @@
-# TODO: SLMP .NET
+﻿# TODO
 
-This file tracks the remaining tasks and issues for the SLMP .NET library.
+## Python Parity Roadmap
 
-## 1. Feature Implementation
-- [ ] **Core Logic Migration**: Port the 3E/4E binary logic from the Python version.
-- [ ] **Async Support**: Implement fully asynchronous client.
-
-## 2. Testing & Validation
-- [ ] **Hardware Evidence**: Verify against Mitsubishi iQ-R and Q series.
-- [ ] **Performance Benchmarking**: Compare throughput with the Python version.
-
-## 3. Documentation & Maintenance
-- [ ] **User Manual**: Create `docs/user/USER_GUIDE.md`.
-- [ ] **NuGet Configuration**: Exclude non-user docs from the package.
+- [ ] Add missing high-level APIs to match `plc-comm-slmp-python`:
+  - [ ] random read/write full set
+  - [ ] block read/write full set (including mixed split/retry policy parity)
+  - [ ] monitor registration / monitor cycle
+  - [ ] memory read/write (`0613` / `1613`)
+  - [ ] extension unit read/write (`0601` / `1601`)
+  - [ ] label operations
+  - [ ] file operations
+  - [ ] on-demand receive/request
+- [ ] Add async + sync API parity wrappers for all supported operations.
+- [ ] Add CLI parity scripts equivalent to Python probes:
+  - [ ] compatibility probe
+  - [ ] matrix renderer
+  - [ ] appendix recheck tools
+  - [ ] soak / mixed-read-load / tcp-concurrency probes
+- [ ] Add hardware evidence reports under `docs/validation/reports/`.
+- [ ] Add CI workflow (`.github/workflows/ci.yml`) for build + test + format + docs link check.
+- [ ] Tighten package distribution rules to exclude repository-only docs and tests from NuGet outputs.

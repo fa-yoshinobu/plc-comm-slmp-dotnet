@@ -1,52 +1,51 @@
-# (Mitsubishi MELSEC) SLMP .NET
+﻿# (Mitsubishi MELSEC) SLMP .NET
 
-[![.NET 9.0](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/9.0)
+[![.NET 9.0](https://img.shields.io/badge/.NET-9.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/9.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Static Analysis: dotnet format](https://img.shields.io/badge/Lint-dotnet%20format-blue.svg)](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-format)
 
-A modern, strictly typed .NET client library for Mitsubishi SLMP (Seamless Message Protocol). Supporting Binary 3E and 4E frames for iQ-R, iQ-F, and Q series PLCs.
+A modern .NET SLMP client for Mitsubishi PLC communication over Binary 3E/4E frames.
 
-## Key Features
+## Current Scope
 
-- **High Performance**: Optimized for .NET 9.0 with asynchronous I/O.
-- **Binary Support**: Full support for Binary 3E and 4E SLMP frames.
-- **Strict Protocol Compliance**: Based on official Mitsubishi Electric English specifications.
-- **Single-File Distribution**: Supports self-contained publishing.
-- **CI-Ready**: Built-in quality checks via `run_ci.bat`.
+This repository now contains a working bootstrap implementation with:
+
+- Core library: `src/PlcComm.Slmp`
+- CLI sample: `samples/PlcComm.Slmp.Cli`
+- Unit tests: `tests/PlcComm.Slmp.Tests`
+
+Implemented core features:
+
+- TCP / UDP transport
+- Binary 3E / 4E request-response framing
+- Compatibility mode (`legacy` / `iqr`)
+- Device parser (`D100`, `X10`, etc.)
+- Read/Write words and bits
+- Read type name
+- Remote controls (`run/stop/pause/latch clear/reset`) and `clear error`
+- Auto profile resolution (`3E/4E` + `legacy/iqr`) with simple probing
 
 ## Quick Start
 
-### Basic Usage
-```csharp
-using Slmp;
+```bash
+dotnet build PlcCommSlmp.sln
+dotnet run --project samples/PlcComm.Slmp.Cli -- connection-check --host 192.168.250.101 --port 1025 --transport tcp --series auto --frame-type auto
+```
 
-// Connect to a MELSEC iQ-R PLC
-using var client = new SlmpClient("192.168.1.10", 1025);
-
-// Read D100 (Word)
-int val = await client.ReadWordAsync("D100");
-Console.WriteLine($"Value: {val}");
+```bash
+dotnet run --project samples/PlcComm.Slmp.Cli -- other-station-check --host 192.168.250.101 --port 1025 --transport tcp --target NW1-ST2
 ```
 
 ## Documentation
 
-Follows the workspace-wide hierarchical documentation policy:
+- [User Guide](docs/user/USER_GUIDE.md)
+- [Protocol Notes](docs/maintainer/PROTOCOL_SPEC.md)
+- [Validation Report](docs/validation/reports/INITIAL_BOOTSTRAP_2026-03-19.md)
 
-- [**User Guide**](docs/user/USER_GUIDE.md): Installation and API reference.
-- [**QA Reports**](docs/validation/reports/): Formal evidence of communication with Mitsubishi hardware.
-- [**Protocol Spec**](docs/maintainer/PROTOCOL_SPEC.md): Technical details of the SLMP implementation.
+## Parity Status
 
-## Development & CI
-
-Quality is managed via `run_ci.bat`.
-
-### Local CI & Publish
-```bash
-run_ci.bat
-```
-Validates the code and publishes a self-contained Single-File EXE to the `publish/` directory.
+Target is parity with `plc-comm-slmp-python`.
+Current implementation is a functional core subset. Remaining parity work is tracked in [TODO.md](TODO.md).
 
 ## License
 
 Distributed under the [MIT License](LICENSE).
-

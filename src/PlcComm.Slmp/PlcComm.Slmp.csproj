@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <PackageId>PlcComm.Slmp</PackageId>
+    <Title>PLC Communication SLMP .NET</Title>
+    <Description>SLMP binary 3E/4E client library for Mitsubishi PLCs.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet</RepositoryUrl>
+    <Authors>fa-yoshinobu</Authors>
+  </PropertyGroup>
+</Project>
