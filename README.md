@@ -48,7 +48,7 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-matrix-render --i
 
 `docs/validation/reports/PLC_COMPATIBILITY.md` remains Python-source-of-truth and should be regenerated from `plc-comm-slmp-python` probe JSON.
 
-TCP concurrency practical note (current environment): use `clients <= 2` on TCP/1025.
+TCP concurrency practical note (current environment): use `clients <= 1` on TCP/1025. Auto profile resolution is cached per process, so `--series auto --frame-type auto` no longer adds repeated probe overhead within one run.
 
 ## Library Auto-Recommend Example
 

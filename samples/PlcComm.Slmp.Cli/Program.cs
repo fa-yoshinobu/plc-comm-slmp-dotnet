@@ -1,8 +1,12 @@
 using System.Text;
 using System.Text.Json;
+using System.Collections.Concurrent;
 using PlcComm.Slmp;
 
-static string GetOption(IReadOnlyList<string> args, string name, string defaultValue)
+var autoProfileCache = new ConcurrentDictionary<string, Lazy<Task<SlmpProfileRecommendation>>>(StringComparer.Ordinal);
+var autoProfileLogged = new ConcurrentDictionary<string, byte>(StringComparer.Ordinal);
+
+string GetOption(IReadOnlyList<string> args, string name, string defaultValue)
 {
     var idx = -1;
     for (var i = 0; i < args.Count; i++)
@@ -16,7 +20,7 @@ static string GetOption(IReadOnlyList<string> args, string name, string defaultV
     return idx >= 0 && idx + 1 < args.Count ? args[idx + 1] : defaultValue;
 }
 
-static List<string> GetOptions(IReadOnlyList<string> args, string name)
+List<string> GetOptions(IReadOnlyList<string> args, string name)
 {
     var values = new List<string>();
     for (var i = 0; i < args.Count - 1; i++)
@@ -29,44 +33,99 @@ static List<string> GetOptions(IReadOnlyList<string> args, string name)
     return values;
 }
 
-static bool HasFlag(IReadOnlyList<string> args, string name) => args.Contains(name, StringComparer.OrdinalIgnoreCase);
+bool HasFlag(IReadOnlyList<string> args, string name) => args.Contains(name, StringComparer.OrdinalIgnoreCase);
 
-static string GetTimestamp() => DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz");
+string GetTimestamp() => DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz");
 
-static async Task<SlmpClient> CreateClientAsync(IReadOnlyList<string> args, SlmpTargetAddress target)
+string BuildAutoProfileKey(string host, int port, SlmpTransportMode transport, SlmpTargetAddress target)
+{
+    return $"{host}:{port}:{transport}:{target.Network:X2}:{target.Station:X2}:{target.ModuleIo:X4}:{target.Multidrop:X2}";
+}
+
+async Task<SlmpProfileRecommendation> ResolveAutoProfileAsync(string host, int port, SlmpTransportMode transport, SlmpTargetAddress target)
+{
+    using var probeClient = new SlmpClient(host, port, transport)
+    {
+        TargetAddress = target,
+    };
+    await probeClient.OpenAsync().ConfigureAwait(false);
+    return await probeClient.ResolveProfileAsync().ConfigureAwait(false);
+}
+
+async Task<SlmpProfileRecommendation?> WarmAutoProfileAsync(IReadOnlyList<string> args, SlmpTargetAddress target)
 {
     var host = GetOption(args, "--host", "192.168.250.101");
     var port = int.Parse(GetOption(args, "--port", "1025"));
     var transport = GetOption(args, "--transport", "tcp").Equals("udp", StringComparison.OrdinalIgnoreCase) ? SlmpTransportMode.Udp : SlmpTransportMode.Tcp;
     var frame = GetOption(args, "--frame-type", "auto");
     var series = GetOption(args, "--series", "auto");
+    var quiet = HasFlag(args, "--quiet");
+    if (!string.Equals(frame, "auto", StringComparison.OrdinalIgnoreCase) && !string.Equals(series, "auto", StringComparison.OrdinalIgnoreCase))
+    {
+        return null;
+    }
+
+    var autoKey = BuildAutoProfileKey(host, port, transport, target);
+    var lazyProfile = autoProfileCache.GetOrAdd(
+        autoKey,
+        _ => new Lazy<Task<SlmpProfileRecommendation>>(() => ResolveAutoProfileAsync(host, port, transport, target))
+    );
+
+    SlmpProfileRecommendation profile;
+    try
+    {
+        profile = await lazyProfile.Value.ConfigureAwait(false);
+    }
+    catch
+    {
+        autoProfileCache.TryRemove(autoKey, out _);
+        throw;
+    }
+
+    if (!quiet && autoProfileLogged.TryAdd(autoKey, 0))
+    {
+        Console.WriteLine($"[INFO] Resolved frame={(profile.FrameType == SlmpFrameType.Frame3E ? "3e" : "4e")}, series={(profile.CompatibilityMode == SlmpCompatibilityMode.Legacy ? "ql" : "iqr")}");
+    }
+
+    return profile;
+}
+
+async Task<SlmpClient> CreateClientAsync(IReadOnlyList<string> args, SlmpTargetAddress target)
+{
+    var host = GetOption(args, "--host", "192.168.250.101");
+    var port = int.Parse(GetOption(args, "--port", "1025"));
+    var transport = GetOption(args, "--transport", "tcp").Equals("udp", StringComparison.OrdinalIgnoreCase) ? SlmpTransportMode.Udp : SlmpTransportMode.Tcp;
+    var frame = GetOption(args, "--frame-type", "auto");
+    var series = GetOption(args, "--series", "auto");
+    var frameAuto = string.Equals(frame, "auto", StringComparison.OrdinalIgnoreCase);
+    var seriesAuto = string.Equals(series, "auto", StringComparison.OrdinalIgnoreCase);
+
+    var cachedProfile = await WarmAutoProfileAsync(args, target).ConfigureAwait(false);
 
     var client = new SlmpClient(host, port, transport) { TargetAddress = target };
-    if (!string.Equals(frame, "auto", StringComparison.OrdinalIgnoreCase))
+    if (!frameAuto)
     {
         client.FrameType = frame.Equals("3e", StringComparison.OrdinalIgnoreCase) ? SlmpFrameType.Frame3E : SlmpFrameType.Frame4E;
     }
 
-    if (!string.Equals(series, "auto", StringComparison.OrdinalIgnoreCase))
+    if (!seriesAuto)
     {
         client.CompatibilityMode = series.Equals("ql", StringComparison.OrdinalIgnoreCase) || series.Equals("legacy", StringComparison.OrdinalIgnoreCase)
             ? SlmpCompatibilityMode.Legacy
             : SlmpCompatibilityMode.Iqr;
     }
 
-    await client.OpenAsync().ConfigureAwait(false);
-    if (string.Equals(frame, "auto", StringComparison.OrdinalIgnoreCase) || string.Equals(series, "auto", StringComparison.OrdinalIgnoreCase))
+    if (cachedProfile is not null)
     {
-        var profile = await client.ResolveProfileAsync().ConfigureAwait(false);
-        client.FrameType = profile.FrameType;
-        client.CompatibilityMode = profile.CompatibilityMode;
-        Console.WriteLine($"[INFO] Resolved frame={(profile.FrameType == SlmpFrameType.Frame3E ? "3e" : "4e")}, series={(profile.CompatibilityMode == SlmpCompatibilityMode.Legacy ? "ql" : "iqr")}");
+        client.FrameType = cachedProfile.FrameType;
+        client.CompatibilityMode = cachedProfile.CompatibilityMode;
     }
 
+    await client.OpenAsync().ConfigureAwait(false);
     return client;
 }
 
-static IReadOnlyList<SlmpNamedTarget> ParseTargets(IReadOnlyList<string> args)
+IReadOnlyList<SlmpNamedTarget> ParseTargets(IReadOnlyList<string> args)
 {
     var targetInputs = GetOptions(args, "--target");
     if (targetInputs.Count == 0)
@@ -76,7 +135,7 @@ static IReadOnlyList<SlmpNamedTarget> ParseTargets(IReadOnlyList<string> args)
     return SlmpTargetParser.ParseMany(targetInputs);
 }
 
-static async Task<int> RunConnectionCheckAsync(IReadOnlyList<string> args)
+async Task<int> RunConnectionCheckAsync(IReadOnlyList<string> args)
 {
     var target = ParseTargets(args)[0];
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
@@ -85,12 +144,12 @@ static async Task<int> RunConnectionCheckAsync(IReadOnlyList<string> args)
     return 0;
 }
 
-static string FormatTarget(SlmpNamedTarget row)
+string FormatTarget(SlmpNamedTarget row)
 {
     return $"name={row.Name}, network=0x{row.Target.Network:X2}, station=0x{row.Target.Station:X2}, module_io=0x{row.Target.ModuleIo:X4}, multidrop=0x{row.Target.Multidrop:X2}";
 }
 
-static async Task<int> RunOtherStationCheckAsync(IReadOnlyList<string> args)
+async Task<int> RunOtherStationCheckAsync(IReadOnlyList<string> args)
 {
     var targets = ParseTargets(args);
     var anyNg = false;
@@ -125,7 +184,7 @@ static async Task<int> RunOtherStationCheckAsync(IReadOnlyList<string> args)
     return anyNg ? 1 : 0;
 }
 
-static async Task<int> RunRandomCheckAsync(IReadOnlyList<string> args)
+async Task<int> RunRandomCheckAsync(IReadOnlyList<string> args)
 {
     var target = ParseTargets(args)[0];
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
@@ -149,7 +208,7 @@ static async Task<int> RunRandomCheckAsync(IReadOnlyList<string> args)
     return 0;
 }
 
-static async Task<int> RunBlockCheckAsync(IReadOnlyList<string> args)
+async Task<int> RunBlockCheckAsync(IReadOnlyList<string> args)
 {
     var target = ParseTargets(args)[0];
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
@@ -182,7 +241,7 @@ static async Task<int> RunBlockCheckAsync(IReadOnlyList<string> args)
     return 0;
 }
 
-static async Task<ProbeItemResult> RunProbeItemAsync(SlmpClient client, SlmpNamedTarget target, string transport, string name, Func<Task<string>> body)
+async Task<ProbeItemResult> RunProbeItemAsync(SlmpClient client, SlmpNamedTarget target, string transport, string name, Func<Task<string>> body)
 {
     try
     {
@@ -197,7 +256,7 @@ static async Task<ProbeItemResult> RunProbeItemAsync(SlmpClient client, SlmpName
     }
 }
 
-static async Task<int> RunCompatibilityProbeAsync(IReadOnlyList<string> args)
+async Task<int> RunCompatibilityProbeAsync(IReadOnlyList<string> args)
 {
     var targets = ParseTargets(args);
     var transports = GetOptions(args, "--transport");
@@ -289,7 +348,7 @@ static async Task<int> RunCompatibilityProbeAsync(IReadOnlyList<string> args)
     return results.Any(x => x.Status == "NG") ? 1 : 0;
 }
 
-static async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
+async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
 {
     var targets = ParseTargets(args);
     var transports = GetOptions(args, "--transport");
@@ -407,7 +466,7 @@ static async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
     return rows.Any(x => x.Status == "NG") ? 1 : 0;
 }
 
-static async Task<int> RunCompatibilityMatrixRenderAsync(IReadOnlyList<string> args)
+async Task<int> RunCompatibilityMatrixRenderAsync(IReadOnlyList<string> args)
 {
     var inputPaths = GetOptions(args, "--input");
     if (inputPaths.Count == 0)
@@ -471,7 +530,7 @@ static async Task<int> RunCompatibilityMatrixRenderAsync(IReadOnlyList<string> a
     return 0;
 }
 
-static async Task<int> RunAppendix1DeviceRecheckAsync(IReadOnlyList<string> args)
+async Task<int> RunAppendix1DeviceRecheckAsync(IReadOnlyList<string> args)
 {
     var target = ParseTargets(args)[0];
     var deviceText = GetOption(args, "--device", @"U3E0\G10");
@@ -513,7 +572,7 @@ static async Task<int> RunAppendix1DeviceRecheckAsync(IReadOnlyList<string> args
     return status == "OK" ? 0 : 1;
 }
 
-static async Task<int> RunReadSoakAsync(IReadOnlyList<string> args)
+async Task<int> RunReadSoakAsync(IReadOnlyList<string> args)
 {
     var target = ParseTargets(args)[0];
     var iterations = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--iterations", "100"));
@@ -554,7 +613,7 @@ static async Task<int> RunReadSoakAsync(IReadOnlyList<string> args)
     return failures == 0 ? 0 : 1;
 }
 
-static async Task<int> RunMixedReadLoadAsync(IReadOnlyList<string> args)
+async Task<int> RunMixedReadLoadAsync(IReadOnlyList<string> args)
 {
     var target = ParseTargets(args)[0];
     var iterations = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--iterations", "100"));
@@ -583,25 +642,42 @@ static async Task<int> RunMixedReadLoadAsync(IReadOnlyList<string> args)
     return failures == 0 ? 0 : 1;
 }
 
-static async Task<int> RunTcpConcurrencyAsync(IReadOnlyList<string> args)
+async Task<int> RunTcpConcurrencyAsync(IReadOnlyList<string> args)
 {
     var target = ParseTargets(args)[0];
     var clients = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--clients", "4"));
     var iterations = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--iterations", "50"));
     var staggerMs = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--stagger-ms", "50"));
+    var quiet = HasFlag(args, "--quiet");
     var readFailures = 0;
     var connectFailures = 0;
 
-    var tasks = Enumerable.Range(0, clients).Select(async _clientIndex =>
+    _ = await WarmAutoProfileAsync(args, target.Target).ConfigureAwait(false);
+    var openedClients = new List<SlmpClient>(clients);
+    for (var clientIndex = 0; clientIndex < clients; clientIndex++)
     {
-        if (staggerMs > 0 && _clientIndex > 0)
+        if (staggerMs > 0 && clientIndex > 0)
         {
-            await Task.Delay(staggerMs * _clientIndex).ConfigureAwait(false);
+            await Task.Delay(staggerMs).ConfigureAwait(false);
         }
-
         try
         {
-            using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
+            openedClients.Add(await CreateClientAsync(args, target.Target).ConfigureAwait(false));
+        }
+        catch (Exception ex)
+        {
+            if (!quiet)
+            {
+                Console.WriteLine($"[INFO] tcp-concurrency connect failed client={clientIndex + 1}: {ex.Message}");
+            }
+            connectFailures++;
+        }
+    }
+
+    try
+    {
+        var tasks = openedClients.Select(async client =>
+        {
             var localReadFailures = 0;
             for (var i = 0; i < iterations; i++)
             {
@@ -616,24 +692,20 @@ static async Task<int> RunTcpConcurrencyAsync(IReadOnlyList<string> args)
                 }
             }
 
-            return (ConnectFailed: false, ReadFailures: localReadFailures);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[INFO] tcp-concurrency connect failed client={_clientIndex + 1}: {ex.Message}");
-            return (ConnectFailed: true, ReadFailures: 0);
-        }
-    }).ToArray();
+            return localReadFailures;
+        }).ToArray();
 
-    foreach (var result in await Task.WhenAll(tasks).ConfigureAwait(false))
+        foreach (var result in await Task.WhenAll(tasks).ConfigureAwait(false))
+        {
+            readFailures += result;
+        }
+    }
+    finally
     {
-        if (result.ConnectFailed)
+        foreach (var client in openedClients)
         {
-            connectFailures++;
-            continue;
+            client.Dispose();
         }
-
-        readFailures += result.ReadFailures;
     }
 
     var reportDir = GetOption(args, "--report-dir", "docs/validation/reports");
@@ -649,17 +721,17 @@ static async Task<int> RunTcpConcurrencyAsync(IReadOnlyList<string> args)
 if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
 {
     Console.WriteLine("SLMP .NET CLI");
-    Console.WriteLine("  connection-check [--host ... --port ... --transport tcp|udp --series auto|ql|iqr --frame-type auto|3e|4e --target SELF|SELF-CPU1|NW1-ST2|name,0x00,0xFF,0x03FF,0x00]");
-    Console.WriteLine("  other-station-check [--host ... --port ... --transport tcp|udp --target ... (repeatable)]");
-    Console.WriteLine("  random-check [--host ... --port ... --transport tcp|udp --target ... --write-check]");
-    Console.WriteLine("  block-check [--host ... --port ... --transport tcp|udp --target ... --write-check]");
-    Console.WriteLine("  compatibility-probe [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --write-check --report-dir docs/validation/reports]");
-    Console.WriteLine("  compatibility-matrix-render [--input ... (repeatable) --output docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md]");
-    Console.WriteLine(@"  appendix1-device-recheck [--host ... --port ... --transport tcp|udp --target SELF --device U3E0\G10 --points 1 --direct-memory 0xFA --write-check --report-dir docs/validation/reports]");
-    Console.WriteLine(@"  g-hg-appendix1-coverage [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --device U3E0\G10 (repeatable) --points 1 (repeatable) --direct-memory 0xFA (repeatable) --write-check --report-dir docs/validation/reports]");
-    Console.WriteLine("  read-soak [--host ... --port ... --transport tcp|udp --target SELF --device D1000 --points 1 --iterations 100 --interval-ms 0 --report-dir docs/validation/reports]");
-    Console.WriteLine("  mixed-read-load [--host ... --port ... --transport tcp|udp --target SELF --iterations 100 --report-dir docs/validation/reports]");
-    Console.WriteLine("  tcp-concurrency [--host ... --port ... --transport tcp --target SELF --clients 4 --iterations 50 --stagger-ms 50 --report-dir docs/validation/reports]");
+    Console.WriteLine("  connection-check [--host ... --port ... --transport tcp|udp --series auto|ql|iqr --frame-type auto|3e|4e --target SELF|SELF-CPU1|NW1-ST2|name,0x00,0xFF,0x03FF,0x00 --quiet]");
+    Console.WriteLine("  other-station-check [--host ... --port ... --transport tcp|udp --target ... (repeatable) --quiet]");
+    Console.WriteLine("  random-check [--host ... --port ... --transport tcp|udp --target ... --write-check --quiet]");
+    Console.WriteLine("  block-check [--host ... --port ... --transport tcp|udp --target ... --write-check --quiet]");
+    Console.WriteLine("  compatibility-probe [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --write-check --report-dir docs/validation/reports --quiet]");
+    Console.WriteLine("  compatibility-matrix-render [--input ... (repeatable) --output docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md --quiet]");
+    Console.WriteLine(@"  appendix1-device-recheck [--host ... --port ... --transport tcp|udp --target SELF --device U3E0\G10 --points 1 --direct-memory 0xFA --write-check --report-dir docs/validation/reports --quiet]");
+    Console.WriteLine(@"  g-hg-appendix1-coverage [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --device U3E0\G10 (repeatable) --points 1 (repeatable) --direct-memory 0xFA (repeatable) --write-check --report-dir docs/validation/reports --quiet]");
+    Console.WriteLine("  read-soak [--host ... --port ... --transport tcp|udp --target SELF --device D1000 --points 1 --iterations 100 --interval-ms 0 --report-dir docs/validation/reports --quiet]");
+    Console.WriteLine("  mixed-read-load [--host ... --port ... --transport tcp|udp --target SELF --iterations 100 --report-dir docs/validation/reports --quiet]");
+    Console.WriteLine("  tcp-concurrency [--host ... --port ... --transport tcp --target SELF --clients 4 --iterations 50 --stagger-ms 50 --report-dir docs/validation/reports --quiet]");
     return;
 }
 
