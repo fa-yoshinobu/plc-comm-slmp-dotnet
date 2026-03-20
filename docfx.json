@@ -18,7 +18,7 @@
         "dest": "api"
       },
       {
-        "files": ["docsrc/**/*.md", "docsrc/**/toc.yml"]
+        "files": ["**/*.md", "**/toc.yml"]
       },
       {
         "files": ["index.md", "toc.yml"]
@@ -42,4 +42,6 @@
     ]
   }
 }
+
+
 

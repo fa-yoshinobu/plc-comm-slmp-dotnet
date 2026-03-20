@@ -12,6 +12,46 @@
     },
     {
       "type": "Conceptual",
+      "source_relative_path": "AGENTS.md",
+      "output": {
+        ".html": {
+          "relative_path": "AGENTS.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "CHANGELOG.md",
+      "output": {
+        ".html": {
+          "relative_path": "CHANGELOG.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "README.md",
+      "output": {
+        ".html": {
+          "relative_path": "README.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "TODO.md",
+      "output": {
+        ".html": {
+          "relative_path": "TODO.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
       "source_relative_path": "docsrc/maintainer/PROTOCOL_SPEC.md",
       "output": {
         ".html": {
