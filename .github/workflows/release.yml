@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Build release artifacts
+        shell: cmd
+        run: release.bat
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: toyopuc-release-${{ github.ref_name }}
+          path: artifacts/release/**
+          if-no-files-found: error
+
+      - name: Create or update GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $releaseDir = Get-ChildItem artifacts/release -Directory | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+          if ($null -eq $releaseDir) {
+            throw "Release directory not found."
+          }
+
+          $version = $releaseDir.Name
+          $assets = @(Get-ChildItem $releaseDir.FullName -File | Select-Object -ExpandProperty FullName)
+          if ($assets.Count -eq 0) {
+            throw "No release assets found."
+          }
+
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $assets --clobber
+          }
+          else {
+            gh release create $tag $assets --title "plc-comm-slmp-dotnet $version" --generate-notes
+          }
+
+      - name: Publish packages to NuGet
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:NUGET_API_KEY)) {
+            Write-Host "NUGET_API_KEY is not configured. Skipping NuGet publish."
+            exit 0
+          }
+
+          $releaseDir = Get-ChildItem artifacts/release -Directory | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+          if ($null -eq $releaseDir) {
+            throw "Release directory not found."
+          }
+
+          Get-ChildItem $releaseDir.FullName -Filter *.nupkg |
+            Where-Object { $_.Name -notlike '*.snupkg' } |
+            ForEach-Object {
+              dotnet nuget push $_.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+            }
+
+          Get-ChildItem $releaseDir.FullName -Filter *.snupkg |
+            ForEach-Object {
+              dotnet nuget push $_.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+            }
+
