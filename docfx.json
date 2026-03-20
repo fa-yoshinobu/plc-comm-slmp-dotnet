@@ -1,1 +1,41 @@
-{  "metadata": [    {      "src": [        {          "files": ["src/**/*.csproj"],          "exclude": ["**/bin/**", "**/obj/**"]        }      ],      "dest": "obj/api"    }  ],  "build": {    "content": [      {        "files": ["**/*.yml"],        "src": "obj/api",        "dest": "api"      },      {        "files": ["**/*.md", "**/toc.yml"]      },      {        "files": ["index.md", "toc.yml"]      }    ],    "resource": [      {        "files": ["docsrc/user/assets/**", "docsrc/maintainer/assets/**"]      }    ],    "dest": "docs",    "globalMetadata": {`n      "_disablePdf": true,      "_appTitle": "Mitsubishi SLMP .NET Documentation",      "_enableSearch": true,      "_enableNewTab": true,      "_appFooter": "PLC Communication Workspace - fa-yoshinobu"    },    "template": [      "default",      "modern"    ]  }}
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "files": ["src/**/*.csproj"],
+          "exclude": ["**/bin/**", "**/obj/**"]
+        }
+      ],
+      "dest": "obj/api"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": ["**/*.md", "**/toc.yml"],
+        "src": "docsrc"
+      },
+      {
+        "files": ["index.md", "toc.yml"]
+      }
+    ],
+    "resource": [
+      {
+        "files": ["docsrc/user/assets/**", "docsrc/maintainer/assets/**"]
+      }
+    ],
+    "dest": "docs",
+    "globalMetadata": {
+      "_disablePdf": true,
+      "_appTitle": "Mitsubishi SLMP .NET Documentation",
+      "_enableSearch": true,
+      "_enableNewTab": true,
+      "_appFooter": "PLC Communication Workspace - fa-yoshinobu"
+    },
+    "template": [
+      "default",
+      "modern"
+    ]
+  }
+}

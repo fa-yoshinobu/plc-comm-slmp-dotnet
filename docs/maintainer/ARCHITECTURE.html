@@ -2,11 +2,11 @@
 <html>
   <head>
     <meta charset="utf-8">
-      <title>Enum SlmpCompatibilityMode | Mitsubishi SLMP .NET Documentation </title>
+      <title>SLMP .NET Architecture | Mitsubishi SLMP .NET Documentation </title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <meta name="title" content="Enum SlmpCompatibilityMode | Mitsubishi SLMP .NET Documentation ">
+      <meta name="title" content="SLMP .NET Architecture | Mitsubishi SLMP .NET Documentation ">
       
-      <meta name="description" content="Specifies the device access subcommand compatibility mode.">
+      
       <link rel="icon" href="../favicon.ico">
       <link rel="stylesheet" href="../public/docfx.min.css">
       <link rel="stylesheet" href="../public/main.css">
@@ -16,7 +16,7 @@
       <meta name="docfx:rel" content="../">
       
       
-      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/new/main/apiSpec/new?filename=PlcComm_Slmp_SlmpCompatibilityMode.md&amp;value=---%0Auid%3A%20PlcComm.Slmp.SlmpCompatibilityMode%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">
+      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/maintainer/ARCHITECTURE.md/#L1">
       <meta name="loc:inThisArticle" content="In this article">
       <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
       <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
@@ -39,7 +39,7 @@
 
   </head>
 
-  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="ManagedReference">
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
     <header class="bg-body border-bottom">
       <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
         <div class="container-xxl flex-nowrap">
@@ -70,55 +70,38 @@
           <nav id="breadcrumb"></nav>
         </div>
 
-        <article data-uid="PlcComm.Slmp.SlmpCompatibilityMode">
+        <article data-uid="">
+<h1 id="slmp-net-architecture">SLMP .NET Architecture</h1>
 
-
-
-
-  <h1 id="PlcComm_Slmp_SlmpCompatibilityMode" data-uid="PlcComm.Slmp.SlmpCompatibilityMode" class="text-break">
-Enum SlmpCompatibilityMode  <a class="header-action link-secondary" title="View source" href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/src/PlcComm.Slmp/SlmpEnums.cs/#L22"><i class="bi bi-code-slash"></i></a>
-  </h1>
-
-  <div class="facts text-secondary">
-    <dl><dt>Namespace</dt><dd><a class="xref" href="PlcComm.html">PlcComm</a>.<a class="xref" href="PlcComm.Slmp.html">Slmp</a></dd></dl>
-  <dl><dt>Assembly</dt><dd>PlcComm.Slmp.dll</dd></dl>
-  </div>
-
-  <div class="markdown summary"><p>Specifies the device access subcommand compatibility mode.</p>
-</div>
-  <div class="markdown conceptual"></div>
-
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public enum SlmpCompatibilityMode : byte</code></pre>
-  </div>
-
-
-
-
-
-
-
-
-
-  <h2 id="fields">Fields
-</h2>
-  <dl class="parameters">
-    <dt id="PlcComm_Slmp_SlmpCompatibilityMode_Iqr"><code>Iqr = 1</code></dt>
-    <dd><p>Modern iQ-R series subcommands (0x0002/0x0003).</p>
-</dd>
-    <dt id="PlcComm_Slmp_SlmpCompatibilityMode_Legacy"><code>Legacy = 0</code></dt>
-    <dd><p>Legacy Q/L series subcommands (0x0000/0x0001).</p>
-</dd>
-  </dl>
-
-
+<p>This document describes the internal design and structural components of the SLMP .NET library.</p>
+<h2 id="core-components">Core Components</h2>
+<h3 id="1-slmpclient-protocol-layer">1. SlmpClient (Protocol Layer)</h3>
+<p>The primary class responsible for encoding and decoding SLMP frames (3E/4E). It handles the mapping between high-level read/write requests and raw byte arrays.</p>
+<h3 id="2-transport-layer-abstraction">2. Transport Layer (Abstraction)</h3>
+<p>Communication is abstracted through a transport interface, allowing the same client logic to work over:</p>
+<ul>
+<li><strong>TCP</strong>: Reliable, stream-oriented.</li>
+<li><strong>UDP</strong>: Fast, packet-oriented.</li>
+</ul>
+<h3 id="3-queuedslmpclient-concurrency-layer">3. QueuedSlmpClient (Concurrency Layer)</h3>
+<p>A wrapper that provides a thread-safe command queue. It ensures that only one request is active on the transport at any given time, preventing packet interleaving in multi-threaded applications.</p>
+<h2 id="requestresponse-lifecycle">Request/Response Lifecycle</h2>
+<ol>
+<li><strong>Request Construction</strong>: <code>SlmpClient</code> builds the command header and payload.</li>
+<li><strong>Transmission</strong>: The raw bytes are sent through the active <code>Transport</code>.</li>
+<li><strong>Reception</strong>: The library waits for the response header, validates the length, and reads the full payload.</li>
+<li><strong>Parsing</strong>: The response is validated (End Code check) and converted back into typed results (e.g., <code>ushort[]</code>).</li>
+</ol>
+<h2 id="error-handling">Error Handling</h2>
+<p>Errors are handled through a custom exception hierarchy, capturing both network-level failures and PLC-level error codes (End Codes).</p>
 
 </article>
 
         <div class="contribution d-print-none">
-          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/src/PlcComm.Slmp/SlmpEnums.cs/#L22" class="edit-link">Edit this page</a>
+          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/maintainer/ARCHITECTURE.md/#L1" class="edit-link">Edit this page</a>
         </div>
 
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
 
       </div>
 

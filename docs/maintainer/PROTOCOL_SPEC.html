@@ -2,21 +2,21 @@
 <html>
   <head>
     <meta charset="utf-8">
-      <title>PLC Compatibility (Dotnet Probe) | Mitsubishi SLMP .NET Documentation </title>
+      <title>Protocol Notes | Mitsubishi SLMP .NET Documentation </title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <meta name="title" content="PLC Compatibility (Dotnet Probe) | Mitsubishi SLMP .NET Documentation ">
+      <meta name="title" content="Protocol Notes | Mitsubishi SLMP .NET Documentation ">
       
       
-      <link rel="icon" href="../../../favicon.ico">
-      <link rel="stylesheet" href="../../../public/docfx.min.css">
-      <link rel="stylesheet" href="../../../public/main.css">
-      <meta name="docfx:navrel" content="../../../toc.html">
-      <meta name="docfx:tocrel" content="../../../toc.html">
+      <link rel="icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../public/docfx.min.css">
+      <link rel="stylesheet" href="../public/main.css">
+      <meta name="docfx:navrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="../toc.html">
       
-      <meta name="docfx:rel" content="../../../">
+      <meta name="docfx:rel" content="../">
       
       
-      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/validation/reports/PLC_COMPATIBILITY_DOTNET.md/#L1">
+      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/maintainer/PROTOCOL_SPEC.md/#L1">
       <meta name="loc:inThisArticle" content="In this article">
       <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
       <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
@@ -30,7 +30,7 @@
       <meta name="loc:copy" content="Copy">
       <meta name="loc:downloadPdf" content="Download PDF">
 
-      <script type="module" src="./../../../public/docfx.min.js"></script>
+      <script type="module" src="./../public/docfx.min.js"></script>
 
       <script>
         const theme = localStorage.getItem('theme') || 'auto'
@@ -43,8 +43,8 @@
     <header class="bg-body border-bottom">
       <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
         <div class="container-xxl flex-nowrap">
-          <a class="navbar-brand" href="../../../index.html">
-            <img id="logo" class="svg" src="../../../logo.svg" alt="">
+          <a class="navbar-brand" href="../index.html">
+            <img id="logo" class="svg" src="../logo.svg" alt="">
             
           </a>
           <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,41 +71,40 @@
         </div>
 
         <article data-uid="">
-<h1 id="plc-compatibility-dotnet-probe">PLC Compatibility (Dotnet Probe)</h1>
+<h1 id="protocol-notes">Protocol Notes</h1>
 
+<h2 id="frame-support">Frame Support</h2>
 <ul>
-<li>Timestamp: 2026-03-19 20:24:06 +09:00</li>
-<li>Sources: docsrc/validation/reports/compatibility_probe_latest.json</li>
+<li>Binary 3E request/response</li>
+<li>Binary 4E request/response</li>
 </ul>
-<table>
-<thead>
-<tr>
-<th>Target</th>
-<th>0101 read_type_name</th>
-<th>0401 read_sm400</th>
-<th>0403 random_read</th>
-<th>0406 block_read</th>
-<th>1402 random_write</th>
-<th>1406 block_write</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>SELF</td>
-<td>OK</td>
-<td>OK</td>
-<td>OK</td>
-<td>OK</td>
-<td>OK</td>
-<td>OK</td>
-</tr>
-</tbody>
-</table>
+<h2 id="transport-support">Transport Support</h2>
+<ul>
+<li>TCP (<code>TcpClient</code>)</li>
+<li>UDP (<code>UdpClient</code>)</li>
+</ul>
+<h2 id="compatibility-modes">Compatibility Modes</h2>
+<ul>
+<li><code>legacy</code>: subcommands <code>0x0000/0x0001</code></li>
+<li><code>iqr</code>: subcommands <code>0x0002/0x0003</code></li>
+</ul>
+<h2 id="current-api-scope">Current API Scope</h2>
+<p>Implemented in <code>SlmpClient</code>:</p>
+<ul>
+<li><code>ReadTypeNameAsync</code></li>
+<li><code>ReadWordsAsync</code> / <code>WriteWordsAsync</code></li>
+<li><code>ReadBitsAsync</code> / <code>WriteBitsAsync</code></li>
+<li><code>RemoteRunAsync</code>, <code>RemoteStopAsync</code>, <code>RemotePauseAsync</code>, <code>RemoteLatchClearAsync</code>, <code>RemoteResetAsync</code></li>
+<li><code>ClearErrorAsync</code></li>
+<li>low-level <code>RequestAsync</code></li>
+</ul>
+<h2 id="next-steps">Next Steps</h2>
+<p>See <code>TODO.md</code> for remaining parity with Python implementation (labels, file operations, monitor registration, block/random/extended memory full parity, and richer CLI set).</p>
 
 </article>
 
         <div class="contribution d-print-none">
-          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/validation/reports/PLC_COMPATIBILITY_DOTNET.md/#L1" class="edit-link">Edit this page</a>
+          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/maintainer/PROTOCOL_SPEC.md/#L1" class="edit-link">Edit this page</a>
         </div>
 
         <div class="next-article d-print-none border-top" id="nextArticle"></div>

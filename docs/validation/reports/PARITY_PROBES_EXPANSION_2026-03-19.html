@@ -2,9 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8">
-      <title>Protocol Notes | Mitsubishi SLMP .NET Documentation </title>
+      <title>Parity Probe Expansion Validation (2026-03-19) | Mitsubishi SLMP .NET Documentation </title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <meta name="title" content="Protocol Notes | Mitsubishi SLMP .NET Documentation ">
+      <meta name="title" content="Parity Probe Expansion Validation (2026-03-19) | Mitsubishi SLMP .NET Documentation ">
       
       
       <link rel="icon" href="../../favicon.ico">
@@ -16,7 +16,7 @@
       <meta name="docfx:rel" content="../../">
       
       
-      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/maintainer/PROTOCOL_SPEC.md/#L1">
+      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/validation/reports/PARITY_PROBES_EXPANSION_2026-03-19.md/#L1">
       <meta name="loc:inThisArticle" content="In this article">
       <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
       <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
@@ -71,40 +71,38 @@
         </div>
 
         <article data-uid="">
-<h1 id="protocol-notes">Protocol Notes</h1>
+<h1 id="parity-probe-expansion-validation-2026-03-19">Parity Probe Expansion Validation (2026-03-19)</h1>
 
-<h2 id="frame-support">Frame Support</h2>
+<h2 id="scope">Scope</h2>
+<p>Validate CLI parity tool expansion for <code>.NET</code>:</p>
 <ul>
-<li>Binary 3E request/response</li>
-<li>Binary 4E request/response</li>
+<li><code>compatibility-matrix-render</code></li>
+<li><code>appendix1-device-recheck</code></li>
+<li><code>read-soak</code></li>
+<li><code>mixed-read-load</code></li>
+<li><code>tcp-concurrency</code></li>
 </ul>
-<h2 id="transport-support">Transport Support</h2>
+<h2 id="local-validation">Local Validation</h2>
+<pre><code class="lang-bash">dotnet build PlcCommSlmp.sln
+dotnet test PlcCommSlmp.sln
+dotnet run --project samples/PlcComm.Slmp.Cli -- --help
+run_ci.bat
+</code></pre>
+<h2 id="result">Result</h2>
 <ul>
-<li>TCP (<code>TcpClient</code>)</li>
-<li>UDP (<code>UdpClient</code>)</li>
+<li>Build: PASS</li>
+<li>Unit tests: PASS (<code>6/6</code>)</li>
+<li>CLI command registration: PASS (<code>--help</code> includes new commands)</li>
+<li>Local CI script: PASS</li>
 </ul>
-<h2 id="compatibility-modes">Compatibility Modes</h2>
-<ul>
-<li><code>legacy</code>: subcommands <code>0x0000/0x0001</code></li>
-<li><code>iqr</code>: subcommands <code>0x0002/0x0003</code></li>
-</ul>
-<h2 id="current-api-scope">Current API Scope</h2>
-<p>Implemented in <code>SlmpClient</code>:</p>
-<ul>
-<li><code>ReadTypeNameAsync</code></li>
-<li><code>ReadWordsAsync</code> / <code>WriteWordsAsync</code></li>
-<li><code>ReadBitsAsync</code> / <code>WriteBitsAsync</code></li>
-<li><code>RemoteRunAsync</code>, <code>RemoteStopAsync</code>, <code>RemotePauseAsync</code>, <code>RemoteLatchClearAsync</code>, <code>RemoteResetAsync</code></li>
-<li><code>ClearErrorAsync</code></li>
-<li>low-level <code>RequestAsync</code></li>
-</ul>
-<h2 id="next-steps">Next Steps</h2>
-<p>See <code>TODO.md</code> for remaining parity with Python implementation (labels, file operations, monitor registration, block/random/extended memory full parity, and richer CLI set).</p>
+<h2 id="notes">Notes</h2>
+<p><code>PLC_COMPATIBILITY.md</code> remains generated from Python probe data in <code>plc-comm-slmp-python</code>.
+Hardware evidence for the new <code>.NET</code> commands should be collected by on-device runs.</p>
 
 </article>
 
         <div class="contribution d-print-none">
-          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/maintainer/PROTOCOL_SPEC.md/#L1" class="edit-link">Edit this page</a>
+          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/validation/reports/PARITY_PROBES_EXPANSION_2026-03-19.md/#L1" class="edit-link">Edit this page</a>
         </div>
 
         <div class="next-article d-print-none border-top" id="nextArticle"></div>

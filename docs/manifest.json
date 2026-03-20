@@ -12,40 +12,10 @@
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "AGENTS.md",
+      "source_relative_path": "docsrc/maintainer/ARCHITECTURE.md",
       "output": {
         ".html": {
-          "relative_path": "AGENTS.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "CHANGELOG.md",
-      "output": {
-        ".html": {
-          "relative_path": "CHANGELOG.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "README.md",
-      "output": {
-        ".html": {
-          "relative_path": "README.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "TODO.md",
-      "output": {
-        ".html": {
-          "relative_path": "TODO.html"
+          "relative_path": "maintainer/ARCHITECTURE.html"
         }
       },
       "version": ""
@@ -55,7 +25,7 @@
       "source_relative_path": "docsrc/maintainer/PROTOCOL_SPEC.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/maintainer/PROTOCOL_SPEC.html"
+          "relative_path": "maintainer/PROTOCOL_SPEC.html"
         }
       },
       "version": ""
@@ -65,7 +35,7 @@
       "source_relative_path": "docsrc/user/USER_GUIDE.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/user/USER_GUIDE.html"
+          "relative_path": "user/USER_GUIDE.html"
         }
       },
       "version": ""
@@ -75,10 +45,10 @@
       "source_relative_path": "docsrc/user/toc.yml",
       "output": {
         ".html": {
-          "relative_path": "docsrc/user/toc.html"
+          "relative_path": "user/toc.html"
         },
         ".json": {
-          "relative_path": "docsrc/user/toc.json"
+          "relative_path": "user/toc.json"
         }
       },
       "version": ""
@@ -88,7 +58,7 @@
       "source_relative_path": "docsrc/validation/reports/CLI_PARITY_AND_CI_EXPANSION_2026-03-19.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/validation/reports/CLI_PARITY_AND_CI_EXPANSION_2026-03-19.html"
+          "relative_path": "validation/reports/CLI_PARITY_AND_CI_EXPANSION_2026-03-19.html"
         }
       },
       "version": ""
@@ -98,7 +68,7 @@
       "source_relative_path": "docsrc/validation/reports/INITIAL_BOOTSTRAP_2026-03-19.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/validation/reports/INITIAL_BOOTSTRAP_2026-03-19.html"
+          "relative_path": "validation/reports/INITIAL_BOOTSTRAP_2026-03-19.html"
         }
       },
       "version": ""
@@ -108,7 +78,7 @@
       "source_relative_path": "docsrc/validation/reports/IQR_WRITE_CHECK_FIX_2026-03-19.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/validation/reports/IQR_WRITE_CHECK_FIX_2026-03-19.html"
+          "relative_path": "validation/reports/IQR_WRITE_CHECK_FIX_2026-03-19.html"
         }
       },
       "version": ""
@@ -118,7 +88,7 @@
       "source_relative_path": "docsrc/validation/reports/PARITY_PROBES_EXPANSION_2026-03-19.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/validation/reports/PARITY_PROBES_EXPANSION_2026-03-19.html"
+          "relative_path": "validation/reports/PARITY_PROBES_EXPANSION_2026-03-19.html"
         }
       },
       "version": ""
@@ -128,7 +98,7 @@
       "source_relative_path": "docsrc/validation/reports/PLC_COMPATIBILITY.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/validation/reports/PLC_COMPATIBILITY.html"
+          "relative_path": "validation/reports/PLC_COMPATIBILITY.html"
         }
       },
       "version": ""
@@ -138,7 +108,7 @@
       "source_relative_path": "docsrc/validation/reports/PLC_COMPATIBILITY_DOTNET.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/validation/reports/PLC_COMPATIBILITY_DOTNET.html"
+          "relative_path": "validation/reports/PLC_COMPATIBILITY_DOTNET.html"
         }
       },
       "version": ""
@@ -148,7 +118,7 @@
       "source_relative_path": "docsrc/validation/reports/TCP_CONCURRENCY_FINDING_2026-03-19.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/validation/reports/TCP_CONCURRENCY_FINDING_2026-03-19.html"
+          "relative_path": "validation/reports/TCP_CONCURRENCY_FINDING_2026-03-19.html"
         }
       },
       "version": ""
@@ -158,7 +128,7 @@
       "source_relative_path": "docsrc/validation/reports/appendix1_device_recheck_latest.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/validation/reports/appendix1_device_recheck_latest.html"
+          "relative_path": "validation/reports/appendix1_device_recheck_latest.html"
         }
       },
       "version": ""
@@ -168,7 +138,7 @@
       "source_relative_path": "docsrc/validation/reports/compatibility_probe_latest.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/validation/reports/compatibility_probe_latest.html"
+          "relative_path": "validation/reports/compatibility_probe_latest.html"
         }
       },
       "version": ""
@@ -178,7 +148,7 @@
       "source_relative_path": "docsrc/validation/reports/read_soak_latest.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/validation/reports/read_soak_latest.html"
+          "relative_path": "validation/reports/read_soak_latest.html"
         }
       },
       "version": ""
@@ -188,7 +158,7 @@
       "source_relative_path": "docsrc/validation/reports/single_connection_load_latest.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/validation/reports/single_connection_load_latest.html"
+          "relative_path": "validation/reports/single_connection_load_latest.html"
         }
       },
       "version": ""
@@ -198,7 +168,7 @@
       "source_relative_path": "docsrc/validation/reports/tcp_concurrency_latest.md",
       "output": {
         ".html": {
-          "relative_path": "docsrc/validation/reports/tcp_concurrency_latest.html"
+          "relative_path": "validation/reports/tcp_concurrency_latest.html"
         }
       },
       "version": ""
@@ -209,259 +179,6 @@
       "output": {
         ".html": {
           "relative_path": "index.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.QueuedSlmpClient.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.QueuedSlmpClient.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpBlockRead.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpBlockRead.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpBlockWrite.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpBlockWrite.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpBlockWriteOptions.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpBlockWriteOptions.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpClient.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpClient.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpCommand.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpCommand.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpCompatibilityMode.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpCompatibilityMode.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpDeviceAddress.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpDeviceAddress.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpDeviceCode.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpDeviceCode.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpDeviceParser.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpDeviceParser.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpException.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpException.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpExtensionSpec.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpExtensionSpec.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpFrameType.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpFrameType.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpNamedTarget.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpNamedTarget.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpProfileClass.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpProfileClass.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpProfileHeuristics.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpProfileHeuristics.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpProfileRecommendation.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpProfileRecommendation.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpQualifiedDeviceAddress.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpQualifiedDeviceAddress.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpQualifiedDeviceParser.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpQualifiedDeviceParser.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpTargetAddress.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpTargetAddress.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpTargetParser.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpTargetParser.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpTransportMode.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpTransportMode.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpTypeNameInfo.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.SlmpTypeNameInfo.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "obj/api/PlcComm.Slmp.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/PlcComm.Slmp.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Toc",
-      "source_relative_path": "obj/api/toc.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/toc.html"
-        },
-        ".json": {
-          "relative_path": "api/toc.json"
         }
       },
       "version": ""
