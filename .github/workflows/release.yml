@@ -1,50 +1,25 @@
 name: Release
-
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*"]
   workflow_dispatch:
-
 permissions:
   contents: write
-
 jobs:
   package:
     runs-on: windows-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 9.0.x
-
-      - name: Build and Pack
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: 9.0.x }
+      - name: Pack
         run: |
-          dotnet build -c Release
           dotnet pack -c Release --output artifacts/release
-          # Also publish any CLI tools if they exist
-          Get-ChildItem -Path src -Filter "*.csproj" -Recurse | ForEach-Object {
-              $projectName = $_.BaseName
-              dotnet publish $_.FullName -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o "artifacts/release/$projectName-win-x64"
-          }
-
-      - name: Create or update GitHub Release
+      - name: Upload
         shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
+        env: { GH_TOKEN: ${{ github.token }} }
         run: |
-          $tag = "${{ github.ref_name }}"
-          if ($tag -notmatch "^v\d") { $tag = "v0.1.0" } # Fallback for manual trigger
-          
+          $tag = "${{ github.ref_name }}"; if ($tag -notmatch "^v\d") { $tag = "v0.1.0" }
           $assets = Get-ChildItem artifacts/release -File -Recurse | Select-Object -ExpandProperty FullName
-          
-          if (gh release view $tag) {
-            gh release upload $tag $assets --clobber
-          } else {
-            gh release create $tag $assets --title "Release $tag" --generate-notes
-          }
+          if (gh release view $tag) { gh release upload $tag $assets --clobber }
+          else { gh release create $tag $assets --title "Release $tag" --generate-notes }
