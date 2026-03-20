@@ -21,11 +21,12 @@ This repository is part of the PLC Communication Workspace and follows the globa
 - **Distribution Control**: Ensure `.csproj` excludes `docsrc/maintainer/`, `docsrc/validation/`, `tests/`, and `TODO.md` from NuGet packages (`.nupkg`).
 
 ## 3. Reference Materials
-- **Official Specs**: Refer to `local_folder/CLPA_DOWNLOAD_.../` for authoritative English manuals (Local only).
+- **Official Specs**: Refer to `internal_reference_library/CLPA_DOWNLOAD_.../` for authoritative English manuals (Local only).
 - **Evidence**: Check `docsrc/validation/reports/` for verified communication results with Mitsubishi iQ-R, iQ-F, and Q series.
 
 ## 4. Development Workflow
 - **Issue Tracking**: Log remaining tasks in `TODO.md`.
 - **Change Tracking**: Update `CHANGELOG.md` for every fix or feature.
 - **QA Requirement**: Every hardware-related fix must include an evidence report in `docsrc/validation/reports/`.
+
 
