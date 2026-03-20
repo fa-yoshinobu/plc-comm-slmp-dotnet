@@ -3,27 +3,42 @@
     {
       "src": [
         {
-          "files": ["src/**/*.csproj"]
+          "files": ["src/**/*.csproj"],
+          "exclude": ["**/bin/**", "**/obj/**"]
         }
       ],
-      "dest": "api"
+      "dest": "obj/api"
     }
   ],
   "build": {
     "content": [
       {
-        "files": ["docs/**/*.md", "api/*.yml"]
+        "files": ["**/*.yml"],
+        "src": "obj/api",
+        "dest": "api"
       },
       {
-        "files": ["README.md", "CHANGELOG.md", "TODO.md"]
+        "files": ["docs/**/*.md", "docs/**/toc.yml"]
+      },
+      {
+        "files": ["index.md", "toc.yml"]
       }
     ],
     "resource": [
       {
-        "files": ["LICENSE"]
+        "files": ["docs/user/assets/**", "docs/maintainer/assets/**"]
       }
     ],
-    "dest": "publish/docs",
-    "template": ["default", "modern"]
+    "dest": "_site",
+    "globalMetadata": {
+      "_appTitle": "Mitsubishi SLMP .NET Documentation",
+      "_enableSearch": true,
+      "_enableNewTab": true,
+      "_appFooter": "PLC Communication Workspace - fa-yoshinobu"
+    },
+    "template": [
+      "default",
+      "modern"
+    ]
   }
 }

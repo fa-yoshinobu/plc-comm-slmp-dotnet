@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Namespace PlcComm.Slmp | Mitsubishi SLMP .NET Documentation </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Namespace PlcComm.Slmp | Mitsubishi SLMP .NET Documentation ">
+      
+      
+      <link rel="icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../public/docfx.min.css">
+      <link rel="stylesheet" href="../public/main.css">
+      <meta name="docfx:navrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="../toc.html">
+      
+      <meta name="docfx:rel" content="../">
+      
+      
+      
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="ManagedReference">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../index.html">
+            <img id="logo" class="svg" src="../logo.svg" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="PlcComm.Slmp">
+
+  <h1 id="PlcComm_Slmp" data-uid="PlcComm.Slmp" class="text-break">Namespace PlcComm.Slmp</h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="markdown level0 remarks"></div>
+
+    <h3 id="classes">
+Classes
+</h3>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.QueuedSlmpClient.html">QueuedSlmpClient</a></dt>
+      <dd><p>A wrapper for <a class="xref" href="PlcComm.Slmp.SlmpClient.html">SlmpClient</a> that serializes all operations using a semaphore.
+Useful for environments where a single shared connection must handle multiple concurrent callers.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpBlockRead.html">SlmpBlockRead</a></dt>
+      <dd><p>Description for a contiguous block of devices to read.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpBlockWrite.html">SlmpBlockWrite</a></dt>
+      <dd><p>Description for a contiguous block of devices to write.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpBlockWriteOptions.html">SlmpBlockWriteOptions</a></dt>
+      <dd><p>Configuration for block write operations.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpClient.html">SlmpClient</a></dt>
+      <dd><p>A high-performance, asynchronous SLMP (MC Protocol) client for .NET.
+Supports 3E and 4E frame formats over TCP and UDP.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpDeviceParser.html">SlmpDeviceParser</a></dt>
+      <dd><p>Utility for parsing device address strings into <a class="xref" href="PlcComm.Slmp.SlmpDeviceAddress.html">SlmpDeviceAddress</a>.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpException.html">SlmpException</a></dt>
+      <dd><p>Exception thrown when an SLMP protocol error occurs or the PLC returns an error code.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpProfileHeuristics.html">SlmpProfileHeuristics</a></dt>
+      <dd><p>Utility for analyzing PLC type names and recommending protocol profiles.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpProfileRecommendation.html">SlmpProfileRecommendation</a></dt>
+      <dd><p>Recommended protocol settings based on the target PLC model.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpQualifiedDeviceParser.html">SlmpQualifiedDeviceParser</a></dt>
+      <dd><p>Utility for parsing qualified device strings (e.g., &quot;U01\G10&quot;) into <a class="xref" href="PlcComm.Slmp.SlmpQualifiedDeviceAddress.html">SlmpQualifiedDeviceAddress</a>.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpTargetParser.html">SlmpTargetParser</a></dt>
+      <dd><p>Utility for parsing target station descriptions into <a class="xref" href="PlcComm.Slmp.SlmpNamedTarget.html">SlmpNamedTarget</a>.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpTypeNameInfo.html">SlmpTypeNameInfo</a></dt>
+      <dd><p>Information about the PLC model and type name.</p>
+</dd>
+    </dl>
+    <h3 id="structs">
+Structs
+</h3>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpDeviceAddress.html">SlmpDeviceAddress</a></dt>
+      <dd><p>Represents a specific PLC device and its numeric address.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpExtensionSpec.html">SlmpExtensionSpec</a></dt>
+      <dd><p>Represents Appendix 1 extension fields for device access.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpNamedTarget.html">SlmpNamedTarget</a></dt>
+      <dd><p>Represents a target station with a human-readable name.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpQualifiedDeviceAddress.html">SlmpQualifiedDeviceAddress</a></dt>
+      <dd><p>Represents a device address that may include an explicit Appendix 1 extension specification.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpTargetAddress.html">SlmpTargetAddress</a></dt>
+      <dd><p>Represents the destination routing fields for an SLMP frame.</p>
+</dd>
+    </dl>
+    <h3 id="enums">
+Enums
+</h3>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpCommand.html">SlmpCommand</a></dt>
+      <dd><p>Standard SLMP command codes.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpCompatibilityMode.html">SlmpCompatibilityMode</a></dt>
+      <dd><p>Specifies the device access subcommand compatibility mode.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpDeviceCode.html">SlmpDeviceCode</a></dt>
+      <dd><p>Standard SLMP binary device codes.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpFrameType.html">SlmpFrameType</a></dt>
+      <dd><p>Specifies the SLMP frame format header.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpProfileClass.html">SlmpProfileClass</a></dt>
+      <dd><p>Categorizes PLC series based on their protocol capabilities.</p>
+</dd>
+    </dl>
+    <dl class="jumplist">
+      <dt><a class="xref" href="PlcComm.Slmp.SlmpTransportMode.html">SlmpTransportMode</a></dt>
+      <dd><p>Specifies the transport protocol used for SLMP communication.</p>
+</dd>
+    </dl>
+
+
+</article>
+
+        <div class="contribution d-print-none">
+        </div>
+
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          PLC Communication Workspace - fa-yoshinobu
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
