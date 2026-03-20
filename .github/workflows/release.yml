@@ -12,20 +12,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with: { dotnet-version: 9.0.x }
-      - name: Build and Pack
+      - name: Pack
         run: |
-          dotnet build -c Release
           dotnet pack -c Release --output artifacts/release
-      - name: List Artifacts (Debug)
-        run: |
-          dir artifacts/release -Recurse
-      - name: Upload to GitHub Release
+      - name: Upload
         shell: pwsh
         env: { GH_TOKEN: ${{ github.token }} }
         run: |
           $tag = "${{ github.ref_name }}"; if ($tag -notmatch "^v\d") { $tag = "v0.1.0" }
-          if (!(Test-Path artifacts/release)) { Write-Error "Artifacts directory missing"; exit 1 }
           $assets = Get-ChildItem artifacts/release -File -Recurse | Select-Object -ExpandProperty FullName
-          if ($assets.Count -eq 0) { Write-Error "No files found to upload"; exit 1 }
           if (gh release view $tag) { gh release upload $tag $assets --clobber }
           else { gh release create $tag $assets --title "Release $tag" --generate-notes }
