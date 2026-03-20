@@ -1,4 +1,5 @@
-# (Mitsubishi MELSEC) SLMP .NET
+
+[![Documentation](https://img.shields.io/badge/docs-GitHub_Pages-blue.svg)](https://fa-yoshinobu.github.io/plc-comm-slmp-dotnet/)
 
 [![.NET 9.0](https://img.shields.io/badge/.NET-9.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/9.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -111,4 +112,5 @@ Current implementation is a functional core subset. Remaining parity work is tra
 ## License
 
 Distributed under the [MIT License](LICENSE).
+
 
