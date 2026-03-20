@@ -39,7 +39,7 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- connection-check --host 192.168
 - Target parser (`SELF`, `SELF-CPU1..4`, `NWx-STy`, `NAME,NETWORK,STATION,MODULE_IO,MULTIDROP`)
 - Compatibility probe CLI report output (`markdown` + `json`)
 - Compatibility matrix renderer (`compatibility-matrix-render`)
-- G/HG Appendix 1 coverage CLI (read/write-check)
+- G/HG Extended Specification coverage CLI (read/write-check)
 - Appendix1 device recheck + read-soak + mixed-read-load + tcp-concurrency probes
 - `QueuedSlmpClient` for single-connection serialized app-side reuse
 
@@ -52,7 +52,7 @@ This list reflects device codes accepted by the parser and typed APIs. Actual av
 | Bit devices (direct) | SM, X, Y, M, L, F, V, B, TS, TC, STS, STC, CS, CC, SB, DX, DY | Supported | `X/Y/B/SB/DX/DY` use hexadecimal numbering. |
 | Word devices (direct) | SD, D, W, SW, TN, STN, CN, Z, LZ, R, ZR, RD | Supported | `W/SW` use hexadecimal numbering. |
 | Long timer / counter families | LTS, LTC, LTN, LSTS, LSTC, LSTN, LCS, LCC, LCN | Supported (direct) | Some PLCs reject direct access; validate on the target. |
-| Appendix 1 qualified devices | `Uxx\\Gyy`, `Uxx\\HGyy` | Supported via Appendix 1 APIs | Direct `G/HG` access is not supported. |
+| Extended Specification qualified devices | `Uxx\\Gyy`, `Uxx\\HGyy` | Supported via Extended Specification APIs | Direct `G/HG` access is not supported. |
 | Not supported | S, `Jn\\Xn` | Not supported | `S` is intentionally disabled; linked direct devices are out of scope. |
 
 ## Use Cases

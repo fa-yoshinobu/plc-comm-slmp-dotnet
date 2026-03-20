@@ -1,4 +1,4 @@
-﻿# CHANGELOG
+# CHANGELOG
 
 ## 2026-03-19
 
@@ -15,6 +15,6 @@
 - add `compatibility-matrix-render` command for dotnet probe outputs
 - add `appendix1-device-recheck`, `read-soak`, `mixed-read-load`, and `tcp-concurrency` CLI probes
 - add `QueuedSlmpClient` and `single-connection-load` for single-TCP-connection serialized execution
-- add Appendix 1 extended device read/write support in `.NET` client
+- add Extended Specification extended device read/write support in `.NET` client
 - add GitHub Actions CI workflow (`.github/workflows/ci.yml`)
 - add initial user/maintainer/validation documents
