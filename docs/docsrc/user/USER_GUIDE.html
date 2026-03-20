@@ -2,9 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8">
-      <title>User Guide | Mitsubishi SLMP .NET Documentation </title>
+      <title>SLMP .NET User Guide | Mitsubishi SLMP .NET Documentation </title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <meta name="title" content="User Guide | Mitsubishi SLMP .NET Documentation ">
+      <meta name="title" content="SLMP .NET User Guide | Mitsubishi SLMP .NET Documentation ">
       
       
       <link rel="icon" href="../../favicon.ico">
@@ -85,112 +85,47 @@
         </div>
 
         <article data-uid="">
-<h1 id="user-guide">User Guide</h1>
+<h1 id="slmp-net-user-guide">SLMP .NET User Guide</h1>
 
-<h2 id="build">Build</h2>
-<pre><code class="lang-bash">dotnet build PlcCommSlmp.sln
-</code></pre>
-<h2 id="cli-commands">CLI Commands</h2>
-<h3 id="connection-check">connection-check</h3>
-<pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.Cli -- connection-check \
-  --host 192.168.250.101 --port 1025 --transport tcp \
-  --series auto --frame-type auto
-</code></pre>
-<p>This command:</p>
-<ol>
-<li>Opens SLMP transport.</li>
-<li>Resolves profile (<code>3E/4E</code> + <code>legacy/iqr</code>) when <code>auto</code> is selected.</li>
-<li>Reads <code>SM400</code> for a quick communication check.</li>
-</ol>
-<h3 id="other-station-check">other-station-check</h3>
-<pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.Cli -- other-station-check \
-  --host 192.168.250.101 --port 1025 --transport tcp --target NW1-ST2
-</code></pre>
-<p>Supported target forms:</p>
-<ul>
-<li><code>SELF</code></li>
-<li><code>SELF-CPU1</code> .. <code>SELF-CPU4</code></li>
-<li><code>NWx-STy</code> (for example <code>NW2-ST1</code>)</li>
-<li><code>name,0xNN,0xSS,0xIIII,0xMM</code></li>
-</ul>
-<h3 id="compatibility-probe">compatibility-probe</h3>
-<pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-probe \
-  --host 192.168.250.101 --port 1025 --transport tcp \
-  --target SELF --write-check
-</code></pre>
-<p>Outputs:</p>
-<ul>
-<li><code>docsrc/validation/reports/compatibility_probe_latest.md</code></li>
-<li><code>docsrc/validation/reports/compatibility_probe_latest.json</code></li>
-</ul>
-<h3 id="g-hg-appendix1-coverage">g-hg-appendix1-coverage</h3>
-<pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.Cli -- g-hg-appendix1-coverage \
-  --host 192.168.250.101 --port 1025 --transport tcp \
-  --target SELF-CPU1 --device U3E0\\G10 --device U3E0\\HG20 \
-  --points 1 --points 4 --direct-memory 0xFA --write-check
-</code></pre>
-<p>Output:</p>
-<ul>
-<li><code>docsrc/validation/reports/g_hg_appendix1_coverage_latest.md</code></li>
-</ul>
-<h3 id="compatibility-matrix-render">compatibility-matrix-render</h3>
-<pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-matrix-render \
-  --input docsrc/validation/reports/compatibility_probe_latest.json
-</code></pre>
-<p>Output:</p>
-<ul>
-<li><code>docsrc/validation/reports/PLC_COMPATIBILITY_DOTNET.md</code></li>
-</ul>
-<h3 id="appendix1-device-recheck">appendix1-device-recheck</h3>
-<pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.Cli -- appendix1-device-recheck \
-  --host 192.168.250.101 --port 1025 --transport tcp \
-  --target SELF-CPU1 --device U3E0\\G10 --points 1 --direct-memory 0xFA --write-check
-</code></pre>
-<p>Output:</p>
-<ul>
-<li><code>docsrc/validation/reports/appendix1_device_recheck_latest.md</code></li>
-</ul>
-<h3 id="read-soak--mixed-read-load--tcp-concurrency">read-soak / mixed-read-load / tcp-concurrency</h3>
-<pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.Cli -- read-soak --host 192.168.250.101 --target SELF --iterations 1000
-dotnet run --project samples/PlcComm.Slmp.Cli -- mixed-read-load --host 192.168.250.101 --target SELF --iterations 1000
-dotnet run --project samples/PlcComm.Slmp.Cli -- tcp-concurrency --host 192.168.250.101 --target SELF --clients 8 --iterations 200
-</code></pre>
-<p>Practical note for the currently verified environment: direct multi-connection TCP is unstable beyond one connection on TCP/1025. Prefer <code>single-connection-load</code> for parallel work on one PLC path. The CLI now caches auto profile resolution per process, so repeated operations can keep <code>--series auto --frame-type auto</code> without re-probing every client.</p>
-<p>For app-side reuse, use <code>QueuedSlmpClient</code> to share one <code>SlmpClient</code> across multiple tasks while serializing requests on that one connection.</p>
-<p>Standalone sample:</p>
-<pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.QueuedSample -- 192.168.250.101 1025 4 10
-</code></pre>
-<h2 id="library-example">Library Example</h2>
+<p>This guide covers the basic usage of the SLMP (MC Protocol) client library for .NET.</p>
+<h2 id="getting-started">Getting Started</h2>
+<h3 id="1-installation">1. Installation</h3>
+<p>Add the project reference or DLL to your solution. (NuGet package coming soon).</p>
+<h3 id="2-basic-connection">2. Basic Connection</h3>
+<p>The <code>SlmpClient</code> is the primary entry point.</p>
 <pre><code class="lang-csharp">using PlcComm.Slmp;
 
-using var client = new SlmpClient(&quot;192.168.250.101&quot;, 1025, SlmpTransportMode.Tcp)
-{
-    FrameType = SlmpFrameType.Frame4E,
-    CompatibilityMode = SlmpCompatibilityMode.Iqr,
-};
+// Setup client (IP, Port, Mode)
+using var client = new SlmpClient(&quot;192.168.1.10&quot;, 1025, SlmpTransportMode.Tcp);
 
+// Open connection
 await client.OpenAsync();
-var words = await client.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 2);
-await client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), new ushort[] { 1, 2 });
 
-var profile = await client.ResolveProfileAsync();
-Console.WriteLine($&quot;recommended frame={profile.FrameType}, series={profile.CompatibilityMode}&quot;);
+// Read D100 (1 word)
+var data = await client.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 1);
+Console.WriteLine($&quot;D100 value: {data[0]}&quot;);
 </code></pre>
-<pre><code class="lang-csharp">using var rawClient = new SlmpClient(&quot;192.168.250.101&quot;, 1025, SlmpTransportMode.Tcp)
-{
-    TargetAddress = SlmpTargetParser.ParseNamed(&quot;SELF&quot;).Target,
-};
-await using var queuedClient = new QueuedSlmpClient(rawClient);
-
-var profile = await queuedClient.ResolveProfileAsync();
-queuedClient.FrameType = profile.FrameType;
-queuedClient.CompatibilityMode = profile.CompatibilityMode;
-await queuedClient.OpenAsync();
-
-var readTasks = Enumerable.Range(0, 4)
-    .Select(_ =&gt; queuedClient.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000), 1));
-var reads = await Task.WhenAll(readTasks);
+<h2 id="advanced-features">Advanced Features</h2>
+<h3 id="queued-access">Queued Access</h3>
+<p>For multi-threaded environments, use <code>QueuedSlmpClient</code> to prevent connection collisions.</p>
+<pre><code class="lang-csharp">await using var queuedClient = new QueuedSlmpClient(client);
+var results = await Task.WhenAll(
+    queuedClient.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 1),
+    queuedClient.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 200), 1)
+);
 </code></pre>
+<h3 id="device-parsing">Device Parsing</h3>
+<p>You can use string-based parsing for convenience:</p>
+<ul>
+<li><code>D100</code> -&gt; Data Register 100</li>
+<li><code>X0</code> -&gt; Input 0 (Hex)</li>
+<li><code>M100</code> -&gt; Internal Relay 100</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<ul>
+<li><strong>Timeout</strong>: Check PLC Network settings (Ethernet module configuration).</li>
+<li><strong>End Code 0xC059</strong>: Check if the device range is valid for your PLC model.</li>
+</ul>
 
 </article>
 

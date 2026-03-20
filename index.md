@@ -1,11 +1,10 @@
-# PLC Communication SLMP .NET Documentation
+# SLMP .NET Documentation
 
-Modern, high-performance SLMP (MC Protocol) client library for Mitsubishi PLCs.
+[![.NET 9.0](https://img.shields.io/badge/.NET-9.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/9.0) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Features
-- **SlmpClient**: Binary 3E/4E frame support.
-- **QueuedSlmpClient**: Thread-safe command queuing.
-- **Async Support**: Fully task-based asynchronous API.
+A high-performance SLMP (MC Protocol) client for Mitsubishi MELSEC series.
 
-Refer to the [User Guide](docsrc/user/USER_GUIDE.md) for more information.
-
+## Quick Links
+- [User Guide](docsrc/user/USER_GUIDE.md): Getting started and examples.
+- [API Reference](api/toc.html): Auto-generated library documentation.
+- [Architecture](docsrc/maintainer/ARCHITECTURE.md): Design and internal structure.
