@@ -1,10 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\PlcComm.Slmp\PlcComm.Slmp.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
+    <Version>0.1.0</Version>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -12,3 +13,4 @@
   </PropertyGroup>
 
 </Project>
+
