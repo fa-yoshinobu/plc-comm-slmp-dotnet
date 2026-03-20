@@ -2,9 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8">
-      <title>Read Soak Latest | Mitsubishi SLMP .NET Documentation </title>
+      <title>Compatibility Probe Latest | Mitsubishi SLMP .NET Documentation </title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <meta name="title" content="Read Soak Latest | Mitsubishi SLMP .NET Documentation ">
+      <meta name="title" content="Compatibility Probe Latest | Mitsubishi SLMP .NET Documentation ">
       
       
       <link rel="icon" href="../../../favicon.ico">
@@ -16,7 +16,7 @@
       <meta name="docfx:rel" content="../../../">
       
       
-      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docs/validation/reports/read_soak_latest.md/#L1">
+      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/validation/reports/compatibility_probe_latest.md/#L1">
       <meta name="loc:inThisArticle" content="In this article">
       <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
       <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
@@ -71,19 +71,74 @@
         </div>
 
         <article data-uid="">
-<h1 id="read-soak-latest">Read Soak Latest</h1>
+<h1 id="compatibility-probe-latest">Compatibility Probe Latest</h1>
 
 <ul>
-<li>Timestamp: 2026-03-19 20:36:57 +09:00</li>
-<li>Iterations: 2000</li>
-<li>Failures: 0</li>
-<li>Min/Avg/Max latency (ms): 2/3/91</li>
+<li>Timestamp: 2026-03-19 20:23:02 +09:00</li>
+<li>Host: 192.168.250.101</li>
+<li>Port: 1025</li>
+<li>Write check: enabled</li>
 </ul>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Transport</th>
+<th>Command</th>
+<th>Status</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SELF</td>
+<td>tcp</td>
+<td>0101 read_type_name</td>
+<td>OK</td>
+<td>model=R120PCPU, model_code=0x4844</td>
+</tr>
+<tr>
+<td>SELF</td>
+<td>tcp</td>
+<td>0401 read_sm400</td>
+<td>OK</td>
+<td>values=[True]</td>
+</tr>
+<tr>
+<td>SELF</td>
+<td>tcp</td>
+<td>0403 random_read</td>
+<td>OK</td>
+<td>words=[4660], dwords=[305419896]</td>
+</tr>
+<tr>
+<td>SELF</td>
+<td>tcp</td>
+<td>0406 block_read</td>
+<td>OK</td>
+<td>words=[4096, 4097], bit_words=[1]</td>
+</tr>
+<tr>
+<td>SELF</td>
+<td>tcp</td>
+<td>1402 random_write</td>
+<td>OK</td>
+<td>completed</td>
+</tr>
+<tr>
+<td>SELF</td>
+<td>tcp</td>
+<td>1406 block_write</td>
+<td>OK</td>
+<td>completed</td>
+</tr>
+</tbody>
+</table>
 
 </article>
 
         <div class="contribution d-print-none">
-          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docs/validation/reports/read_soak_latest.md/#L1" class="edit-link">Edit this page</a>
+          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/validation/reports/compatibility_probe_latest.md/#L1" class="edit-link">Edit this page</a>
         </div>
 
         <div class="next-article d-print-none border-top" id="nextArticle"></div>

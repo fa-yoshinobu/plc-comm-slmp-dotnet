@@ -18,7 +18,7 @@
         "dest": "api"
       },
       {
-        "files": ["docs/**/*.md", "docs/**/toc.yml"]
+        "files": ["docsrc/**/*.md", "docsrc/**/toc.yml"]
       },
       {
         "files": ["index.md", "toc.yml"]
@@ -26,10 +26,10 @@
     ],
     "resource": [
       {
-        "files": ["docs/user/assets/**", "docs/maintainer/assets/**"]
+        "files": ["docsrc/user/assets/**", "docsrc/maintainer/assets/**"]
       }
     ],
-    "dest": "_site",
+    "dest": "docs",
     "globalMetadata": {
       "_appTitle": "Mitsubishi SLMP .NET Documentation",
       "_enableSearch": true,

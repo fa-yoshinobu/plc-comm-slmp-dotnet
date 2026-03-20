@@ -2,9 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8">
-      <title>Compatibility Probe Latest | Mitsubishi SLMP .NET Documentation </title>
+      <title>iQ-R Write-Check Validation (2026-03-19) | Mitsubishi SLMP .NET Documentation </title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <meta name="title" content="Compatibility Probe Latest | Mitsubishi SLMP .NET Documentation ">
+      <meta name="title" content="iQ-R Write-Check Validation (2026-03-19) | Mitsubishi SLMP .NET Documentation ">
       
       
       <link rel="icon" href="../../../favicon.ico">
@@ -16,7 +16,7 @@
       <meta name="docfx:rel" content="../../../">
       
       
-      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docs/validation/reports/compatibility_probe_latest.md/#L1">
+      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/validation/reports/IQR_WRITE_CHECK_FIX_2026-03-19.md/#L1">
       <meta name="loc:inThisArticle" content="In this article">
       <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
       <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
@@ -71,74 +71,38 @@
         </div>
 
         <article data-uid="">
-<h1 id="compatibility-probe-latest">Compatibility Probe Latest</h1>
+<h1 id="iq-r-write-check-validation-2026-03-19">iQ-R Write-Check Validation (2026-03-19)</h1>
 
+<h2 id="scope">Scope</h2>
+<p>Validate <code>.NET</code> CLI write-check behavior against iQ-R (TCP/1025) after fixing:</p>
 <ul>
-<li>Timestamp: 2026-03-19 20:23:02 +09:00</li>
-<li>Host: 192.168.250.101</li>
-<li>Port: 1025</li>
-<li>Write check: enabled</li>
+<li><code>1402</code> random bit write payload encoding for iQ-R</li>
+<li><code>1406</code> mixed block write retry behavior on PLC reject end codes</li>
 </ul>
-<table>
-<thead>
-<tr>
-<th>Target</th>
-<th>Transport</th>
-<th>Command</th>
-<th>Status</th>
-<th>Detail</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>SELF</td>
-<td>tcp</td>
-<td>0101 read_type_name</td>
-<td>OK</td>
-<td>model=R120PCPU, model_code=0x4844</td>
-</tr>
-<tr>
-<td>SELF</td>
-<td>tcp</td>
-<td>0401 read_sm400</td>
-<td>OK</td>
-<td>values=[True]</td>
-</tr>
-<tr>
-<td>SELF</td>
-<td>tcp</td>
-<td>0403 random_read</td>
-<td>OK</td>
-<td>words=[4660], dwords=[305419896]</td>
-</tr>
-<tr>
-<td>SELF</td>
-<td>tcp</td>
-<td>0406 block_read</td>
-<td>OK</td>
-<td>words=[4096, 4097], bit_words=[1]</td>
-</tr>
-<tr>
-<td>SELF</td>
-<td>tcp</td>
-<td>1402 random_write</td>
-<td>OK</td>
-<td>completed</td>
-</tr>
-<tr>
-<td>SELF</td>
-<td>tcp</td>
-<td>1406 block_write</td>
-<td>OK</td>
-<td>completed</td>
-</tr>
-</tbody>
-</table>
+<h2 id="executed-commands">Executed Commands</h2>
+<pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.Cli -- random-check --host 192.168.250.101 --port 1025 --transport tcp --target SELF --write-check
+dotnet run --project samples/PlcComm.Slmp.Cli -- block-check --host 192.168.250.101 --port 1025 --transport tcp --target SELF --write-check
+</code></pre>
+<h2 id="result">Result</h2>
+<ul>
+<li><code>random-check --write-check</code>: PASS</li>
+<li><code>block-check --write-check</code>: PASS</li>
+</ul>
+<h2 id="captured-output-summary">Captured Output Summary</h2>
+<ul>
+<li><code>[INFO] Resolved frame=4e, series=iqr</code></li>
+<li><code>[OK] random-read words=[4660] dwords=[305419896]</code></li>
+<li><code>[OK] random-write completed</code></li>
+<li><code>[OK] block-read words=[0, 0] bit_words=[0]</code></li>
+<li><code>[OK] block-write completed</code></li>
+</ul>
+<h2 id="notes">Notes</h2>
+<p>This report confirms that the previous <code>0xC061</code> failures are resolved for the tested iQ-R path.</p>
 
 </article>
 
         <div class="contribution d-print-none">
-          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docs/validation/reports/compatibility_probe_latest.md/#L1" class="edit-link">Edit this page</a>
+          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/validation/reports/IQR_WRITE_CHECK_FIX_2026-03-19.md/#L1" class="edit-link">Edit this page</a>
         </div>
 
         <div class="next-article d-print-none border-top" id="nextArticle"></div>

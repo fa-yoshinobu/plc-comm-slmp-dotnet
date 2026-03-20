@@ -2,9 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8">
-      <title>Single Connection Load Latest | Mitsubishi SLMP .NET Documentation </title>
+      <title>TCP Concurrency Finding (2026-03-19) | Mitsubishi SLMP .NET Documentation </title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <meta name="title" content="Single Connection Load Latest | Mitsubishi SLMP .NET Documentation ">
+      <meta name="title" content="TCP Concurrency Finding (2026-03-19) | Mitsubishi SLMP .NET Documentation ">
       
       
       <link rel="icon" href="../../../favicon.ico">
@@ -16,7 +16,7 @@
       <meta name="docfx:rel" content="../../../">
       
       
-      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docs/validation/reports/single_connection_load_latest.md/#L1">
+      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/validation/reports/TCP_CONCURRENCY_FINDING_2026-03-19.md/#L1">
       <meta name="loc:inThisArticle" content="In this article">
       <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
       <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
@@ -71,19 +71,39 @@
         </div>
 
         <article data-uid="">
-<h1 id="single-connection-load-latest">Single Connection Load Latest</h1>
+<h1 id="tcp-concurrency-finding-2026-03-19">TCP Concurrency Finding (2026-03-19)</h1>
 
+<h2 id="scope">Scope</h2>
+<p>Practical TCP concurrency check against the current PLC endpoint:</p>
 <ul>
-<li>Timestamp: 2026-03-19 20:45:04 +09:00</li>
-<li>Workers: 4</li>
-<li>Iterations per worker: 200</li>
-<li>Read failures: 0</li>
+<li>Host: <code>192.168.250.101</code></li>
+<li>Port: <code>1025</code></li>
+<li>Transport: <code>tcp</code></li>
+<li>Profile: <code>frame=4e</code>, <code>series=iqr</code> (auto-resolved)</li>
+</ul>
+<h2 id="commands">Commands</h2>
+<pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.Cli -- tcp-concurrency --host 192.168.250.101 --port 1025 --transport tcp --series auto --frame-type auto --target SELF --clients 2 --iterations 100 --stagger-ms 200
+dotnet run --project samples/PlcComm.Slmp.Cli -- tcp-concurrency --host 192.168.250.101 --port 1025 --transport tcp --series auto --frame-type auto --target SELF --clients 4 --iterations 100 --stagger-ms 200
+dotnet run --project samples/PlcComm.Slmp.Cli -- tcp-concurrency --host 192.168.250.101 --port 1025 --transport tcp --series auto --frame-type auto --target SELF --clients 1 --iterations 500 --stagger-ms 200 --quiet
+</code></pre>
+<h2 id="result">Result</h2>
+<ul>
+<li><code>clients=1</code>: stable (<code>Connect failures: 0</code>, <code>Read failures: 0</code>).</li>
+<li><code>clients=2</code>: connection reject still observed on this endpoint.</li>
+<li><code>clients=4</code>: connection reject observed.</li>
+<li><code>single-connection-load</code> with <code>workers=4</code>: stable (<code>Read failures: 0</code>).</li>
+</ul>
+<h2 id="operational-recommendation">Operational Recommendation</h2>
+<ul>
+<li>Do not rely on direct multi-connection TCP for parallel work on this endpoint.</li>
+<li>If higher parallelism is required, use single-connection multiplexing / request queueing.</li>
+<li>Auto profile resolution is now cached per process, so <code>--series auto --frame-type auto</code> can remain enabled without repeated per-client probe overhead.</li>
 </ul>
 
 </article>
 
         <div class="contribution d-print-none">
-          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docs/validation/reports/single_connection_load_latest.md/#L1" class="edit-link">Edit this page</a>
+          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/validation/reports/TCP_CONCURRENCY_FINDING_2026-03-19.md/#L1" class="edit-link">Edit this page</a>
         </div>
 
         <div class="next-article d-print-none border-top" id="nextArticle"></div>

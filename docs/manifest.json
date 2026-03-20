@@ -12,153 +12,153 @@
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/maintainer/PROTOCOL_SPEC.md",
+      "source_relative_path": "docsrc/maintainer/PROTOCOL_SPEC.md",
       "output": {
         ".html": {
-          "relative_path": "docs/maintainer/PROTOCOL_SPEC.html"
+          "relative_path": "docsrc/maintainer/PROTOCOL_SPEC.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/user/USER_GUIDE.md",
+      "source_relative_path": "docsrc/user/USER_GUIDE.md",
       "output": {
         ".html": {
-          "relative_path": "docs/user/USER_GUIDE.html"
+          "relative_path": "docsrc/user/USER_GUIDE.html"
         }
       },
       "version": ""
     },
     {
       "type": "Toc",
-      "source_relative_path": "docs/user/toc.yml",
+      "source_relative_path": "docsrc/user/toc.yml",
       "output": {
         ".html": {
-          "relative_path": "docs/user/toc.html"
+          "relative_path": "docsrc/user/toc.html"
         },
         ".json": {
-          "relative_path": "docs/user/toc.json"
+          "relative_path": "docsrc/user/toc.json"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/validation/reports/CLI_PARITY_AND_CI_EXPANSION_2026-03-19.md",
+      "source_relative_path": "docsrc/validation/reports/CLI_PARITY_AND_CI_EXPANSION_2026-03-19.md",
       "output": {
         ".html": {
-          "relative_path": "docs/validation/reports/CLI_PARITY_AND_CI_EXPANSION_2026-03-19.html"
+          "relative_path": "docsrc/validation/reports/CLI_PARITY_AND_CI_EXPANSION_2026-03-19.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/validation/reports/INITIAL_BOOTSTRAP_2026-03-19.md",
+      "source_relative_path": "docsrc/validation/reports/INITIAL_BOOTSTRAP_2026-03-19.md",
       "output": {
         ".html": {
-          "relative_path": "docs/validation/reports/INITIAL_BOOTSTRAP_2026-03-19.html"
+          "relative_path": "docsrc/validation/reports/INITIAL_BOOTSTRAP_2026-03-19.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/validation/reports/IQR_WRITE_CHECK_FIX_2026-03-19.md",
+      "source_relative_path": "docsrc/validation/reports/IQR_WRITE_CHECK_FIX_2026-03-19.md",
       "output": {
         ".html": {
-          "relative_path": "docs/validation/reports/IQR_WRITE_CHECK_FIX_2026-03-19.html"
+          "relative_path": "docsrc/validation/reports/IQR_WRITE_CHECK_FIX_2026-03-19.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/validation/reports/PARITY_PROBES_EXPANSION_2026-03-19.md",
+      "source_relative_path": "docsrc/validation/reports/PARITY_PROBES_EXPANSION_2026-03-19.md",
       "output": {
         ".html": {
-          "relative_path": "docs/validation/reports/PARITY_PROBES_EXPANSION_2026-03-19.html"
+          "relative_path": "docsrc/validation/reports/PARITY_PROBES_EXPANSION_2026-03-19.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/validation/reports/PLC_COMPATIBILITY.md",
+      "source_relative_path": "docsrc/validation/reports/PLC_COMPATIBILITY.md",
       "output": {
         ".html": {
-          "relative_path": "docs/validation/reports/PLC_COMPATIBILITY.html"
+          "relative_path": "docsrc/validation/reports/PLC_COMPATIBILITY.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md",
+      "source_relative_path": "docsrc/validation/reports/PLC_COMPATIBILITY_DOTNET.md",
       "output": {
         ".html": {
-          "relative_path": "docs/validation/reports/PLC_COMPATIBILITY_DOTNET.html"
+          "relative_path": "docsrc/validation/reports/PLC_COMPATIBILITY_DOTNET.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/validation/reports/TCP_CONCURRENCY_FINDING_2026-03-19.md",
+      "source_relative_path": "docsrc/validation/reports/TCP_CONCURRENCY_FINDING_2026-03-19.md",
       "output": {
         ".html": {
-          "relative_path": "docs/validation/reports/TCP_CONCURRENCY_FINDING_2026-03-19.html"
+          "relative_path": "docsrc/validation/reports/TCP_CONCURRENCY_FINDING_2026-03-19.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/validation/reports/appendix1_device_recheck_latest.md",
+      "source_relative_path": "docsrc/validation/reports/appendix1_device_recheck_latest.md",
       "output": {
         ".html": {
-          "relative_path": "docs/validation/reports/appendix1_device_recheck_latest.html"
+          "relative_path": "docsrc/validation/reports/appendix1_device_recheck_latest.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/validation/reports/compatibility_probe_latest.md",
+      "source_relative_path": "docsrc/validation/reports/compatibility_probe_latest.md",
       "output": {
         ".html": {
-          "relative_path": "docs/validation/reports/compatibility_probe_latest.html"
+          "relative_path": "docsrc/validation/reports/compatibility_probe_latest.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/validation/reports/read_soak_latest.md",
+      "source_relative_path": "docsrc/validation/reports/read_soak_latest.md",
       "output": {
         ".html": {
-          "relative_path": "docs/validation/reports/read_soak_latest.html"
+          "relative_path": "docsrc/validation/reports/read_soak_latest.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/validation/reports/single_connection_load_latest.md",
+      "source_relative_path": "docsrc/validation/reports/single_connection_load_latest.md",
       "output": {
         ".html": {
-          "relative_path": "docs/validation/reports/single_connection_load_latest.html"
+          "relative_path": "docsrc/validation/reports/single_connection_load_latest.html"
         }
       },
       "version": ""
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/validation/reports/tcp_concurrency_latest.md",
+      "source_relative_path": "docsrc/validation/reports/tcp_concurrency_latest.md",
       "output": {
         ".html": {
-          "relative_path": "docs/validation/reports/tcp_concurrency_latest.html"
+          "relative_path": "docsrc/validation/reports/tcp_concurrency_latest.html"
         }
       },
       "version": ""
