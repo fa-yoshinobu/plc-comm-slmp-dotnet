@@ -1,4 +1,4 @@
-﻿# Initial Bootstrap Validation (2026-03-19)
+# Initial Bootstrap Validation (2026-03-19)
 
 ## Scope
 

@@ -1,4 +1,4 @@
-﻿# TODO
+# TODO
 
 ## Python Parity Roadmap
 
@@ -18,10 +18,11 @@
   - [x] matrix renderer
   - [x] appendix recheck tools
   - [x] soak / mixed-read-load / tcp-concurrency probes
-- [ ] Add hardware evidence reports under `docs/validation/reports/`.
+- [ ] Add hardware evidence reports under `docsrc/validation/reports/`.
 - [x] Add CI workflow (`.github/workflows/ci.yml`) for build + test + format + docs link check.
 - [ ] Tighten package distribution rules to exclude repository-only docs and tests from NuGet outputs.
 
 ## Known Limitations
 
 - Linked direct devices (`Jn\Xn` style) are not supported yet.
+

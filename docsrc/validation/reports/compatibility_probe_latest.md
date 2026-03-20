@@ -1,4 +1,4 @@
-﻿# Compatibility Probe Latest
+# Compatibility Probe Latest
 
 - Timestamp: 2026-03-19 20:23:02 +09:00
 - Host: 192.168.250.101

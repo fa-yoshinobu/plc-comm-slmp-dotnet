@@ -1,4 +1,4 @@
-﻿# (Mitsubishi MELSEC) SLMP .NET
+# (Mitsubishi MELSEC) SLMP .NET
 
 [![.NET 9.0](https://img.shields.io/badge/.NET-9.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/9.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -99,9 +99,9 @@ await Task.WhenAll(workers);
 
 ## Documentation
 
-- [User Guide](docs/user/USER_GUIDE.md)
-- [Protocol Notes](docs/maintainer/PROTOCOL_SPEC.md)
-- [Validation Report](docs/validation/reports/INITIAL_BOOTSTRAP_2026-03-19.md)
+- [User Guide](docsrc/user/USER_GUIDE.md)
+- [Protocol Notes](docsrc/maintainer/PROTOCOL_SPEC.md)
+- [Validation Report](docsrc/validation/reports/INITIAL_BOOTSTRAP_2026-03-19.md)
 
 ## Parity Status
 
@@ -111,3 +111,4 @@ Current implementation is a functional core subset. Remaining parity work is tra
 ## License
 
 Distributed under the [MIT License](LICENSE).
+

@@ -1,4 +1,4 @@
-﻿# Protocol Notes
+# Protocol Notes
 
 ## Frame Support
 

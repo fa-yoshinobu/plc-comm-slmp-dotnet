@@ -8,3 +8,4 @@ Modern, high-performance SLMP (MC Protocol) client library for Mitsubishi PLCs.
 - **Async Support**: Fully task-based asynchronous API.
 
 Refer to the [User Guide](docsrc/user/USER_GUIDE.md) for more information.
+

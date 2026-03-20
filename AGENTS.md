@@ -15,16 +15,17 @@ This repository is part of the PLC Communication Workspace and follows the globa
   - All changes must pass `dotnet format` and Roslyn analyzers (StyleCop/SonarAnalyzer).
   - Use `dotnet build` to verify compliance.
 - **Documentation Structure**: Follow the Modern Documentation Policy:
-  - `docs/user/`: User manuals and API guides. [DIST]
-  - `docs/maintainer/`: Protocol specs and internal logic. [REPO]
-  - `docs/validation/`: Hardware QA reports and bug analysis. [REPO]
-- **Distribution Control**: Ensure `.csproj` excludes `docs/maintainer/`, `docs/validation/`, `tests/`, and `TODO.md` from NuGet packages (`.nupkg`).
+  - `docsrc/user/`: User manuals and API guides. [DIST]
+  - `docsrc/maintainer/`: Protocol specs and internal logic. [REPO]
+  - `docsrc/validation/`: Hardware QA reports and bug analysis. [REPO]
+- **Distribution Control**: Ensure `.csproj` excludes `docsrc/maintainer/`, `docsrc/validation/`, `tests/`, and `TODO.md` from NuGet packages (`.nupkg`).
 
 ## 3. Reference Materials
 - **Official Specs**: Refer to `local_folder/CLPA_DOWNLOAD_.../` for authoritative English manuals (Local only).
-- **Evidence**: Check `docs/validation/reports/` for verified communication results with Mitsubishi iQ-R, iQ-F, and Q series.
+- **Evidence**: Check `docsrc/validation/reports/` for verified communication results with Mitsubishi iQ-R, iQ-F, and Q series.
 
 ## 4. Development Workflow
 - **Issue Tracking**: Log remaining tasks in `TODO.md`.
 - **Change Tracking**: Update `CHANGELOG.md` for every fix or feature.
-- **QA Requirement**: Every hardware-related fix must include an evidence report in `docs/validation/reports/`.
+- **QA Requirement**: Every hardware-related fix must include an evidence report in `docsrc/validation/reports/`.
+

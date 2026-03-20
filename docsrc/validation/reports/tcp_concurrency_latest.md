@@ -1,4 +1,4 @@
-﻿# TCP Concurrency Latest
+# TCP Concurrency Latest
 
 - Timestamp: 2026-03-19 20:44:54 +09:00
 - Clients: 2

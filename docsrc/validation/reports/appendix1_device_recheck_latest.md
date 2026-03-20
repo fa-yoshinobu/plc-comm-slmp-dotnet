@@ -1,4 +1,4 @@
-﻿# Appendix1 Device Recheck Latest
+# Appendix1 Device Recheck Latest
 
 - Timestamp: 2026-03-19 20:25:40 +09:00
 - Target: SELF-CPU1

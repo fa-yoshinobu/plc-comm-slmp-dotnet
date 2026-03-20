@@ -1,4 +1,4 @@
-﻿# User Guide
+# User Guide
 
 ## Build
 
@@ -46,8 +46,8 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-probe \
 
 Outputs:
 
-- `docs/validation/reports/compatibility_probe_latest.md`
-- `docs/validation/reports/compatibility_probe_latest.json`
+- `docsrc/validation/reports/compatibility_probe_latest.md`
+- `docsrc/validation/reports/compatibility_probe_latest.json`
 
 ### g-hg-appendix1-coverage
 
@@ -60,18 +60,18 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- g-hg-appendix1-coverage \
 
 Output:
 
-- `docs/validation/reports/g_hg_appendix1_coverage_latest.md`
+- `docsrc/validation/reports/g_hg_appendix1_coverage_latest.md`
 
 ### compatibility-matrix-render
 
 ```bash
 dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-matrix-render \
-  --input docs/validation/reports/compatibility_probe_latest.json
+  --input docsrc/validation/reports/compatibility_probe_latest.json
 ```
 
 Output:
 
-- `docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md`
+- `docsrc/validation/reports/PLC_COMPATIBILITY_DOTNET.md`
 
 ### appendix1-device-recheck
 
@@ -83,7 +83,7 @@ dotnet run --project samples/PlcComm.Slmp.Cli -- appendix1-device-recheck \
 
 Output:
 
-- `docs/validation/reports/appendix1_device_recheck_latest.md`
+- `docsrc/validation/reports/appendix1_device_recheck_latest.md`
 
 ### read-soak / mixed-read-load / tcp-concurrency
 
@@ -138,3 +138,4 @@ var readTasks = Enumerable.Range(0, 4)
     .Select(_ => queuedClient.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000), 1));
 var reads = await Task.WhenAll(readTasks);
 ```
+

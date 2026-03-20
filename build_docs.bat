@@ -6,3 +6,4 @@ if %errorlevel% neq 0 (
     echo [ERROR] DocFX build failed.
 )
 echo [SUCCESS] Documentation built to docs/
+

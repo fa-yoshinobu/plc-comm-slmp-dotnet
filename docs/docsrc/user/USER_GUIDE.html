@@ -120,8 +120,8 @@
 </code></pre>
 <p>Outputs:</p>
 <ul>
-<li><code>docs/validation/reports/compatibility_probe_latest.md</code></li>
-<li><code>docs/validation/reports/compatibility_probe_latest.json</code></li>
+<li><code>docsrc/validation/reports/compatibility_probe_latest.md</code></li>
+<li><code>docsrc/validation/reports/compatibility_probe_latest.json</code></li>
 </ul>
 <h3 id="g-hg-appendix1-coverage">g-hg-appendix1-coverage</h3>
 <pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.Cli -- g-hg-appendix1-coverage \
@@ -131,15 +131,15 @@
 </code></pre>
 <p>Output:</p>
 <ul>
-<li><code>docs/validation/reports/g_hg_appendix1_coverage_latest.md</code></li>
+<li><code>docsrc/validation/reports/g_hg_appendix1_coverage_latest.md</code></li>
 </ul>
 <h3 id="compatibility-matrix-render">compatibility-matrix-render</h3>
 <pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.Cli -- compatibility-matrix-render \
-  --input docs/validation/reports/compatibility_probe_latest.json
+  --input docsrc/validation/reports/compatibility_probe_latest.json
 </code></pre>
 <p>Output:</p>
 <ul>
-<li><code>docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md</code></li>
+<li><code>docsrc/validation/reports/PLC_COMPATIBILITY_DOTNET.md</code></li>
 </ul>
 <h3 id="appendix1-device-recheck">appendix1-device-recheck</h3>
 <pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.Cli -- appendix1-device-recheck \
@@ -148,7 +148,7 @@
 </code></pre>
 <p>Output:</p>
 <ul>
-<li><code>docs/validation/reports/appendix1_device_recheck_latest.md</code></li>
+<li><code>docsrc/validation/reports/appendix1_device_recheck_latest.md</code></li>
 </ul>
 <h3 id="read-soak--mixed-read-load--tcp-concurrency">read-soak / mixed-read-load / tcp-concurrency</h3>
 <pre><code class="lang-bash">dotnet run --project samples/PlcComm.Slmp.Cli -- read-soak --host 192.168.250.101 --target SELF --iterations 1000
