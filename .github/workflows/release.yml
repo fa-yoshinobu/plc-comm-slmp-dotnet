@@ -12,14 +12,26 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with: { dotnet-version: 9.0.x }
-      - name: Pack
+      - name: Build and Pack
         run: |
-          dotnet pack -c Release --output artifacts/release
+          mkdir out
+          # Only pack the core library (searches for main csproj in src/)
+          Get-ChildItem -Path src -Filter "*.csproj" -Recurse | ForEach-Object {
+              Write-Host "Packing: $($_.Name)"
+              dotnet pack $_.FullName -c Release --output out
+          }
+      - name: List Files
+        run: dir out
       - name: Upload
         shell: pwsh
         env: { GH_TOKEN: ${{ github.token }} }
         run: |
           $tag = "${{ github.ref_name }}"; if ($tag -notmatch "^v\d") { $tag = "v0.1.0" }
-          $assets = Get-ChildItem artifacts/release -File -Recurse | Select-Object -ExpandProperty FullName
-          if (gh release view $tag) { gh release upload $tag $assets --clobber }
-          else { gh release create $tag $assets --title "Release $tag" --generate-notes }
+          $assets = Get-ChildItem out -File | Select-Object -ExpandProperty FullName
+          if ($assets.Count -gt 0) {
+            if (gh release view $tag) { gh release upload $tag $assets --clobber }
+            else { gh release create $tag $assets --title "Release $tag" --generate-notes }
+          } else {
+            Write-Error "No assets found in out/ directory"
+            exit 1
+          }
