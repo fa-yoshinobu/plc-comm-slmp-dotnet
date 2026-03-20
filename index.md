@@ -6,5 +6,6 @@ A high-performance SLMP (MC Protocol) client for Mitsubishi MELSEC series.
 
 ## Quick Links
 - [User Guide](docsrc/user/USER_GUIDE.md): Getting started and examples.
-- [API Reference](api/toc.html): Auto-generated library documentation.
+- [API Reference](api/index.html): Auto-generated library documentation.
 - [Architecture](docsrc/maintainer/ARCHITECTURE.md): Design and internal structure.
+
