@@ -30,7 +30,7 @@
       }
     ],
     "dest": "docs",
-    "globalMetadata": {
+    "globalMetadata": {`n      "_disablePdf": true,
       "_appTitle": "Mitsubishi SLMP .NET Documentation",
       "_enableSearch": true,
       "_enableNewTab": true,
@@ -42,6 +42,7 @@
     ]
   }
 }
+
 
 
 
