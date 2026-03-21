@@ -119,9 +119,9 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     public Task<SlmpTypeNameInfo> ReadTypeNameAsync(CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.ReadTypeNameAsync(cancellationToken), cancellationToken);
 
-    /// <inheritdoc cref="SlmpClient.ReadWordsAsync"/>
-    public Task<ushort[]> ReadWordsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
-        => ExecuteAsync(client => client.ReadWordsAsync(device, points, cancellationToken), cancellationToken);
+    /// <inheritdoc cref="SlmpClient.ReadWordsRawAsync"/>
+    public Task<ushort[]> ReadWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+        => ExecuteAsync(client => client.ReadWordsRawAsync(device, points, cancellationToken), cancellationToken);
 
     /// <inheritdoc cref="SlmpClient.WriteWordsAsync"/>
     public Task WriteWordsAsync(SlmpDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
@@ -135,9 +135,9 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     public Task WriteBitsAsync(SlmpDeviceAddress device, IReadOnlyList<bool> values, CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.WriteBitsAsync(device, values, cancellationToken), cancellationToken);
 
-    /// <inheritdoc cref="SlmpClient.ReadDWordsAsync"/>
-    public Task<uint[]> ReadDWordsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
-        => ExecuteAsync(client => client.ReadDWordsAsync(device, points, cancellationToken), cancellationToken);
+    /// <inheritdoc cref="SlmpClient.ReadDWordsRawAsync"/>
+    public Task<uint[]> ReadDWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+        => ExecuteAsync(client => client.ReadDWordsRawAsync(device, points, cancellationToken), cancellationToken);
 
     /// <inheritdoc cref="SlmpClient.WriteDWordsAsync"/>
     public Task WriteDWordsAsync(SlmpDeviceAddress device, IReadOnlyList<uint> values, CancellationToken cancellationToken = default)
@@ -190,6 +190,61 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
         CancellationToken cancellationToken = default
     )
         => ExecuteAsync(client => client.WriteBlockAsync(wordBlocks, bitBlocks, options, cancellationToken), cancellationToken);
+
+    /// <inheritdoc cref="SlmpClient.ReadRandomExtAsync"/>
+    public Task<(ushort[] WordValues, uint[] DwordValues)> ReadRandomExtAsync(
+        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)> wordDevices,
+        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)> dwordDevices,
+        CancellationToken cancellationToken = default
+    )
+        => ExecuteAsync(client => client.ReadRandomExtAsync(wordDevices, dwordDevices, cancellationToken), cancellationToken);
+
+    /// <inheritdoc cref="SlmpClient.WriteRandomWordsExtAsync"/>
+    public Task WriteRandomWordsExtAsync(
+        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, ushort Value, SlmpExtensionSpec Extension)> wordEntries,
+        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, uint Value, SlmpExtensionSpec Extension)> dwordEntries,
+        CancellationToken cancellationToken = default
+    )
+        => ExecuteAsync(client => client.WriteRandomWordsExtAsync(wordEntries, dwordEntries, cancellationToken), cancellationToken);
+
+    /// <inheritdoc cref="SlmpClient.WriteRandomBitsExtAsync"/>
+    public Task WriteRandomBitsExtAsync(
+        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, bool Value, SlmpExtensionSpec Extension)> bitEntries,
+        CancellationToken cancellationToken = default
+    )
+        => ExecuteAsync(client => client.WriteRandomBitsExtAsync(bitEntries, cancellationToken), cancellationToken);
+
+    /// <inheritdoc cref="SlmpClient.RegisterMonitorDevicesAsync"/>
+    public Task RegisterMonitorDevicesAsync(
+        IReadOnlyList<SlmpDeviceAddress> wordDevices,
+        IReadOnlyList<SlmpDeviceAddress> dwordDevices,
+        CancellationToken cancellationToken = default
+    )
+        => ExecuteAsync(client => client.RegisterMonitorDevicesAsync(wordDevices, dwordDevices, cancellationToken), cancellationToken);
+
+    /// <inheritdoc cref="SlmpClient.RegisterMonitorDevicesExtAsync"/>
+    public Task RegisterMonitorDevicesExtAsync(
+        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)> wordDevices,
+        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)> dwordDevices,
+        CancellationToken cancellationToken = default
+    )
+        => ExecuteAsync(client => client.RegisterMonitorDevicesExtAsync(wordDevices, dwordDevices, cancellationToken), cancellationToken);
+
+    /// <inheritdoc cref="SlmpClient.RunMonitorCycleAsync"/>
+    public Task<SlmpMonitorResult> RunMonitorCycleAsync(int wordPoints, int dwordPoints, CancellationToken cancellationToken = default)
+        => ExecuteAsync(client => client.RunMonitorCycleAsync(wordPoints, dwordPoints, cancellationToken), cancellationToken);
+
+    /// <inheritdoc cref="SlmpClient.ReceiveRequestAsync"/>
+    public Task<SlmpRequestFrame> ReceiveRequestAsync(CancellationToken cancellationToken = default)
+        => ExecuteAsync(client => client.ReceiveRequestAsync(cancellationToken), cancellationToken);
+
+    /// <inheritdoc cref="SlmpClient.ReceiveOnDemandAsync"/>
+    public Task<byte[]> ReceiveOnDemandAsync(CancellationToken cancellationToken = default)
+        => ExecuteAsync(client => client.ReceiveOnDemandAsync(cancellationToken), cancellationToken);
+
+    /// <inheritdoc cref="SlmpClient.OnDemandAsync"/>
+    public Task<byte[]> OnDemandAsync(byte[] payload, CancellationToken cancellationToken = default)
+        => ExecuteAsync(client => client.OnDemandAsync(payload, cancellationToken), cancellationToken);
 
     /// <summary>Disposes the client and releases resources.</summary>
     public void Dispose()

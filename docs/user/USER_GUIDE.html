@@ -110,8 +110,8 @@ Console.WriteLine($&quot;D100 value: {data[0]}&quot;);
 <p>For multi-threaded environments, use <code>QueuedSlmpClient</code> to prevent connection collisions.</p>
 <pre><code class="lang-csharp">await using var queuedClient = new QueuedSlmpClient(client);
 var results = await Task.WhenAll(
-    queuedClient.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 1),
-    queuedClient.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 200), 1)
+    queuedClient.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 1),
+    queuedClient.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 200), 1)
 );
 </code></pre>
 <h3 id="device-parsing">Device Parsing</h3>

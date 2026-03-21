@@ -93,7 +93,7 @@ await queued.OpenAsync();
 var workers = Enumerable.Range(0, 4).Select(async _ =>
 {
     var sm400 = await queued.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400), 1);
-    var d1000 = await queued.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000), 1);
+    var d1000 = await queued.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000), 1);
 });
 await Task.WhenAll(workers);
 ```

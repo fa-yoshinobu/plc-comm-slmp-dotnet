@@ -1,10 +1,14 @@
-bin/
-obj/
+**/bin/
+**/obj/
 .vs/
 .idea/
 *.user
 *.suo
 TestResults/
+local_folder/
 publish/
+build_check.log
+*.nupkg
+*.snupkg
 
 _site/

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>API Unification Policy | Mitsubishi SLMP .NET Documentation </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="API Unification Policy | Mitsubishi SLMP .NET Documentation ">
+      
+      
+      <link rel="icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../public/docfx.min.css">
+      <link rel="stylesheet" href="../public/main.css">
+      <meta name="docfx:navrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="../toc.html">
+      
+      <meta name="docfx:rel" content="../">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/maintainer/API_UNIFICATION_POLICY.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../index.html">
+            <img id="logo" class="svg" src="../logo.svg" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="api-unification-policy">API Unification Policy</h1>
+
+<p>This document defines the public API rules for the SLMP .NET library.
+It is a design policy document. It does not claim that every rule is implemented yet.</p>
+<h2 id="purpose">Purpose</h2>
+<ul>
+<li>Keep the SLMP .NET API internally consistent between <code>SlmpClient</code> and <code>QueuedSlmpClient</code>.</li>
+<li>Keep operation names aligned with the SLMP Python library where the operation class is the same.</li>
+<li>Avoid hiding protocol-specific distinctions behind overly generic names.</li>
+</ul>
+<h2 id="public-api-shape">Public API Shape</h2>
+<p>The canonical client classes are:</p>
+<ul>
+<li><code>SlmpClient</code> — full protocol client</li>
+<li><code>QueuedSlmpClient</code> — serialized wrapper for concurrent callers</li>
+</ul>
+<p>This library is protocol-oriented.
+It must not replace clear SLMP operation names with a generic <code>Read()</code> or <code>Write()</code> facade.</p>
+<p>Canonical direct device names:</p>
+<ul>
+<li><code>ReadWordsRawAsync</code></li>
+<li><code>WriteWordsAsync</code></li>
+<li><code>ReadBitsAsync</code></li>
+<li><code>WriteBitsAsync</code></li>
+<li><code>ReadDWordsRawAsync</code></li>
+<li><code>WriteDWordsAsync</code></li>
+<li><code>ReadFloat32sAsync</code></li>
+<li><code>WriteFloat32sAsync</code></li>
+<li><code>ReadWordsExtendedAsync</code></li>
+<li><code>WriteWordsExtendedAsync</code></li>
+<li><code>ReadRandomAsync</code></li>
+<li><code>ReadRandomExtAsync</code></li>
+<li><code>WriteRandomWordsAsync</code></li>
+<li><code>WriteRandomWordsExtAsync</code></li>
+<li><code>WriteRandomBitsAsync</code></li>
+<li><code>WriteRandomBitsExtAsync</code></li>
+<li><code>ReadBlockAsync</code></li>
+<li><code>WriteBlockAsync</code></li>
+<li><code>ReadTypeNameAsync</code></li>
+</ul>
+<p>Canonical specialized names:</p>
+<ul>
+<li><code>RegisterMonitorDevicesAsync</code></li>
+<li><code>RegisterMonitorDevicesExtAsync</code></li>
+<li><code>RunMonitorCycleAsync</code></li>
+<li><code>MemoryReadWordsAsync</code></li>
+<li><code>MemoryWriteWordsAsync</code></li>
+<li><code>ExtendUnitReadWordsAsync</code></li>
+<li><code>ExtendUnitWriteWordsAsync</code></li>
+<li><code>CpuBufferReadWordsAsync</code></li>
+<li><code>CpuBufferWriteWordsAsync</code></li>
+<li><code>ReadArrayLabelsAsync</code></li>
+<li><code>WriteArrayLabelsAsync</code></li>
+<li><code>ReadRandomLabelsAsync</code></li>
+<li><code>WriteRandomLabelsAsync</code></li>
+<li><code>RemoteRunAsync</code></li>
+<li><code>RemoteStopAsync</code></li>
+<li><code>RemotePauseAsync</code></li>
+<li><code>RemoteLatchClearAsync</code></li>
+<li><code>RemoteResetAsync</code></li>
+<li><code>RemotePasswordUnlockAsync</code></li>
+<li><code>RemotePasswordLockAsync</code></li>
+</ul>
+<h2 id="extension-methods">Extension Methods</h2>
+<p><code>SlmpClientExtensions</code> provides convenience wrappers:</p>
+<ul>
+<li><code>ReadWordsAsync</code> — aligned multi-word read (no cross-DWord splits by default)</li>
+<li><code>ReadDWordsAsync</code> — aligned DWord read</li>
+<li><code>ReadTypedAsync</code> / <code>WriteTypedAsync</code> — dtype-based typed access (U/S/D/L/F)</li>
+<li><code>WriteBitInWordAsync</code> — single-bit write within a word device</li>
+<li><code>ReadNamedAsync</code> — address-string-based read</li>
+<li><code>PollAsync</code> — repeated read with condition predicate</li>
+<li><code>ParseAddress</code> — parse device address string to <code>SlmpDeviceAddress</code></li>
+</ul>
+<h2 id="cross-library-parity-rules">Cross-Library Parity Rules</h2>
+<p>When an equivalent operation exists in the SLMP Python library, semantic names must stay aligned.</p>
+<p>Examples:</p>
+<ul>
+<li><code>ReadRandomAsync</code> ↔ <code>read_random</code></li>
+<li><code>RegisterMonitorDevicesExtAsync</code> ↔ <code>register_monitor_devices_ext</code></li>
+<li><code>RunMonitorCycleAsync</code> ↔ <code>run_monitor_cycle</code></li>
+<li><code>ReadArrayLabelsAsync</code> ↔ <code>read_array_labels</code></li>
+</ul>
+<h2 id="async-rules">Async Rules</h2>
+<p>Async methods must use the same base name as the conceptual operation with the .NET <code>Async</code> suffix.</p>
+<ul>
+<li>Return the same logical result shape as the Python equivalent.</li>
+<li>Keep parameter order stable.</li>
+<li>Accept an optional <code>CancellationToken</code> on all async methods.</li>
+</ul>
+<h2 id="32-bit-value-rules">32-Bit Value Rules</h2>
+<ul>
+<li><code>DWord</code> means a raw 32-bit unsigned value stored across two PLC words (low-word-first).</li>
+<li>Signed 32-bit helpers, if added later, should be named <code>ReadInt32Async</code> / <code>WriteInt32Async</code>.</li>
+<li>Floating-point helpers must use <code>Float32</code> in the public name.</li>
+</ul>
+<h2 id="documentation-rules">Documentation Rules</h2>
+<p>README and samples must describe the canonical names from this document.
+<code>QueuedSlmpClient</code> must expose the same surface as <code>SlmpClient</code> for all commonly used operations.</p>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/maintainer/API_UNIFICATION_POLICY.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          PLC Communication Workspace - fa-yoshinobu
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

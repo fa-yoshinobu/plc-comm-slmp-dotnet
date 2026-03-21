@@ -738,7 +738,7 @@ async Task<int> RunSingleConnectionLoadAsync(IReadOnlyList<string> args)
             try
             {
                 _ = await queuedClient.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400), 1).ConfigureAwait(false);
-                _ = await queuedClient.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000), 1).ConfigureAwait(false);
+                _ = await queuedClient.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000), 1).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

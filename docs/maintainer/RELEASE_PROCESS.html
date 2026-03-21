@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Release Checklist | Mitsubishi SLMP .NET Documentation </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Release Checklist | Mitsubishi SLMP .NET Documentation ">
+      
+      
+      <link rel="icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../public/docfx.min.css">
+      <link rel="stylesheet" href="../public/main.css">
+      <meta name="docfx:navrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="../toc.html">
+      
+      <meta name="docfx:rel" content="../">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/maintainer/RELEASE_PROCESS.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../index.html">
+            <img id="logo" class="svg" src="../logo.svg" alt="">
+            
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="release-checklist">Release Checklist</h1>
+
+<p>This document is the release checklist for <code>PlcComm.Slmp</code>.</p>
+<h2 id="scope">Scope</h2>
+<p>Confirm that the release contains only public .NET assets:</p>
+<ul>
+<li><code>src/PlcComm.Slmp</code></li>
+<li><code>samples/</code></li>
+<li><code>README.md</code></li>
+<li><code>CHANGELOG.md</code></li>
+<li><code>LICENSE</code></li>
+</ul>
+<p>Confirm that local output is excluded:</p>
+<ul>
+<li><code>bin/</code></li>
+<li><code>obj/</code></li>
+<li><code>local_folder/</code></li>
+<li><code>build_check.log</code></li>
+</ul>
+<h2 id="versioning">Versioning</h2>
+<p>Before packaging:</p>
+<ol>
+<li>Update <code>&lt;Version&gt;</code> in <code>src/PlcComm.Slmp/PlcComm.Slmp.csproj</code>.</li>
+<li>Update <code>CHANGELOG.md</code> so the released changes are recorded in the target version section.</li>
+<li>Make sure the release tag matches the package version, for example <code>v1.0.0</code>.</li>
+</ol>
+<h2 id="quality-gates">Quality Gates</h2>
+<p>Run these commands locally:</p>
+<pre><code class="lang-powershell">dotnet build PlcCommSlmp.sln
+dotnet test PlcCommSlmp.sln --no-build
+dotnet pack src\PlcComm.Slmp\PlcComm.Slmp.csproj -c Release
+</code></pre>
+<h2 id="pre-tag-review-checklist">Pre-Tag Review Checklist</h2>
+<p>Before creating a release tag, confirm these review items:</p>
+<ol>
+<li>Tag alignment
+<ul>
+<li>The target tag commit matches the intended <code>main</code> commit.</li>
+</ul>
+</li>
+<li>Changelog alignment
+<ul>
+<li>Recent fixes are recorded in <code>CHANGELOG.md</code>.</li>
+</ul>
+</li>
+<li>Cross-library parity
+<ul>
+<li>Public API surface matches the SLMP Python library equivalents.</li>
+<li><code>QueuedSlmpClient</code> exposes all new methods added to <code>SlmpClient</code>.</li>
+</ul>
+</li>
+<li>Release consistency
+<ul>
+<li>GitHub Release notes mention the package version.</li>
+</ul>
+</li>
+</ol>
+<h2 id="github-actions">GitHub Actions</h2>
+<p>Repository workflows:</p>
+<ul>
+<li><code>.github/workflows/ci.yml</code>
+<ul>
+<li>restore, build, and test on Windows for pushes and pull requests</li>
+</ul>
+</li>
+<li><code>.github/workflows/release.yml</code>
+<ul>
+<li>build release artifacts on tag pushes</li>
+<li>create or update a GitHub Release for <code>v*</code> tags</li>
+<li>optionally push <code>.nupkg</code> to NuGet when <code>NUGET_API_KEY</code> is configured</li>
+</ul>
+</li>
+</ul>
+<h2 id="nuget-readiness">NuGet Readiness</h2>
+<p>Confirm package metadata in <code>src/PlcComm.Slmp/PlcComm.Slmp.csproj</code>:</p>
+<ul>
+<li>package id</li>
+<li>version</li>
+<li>description</li>
+<li>repository URL</li>
+<li>README</li>
+<li>license</li>
+</ul>
+<h2 id="final-git-check">Final Git Check</h2>
+<p>Before tagging:</p>
+<pre><code class="lang-powershell">git status
+git diff --stat
+</code></pre>
+<p>Confirm:</p>
+<ul>
+<li>no accidental local files</li>
+<li>no generated logs</li>
+<li>no leftover temporary artifacts</li>
+</ul>
+<h2 id="publish-order">Publish Order</h2>
+<p>Recommended order:</p>
+<ol>
+<li>Merge the release commit.</li>
+<li>Verify CI on that commit.</li>
+<li>Create and push the version tag.</li>
+<li>Let the release workflow build the package artifacts.</li>
+<li>If <code>NUGET_API_KEY</code> is configured, let the workflow publish to NuGet.</li>
+</ol>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/maintainer/RELEASE_PROCESS.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          PLC Communication Workspace - fa-yoshinobu
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

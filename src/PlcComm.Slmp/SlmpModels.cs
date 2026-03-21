@@ -63,33 +63,84 @@ public sealed record SlmpBlockWriteOptions(bool SplitMixedBlocks = false, bool R
 public record SlmpTraceFrame(SlmpTraceDirection Direction, byte[] Data, DateTime Timestamp);
 
 /// <summary>
-/// Exception thrown when an SLMP protocol error occurs or the PLC returns an error code.
+/// Result returned by <c>RunMonitorCycleAsync</c>.
 /// </summary>
-public sealed class SlmpException : Exception
-{
-    public SlmpException(string message, ushort? endCode = null, SlmpCommand? command = null, ushort? subcommand = null, Exception? innerException = null)
-        : base(message, innerException)
-    {
-        EndCode = endCode;
-        Command = command;
-        Subcommand = subcommand;
-    }
+/// <param name="WordValues">16-bit word values for the registered word devices (in registration order).</param>
+/// <param name="DwordValues">32-bit values for the registered DWord devices (in registration order).</param>
+public sealed record SlmpMonitorResult(ushort[] WordValues, uint[] DwordValues);
 
-    /// <summary>
-    /// The end code returned by the PLC (0x0000 for success).
-    /// </summary>
-    public ushort? EndCode { get; }
+/// <summary>
+/// Information about a node discovered via NODE_SEARCH (command 0x0E30).
+/// </summary>
+public sealed record SlmpNodeSearchInfo(
+    string MacAddress,
+    string IpAddress,
+    string SubnetMask,
+    string DefaultGateway,
+    string HostName,
+    ushort VendorCode,
+    string ModelName,
+    ushort ModelCode,
+    string Version,
+    ushort PortNo,
+    ushort ProtocolSetting);
 
-    /// <summary>
-    /// The SLMP command that triggered the error.
-    /// </summary>
-    public SlmpCommand? Command { get; }
+/// <summary>
+/// Describes one array label to read. <see cref="UnitSpecification"/>: 0 = bit, 1 = byte.
+/// <see cref="ArrayDataLength"/> is in units defined by <see cref="UnitSpecification"/>.
+/// </summary>
+public sealed record SlmpLabelArrayReadPoint(string Label, byte UnitSpecification, ushort ArrayDataLength);
 
-    /// <summary>
-    /// The SLMP subcommand that triggered the error.
-    /// </summary>
-    public ushort? Subcommand { get; }
-}
+/// <summary>
+/// Describes one array label to write, including the raw data bytes.
+/// </summary>
+public sealed record SlmpLabelArrayWritePoint(string Label, byte UnitSpecification, ushort ArrayDataLength, byte[] Data);
+
+/// <summary>
+/// Describes one random label write point.
+/// </summary>
+public sealed record SlmpLabelRandomWritePoint(string Label, byte[] Data);
+
+/// <summary>
+/// Result item returned by <c>ReadArrayLabelsAsync</c>.
+/// </summary>
+public sealed record SlmpLabelArrayReadResult(byte DataTypeId, byte UnitSpecification, ushort ArrayDataLength, byte[] Data);
+
+/// <summary>
+/// Result item returned by <c>ReadRandomLabelsAsync</c>.
+/// </summary>
+public sealed record SlmpLabelRandomReadResult(byte DataTypeId, byte Spare, ushort ReadDataLength, byte[] Data);
+
+/// <summary>
+/// Represents the decoded state of a single long timer or long retentive timer device.
+/// </summary>
+/// <param name="Index">The device number (e.g. 0 for LTN0).</param>
+/// <param name="Device">The device address string (e.g. "LTN0").</param>
+/// <param name="CurrentValue">32-bit current value (two 16-bit words combined).</param>
+/// <param name="Contact">True when the timer contact is ON.</param>
+/// <param name="Coil">True when the timer coil is ON.</param>
+/// <param name="StatusWord">Raw status word (word index 2 in the 4-word block).</param>
+/// <param name="RawWords">The four raw 16-bit words that make up this timer entry.</param>
+public sealed record SlmpLongTimerResult(
+    int Index,
+    string Device,
+    uint CurrentValue,
+    bool Contact,
+    bool Coil,
+    ushort StatusWord,
+    ushort[] RawWords);
+
+/// <summary>
+/// A decoded SLMP request frame received from the PLC (PLC-initiated communication).
+/// </summary>
+public sealed record SlmpRequestFrame(
+    ushort Serial,
+    SlmpTargetAddress Target,
+    ushort MonitoringTimer,
+    ushort Command,
+    ushort Subcommand,
+    byte[] Data,
+    byte[] Raw);
 
 /// <summary>
 /// Utility for parsing device address strings into <see cref="SlmpDeviceAddress"/>.

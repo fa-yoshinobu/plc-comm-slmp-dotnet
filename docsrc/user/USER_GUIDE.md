@@ -32,8 +32,8 @@ For multi-threaded environments, use `QueuedSlmpClient` to prevent connection co
 ```csharp
 await using var queuedClient = new QueuedSlmpClient(client);
 var results = await Task.WhenAll(
-    queuedClient.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 1),
-    queuedClient.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 200), 1)
+    queuedClient.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 1),
+    queuedClient.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 200), 1)
 );
 ```
 

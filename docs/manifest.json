@@ -12,6 +12,16 @@
     },
     {
       "type": "Conceptual",
+      "source_relative_path": "docsrc/maintainer/API_UNIFICATION_POLICY.md",
+      "output": {
+        ".html": {
+          "relative_path": "maintainer/API_UNIFICATION_POLICY.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
       "source_relative_path": "docsrc/maintainer/ARCHITECTURE.md",
       "output": {
         ".html": {
@@ -26,6 +36,16 @@
       "output": {
         ".html": {
           "relative_path": "maintainer/PROTOCOL_SPEC.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docsrc/maintainer/RELEASE_PROCESS.md",
+      "output": {
+        ".html": {
+          "relative_path": "maintainer/RELEASE_PROCESS.html"
         }
       },
       "version": ""

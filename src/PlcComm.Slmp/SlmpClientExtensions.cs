@@ -19,7 +19,7 @@ public static class SlmpClientExtensions
     /// <param name="client">The client to use.</param>
     /// <param name="device">Device address.</param>
     /// <param name="dtype">
-    /// Type code: "W" = ushort, "I" = short (signed 16-bit),
+    /// Type code: "U" = ushort, "S" = short (signed 16-bit),
     /// "D" = uint (32-bit), "L" = int (signed 32-bit), "F" = float32.
     /// </param>
     /// <param name="ct">Cancellation token.</param>
@@ -35,7 +35,7 @@ public static class SlmpClientExtensions
             case "D":
             case "L":
             {
-                var dwords = await client.ReadDWordsAsync(device, 1, ct).ConfigureAwait(false);
+                var dwords = await client.ReadDWordsRawAsync(device, 1, ct).ConfigureAwait(false);
                 return dtype.ToUpperInvariant() switch
                 {
                     "F" => BitConverter.Int32BitsToSingle(unchecked((int)dwords[0])),
@@ -43,14 +43,14 @@ public static class SlmpClientExtensions
                     _   => dwords[0],
                 };
             }
-            case "I":
+            case "S":
             {
-                var words = await client.ReadWordsAsync(device, 1, ct).ConfigureAwait(false);
+                var words = await client.ReadWordsRawAsync(device, 1, ct).ConfigureAwait(false);
                 return unchecked((short)words[0]);
             }
-            default: // "W"
+            default: // "U"
             {
-                var words = await client.ReadWordsAsync(device, 1, ct).ConfigureAwait(false);
+                var words = await client.ReadWordsRawAsync(device, 1, ct).ConfigureAwait(false);
                 return words[0];
             }
         }
@@ -86,7 +86,7 @@ public static class SlmpClientExtensions
                 await client.WriteDWordsAsync(device,
                     [unchecked((uint)Convert.ToInt32(value))], ct).ConfigureAwait(false);
                 break;
-            default: // "W" / "I"
+            default: // "U" / "S"
                 await client.WriteWordsAsync(device, [Convert.ToUInt16(value)], ct).ConfigureAwait(false);
                 break;
         }
@@ -109,7 +109,7 @@ public static class SlmpClientExtensions
     {
         if (bitIndex is < 0 or > 15)
             throw new ArgumentOutOfRangeException(nameof(bitIndex), "bitIndex must be 0-15.");
-        var words = await client.ReadWordsAsync(device, 1, ct).ConfigureAwait(false);
+        var words = await client.ReadWordsRawAsync(device, 1, ct).ConfigureAwait(false);
         int cur = words[0];
         if (value) cur |=   1 << bitIndex;
         else       cur &= ~(1 << bitIndex);
@@ -121,29 +121,42 @@ public static class SlmpClientExtensions
     // -----------------------------------------------------------------------
 
     /// <summary>
-    /// Reads word devices in multiple requests when <paramref name="count"/> exceeds
-    /// <paramref name="maxPerRequest"/> (SLMP limit: 960 words).
+    /// Reads word devices in one or more SLMP requests (SLMP limit: 960 words per request).
+    /// Chunk boundaries are always aligned to 2-word (DWord) boundaries to prevent Float32 /
+    /// DWord data tearing across requests.
     /// </summary>
     /// <param name="client">The client to use.</param>
     /// <param name="start">Starting device address.</param>
     /// <param name="count">Total number of words to read.</param>
     /// <param name="maxPerRequest">Maximum words per SLMP request. Defaults to 960.</param>
-    /// <param name="alignToDwords">
-    /// When <see langword="true"/>, chunk boundaries are aligned to 2-word boundaries to prevent
-    /// DWord / Float32 data tearing across separate requests. Default is <see langword="false"/>.
+    /// <param name="allowSplit">
+    /// When <see langword="false"/> (default), the entire read must fit within a single request;
+    /// an <see cref="ArgumentException"/> is thrown if <paramref name="count"/> exceeds
+    /// <paramref name="maxPerRequest"/>.
+    /// When <see langword="true"/>, large reads are automatically split across multiple requests.
     /// </param>
     /// <param name="ct">Cancellation token.</param>
-    public static async Task<ushort[]> ReadWordsChunkedAsync(
+    public static async Task<ushort[]> ReadWordsAsync(
         this SlmpClient client,
         SlmpDeviceAddress start,
         int count,
         int maxPerRequest = 960,
-        bool alignToDwords = false,
+        bool allowSplit = false,
         CancellationToken ct = default)
     {
-        int effectiveMax = alignToDwords ? (maxPerRequest / 2) * 2 : maxPerRequest;
+        // Always keep DWord boundaries aligned.
+        int effectiveMax = (maxPerRequest / 2) * 2;
         if (effectiveMax <= 0)
             throw new ArgumentOutOfRangeException(nameof(maxPerRequest), "maxPerRequest must be at least 2.");
+
+        if (!allowSplit)
+        {
+            if (count > effectiveMax)
+                throw new ArgumentException(
+                    $"count {count} exceeds maxPerRequest {effectiveMax}; pass allowSplit: true to split the read across multiple requests.",
+                    nameof(count));
+            return await client.ReadWordsRawAsync(start, (ushort)count, ct).ConfigureAwait(false);
+        }
 
         var result = new List<ushort>(count);
         int remaining = count;
@@ -151,9 +164,8 @@ public static class SlmpClientExtensions
         while (remaining > 0)
         {
             int chunk = Math.Min(remaining, effectiveMax);
-            if (alignToDwords && chunk % 2 != 0 && chunk > 1) chunk--;
             var addr = new SlmpDeviceAddress(start.Code, start.Number + offset);
-            var words = await client.ReadWordsAsync(addr, (ushort)chunk, ct).ConfigureAwait(false);
+            var words = await client.ReadWordsRawAsync(addr, (ushort)chunk, ct).ConfigureAwait(false);
             result.AddRange(words);
             offset += (uint)chunk;
             remaining -= chunk;
@@ -162,25 +174,30 @@ public static class SlmpClientExtensions
     }
 
     /// <summary>
-    /// Reads DWord (32-bit) devices in multiple requests. DWord boundaries are always aligned
-    /// to prevent data tearing across requests.
+    /// Reads DWord (32-bit) devices in one or more SLMP requests.
+    /// DWord boundaries are always aligned to prevent data tearing across requests.
     /// </summary>
     /// <param name="client">The client to use.</param>
     /// <param name="start">Starting device address.</param>
     /// <param name="count">Number of DWords to read.</param>
     /// <param name="maxDwordsPerRequest">Maximum DWords per request. Defaults to 480 (= 960 words / 2).</param>
+    /// <param name="allowSplit">
+    /// When <see langword="false"/> (default), throws if <paramref name="count"/> exceeds
+    /// <paramref name="maxDwordsPerRequest"/>. When <see langword="true"/>, splits automatically.
+    /// </param>
     /// <param name="ct">Cancellation token.</param>
-    public static async Task<uint[]> ReadDWordsChunkedAsync(
+    public static async Task<uint[]> ReadDWordsAsync(
         this SlmpClient client,
         SlmpDeviceAddress start,
         int count,
         int maxDwordsPerRequest = 480,
+        bool allowSplit = false,
         CancellationToken ct = default)
     {
-        var words = await client.ReadWordsChunkedAsync(
+        var words = await client.ReadWordsAsync(
             start, count * 2,
             maxPerRequest: maxDwordsPerRequest * 2,
-            alignToDwords: true,
+            allowSplit: allowSplit,
             ct: ct).ConfigureAwait(false);
 
         var result = new uint[count];
@@ -201,7 +218,7 @@ public static class SlmpClientExtensions
     /// <list type="bullet">
     ///   <item><description>"D100" — ushort</description></item>
     ///   <item><description>"D100:F" — float32</description></item>
-    ///   <item><description>"D100:I" — signed short</description></item>
+    ///   <item><description>"D100:S" — signed short</description></item>
     ///   <item><description>"D100:D" — unsigned 32-bit</description></item>
     ///   <item><description>"D100:L" — signed 32-bit</description></item>
     ///   <item><description>"D100.3" — bit 3 within word (bool)</description></item>
@@ -215,11 +232,11 @@ public static class SlmpClientExtensions
         var result = new Dictionary<string, object>();
         foreach (var address in addresses)
         {
-            var (baseAddr, dtype, bitIdx) = ParseScopeAddress(address);
+            var (baseAddr, dtype, bitIdx) = ParseAddress(address);
             var device = SlmpDeviceParser.Parse(baseAddr);
             if (dtype == "BIT_IN_WORD")
             {
-                var words = await client.ReadWordsAsync(device, 1, ct).ConfigureAwait(false);
+                var words = await client.ReadWordsRawAsync(device, 1, ct).ConfigureAwait(false);
                 result[address] = ((words[0] >> (bitIdx ?? 0)) & 1) != 0;
             }
             else
@@ -243,7 +260,7 @@ public static class SlmpClientExtensions
     /// <param name="ct">Cancellation token to stop polling.</param>
     /// <example>
     /// <code>
-    /// await using var client = await SlmpClient.QuickConnectAsync("192.168.1.10");
+    /// await using var client = await SlmpClient.OpenAndConnectAsync("192.168.1.10");
     /// await foreach (var snapshot in client.PollAsync(["D100", "D200:F"], TimeSpan.FromSeconds(1)))
     /// {
     ///     Console.WriteLine($"D100={snapshot["D100"]}, D200:F={snapshot["D200:F"]}");
@@ -269,7 +286,7 @@ public static class SlmpClientExtensions
     // -----------------------------------------------------------------------
 
     // "D100:F" → ("D100", "F", null),  "D100.3" → ("D100", "BIT_IN_WORD", 3)
-    private static (string Base, string DType, int? BitIdx) ParseScopeAddress(string address)
+    private static (string Base, string DType, int? BitIdx) ParseAddress(string address)
     {
         if (address.Contains(':'))
         {
@@ -282,6 +299,6 @@ public static class SlmpClientExtensions
             if (int.TryParse(address[(i + 1)..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var bit))
                 return (address[..i], "BIT_IN_WORD", bit);
         }
-        return (address, "W", null);
+        return (address, "U", null);
     }
 }
