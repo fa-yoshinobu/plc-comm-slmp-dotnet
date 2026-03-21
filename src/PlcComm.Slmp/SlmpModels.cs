@@ -58,6 +58,11 @@ public sealed record SlmpBlockWrite(SlmpDeviceAddress Device, IReadOnlyList<usho
 public sealed record SlmpBlockWriteOptions(bool SplitMixedBlocks = false, bool RetryMixedOnError = false);
 
 /// <summary>
+/// A raw frame captured by <see cref="SlmpClient.TraceHook"/>.
+/// </summary>
+public record SlmpTraceFrame(SlmpTraceDirection Direction, byte[] Data, DateTime Timestamp);
+
+/// <summary>
 /// Exception thrown when an SLMP protocol error occurs or the PLC returns an error code.
 /// </summary>
 public sealed class SlmpException : Exception
@@ -161,6 +166,9 @@ public static class SlmpDeviceParser
             }
         }
 
-        throw new FormatException($"Invalid SLMP device format: {text}");
+        var validCodes = string.Join(", ", Prefixes.Select(static p => p.Prefix));
+        throw new FormatException(
+            $"Invalid SLMP device string '{text}'. " +
+            $"Valid device codes: {validCodes}");
     }
 }

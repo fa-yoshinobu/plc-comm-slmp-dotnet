@@ -8,7 +8,7 @@ namespace PlcComm.Slmp;
 /// A high-performance, asynchronous SLMP (MC Protocol) client for .NET.
 /// Supports 3E and 4E frame formats over TCP and UDP.
 /// </summary>
-public sealed class SlmpClient : IDisposable
+public sealed class SlmpClient : IDisposable, IAsyncDisposable
 {
     private readonly string _host;
     private readonly int _port;
@@ -45,6 +45,11 @@ public sealed class SlmpClient : IDisposable
     public byte[] LastRequestFrame { get; private set; } = [];
     /// <summary>Gets the raw binary content of the last received response frame.</summary>
     public byte[] LastResponseFrame { get; private set; } = [];
+    /// <summary>
+    /// Optional hook called for every raw frame sent and received.
+    /// Useful for protocol tracing and debugging.
+    /// </summary>
+    public Action<SlmpTraceFrame>? TraceHook { get; set; }
 
     /// <summary>Gets a value indicating whether the client is currently connected.</summary>
     public bool IsOpen => _transportMode == SlmpTransportMode.Tcp ? _tcp?.Connected == true : _udp is not null;
@@ -89,8 +94,43 @@ public sealed class SlmpClient : IDisposable
         _udp = null;
     }
 
+    /// <summary>Closes the connection to the PLC asynchronously.</summary>
+    public Task CloseAsync()
+    {
+        Close();
+        return Task.CompletedTask;
+    }
+
     /// <summary>Disposes the client and closes the connection.</summary>
     public void Dispose() => Close();
+
+    /// <inheritdoc/>
+    public ValueTask DisposeAsync()
+    {
+        Close();
+        return ValueTask.CompletedTask;
+    }
+
+    private void FireTrace(SlmpTraceDirection direction, byte[] data)
+        => TraceHook?.Invoke(new SlmpTraceFrame(direction, data, DateTime.UtcNow));
+
+    /// <summary>
+    /// Auto-detects the optimal protocol settings and returns a connected <see cref="QueuedSlmpClient"/>.
+    /// Internally calls <see cref="ResolveProfileAsync"/> then <see cref="OpenAsync"/>.
+    /// </summary>
+    public static async Task<QueuedSlmpClient> QuickConnectAsync(
+        string host,
+        int port = 1025,
+        CancellationToken cancellationToken = default)
+    {
+        var inner = new SlmpClient(host, port);
+        var queued = new QueuedSlmpClient(inner);
+        var profile = await queued.ResolveProfileAsync(cancellationToken).ConfigureAwait(false);
+        queued.FrameType = profile.FrameType;
+        queued.CompatibilityMode = profile.CompatibilityMode;
+        await queued.OpenAsync(cancellationToken).ConfigureAwait(false);
+        return queued;
+    }
 
     /// <summary>
     /// Reads the PLC model and type name info asynchronously.
@@ -579,6 +619,7 @@ public sealed class SlmpClient : IDisposable
         if (!IsOpen) await OpenAsync(cancellationToken).ConfigureAwait(false);
         var frame = BuildRequestFrame(command, subcommand, payload.Span);
         LastRequestFrame = frame;
+        FireTrace(SlmpTraceDirection.Send, frame);
         if (_transportMode == SlmpTransportMode.Tcp)
         {
             if (_tcpStream is null) throw new SlmpException("tcp not open");
@@ -592,6 +633,7 @@ public sealed class SlmpClient : IDisposable
 
             var response = await ReceiveTcpFrameAsync(_tcpStream, cancellationToken).ConfigureAwait(false);
             LastResponseFrame = response;
+            FireTrace(SlmpTraceDirection.Receive, response);
             return ParseResponse(command, subcommand, response);
         }
 
@@ -607,6 +649,7 @@ public sealed class SlmpClient : IDisposable
         linked.CancelAfter(Timeout);
         var datagram = await _udp.ReceiveAsync(linked.Token).ConfigureAwait(false);
         LastResponseFrame = datagram.Buffer;
+        FireTrace(SlmpTraceDirection.Receive, datagram.Buffer);
         return ParseResponse(command, subcommand, datagram.Buffer);
     }
 

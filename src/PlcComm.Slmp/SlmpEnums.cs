@@ -27,6 +27,15 @@ public enum SlmpCompatibilityMode : byte
     Iqr = 1,
 }
 
+/// <summary>Direction of a frame captured by <see cref="SlmpClient.TraceHook"/>.</summary>
+public enum SlmpTraceDirection
+{
+    /// <summary>Frame sent to the PLC.</summary>
+    Send,
+    /// <summary>Frame received from the PLC.</summary>
+    Receive,
+}
+
 /// <summary>Categorizes PLC series based on their protocol capabilities.</summary>
 public enum SlmpProfileClass : byte
 {

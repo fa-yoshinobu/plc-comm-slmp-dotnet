@@ -143,6 +143,14 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     public Task WriteDWordsAsync(SlmpDeviceAddress device, IReadOnlyList<uint> values, CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.WriteDWordsAsync(device, values, cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.ReadFloat32sAsync"/>
+    public Task<float[]> ReadFloat32sAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+        => ExecuteAsync(client => client.ReadFloat32sAsync(device, points, cancellationToken), cancellationToken);
+
+    /// <inheritdoc cref="SlmpClient.WriteFloat32sAsync"/>
+    public Task WriteFloat32sAsync(SlmpDeviceAddress device, IReadOnlyList<float> values, CancellationToken cancellationToken = default)
+        => ExecuteAsync(client => client.WriteFloat32sAsync(device, values, cancellationToken), cancellationToken);
+
     /// <inheritdoc cref="SlmpClient.ReadRandomAsync"/>
     public Task<(ushort[] WordValues, uint[] DwordValues)> ReadRandomAsync(
         IReadOnlyList<SlmpDeviceAddress> wordDevices,
