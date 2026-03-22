@@ -8,9 +8,9 @@ if (args.Length > 0 && (string.Equals(args[0], "--help", StringComparison.Ordina
 }
 
 var host = args.Length > 0 ? args[0] : "192.168.250.101";
-var port = args.Length > 1 ? int.Parse(args[1]) : 1025;
-var workers = args.Length > 2 ? int.Parse(args[2]) : 4;
-var iterations = args.Length > 3 ? int.Parse(args[3]) : 10;
+var port = args.Length > 1 ? int.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture) : 1025;
+var workers = args.Length > 2 ? int.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture) : 4;
+var iterations = args.Length > 3 ? int.Parse(args[3], System.Globalization.CultureInfo.InvariantCulture) : 10;
 
 using var rawClient = new SlmpClient(host, port, SlmpTransportMode.Tcp)
 {

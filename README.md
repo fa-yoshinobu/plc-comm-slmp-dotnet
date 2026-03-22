@@ -16,7 +16,7 @@ A modern .NET SLMP client for Mitsubishi PLC communication over Binary 3E/4E fra
 ## Quick Start (Copy/Paste)
 
 ```bash
-dotnet build PlcCommSlmp.sln
+dotnet build PlcComm.Slmp.sln
 dotnet run --project samples/PlcComm.Slmp.Cli -- connection-check --host 192.168.250.101 --series auto --frame-type auto
 ```
 

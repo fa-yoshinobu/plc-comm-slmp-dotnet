@@ -3,7 +3,9 @@ namespace PlcComm.Slmp;
 /// <summary>
 /// Error thrown when an SLMP protocol error occurs or the PLC returns an error code.
 /// </summary>
+#pragma warning disable CA1710 // Intentionally named SlmpError (not SlmpException) for cross-language API consistency
 public sealed class SlmpError : Exception
+#pragma warning restore CA1710
 {
     public SlmpError(string message, ushort? endCode = null, SlmpCommand? command = null, ushort? subcommand = null, Exception? innerException = null)
         : base(message, innerException)

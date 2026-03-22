@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <Company>fa-yoshinobu</Company>
+    <Authors>fa-yoshinobu</Authors>
+    <Copyright>Copyright (c) 2026 fa-yoshinobu</Copyright>
+    <RepositoryUrl>https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="License" Value="MIT" />
+    <AssemblyMetadata Include="RepositoryUrl" Value="https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet" />
+  </ItemGroup>
+</Project>

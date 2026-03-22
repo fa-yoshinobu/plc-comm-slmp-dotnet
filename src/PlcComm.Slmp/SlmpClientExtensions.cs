@@ -34,25 +34,25 @@ public static class SlmpClientExtensions
             case "F":
             case "D":
             case "L":
-            {
-                var dwords = await client.ReadDWordsRawAsync(device, 1, ct).ConfigureAwait(false);
-                return dtype.ToUpperInvariant() switch
                 {
-                    "F" => BitConverter.Int32BitsToSingle(unchecked((int)dwords[0])),
-                    "L" => (object)unchecked((int)dwords[0]),
-                    _   => dwords[0],
-                };
-            }
+                    var dwords = await client.ReadDWordsRawAsync(device, 1, ct).ConfigureAwait(false);
+                    return dtype.ToUpperInvariant() switch
+                    {
+                        "F" => BitConverter.Int32BitsToSingle(unchecked((int)dwords[0])),
+                        "L" => (object)unchecked((int)dwords[0]),
+                        _ => dwords[0],
+                    };
+                }
             case "S":
-            {
-                var words = await client.ReadWordsRawAsync(device, 1, ct).ConfigureAwait(false);
-                return unchecked((short)words[0]);
-            }
+                {
+                    var words = await client.ReadWordsRawAsync(device, 1, ct).ConfigureAwait(false);
+                    return unchecked((short)words[0]);
+                }
             default: // "U"
-            {
-                var words = await client.ReadWordsRawAsync(device, 1, ct).ConfigureAwait(false);
-                return words[0];
-            }
+                {
+                    var words = await client.ReadWordsRawAsync(device, 1, ct).ConfigureAwait(false);
+                    return words[0];
+                }
         }
     }
 
@@ -80,14 +80,14 @@ public static class SlmpClientExtensions
                     .ConfigureAwait(false);
                 break;
             case "D":
-                await client.WriteDWordsAsync(device, [Convert.ToUInt32(value)], ct).ConfigureAwait(false);
+                await client.WriteDWordsAsync(device, [Convert.ToUInt32(value, CultureInfo.InvariantCulture)], ct).ConfigureAwait(false);
                 break;
             case "L":
                 await client.WriteDWordsAsync(device,
-                    [unchecked((uint)Convert.ToInt32(value))], ct).ConfigureAwait(false);
+                    [unchecked((uint)Convert.ToInt32(value, CultureInfo.InvariantCulture))], ct).ConfigureAwait(false);
                 break;
             default: // "U" / "S"
-                await client.WriteWordsAsync(device, [Convert.ToUInt16(value)], ct).ConfigureAwait(false);
+                await client.WriteWordsAsync(device, [Convert.ToUInt16(value, CultureInfo.InvariantCulture)], ct).ConfigureAwait(false);
                 break;
         }
     }
@@ -111,8 +111,8 @@ public static class SlmpClientExtensions
             throw new ArgumentOutOfRangeException(nameof(bitIndex), "bitIndex must be 0-15.");
         var words = await client.ReadWordsRawAsync(device, 1, ct).ConfigureAwait(false);
         int cur = words[0];
-        if (value) cur |=   1 << bitIndex;
-        else       cur &= ~(1 << bitIndex);
+        if (value) cur |= 1 << bitIndex;
+        else cur &= ~(1 << bitIndex);
         await client.WriteWordsAsync(device, [(ushort)(cur & 0xFFFF)], ct).ConfigureAwait(false);
     }
 

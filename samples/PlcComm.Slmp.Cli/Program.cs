@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Collections.Concurrent;
@@ -35,7 +36,7 @@ List<string> GetOptions(IReadOnlyList<string> args, string name)
 
 bool HasFlag(IReadOnlyList<string> args, string name) => args.Contains(name, StringComparer.OrdinalIgnoreCase);
 
-string GetTimestamp() => DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz");
+string GetTimestamp() => DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
 
 string BuildAutoProfileKey(string host, int port, SlmpTransportMode transport, SlmpTargetAddress target)
 {
@@ -55,7 +56,7 @@ async Task<SlmpProfileRecommendation> ResolveAutoProfileAsync(string host, int p
 async Task<SlmpProfileRecommendation?> WarmAutoProfileAsync(IReadOnlyList<string> args, SlmpTargetAddress target)
 {
     var host = GetOption(args, "--host", "192.168.250.101");
-    var port = int.Parse(GetOption(args, "--port", "1025"));
+    var port = int.Parse(GetOption(args, "--port", "1025"), CultureInfo.InvariantCulture);
     var transport = GetOption(args, "--transport", "tcp").Equals("udp", StringComparison.OrdinalIgnoreCase) ? SlmpTransportMode.Udp : SlmpTransportMode.Tcp;
     var frame = GetOption(args, "--frame-type", "auto");
     var series = GetOption(args, "--series", "auto");
@@ -93,7 +94,7 @@ async Task<SlmpProfileRecommendation?> WarmAutoProfileAsync(IReadOnlyList<string
 async Task<SlmpClient> CreateClientAsync(IReadOnlyList<string> args, SlmpTargetAddress target)
 {
     var host = GetOption(args, "--host", "192.168.250.101");
-    var port = int.Parse(GetOption(args, "--port", "1025"));
+    var port = int.Parse(GetOption(args, "--port", "1025"), CultureInfo.InvariantCulture);
     var transport = GetOption(args, "--transport", "tcp").Equals("udp", StringComparison.OrdinalIgnoreCase) ? SlmpTransportMode.Udp : SlmpTransportMode.Tcp;
     var frame = GetOption(args, "--frame-type", "auto");
     var series = GetOption(args, "--series", "auto");
@@ -340,7 +341,9 @@ async Task<int> RunCompatibilityProbeAsync(IReadOnlyList<string> args)
         md.AppendLine($"| {row.Target} | {row.Transport} | {row.Name} | {row.Status} | {row.Detail.Replace("|", "/")} |");
     }
     await File.WriteAllTextAsync(mdPath, md.ToString(), Encoding.UTF8).ConfigureAwait(false);
+#pragma warning disable CA1869 // One-time serialization in a CLI tool; caching not beneficial here
     var json = JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true });
+#pragma warning restore CA1869
     await File.WriteAllTextAsync(jsonPath, json, Encoding.UTF8).ConfigureAwait(false);
     Console.WriteLine($"[DONE] markdown={mdPath}");
     Console.WriteLine($"[DONE] json={jsonPath}");

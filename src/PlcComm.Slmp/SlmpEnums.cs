@@ -108,6 +108,8 @@ public enum SlmpDeviceCode : ushort
     /// <summary>Latch Relay</summary>
     L = 0x0092,
     /// <summary>Annunciator</summary>
+    F = 0x0093,
+    /// <summary>Edge Relay</summary>
     V = 0x0094,
     /// <summary>Link Relay</summary>
     B = 0x00A0,
@@ -139,6 +141,12 @@ public enum SlmpDeviceCode : ushort
     LSTC = 0x0058,
     /// <summary>Long Retentive Timer Current Value</summary>
     LSTN = 0x005A,
+    /// <summary>Long Counter Coil</summary>
+    LCC = 0x0054,
+    /// <summary>Long Counter Contact</summary>
+    LCS = 0x0055,
+    /// <summary>Long Counter Current Value</summary>
+    LCN = 0x0056,
     /// <summary>Counter Contact</summary>
     CS = 0x00C4,
     /// <summary>Counter Coil</summary>

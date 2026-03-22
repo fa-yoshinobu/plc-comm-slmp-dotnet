@@ -24,12 +24,12 @@ public static class SlmpProfileHeuristics
         }
 
         var model = info.Model.ToUpperInvariant();
-        if (model.StartsWith("R") && !model.StartsWith("RD") && !model.StartsWith("RX") && !model.StartsWith("RY"))
+        if (model.StartsWith('R') && !model.StartsWith("RD", StringComparison.Ordinal) && !model.StartsWith("RX", StringComparison.Ordinal) && !model.StartsWith("RY", StringComparison.Ordinal))
         {
             return new SlmpProfileRecommendation(SlmpFrameType.Frame4E, SlmpCompatibilityMode.Iqr, SlmpProfileClass.ModernIqr, true);
         }
 
-        if (model.StartsWith("Q") || model.StartsWith("L") || model.StartsWith("FX"))
+        if (model.StartsWith('Q') || model.StartsWith('L') || model.StartsWith("FX", StringComparison.Ordinal))
         {
             return new SlmpProfileRecommendation(SlmpFrameType.Frame3E, SlmpCompatibilityMode.Legacy, SlmpProfileClass.LegacyQl, true);
         }

@@ -11,4 +11,4 @@ build_check.log
 *.nupkg
 *.snupkg
 
-_site/
+docs/

@@ -32,8 +32,8 @@ Before packaging:
 Run these commands locally:
 
 ```powershell
-dotnet build PlcCommSlmp.sln
-dotnet test PlcCommSlmp.sln --no-build
+dotnet build PlcComm.Slmp.sln
+dotnet test PlcComm.Slmp.sln --no-build
 dotnet pack src\PlcComm.Slmp\PlcComm.Slmp.csproj -c Release
 ```
 

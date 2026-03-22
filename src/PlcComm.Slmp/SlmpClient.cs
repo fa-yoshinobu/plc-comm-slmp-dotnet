@@ -1,4 +1,5 @@
 ﻿using System.Buffers.Binary;
+using System.Globalization;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -23,7 +24,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// Initializes a new instance of the <see cref="SlmpClient"/> class.
     /// </summary>
     /// <param name="host">The IP address or hostname of the PLC.</param>
-    /// <param name="port">The port number. Defaults to 5000 (standard SLMP) or 1025 (custom).</param>
+    /// <param name="port">The port number. Defaults to 1025.</param>
     /// <param name="transportMode">The transport protocol (TCP or UDP).</param>
     public SlmpClient(string host, int port = 1025, SlmpTransportMode transportMode = SlmpTransportMode.Tcp)
     {
@@ -37,7 +38,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <summary>Gets or sets the device access compatibility mode (Legacy or iQ-R).</summary>
     public SlmpCompatibilityMode CompatibilityMode { get; set; } = SlmpCompatibilityMode.Iqr;
     /// <summary>Gets or sets the destination routing information.</summary>
+#pragma warning disable CA1805 // Explicit initialization to non-default struct defaults (Station=0xFF, ModuleIo=0x03FF)
     public SlmpTargetAddress TargetAddress { get; set; } = new();
+#pragma warning restore CA1805
     /// <summary>Gets or sets the monitoring timer value (multiples of 250ms). Default is 0x0010 (4s).</summary>
     public ushort MonitoringTimer { get; set; } = 0x0010;
     /// <summary>Gets or sets the communication timeout.</summary>
@@ -893,7 +896,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             if (idx + 2 > d.Length) return null;
             var size = BinaryPrimitives.ReadUInt16LittleEndian(d.AsSpan(idx, 2));
             if (idx + 2 + size > d.Length) return null;
-            var parts = d.Skip(idx + 2).Take(size).Select(static b => b.ToString());
+            var parts = d.Skip(idx + 2).Take(size).Select(static b => b.ToString(CultureInfo.InvariantCulture));
             return (string.Join(".", parts), idx + 2 + size);
         }
 
@@ -1843,7 +1846,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         throw new SlmpError("invalid response subheader");
     }
 
-    private byte[] ParseResponse(SlmpCommand command, ushort subcommand, byte[] response)
+    private static byte[] ParseResponse(SlmpCommand command, ushort subcommand, byte[] response)
     {
         var is4E = response.Length >= 13 && response[0] == 0xD4 && response[1] == 0x00;
         var is3E = response.Length >= 9 && response[0] == 0xD0 && response[1] == 0x00;
@@ -1984,7 +1987,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         return payload;
     }
 
-    private SlmpExtensionSpec ResolveEffectiveExtension(SlmpQualifiedDeviceAddress device, SlmpExtensionSpec extension)
+    private static SlmpExtensionSpec ResolveEffectiveExtension(SlmpQualifiedDeviceAddress device, SlmpExtensionSpec extension)
     {
         if (device.ExtensionSpecification is null || device.ExtensionSpecification.Value == extension.ExtensionSpecification)
         {
@@ -2068,18 +2071,36 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         return data;
     }
 
-    private static byte[] EncodePassword(string password)
+    private byte[] EncodePassword(string password)
     {
-        if (password is null)
-        {
-            throw new ArgumentNullException(nameof(password));
-        }
+        ArgumentNullException.ThrowIfNull(password);
 
-        if (password.Length is < 6 or > 32)
-        {
-            throw new ArgumentOutOfRangeException(nameof(password), "password length must be 6..32");
-        }
+        var raw = Encoding.ASCII.GetBytes(password);
 
-        return Encoding.ASCII.GetBytes(password);
+        if (CompatibilityMode == SlmpCompatibilityMode.Iqr)
+        {
+            // iQ-R: 2-byte LE length prefix followed by raw bytes (max 32 bytes)
+            if (raw.Length is < 6 or > 32)
+            {
+                throw new ArgumentOutOfRangeException(nameof(password), "iQ-R password length must be 6..32");
+            }
+
+            var result = new byte[2 + raw.Length];
+            BinaryPrimitives.WriteUInt16LittleEndian(result.AsSpan(0, 2), (ushort)raw.Length);
+            raw.CopyTo(result.AsSpan(2));
+            return result;
+        }
+        else
+        {
+            // Q/L Legacy: fixed 8 bytes, null-padded (max 8 bytes)
+            if (raw.Length is < 6 or > 8)
+            {
+                throw new ArgumentOutOfRangeException(nameof(password), "Q/L password length must be 6..8");
+            }
+
+            var result = new byte[8];
+            raw.CopyTo(result.AsSpan(0));
+            return result;
+        }
     }
 }

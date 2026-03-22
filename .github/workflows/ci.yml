@@ -1,29 +1,33 @@
-name: ci
+name: CI
 
 on:
   push:
-    branches: [ main ]
   pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   build-test:
     runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Setup .NET
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
 
       - name: Restore
-        run: dotnet restore PlcCommSlmp.sln
+        run: dotnet restore PlcComm.Slmp.sln
 
       - name: Build
-        run: dotnet build PlcCommSlmp.sln --configuration Release --no-restore
+        run: dotnet build PlcComm.Slmp.sln -c Release --no-restore
 
       - name: Test
-        run: dotnet test PlcCommSlmp.sln --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test PlcComm.Slmp.sln -c Release --no-build --logger "trx;LogFileName=test-results.trx"
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -39,3 +43,15 @@ jobs:
           path: docsrc/validation/reports/**
           if-no-files-found: ignore
 
+      - name: Install docfx
+        run: dotnet tool install -g docfx
+
+      - name: Build docs
+        run: docfx docfx.json
+
+      - name: Upload docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: docs/
+          if-no-files-found: ignore

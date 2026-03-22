@@ -13,7 +13,12 @@
   "build": {
     "content": [
       {
+        "files": ["obj/api/**.yml"],
+        "dest": "api"
+      },
+      {
         "files": ["**/*.md", "**/toc.yml"],
+        "exclude": ["maintainer/**"],
         "src": "docsrc"
       },
       {
