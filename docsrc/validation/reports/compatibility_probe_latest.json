@@ -1,0 +1,44 @@
+﻿[
+  {
+    "Target": "SELF",
+    "Transport": "tcp",
+    "Name": "0101 read_type_name",
+    "Status": "OK",
+    "Detail": "model=R120PCPU, model_code=0x4844"
+  },
+  {
+    "Target": "SELF",
+    "Transport": "tcp",
+    "Name": "0401 read_sm400",
+    "Status": "OK",
+    "Detail": "values=[True]"
+  },
+  {
+    "Target": "SELF",
+    "Transport": "tcp",
+    "Name": "0403 random_read",
+    "Status": "OK",
+    "Detail": "words=[4660], dwords=[305419896]"
+  },
+  {
+    "Target": "SELF",
+    "Transport": "tcp",
+    "Name": "0406 block_read",
+    "Status": "OK",
+    "Detail": "words=[4096, 4097], bit_words=[1]"
+  },
+  {
+    "Target": "SELF",
+    "Transport": "tcp",
+    "Name": "1402 random_write",
+    "Status": "OK",
+    "Detail": "completed"
+  },
+  {
+    "Target": "SELF",
+    "Transport": "tcp",
+    "Name": "1406 block_write",
+    "Status": "OK",
+    "Detail": "completed"
+  }
+]

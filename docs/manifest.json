@@ -1,0 +1,378 @@
+{
+  "source_base_path": "D:/PLC_COMM_PROJ/plc-comm-slmp-dotnet",
+  "xrefmap": "xrefmap.yml",
+  "files": [
+    {
+      "type": "Resource",
+      "output": {
+        "resource": {
+          "relative_path": "index.json"
+        }
+      }
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docsrc/user/USER_GUIDE.md",
+      "output": {
+        ".html": {
+          "relative_path": "user/USER_GUIDE.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "docsrc/user/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "user/toc.html"
+        },
+        ".json": {
+          "relative_path": "user/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.QueuedSlmpClient.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.QueuedSlmpClient.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpBlockRead.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpBlockRead.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpBlockWrite.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpBlockWrite.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpBlockWriteOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpBlockWriteOptions.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpClient.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpClient.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpClientExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpCommand.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpCommand.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpCompatibilityMode.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpCompatibilityMode.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpDeviceAddress.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpDeviceAddress.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpDeviceCode.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpDeviceCode.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpDeviceParser.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpDeviceParser.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpError.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpError.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpExtensionSpec.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpExtensionSpec.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpFrameType.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpFrameType.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpLabelArrayReadPoint.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpLabelArrayReadPoint.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpLabelArrayReadResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpLabelArrayReadResult.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpLabelArrayWritePoint.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpLabelArrayWritePoint.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpLabelRandomReadResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpLabelRandomReadResult.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpLabelRandomWritePoint.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpLabelRandomWritePoint.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpLongTimerResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpLongTimerResult.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpMonitorResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpMonitorResult.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpNamedTarget.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpNamedTarget.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpQualifiedDeviceAddress.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpQualifiedDeviceAddress.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpQualifiedDeviceParser.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpQualifiedDeviceParser.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpTargetAddress.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpTargetAddress.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpTargetParser.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpTargetParser.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpTraceDirection.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpTraceDirection.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpTraceFrame.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpTraceFrame.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpTransportMode.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpTransportMode.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpTypeNameInfo.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpTypeNameInfo.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "obj/api/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/toc.html"
+        },
+        ".json": {
+          "relative_path": "api/obj/api/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "toc.html"
+        },
+        ".json": {
+          "relative_path": "toc.json"
+        }
+      },
+      "version": ""
+    }
+  ],
+  "groups": [
+    {
+      "xrefmap": "xrefmap.yml"
+    }
+  ]
+}

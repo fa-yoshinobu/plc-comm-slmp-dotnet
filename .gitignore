@@ -1,0 +1,17 @@
+﻿**/bin/
+**/obj/
+.vs/
+.idea/
+*.user
+*.suo
+TestResults/
+local_folder/
+publish/
+*.log
+*.nupkg
+*.snupkg
+*.binlog
+*.trx
+.docfx/
+artifacts/
+

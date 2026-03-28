@@ -1,0 +1,48 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version without the v prefix"
+        required: true
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with: { dotnet-version: 9.0.x }
+      - name: Restore
+        run: dotnet restore PlcComm.Slmp.sln
+      - name: Build
+        run: dotnet build PlcComm.Slmp.sln -c Release --no-restore
+      - name: Test
+        run: dotnet test PlcComm.Slmp.sln -c Release --no-build --logger "trx;LogFileName=test-results.trx"
+      - name: Format check
+        run: dotnet format PlcComm.Slmp.sln --verify-no-changes --no-restore
+      - name: Pack
+        run: dotnet pack src\PlcComm.Slmp\PlcComm.Slmp.csproj -c Release --no-build --output out
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: out/*
+      - name: Publish to GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: "${{ github.token }}"
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") { $tag = "${{ github.ref_name }}" } else { $tag = "v${{ inputs.version }}" }
+          $assets = Get-ChildItem out -File | Select-Object -ExpandProperty FullName
+          if (gh release view $tag) { gh release upload $tag $assets --clobber }
+          else { gh release create $tag $assets --target main --title "Release $tag" --generate-notes }
+      - name: Publish to NuGet
+        if: ${{ secrets.NUGET_API_KEY != '' }}
+        shell: pwsh
+        run: |
+          dotnet nuget push out\*.nupkg --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          dotnet nuget push out\*.snupkg --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
