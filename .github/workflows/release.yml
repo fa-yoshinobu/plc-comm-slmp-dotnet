@@ -36,7 +36,7 @@ jobs:
         env:
           GH_TOKEN: "${{ github.token }}"
         run: |
-          if ("${{ github.ref_type }}" -eq "tag") { $tag = "${{ github.ref_name }}" } else { $tag = "v${{ inputs.version }}" }
+          if ("${{ github.ref_type }}" -eq "tag") { $tag = "${{ github.ref_name }}" } else { $tag = "v${{ github.event.inputs.version }}" }
           $assets = Get-ChildItem out -File | Select-Object -ExpandProperty FullName
           if (gh release view $tag) { gh release upload $tag $assets --clobber }
           else { gh release create $tag $assets --target main --title "Release $tag" --generate-notes }
