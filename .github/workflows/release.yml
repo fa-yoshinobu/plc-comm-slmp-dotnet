@@ -1,46 +1,70 @@
 name: Release
+
 on:
   push:
-    tags: ["v*"]
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       version:
         description: "Release version without the v prefix"
         required: true
         type: string
+
 permissions:
   contents: write
+
 jobs:
   package:
     runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-dotnet@v5
-        with: { dotnet-version: 9.0.x }
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 9.0.x
+
       - name: Restore
         run: dotnet restore PlcComm.Slmp.sln
+
       - name: Build
         run: dotnet build PlcComm.Slmp.sln -c Release --no-restore
+
       - name: Test
         run: dotnet test PlcComm.Slmp.sln -c Release --no-build --logger "trx;LogFileName=test-results.trx"
+
       - name: Format check
         run: dotnet format PlcComm.Slmp.sln --verify-no-changes --no-restore
+
       - name: Pack
         run: dotnet pack src\PlcComm.Slmp\PlcComm.Slmp.csproj -c Release --no-build --output out
+
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:
           name: nuget-packages
-          path: out/*
+          path: out\*
+
       - name: Publish to GitHub Release
         shell: pwsh
         env:
-          GH_TOKEN: "${{ github.token }}"
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if ("${{ github.ref_type }}" -eq "tag") { $tag = "${{ github.ref_name }}" } else { $tag = "v${{ github.event.inputs.version }}" }
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $tag = "v${{ github.event.inputs.version }}"
+          } else {
+            $tag = "${{ github.ref_name }}"
+          }
           $assets = Get-ChildItem out -File | Select-Object -ExpandProperty FullName
-          if (gh release view $tag) { gh release upload $tag $assets --clobber }
-          else { gh release create $tag $assets --target main --title "Release $tag" --generate-notes }
+          if (gh release view $tag --repo "${{ github.repository }}") {
+            gh release upload $tag $assets --repo "${{ github.repository }}" --clobber
+          } else {
+            gh release create $tag $assets --repo "${{ github.repository }}" --target main --title "Release $tag" --generate-notes
+          }
+
       - name: Publish to NuGet
         if: ${{ secrets.NUGET_API_KEY != '' }}
         shell: pwsh
