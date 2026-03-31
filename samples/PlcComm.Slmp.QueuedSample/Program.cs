@@ -17,11 +17,13 @@ var iterations = args.Length > 3 ? int.Parse(args[3], CultureInfo.InvariantCultu
 // 1. open one queued client with explicit stable settings
 // 2. share it across multiple tasks
 // 3. use only the high-level helper APIs from SlmpClientExtensions
-await using var client = await SlmpClient.OpenAndConnectAsync(
-    host,
-    port,
-    SlmpFrameType.Frame4E,
-    SlmpCompatibilityMode.Iqr).ConfigureAwait(false);
+var options = new SlmpConnectionOptions(host)
+{
+    Port = port,
+    FrameType = SlmpFrameType.Frame4E,
+    CompatibilityMode = SlmpCompatibilityMode.Iqr,
+};
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options).ConfigureAwait(false);
 
 Console.WriteLine("[INFO] Using queued high-level client");
 Console.WriteLine("[INFO] frame=4e series=iqr");
@@ -38,7 +40,7 @@ var tasks = Enumerable.Range(0, workers).Select(async workerIndex =>
         var snapshot = await client.ReadNamedAsync(["D100", "D200:F", "D50.3"]).ConfigureAwait(false);
 
         // Example 3: chunked helper call
-        var words = await client.ReadWordsAsync("D0", 4).ConfigureAwait(false);
+        var words = await client.ReadWordsSingleRequestAsync("D0", 4).ConfigureAwait(false);
 
         Console.WriteLine(
             $"[OK] worker={workerIndex + 1} iter={i + 1} " +

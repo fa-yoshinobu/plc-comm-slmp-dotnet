@@ -14,7 +14,7 @@ Included examples:
 
 - explicit high-level connect
 - typed reads and writes
-- contiguous word and dword reads
+- explicit `single-request` and `chunked` contiguous reads
 - bit-in-word updates
 - mixed `ReadNamedAsync`
 - `PollAsync`
@@ -27,7 +27,7 @@ dotnet run --project samples/PlcComm.Slmp.QueuedSample -- 192.168.250.100 1025 4
 
 Included examples:
 
-- one shared `QueuedSlmpClient`
+- one shared queued client from `SlmpClientFactory.OpenAndConnectAsync`
 - concurrent workers using only high-level helper APIs
 - repeated typed and mixed named reads
 

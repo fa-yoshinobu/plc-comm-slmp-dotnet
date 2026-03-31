@@ -1,9 +1,10 @@
 // PlcComm.Slmp.HighLevelSample
 // ============================
 // Demonstrates all high-level SLMP APIs:
-//   OpenAndConnectAsync, ReadWordsAsync (with allowSplit), ReadDWordsAsync,
+//   SlmpClientFactory.OpenAndConnectAsync, ReadWordsSingleRequestAsync,
+//   ReadDWordsSingleRequestAsync, ReadWordsChunkedAsync,
 //   ReadTypedAsync, WriteTypedAsync, WriteBitInWordAsync,
-//   ReadNamedAsync, PollAsync, and SlmpClient options.
+//   ReadNamedAsync, PollAsync, and SlmpAddress.Normalize.
 //
 // Usage:
 //   dotnet run --project samples/PlcComm.Slmp.HighLevelSample -- [host] [port] [series] [frame]
@@ -41,8 +42,17 @@ var frameType = frameArg == "3e" ? SlmpFrameType.Frame3E : SlmpFrameType.Frame4E
 //   5007  Q/L series Ethernet module SLMP port
 // -------------------------------------------------------------------------
 Console.WriteLine($"Connecting to {host}:{port} with frame={frameArg} series={seriesArg} ...");
-await using var client = await SlmpClient.OpenAndConnectAsync(host, port, frameType, compatibilityMode);
+var options = new SlmpConnectionOptions(host)
+{
+    Port = port,
+    FrameType = frameType,
+    CompatibilityMode = compatibilityMode,
+};
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 Console.WriteLine($"[OpenAndConnectAsync] frame={client.FrameType}  series={client.CompatibilityMode}");
+
+string normalized = SlmpAddress.Normalize("d50");
+Console.WriteLine($"[Normalize] d50 -> {normalized}");
 
 // -------------------------------------------------------------------------
 // QueuedSlmpClient properties you can adjust after connection:
@@ -84,35 +94,31 @@ await client.WriteTypedAsync("D300", "L", -100);
 Console.WriteLine("[WriteTypedAsync] Wrote 42->D100, 3.14->D200, -100->D300");
 
 // -------------------------------------------------------------------------
-// 3. ReadWordsAsync (chunked read)
+// 3. ReadWordsSingleRequestAsync
 //
 // Reads a contiguous block of word devices.
-// maxPerRequest - maximum words per SLMP request (protocol limit 960).
-// allowSplit    - when false (default) throws ArgumentException if
-//                 count > maxPerRequest; when true, automatically chunks
-//                 the read across multiple requests.
 //
-// Use case: reading a recipe table of 1200 words that exceeds the 960-word
-//           SLMP limit - set allowSplit: true to handle it transparently.
+// Use case: reading a compact recipe table when one request is required.
 // -------------------------------------------------------------------------
-ushort[] words10 = await client.ReadWordsAsync("D0", 10);
-Console.WriteLine($"[ReadWordsAsync] D0-D9 = [{string.Join(", ", words10)}]");
-
-// Large read split across multiple SLMP requests:
-ushort[] largeWords = await client.ReadWordsAsync("D0", 1000, allowSplit: true);
-Console.WriteLine($"[ReadWordsAsync allowSplit] D0-D999: {largeWords.Length} words read");
+ushort[] words10 = await client.ReadWordsSingleRequestAsync("D0", 10);
+Console.WriteLine($"[ReadWordsSingleRequestAsync] D0-D9 = [{string.Join(", ", words10)}]");
 
 // -------------------------------------------------------------------------
-// 4. ReadDWordsAsync (chunked 32-bit read)
+// 4. ReadDWordsSingleRequestAsync / ReadWordsChunkedAsync / ReadDWordsChunkedAsync
 //
 // Reads contiguous DWord (32-bit unsigned) values.
 // Each DWord occupies two consecutive word registers (low-word first).
 //
-// Use case: reading an array of 32-bit position values that would require
-//           960+ words if read as individual words.
+// Use case: choosing explicitly between one-request reads and multi-request
+//           chunked reads.
 // -------------------------------------------------------------------------
-uint[] dwords = await client.ReadDWordsAsync("D0", 4);
-Console.WriteLine($"[ReadDWordsAsync] D0-D7 as uint32[4] = [{string.Join(", ", dwords)}]");
+uint[] dwords = await client.ReadDWordsSingleRequestAsync("D0", 4);
+Console.WriteLine($"[ReadDWordsSingleRequestAsync] D0-D7 as uint32[4] = [{string.Join(", ", dwords)}]");
+
+ushort[] largeWords = await client.ReadWordsChunkedAsync("D0", 1000, maxWordsPerRequest: 480);
+uint[] largeDwords = await client.ReadDWordsChunkedAsync("D200", 120, maxDwordsPerRequest: 240);
+Console.WriteLine($"[ReadWordsChunkedAsync] D0-D999: {largeWords.Length} words read");
+Console.WriteLine($"[ReadDWordsChunkedAsync] D200-D439: {largeDwords.Length} dwords read");
 
 // -------------------------------------------------------------------------
 // 5. WriteBitInWordAsync
