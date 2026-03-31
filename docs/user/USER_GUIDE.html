@@ -93,11 +93,14 @@
 <p>Create a connected queued client with explicit stable settings:</p>
 <pre><code class="lang-csharp">using PlcComm.Slmp;
 
-await using var client = await SlmpClient.OpenAndConnectAsync(
-    &quot;192.168.250.100&quot;,
-    1025,
-    SlmpFrameType.Frame4E,
-    SlmpCompatibilityMode.Iqr);
+var options = new SlmpConnectionOptions(&quot;192.168.250.100&quot;)
+{
+    Port = 1025,
+    FrameType = SlmpFrameType.Frame4E,
+    CompatibilityMode = SlmpCompatibilityMode.Iqr,
+};
+
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 </code></pre>
 <p>Typical pairs:</p>
 <table>
@@ -122,6 +125,9 @@ await using var client = await SlmpClient.OpenAndConnectAsync(
 </tbody>
 </table>
 <p>Use the queued client as the default application object. It is the safest choice when more than one task may touch the same connection.</p>
+<p>Use <code>*SingleRequestAsync</code> when one protocol request is required. Use
+<code>*ChunkedAsync</code> only when it is acceptable to split the operation across
+multiple requests at word or dword boundaries.</p>
 <h2 id="high-level-helpers">High-Level Helpers</h2>
 <h3 id="readtypedasync--writetypedasync"><code>ReadTypedAsync</code> / <code>WriteTypedAsync</code></h3>
 <p>Read or write one logical value with conversion.</p>
@@ -224,17 +230,26 @@ await client.WriteBitInWordAsync(&quot;D50&quot;, bitIndex: 3, value: false);
 </code></pre>
 <p>Use <code>.bit</code> notation only with word devices such as <code>D50.3</code>.
 Address bit devices directly as <code>M1000</code>, <code>M1001</code>, <code>X20</code>, or <code>Y20</code>.</p>
+<p>Long-device notes for the high-level helper layer:</p>
+<ul>
+<li>plain <code>LTN</code>, <code>LSTN</code>, and <code>LCN</code> addresses default to 32-bit current-value access</li>
+<li><code>LTS</code>, <code>LTC</code>, <code>LSTS</code>, and <code>LSTC</code> are resolved through the corresponding <code>ReadLongTimerAsync</code> / <code>ReadLongRetentiveTimerAsync</code> helper-backed 4-word decode instead of direct state reads</li>
+</ul>
 <p>This is the recommended helper for dashboards, periodic snapshots, and application logic that needs mixed values.</p>
-<h3 id="readwordsasync"><code>ReadWordsAsync</code></h3>
+<h3 id="readwordssinglerequestasync"><code>ReadWordsSingleRequestAsync</code></h3>
 <p>Read a contiguous word range.</p>
-<pre><code class="lang-csharp">ushort[] words = await client.ReadWordsAsync(&quot;D0&quot;, 10);
-ushort[] largeWords = await client.ReadWordsAsync(&quot;D0&quot;, 1000, allowSplit: true);
+<pre><code class="lang-csharp">ushort[] words = await client.ReadWordsSingleRequestAsync(&quot;D0&quot;, 10);
 </code></pre>
-<p>Use <code>allowSplit: true</code> when the request exceeds one SLMP frame.</p>
-<h3 id="readdwordsasync"><code>ReadDWordsAsync</code></h3>
+<p>This helper does not silently split one logical request.</p>
+<h3 id="readdwordssinglerequestasync"><code>ReadDWordsSingleRequestAsync</code></h3>
 <p>Read contiguous 32-bit values.</p>
-<pre><code class="lang-csharp">uint[] dwords = await client.ReadDWordsAsync(&quot;D200&quot;, 8);
-uint[] largeDwords = await client.ReadDWordsAsync(&quot;D200&quot;, 200, allowSplit: true);
+<pre><code class="lang-csharp">uint[] dwords = await client.ReadDWordsSingleRequestAsync(&quot;D200&quot;, 8);
+</code></pre>
+<h3 id="readwordschunkedasync--readdwordschunkedasync"><code>ReadWordsChunkedAsync</code> / <code>ReadDWordsChunkedAsync</code></h3>
+<p>Use explicit chunked helpers when the range is too large for one request and
+splitting is acceptable:</p>
+<pre><code class="lang-csharp">ushort[] largeWords = await client.ReadWordsChunkedAsync(&quot;D0&quot;, 1000, maxWordsPerRequest: 480);
+uint[] largeDwords = await client.ReadDWordsChunkedAsync(&quot;D200&quot;, 200, maxDwordsPerRequest: 240);
 </code></pre>
 <h3 id="pollasync"><code>PollAsync</code></h3>
 <p>Read the same logical snapshot repeatedly.</p>
@@ -267,14 +282,19 @@ await client.WriteTypedAsync(&quot;D200&quot;, &quot;F&quot;, 12.5f);
 await client.WriteTypedAsync(&quot;D202&quot;, &quot;F&quot;, 6.75f);
 </code></pre>
 <h3 id="example-3-historian-style-reads">Example 3: historian-style reads</h3>
-<pre><code class="lang-csharp">ushort[] historyWords = await client.ReadWordsAsync(&quot;D1000&quot;, 1200, allowSplit: true);
-uint[] historyDwords = await client.ReadDWordsAsync(&quot;D2000&quot;, 240, allowSplit: true);
+<pre><code class="lang-csharp">ushort[] historyWords = await client.ReadWordsChunkedAsync(&quot;D1000&quot;, 1200, maxWordsPerRequest: 480);
+uint[] historyDwords = await client.ReadDWordsChunkedAsync(&quot;D2000&quot;, 240, maxDwordsPerRequest: 240);
 </code></pre>
 <h3 id="example-4-one-shared-connection-for-many-tasks">Example 4: one shared connection for many tasks</h3>
 <pre><code class="lang-csharp">var first = client.ReadNamedAsync([&quot;D100&quot;, &quot;D200:F&quot;]);
 var second = client.ReadNamedAsync([&quot;D300&quot;, &quot;D50.3&quot;]);
 
 await Task.WhenAll(first, second);
+</code></pre>
+<h2 id="address-normalization">Address Normalization</h2>
+<p>Use <code>SlmpAddress.Normalize</code> when you need one stable string form:</p>
+<pre><code class="lang-csharp">string canonical = SlmpAddress.Normalize(&quot;d100&quot;);
+Console.WriteLine(canonical); // D100
 </code></pre>
 <h2 id="sample-projects">Sample Projects</h2>
 <p>The main user-facing sample projects are:</p>

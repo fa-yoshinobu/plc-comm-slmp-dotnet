@@ -21,6 +21,24 @@ public sealed class SlmpClientExtensionsTests
     }
 
     [Fact]
+    public async Task WriteWordsSingleRequestAsync_RejectsOversizedRangeBeforeTransport()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        ushort[] values = Enumerable.Repeat((ushort)1, 961).ToArray();
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.WriteWordsSingleRequestAsync("D0", values));
+    }
+
+    [Fact]
+    public async Task WriteDWordsSingleRequestAsync_RejectsOversizedRangeBeforeTransport()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        uint[] values = Enumerable.Repeat((uint)1, 481).ToArray();
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.WriteDWordsSingleRequestAsync("D0", values));
+    }
+
+    [Fact]
     public void CompileReadPlan_BatchesWordDwordAndBitInWord()
     {
         var plan = SlmpClientExtensions.CompileReadPlan(["D100", "D100.3", "D101:F", "M10"]);

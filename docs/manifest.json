@@ -45,6 +45,16 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpAddress.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpAddress.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "obj/api/PlcComm.Slmp.SlmpBlockRead.yml",
       "output": {
         ".html": {
@@ -95,6 +105,16 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpClientFactory.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpClientFactory.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "obj/api/PlcComm.Slmp.SlmpCommand.yml",
       "output": {
         ".html": {
@@ -109,6 +129,16 @@
       "output": {
         ".html": {
           "relative_path": "api/obj/api/PlcComm.Slmp.SlmpCompatibilityMode.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/PlcComm.Slmp.SlmpConnectionOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html"
         }
       },
       "version": ""

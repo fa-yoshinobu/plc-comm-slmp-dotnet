@@ -1016,6 +1016,73 @@ references:
   isSpec: "True"
   fullName: PlcComm.Slmp.QueuedSlmpClient.WriteWordsExtendedAsync
   nameWithType: QueuedSlmpClient.WriteWordsExtendedAsync
+- uid: PlcComm.Slmp.SlmpAddress
+  name: SlmpAddress
+  href: api/obj/api/PlcComm.Slmp.SlmpAddress.html
+  commentId: T:PlcComm.Slmp.SlmpAddress
+  fullName: PlcComm.Slmp.SlmpAddress
+  nameWithType: SlmpAddress
+- uid: PlcComm.Slmp.SlmpAddress.Format(PlcComm.Slmp.SlmpDeviceAddress)
+  name: Format(SlmpDeviceAddress)
+  href: api/obj/api/PlcComm.Slmp.SlmpAddress.html#PlcComm_Slmp_SlmpAddress_Format_PlcComm_Slmp_SlmpDeviceAddress_
+  commentId: M:PlcComm.Slmp.SlmpAddress.Format(PlcComm.Slmp.SlmpDeviceAddress)
+  fullName: PlcComm.Slmp.SlmpAddress.Format(PlcComm.Slmp.SlmpDeviceAddress)
+  nameWithType: SlmpAddress.Format(SlmpDeviceAddress)
+- uid: PlcComm.Slmp.SlmpAddress.Format*
+  name: Format
+  href: api/obj/api/PlcComm.Slmp.SlmpAddress.html#PlcComm_Slmp_SlmpAddress_Format_
+  commentId: Overload:PlcComm.Slmp.SlmpAddress.Format
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpAddress.Format
+  nameWithType: SlmpAddress.Format
+- uid: PlcComm.Slmp.SlmpAddress.Normalize(System.String)
+  name: Normalize(string)
+  href: api/obj/api/PlcComm.Slmp.SlmpAddress.html#PlcComm_Slmp_SlmpAddress_Normalize_System_String_
+  commentId: M:PlcComm.Slmp.SlmpAddress.Normalize(System.String)
+  name.vb: Normalize(String)
+  fullName: PlcComm.Slmp.SlmpAddress.Normalize(string)
+  fullName.vb: PlcComm.Slmp.SlmpAddress.Normalize(String)
+  nameWithType: SlmpAddress.Normalize(string)
+  nameWithType.vb: SlmpAddress.Normalize(String)
+- uid: PlcComm.Slmp.SlmpAddress.Normalize*
+  name: Normalize
+  href: api/obj/api/PlcComm.Slmp.SlmpAddress.html#PlcComm_Slmp_SlmpAddress_Normalize_
+  commentId: Overload:PlcComm.Slmp.SlmpAddress.Normalize
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpAddress.Normalize
+  nameWithType: SlmpAddress.Normalize
+- uid: PlcComm.Slmp.SlmpAddress.Parse(System.String)
+  name: Parse(string)
+  href: api/obj/api/PlcComm.Slmp.SlmpAddress.html#PlcComm_Slmp_SlmpAddress_Parse_System_String_
+  commentId: M:PlcComm.Slmp.SlmpAddress.Parse(System.String)
+  name.vb: Parse(String)
+  fullName: PlcComm.Slmp.SlmpAddress.Parse(string)
+  fullName.vb: PlcComm.Slmp.SlmpAddress.Parse(String)
+  nameWithType: SlmpAddress.Parse(string)
+  nameWithType.vb: SlmpAddress.Parse(String)
+- uid: PlcComm.Slmp.SlmpAddress.Parse*
+  name: Parse
+  href: api/obj/api/PlcComm.Slmp.SlmpAddress.html#PlcComm_Slmp_SlmpAddress_Parse_
+  commentId: Overload:PlcComm.Slmp.SlmpAddress.Parse
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpAddress.Parse
+  nameWithType: SlmpAddress.Parse
+- uid: PlcComm.Slmp.SlmpAddress.TryParse(System.String,PlcComm.Slmp.SlmpDeviceAddress@)
+  name: TryParse(string, out SlmpDeviceAddress)
+  href: api/obj/api/PlcComm.Slmp.SlmpAddress.html#PlcComm_Slmp_SlmpAddress_TryParse_System_String_PlcComm_Slmp_SlmpDeviceAddress__
+  commentId: M:PlcComm.Slmp.SlmpAddress.TryParse(System.String,PlcComm.Slmp.SlmpDeviceAddress@)
+  name.vb: TryParse(String, SlmpDeviceAddress)
+  fullName: PlcComm.Slmp.SlmpAddress.TryParse(string, out PlcComm.Slmp.SlmpDeviceAddress)
+  fullName.vb: PlcComm.Slmp.SlmpAddress.TryParse(String, PlcComm.Slmp.SlmpDeviceAddress)
+  nameWithType: SlmpAddress.TryParse(string, out SlmpDeviceAddress)
+  nameWithType.vb: SlmpAddress.TryParse(String, SlmpDeviceAddress)
+- uid: PlcComm.Slmp.SlmpAddress.TryParse*
+  name: TryParse
+  href: api/obj/api/PlcComm.Slmp.SlmpAddress.html#PlcComm_Slmp_SlmpAddress_TryParse_
+  commentId: Overload:PlcComm.Slmp.SlmpAddress.TryParse
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpAddress.TryParse
+  nameWithType: SlmpAddress.TryParse
 - uid: PlcComm.Slmp.SlmpBlockRead
   name: SlmpBlockRead
   href: api/obj/api/PlcComm.Slmp.SlmpBlockRead.html
@@ -2502,6 +2569,92 @@ references:
   isSpec: "True"
   fullName: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsAsync
   nameWithType: SlmpClientExtensions.ReadDWordsAsync
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name: ReadDWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, int, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadDWordsChunkedAsync_PlcComm_Slmp_QueuedSlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Int32_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadDWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, Integer, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, int, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, Integer, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadDWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, int, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadDWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, Integer, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name: ReadDWordsChunkedAsync(QueuedSlmpClient, string, int, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadDWordsChunkedAsync_PlcComm_Slmp_QueuedSlmpClient_System_String_System_Int32_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadDWordsChunkedAsync(QueuedSlmpClient, String, Integer, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, string, int, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, String, Integer, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadDWordsChunkedAsync(QueuedSlmpClient, string, int, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadDWordsChunkedAsync(QueuedSlmpClient, String, Integer, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name: ReadDWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, int, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadDWordsChunkedAsync_PlcComm_Slmp_SlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Int32_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadDWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, Integer, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, int, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, Integer, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadDWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, int, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadDWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, Integer, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.SlmpClient,System.String,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name: ReadDWordsChunkedAsync(SlmpClient, string, int, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadDWordsChunkedAsync_PlcComm_Slmp_SlmpClient_System_String_System_Int32_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.SlmpClient,System.String,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadDWordsChunkedAsync(SlmpClient, String, Integer, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.SlmpClient, string, int, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync(PlcComm.Slmp.SlmpClient, String, Integer, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadDWordsChunkedAsync(SlmpClient, string, int, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadDWordsChunkedAsync(SlmpClient, String, Integer, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync*
+  name: ReadDWordsChunkedAsync
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadDWordsChunkedAsync_
+  commentId: Overload:PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsChunkedAsync
+  nameWithType: SlmpClientExtensions.ReadDWordsChunkedAsync
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Threading.CancellationToken)
+  name: ReadDWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadDWordsSingleRequestAsync_PlcComm_Slmp_QueuedSlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadDWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadDWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadDWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Int32,System.Threading.CancellationToken)
+  name: ReadDWordsSingleRequestAsync(QueuedSlmpClient, string, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadDWordsSingleRequestAsync_PlcComm_Slmp_QueuedSlmpClient_System_String_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadDWordsSingleRequestAsync(QueuedSlmpClient, String, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, string, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, String, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadDWordsSingleRequestAsync(QueuedSlmpClient, string, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadDWordsSingleRequestAsync(QueuedSlmpClient, String, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Threading.CancellationToken)
+  name: ReadDWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadDWordsSingleRequestAsync_PlcComm_Slmp_SlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadDWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadDWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadDWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Int32,System.Threading.CancellationToken)
+  name: ReadDWordsSingleRequestAsync(SlmpClient, string, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadDWordsSingleRequestAsync_PlcComm_Slmp_SlmpClient_System_String_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadDWordsSingleRequestAsync(SlmpClient, String, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, string, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, String, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadDWordsSingleRequestAsync(SlmpClient, string, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadDWordsSingleRequestAsync(SlmpClient, String, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync*
+  name: ReadDWordsSingleRequestAsync
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadDWordsSingleRequestAsync_
+  commentId: Overload:PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadDWordsSingleRequestAsync
+  nameWithType: SlmpClientExtensions.ReadDWordsSingleRequestAsync
 - uid: PlcComm.Slmp.SlmpClientExtensions.ReadNamedAsync(PlcComm.Slmp.QueuedSlmpClient,System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)
   name: ReadNamedAsync(QueuedSlmpClient, IEnumerable<string>, CancellationToken)
   href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadNamedAsync_PlcComm_Slmp_QueuedSlmpClient_System_Collections_Generic_IEnumerable_System_String__System_Threading_CancellationToken_
@@ -2613,6 +2766,92 @@ references:
   isSpec: "True"
   fullName: PlcComm.Slmp.SlmpClientExtensions.ReadWordsAsync
   nameWithType: SlmpClientExtensions.ReadWordsAsync
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name: ReadWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, int, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadWordsChunkedAsync_PlcComm_Slmp_QueuedSlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Int32_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, Integer, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, int, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, Integer, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, int, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, Integer, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name: ReadWordsChunkedAsync(QueuedSlmpClient, string, int, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadWordsChunkedAsync_PlcComm_Slmp_QueuedSlmpClient_System_String_System_Int32_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadWordsChunkedAsync(QueuedSlmpClient, String, Integer, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, string, int, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, String, Integer, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadWordsChunkedAsync(QueuedSlmpClient, string, int, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadWordsChunkedAsync(QueuedSlmpClient, String, Integer, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name: ReadWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, int, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadWordsChunkedAsync_PlcComm_Slmp_SlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Int32_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, Integer, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, int, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, Integer, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, int, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, Integer, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.SlmpClient,System.String,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name: ReadWordsChunkedAsync(SlmpClient, string, int, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadWordsChunkedAsync_PlcComm_Slmp_SlmpClient_System_String_System_Int32_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.SlmpClient,System.String,System.Int32,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadWordsChunkedAsync(SlmpClient, String, Integer, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.SlmpClient, string, int, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync(PlcComm.Slmp.SlmpClient, String, Integer, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadWordsChunkedAsync(SlmpClient, string, int, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadWordsChunkedAsync(SlmpClient, String, Integer, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync*
+  name: ReadWordsChunkedAsync
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadWordsChunkedAsync_
+  commentId: Overload:PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadWordsChunkedAsync
+  nameWithType: SlmpClientExtensions.ReadWordsChunkedAsync
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Threading.CancellationToken)
+  name: ReadWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadWordsSingleRequestAsync_PlcComm_Slmp_QueuedSlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Int32,System.Threading.CancellationToken)
+  name: ReadWordsSingleRequestAsync(QueuedSlmpClient, string, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadWordsSingleRequestAsync_PlcComm_Slmp_QueuedSlmpClient_System_String_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadWordsSingleRequestAsync(QueuedSlmpClient, String, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, string, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, String, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadWordsSingleRequestAsync(QueuedSlmpClient, string, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadWordsSingleRequestAsync(QueuedSlmpClient, String, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Threading.CancellationToken)
+  name: ReadWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadWordsSingleRequestAsync_PlcComm_Slmp_SlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Int32,System.Threading.CancellationToken)
+  name: ReadWordsSingleRequestAsync(SlmpClient, string, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadWordsSingleRequestAsync_PlcComm_Slmp_SlmpClient_System_String_System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Int32,System.Threading.CancellationToken)
+  name.vb: ReadWordsSingleRequestAsync(SlmpClient, String, Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, string, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, String, Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.ReadWordsSingleRequestAsync(SlmpClient, string, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.ReadWordsSingleRequestAsync(SlmpClient, String, Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync*
+  name: ReadWordsSingleRequestAsync
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_ReadWordsSingleRequestAsync_
+  commentId: Overload:PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpClientExtensions.ReadWordsSingleRequestAsync
+  nameWithType: SlmpClientExtensions.ReadWordsSingleRequestAsync
 - uid: PlcComm.Slmp.SlmpClientExtensions.WriteBitInWordAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Boolean,System.Threading.CancellationToken)
   name: WriteBitInWordAsync(QueuedSlmpClient, SlmpDeviceAddress, int, bool, CancellationToken)
   href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteBitInWordAsync_PlcComm_Slmp_QueuedSlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Int32_System_Boolean_System_Threading_CancellationToken_
@@ -2699,6 +2938,135 @@ references:
   isSpec: "True"
   fullName: PlcComm.Slmp.SlmpClientExtensions.WriteBitsBlockAsync
   nameWithType: SlmpClientExtensions.WriteBitsBlockAsync
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name: WriteDWordsBlockAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList<uint>, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsBlockAsync_PlcComm_Slmp_QueuedSlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Collections_Generic_IReadOnlyList_System_UInt32__System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name.vb: WriteDWordsBlockAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UInteger), CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList<uint>, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList(Of UInteger), System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteDWordsBlockAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList<uint>, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteDWordsBlockAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UInteger), CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name: WriteDWordsBlockAsync(QueuedSlmpClient, string, IReadOnlyList<uint>, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsBlockAsync_PlcComm_Slmp_QueuedSlmpClient_System_String_System_Collections_Generic_IReadOnlyList_System_UInt32__System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name.vb: WriteDWordsBlockAsync(QueuedSlmpClient, String, IReadOnlyList(Of UInteger), CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.QueuedSlmpClient, string, System.Collections.Generic.IReadOnlyList<uint>, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.QueuedSlmpClient, String, System.Collections.Generic.IReadOnlyList(Of UInteger), System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteDWordsBlockAsync(QueuedSlmpClient, string, IReadOnlyList<uint>, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteDWordsBlockAsync(QueuedSlmpClient, String, IReadOnlyList(Of UInteger), CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name: WriteDWordsBlockAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList<uint>, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsBlockAsync_PlcComm_Slmp_SlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Collections_Generic_IReadOnlyList_System_UInt32__System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name.vb: WriteDWordsBlockAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UInteger), CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList<uint>, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList(Of UInteger), System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteDWordsBlockAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList<uint>, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteDWordsBlockAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UInteger), CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name: WriteDWordsBlockAsync(SlmpClient, string, IReadOnlyList<uint>, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsBlockAsync_PlcComm_Slmp_SlmpClient_System_String_System_Collections_Generic_IReadOnlyList_System_UInt32__System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name.vb: WriteDWordsBlockAsync(SlmpClient, String, IReadOnlyList(Of UInteger), CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient, string, System.Collections.Generic.IReadOnlyList<uint>, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient, String, System.Collections.Generic.IReadOnlyList(Of UInteger), System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteDWordsBlockAsync(SlmpClient, string, IReadOnlyList<uint>, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteDWordsBlockAsync(SlmpClient, String, IReadOnlyList(Of UInteger), CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync*
+  name: WriteDWordsBlockAsync
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsBlockAsync_
+  commentId: Overload:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync
+  nameWithType: SlmpClientExtensions.WriteDWordsBlockAsync
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Int32,System.Threading.CancellationToken)
+  name: WriteDWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList<uint>, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsChunkedAsync_PlcComm_Slmp_QueuedSlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Collections_Generic_IReadOnlyList_System_UInt32__System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Int32,System.Threading.CancellationToken)
+  name.vb: WriteDWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UInteger), Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList<uint>, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList(Of UInteger), Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteDWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList<uint>, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteDWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UInteger), Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Int32,System.Threading.CancellationToken)
+  name: WriteDWordsChunkedAsync(QueuedSlmpClient, string, IReadOnlyList<uint>, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsChunkedAsync_PlcComm_Slmp_QueuedSlmpClient_System_String_System_Collections_Generic_IReadOnlyList_System_UInt32__System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Int32,System.Threading.CancellationToken)
+  name.vb: WriteDWordsChunkedAsync(QueuedSlmpClient, String, IReadOnlyList(Of UInteger), Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, string, System.Collections.Generic.IReadOnlyList<uint>, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, String, System.Collections.Generic.IReadOnlyList(Of UInteger), Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteDWordsChunkedAsync(QueuedSlmpClient, string, IReadOnlyList<uint>, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteDWordsChunkedAsync(QueuedSlmpClient, String, IReadOnlyList(Of UInteger), Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Int32,System.Threading.CancellationToken)
+  name: WriteDWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList<uint>, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsChunkedAsync_PlcComm_Slmp_SlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Collections_Generic_IReadOnlyList_System_UInt32__System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Int32,System.Threading.CancellationToken)
+  name.vb: WriteDWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UInteger), Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList<uint>, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList(Of UInteger), Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteDWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList<uint>, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteDWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UInteger), Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Int32,System.Threading.CancellationToken)
+  name: WriteDWordsChunkedAsync(SlmpClient, string, IReadOnlyList<uint>, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsChunkedAsync_PlcComm_Slmp_SlmpClient_System_String_System_Collections_Generic_IReadOnlyList_System_UInt32__System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Int32,System.Threading.CancellationToken)
+  name.vb: WriteDWordsChunkedAsync(SlmpClient, String, IReadOnlyList(Of UInteger), Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.SlmpClient, string, System.Collections.Generic.IReadOnlyList<uint>, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync(PlcComm.Slmp.SlmpClient, String, System.Collections.Generic.IReadOnlyList(Of UInteger), Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteDWordsChunkedAsync(SlmpClient, string, IReadOnlyList<uint>, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteDWordsChunkedAsync(SlmpClient, String, IReadOnlyList(Of UInteger), Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync*
+  name: WriteDWordsChunkedAsync
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsChunkedAsync_
+  commentId: Overload:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsChunkedAsync
+  nameWithType: SlmpClientExtensions.WriteDWordsChunkedAsync
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name: WriteDWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList<uint>, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsSingleRequestAsync_PlcComm_Slmp_QueuedSlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Collections_Generic_IReadOnlyList_System_UInt32__System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name.vb: WriteDWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UInteger), CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList<uint>, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList(Of UInteger), System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteDWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList<uint>, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteDWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UInteger), CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name: WriteDWordsSingleRequestAsync(QueuedSlmpClient, string, IReadOnlyList<uint>, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsSingleRequestAsync_PlcComm_Slmp_QueuedSlmpClient_System_String_System_Collections_Generic_IReadOnlyList_System_UInt32__System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name.vb: WriteDWordsSingleRequestAsync(QueuedSlmpClient, String, IReadOnlyList(Of UInteger), CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, string, System.Collections.Generic.IReadOnlyList<uint>, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, String, System.Collections.Generic.IReadOnlyList(Of UInteger), System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteDWordsSingleRequestAsync(QueuedSlmpClient, string, IReadOnlyList<uint>, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteDWordsSingleRequestAsync(QueuedSlmpClient, String, IReadOnlyList(Of UInteger), CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name: WriteDWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList<uint>, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsSingleRequestAsync_PlcComm_Slmp_SlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Collections_Generic_IReadOnlyList_System_UInt32__System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name.vb: WriteDWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UInteger), CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList<uint>, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList(Of UInteger), System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteDWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList<uint>, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteDWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UInteger), CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name: WriteDWordsSingleRequestAsync(SlmpClient, string, IReadOnlyList<uint>, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsSingleRequestAsync_PlcComm_Slmp_SlmpClient_System_String_System_Collections_Generic_IReadOnlyList_System_UInt32__System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)
+  name.vb: WriteDWordsSingleRequestAsync(SlmpClient, String, IReadOnlyList(Of UInteger), CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, string, System.Collections.Generic.IReadOnlyList<uint>, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, String, System.Collections.Generic.IReadOnlyList(Of UInteger), System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteDWordsSingleRequestAsync(SlmpClient, string, IReadOnlyList<uint>, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteDWordsSingleRequestAsync(SlmpClient, String, IReadOnlyList(Of UInteger), CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync*
+  name: WriteDWordsSingleRequestAsync
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteDWordsSingleRequestAsync_
+  commentId: Overload:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteDWordsSingleRequestAsync
+  nameWithType: SlmpClientExtensions.WriteDWordsSingleRequestAsync
 - uid: PlcComm.Slmp.SlmpClientExtensions.WriteNamedAsync(PlcComm.Slmp.QueuedSlmpClient,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.Threading.CancellationToken)
   name: WriteNamedAsync(QueuedSlmpClient, IReadOnlyDictionary<string, object>, CancellationToken)
   href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteNamedAsync_PlcComm_Slmp_QueuedSlmpClient_System_Collections_Generic_IReadOnlyDictionary_System_String_System_Object__System_Threading_CancellationToken_
@@ -2810,6 +3178,111 @@ references:
   isSpec: "True"
   fullName: PlcComm.Slmp.SlmpClientExtensions.WriteWordsBlockAsync
   nameWithType: SlmpClientExtensions.WriteWordsBlockAsync
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Int32,System.Threading.CancellationToken)
+  name: WriteWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList<ushort>, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteWordsChunkedAsync_PlcComm_Slmp_QueuedSlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Collections_Generic_IReadOnlyList_System_UInt16__System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Int32,System.Threading.CancellationToken)
+  name.vb: WriteWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UShort), Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList<ushort>, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList(Of UShort), Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList<ushort>, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteWordsChunkedAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UShort), Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Int32,System.Threading.CancellationToken)
+  name: WriteWordsChunkedAsync(QueuedSlmpClient, string, IReadOnlyList<ushort>, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteWordsChunkedAsync_PlcComm_Slmp_QueuedSlmpClient_System_String_System_Collections_Generic_IReadOnlyList_System_UInt16__System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Int32,System.Threading.CancellationToken)
+  name.vb: WriteWordsChunkedAsync(QueuedSlmpClient, String, IReadOnlyList(Of UShort), Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, string, System.Collections.Generic.IReadOnlyList<ushort>, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.QueuedSlmpClient, String, System.Collections.Generic.IReadOnlyList(Of UShort), Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteWordsChunkedAsync(QueuedSlmpClient, string, IReadOnlyList<ushort>, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteWordsChunkedAsync(QueuedSlmpClient, String, IReadOnlyList(Of UShort), Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Int32,System.Threading.CancellationToken)
+  name: WriteWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList<ushort>, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteWordsChunkedAsync_PlcComm_Slmp_SlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Collections_Generic_IReadOnlyList_System_UInt16__System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Int32,System.Threading.CancellationToken)
+  name.vb: WriteWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UShort), Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList<ushort>, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList(Of UShort), Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList<ushort>, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteWordsChunkedAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UShort), Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Int32,System.Threading.CancellationToken)
+  name: WriteWordsChunkedAsync(SlmpClient, string, IReadOnlyList<ushort>, int, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteWordsChunkedAsync_PlcComm_Slmp_SlmpClient_System_String_System_Collections_Generic_IReadOnlyList_System_UInt16__System_Int32_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Int32,System.Threading.CancellationToken)
+  name.vb: WriteWordsChunkedAsync(SlmpClient, String, IReadOnlyList(Of UShort), Integer, CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.SlmpClient, string, System.Collections.Generic.IReadOnlyList<ushort>, int, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync(PlcComm.Slmp.SlmpClient, String, System.Collections.Generic.IReadOnlyList(Of UShort), Integer, System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteWordsChunkedAsync(SlmpClient, string, IReadOnlyList<ushort>, int, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteWordsChunkedAsync(SlmpClient, String, IReadOnlyList(Of UShort), Integer, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync*
+  name: WriteWordsChunkedAsync
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteWordsChunkedAsync_
+  commentId: Overload:PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteWordsChunkedAsync
+  nameWithType: SlmpClientExtensions.WriteWordsChunkedAsync
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)
+  name: WriteWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList<ushort>, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteWordsSingleRequestAsync_PlcComm_Slmp_QueuedSlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Collections_Generic_IReadOnlyList_System_UInt16__System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)
+  name.vb: WriteWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UShort), CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList<ushort>, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList(Of UShort), System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList<ushort>, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteWordsSingleRequestAsync(QueuedSlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UShort), CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)
+  name: WriteWordsSingleRequestAsync(QueuedSlmpClient, string, IReadOnlyList<ushort>, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteWordsSingleRequestAsync_PlcComm_Slmp_QueuedSlmpClient_System_String_System_Collections_Generic_IReadOnlyList_System_UInt16__System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)
+  name.vb: WriteWordsSingleRequestAsync(QueuedSlmpClient, String, IReadOnlyList(Of UShort), CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, string, System.Collections.Generic.IReadOnlyList<ushort>, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.QueuedSlmpClient, String, System.Collections.Generic.IReadOnlyList(Of UShort), System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteWordsSingleRequestAsync(QueuedSlmpClient, string, IReadOnlyList<ushort>, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteWordsSingleRequestAsync(QueuedSlmpClient, String, IReadOnlyList(Of UShort), CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)
+  name: WriteWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList<ushort>, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteWordsSingleRequestAsync_PlcComm_Slmp_SlmpClient_PlcComm_Slmp_SlmpDeviceAddress_System_Collections_Generic_IReadOnlyList_System_UInt16__System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)
+  name.vb: WriteWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UShort), CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList<ushort>, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, PlcComm.Slmp.SlmpDeviceAddress, System.Collections.Generic.IReadOnlyList(Of UShort), System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList<ushort>, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList(Of UShort), CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)
+  name: WriteWordsSingleRequestAsync(SlmpClient, string, IReadOnlyList<ushort>, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteWordsSingleRequestAsync_PlcComm_Slmp_SlmpClient_System_String_System_Collections_Generic_IReadOnlyList_System_UInt16__System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)
+  name.vb: WriteWordsSingleRequestAsync(SlmpClient, String, IReadOnlyList(Of UShort), CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, string, System.Collections.Generic.IReadOnlyList<ushort>, System.Threading.CancellationToken)
+  fullName.vb: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync(PlcComm.Slmp.SlmpClient, String, System.Collections.Generic.IReadOnlyList(Of UShort), System.Threading.CancellationToken)
+  nameWithType: SlmpClientExtensions.WriteWordsSingleRequestAsync(SlmpClient, string, IReadOnlyList<ushort>, CancellationToken)
+  nameWithType.vb: SlmpClientExtensions.WriteWordsSingleRequestAsync(SlmpClient, String, IReadOnlyList(Of UShort), CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync*
+  name: WriteWordsSingleRequestAsync
+  href: api/obj/api/PlcComm.Slmp.SlmpClientExtensions.html#PlcComm_Slmp_SlmpClientExtensions_WriteWordsSingleRequestAsync_
+  commentId: Overload:PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpClientExtensions.WriteWordsSingleRequestAsync
+  nameWithType: SlmpClientExtensions.WriteWordsSingleRequestAsync
+- uid: PlcComm.Slmp.SlmpClientFactory
+  name: SlmpClientFactory
+  href: api/obj/api/PlcComm.Slmp.SlmpClientFactory.html
+  commentId: T:PlcComm.Slmp.SlmpClientFactory
+  fullName: PlcComm.Slmp.SlmpClientFactory
+  nameWithType: SlmpClientFactory
+- uid: PlcComm.Slmp.SlmpClientFactory.OpenAndConnectAsync(PlcComm.Slmp.SlmpConnectionOptions,System.Threading.CancellationToken)
+  name: OpenAndConnectAsync(SlmpConnectionOptions, CancellationToken)
+  href: api/obj/api/PlcComm.Slmp.SlmpClientFactory.html#PlcComm_Slmp_SlmpClientFactory_OpenAndConnectAsync_PlcComm_Slmp_SlmpConnectionOptions_System_Threading_CancellationToken_
+  commentId: M:PlcComm.Slmp.SlmpClientFactory.OpenAndConnectAsync(PlcComm.Slmp.SlmpConnectionOptions,System.Threading.CancellationToken)
+  fullName: PlcComm.Slmp.SlmpClientFactory.OpenAndConnectAsync(PlcComm.Slmp.SlmpConnectionOptions, System.Threading.CancellationToken)
+  nameWithType: SlmpClientFactory.OpenAndConnectAsync(SlmpConnectionOptions, CancellationToken)
+- uid: PlcComm.Slmp.SlmpClientFactory.OpenAndConnectAsync*
+  name: OpenAndConnectAsync
+  href: api/obj/api/PlcComm.Slmp.SlmpClientFactory.html#PlcComm_Slmp_SlmpClientFactory_OpenAndConnectAsync_
+  commentId: Overload:PlcComm.Slmp.SlmpClientFactory.OpenAndConnectAsync
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpClientFactory.OpenAndConnectAsync
+  nameWithType: SlmpClientFactory.OpenAndConnectAsync
 - uid: PlcComm.Slmp.SlmpCommand
   name: SlmpCommand
   href: api/obj/api/PlcComm.Slmp.SlmpCommand.html
@@ -2990,6 +3463,135 @@ references:
   commentId: F:PlcComm.Slmp.SlmpCompatibilityMode.Legacy
   fullName: PlcComm.Slmp.SlmpCompatibilityMode.Legacy
   nameWithType: SlmpCompatibilityMode.Legacy
+- uid: PlcComm.Slmp.SlmpConnectionOptions
+  name: SlmpConnectionOptions
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html
+  commentId: T:PlcComm.Slmp.SlmpConnectionOptions
+  fullName: PlcComm.Slmp.SlmpConnectionOptions
+  nameWithType: SlmpConnectionOptions
+- uid: PlcComm.Slmp.SlmpConnectionOptions.#ctor(System.String)
+  name: SlmpConnectionOptions(string)
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions__ctor_System_String_
+  commentId: M:PlcComm.Slmp.SlmpConnectionOptions.#ctor(System.String)
+  name.vb: New(String)
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.SlmpConnectionOptions(string)
+  fullName.vb: PlcComm.Slmp.SlmpConnectionOptions.New(String)
+  nameWithType: SlmpConnectionOptions.SlmpConnectionOptions(string)
+  nameWithType.vb: SlmpConnectionOptions.New(String)
+- uid: PlcComm.Slmp.SlmpConnectionOptions.#ctor*
+  name: SlmpConnectionOptions
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions__ctor_
+  commentId: Overload:PlcComm.Slmp.SlmpConnectionOptions.#ctor
+  isSpec: "True"
+  name.vb: New
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.SlmpConnectionOptions
+  fullName.vb: PlcComm.Slmp.SlmpConnectionOptions.New
+  nameWithType: SlmpConnectionOptions.SlmpConnectionOptions
+  nameWithType.vb: SlmpConnectionOptions.New
+- uid: PlcComm.Slmp.SlmpConnectionOptions.CompatibilityMode
+  name: CompatibilityMode
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_CompatibilityMode
+  commentId: P:PlcComm.Slmp.SlmpConnectionOptions.CompatibilityMode
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.CompatibilityMode
+  nameWithType: SlmpConnectionOptions.CompatibilityMode
+- uid: PlcComm.Slmp.SlmpConnectionOptions.CompatibilityMode*
+  name: CompatibilityMode
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_CompatibilityMode_
+  commentId: Overload:PlcComm.Slmp.SlmpConnectionOptions.CompatibilityMode
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.CompatibilityMode
+  nameWithType: SlmpConnectionOptions.CompatibilityMode
+- uid: PlcComm.Slmp.SlmpConnectionOptions.FrameType
+  name: FrameType
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_FrameType
+  commentId: P:PlcComm.Slmp.SlmpConnectionOptions.FrameType
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.FrameType
+  nameWithType: SlmpConnectionOptions.FrameType
+- uid: PlcComm.Slmp.SlmpConnectionOptions.FrameType*
+  name: FrameType
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_FrameType_
+  commentId: Overload:PlcComm.Slmp.SlmpConnectionOptions.FrameType
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.FrameType
+  nameWithType: SlmpConnectionOptions.FrameType
+- uid: PlcComm.Slmp.SlmpConnectionOptions.Host
+  name: Host
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_Host
+  commentId: P:PlcComm.Slmp.SlmpConnectionOptions.Host
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.Host
+  nameWithType: SlmpConnectionOptions.Host
+- uid: PlcComm.Slmp.SlmpConnectionOptions.Host*
+  name: Host
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_Host_
+  commentId: Overload:PlcComm.Slmp.SlmpConnectionOptions.Host
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.Host
+  nameWithType: SlmpConnectionOptions.Host
+- uid: PlcComm.Slmp.SlmpConnectionOptions.MonitoringTimer
+  name: MonitoringTimer
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_MonitoringTimer
+  commentId: P:PlcComm.Slmp.SlmpConnectionOptions.MonitoringTimer
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.MonitoringTimer
+  nameWithType: SlmpConnectionOptions.MonitoringTimer
+- uid: PlcComm.Slmp.SlmpConnectionOptions.MonitoringTimer*
+  name: MonitoringTimer
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_MonitoringTimer_
+  commentId: Overload:PlcComm.Slmp.SlmpConnectionOptions.MonitoringTimer
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.MonitoringTimer
+  nameWithType: SlmpConnectionOptions.MonitoringTimer
+- uid: PlcComm.Slmp.SlmpConnectionOptions.Port
+  name: Port
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_Port
+  commentId: P:PlcComm.Slmp.SlmpConnectionOptions.Port
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.Port
+  nameWithType: SlmpConnectionOptions.Port
+- uid: PlcComm.Slmp.SlmpConnectionOptions.Port*
+  name: Port
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_Port_
+  commentId: Overload:PlcComm.Slmp.SlmpConnectionOptions.Port
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.Port
+  nameWithType: SlmpConnectionOptions.Port
+- uid: PlcComm.Slmp.SlmpConnectionOptions.Target
+  name: Target
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_Target
+  commentId: P:PlcComm.Slmp.SlmpConnectionOptions.Target
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.Target
+  nameWithType: SlmpConnectionOptions.Target
+- uid: PlcComm.Slmp.SlmpConnectionOptions.Target*
+  name: Target
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_Target_
+  commentId: Overload:PlcComm.Slmp.SlmpConnectionOptions.Target
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.Target
+  nameWithType: SlmpConnectionOptions.Target
+- uid: PlcComm.Slmp.SlmpConnectionOptions.Timeout
+  name: Timeout
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_Timeout
+  commentId: P:PlcComm.Slmp.SlmpConnectionOptions.Timeout
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.Timeout
+  nameWithType: SlmpConnectionOptions.Timeout
+- uid: PlcComm.Slmp.SlmpConnectionOptions.Timeout*
+  name: Timeout
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_Timeout_
+  commentId: Overload:PlcComm.Slmp.SlmpConnectionOptions.Timeout
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.Timeout
+  nameWithType: SlmpConnectionOptions.Timeout
+- uid: PlcComm.Slmp.SlmpConnectionOptions.Transport
+  name: Transport
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_Transport
+  commentId: P:PlcComm.Slmp.SlmpConnectionOptions.Transport
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.Transport
+  nameWithType: SlmpConnectionOptions.Transport
+- uid: PlcComm.Slmp.SlmpConnectionOptions.Transport*
+  name: Transport
+  href: api/obj/api/PlcComm.Slmp.SlmpConnectionOptions.html#PlcComm_Slmp_SlmpConnectionOptions_Transport_
+  commentId: Overload:PlcComm.Slmp.SlmpConnectionOptions.Transport
+  isSpec: "True"
+  fullName: PlcComm.Slmp.SlmpConnectionOptions.Transport
+  nameWithType: SlmpConnectionOptions.Transport
 - uid: PlcComm.Slmp.SlmpDeviceAddress
   name: SlmpDeviceAddress
   href: api/obj/api/PlcComm.Slmp.SlmpDeviceAddress.html
