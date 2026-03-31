@@ -12,12 +12,15 @@ High-level SLMP helpers for Mitsubishi PLC communication over Binary 3E and 4E f
 
 The recommended user surface is the extension-method layer:
 
-- `SlmpClient.OpenAndConnectAsync`
+- `SlmpClientFactory.OpenAndConnectAsync`
+- `SlmpConnectionOptions`
 - `ReadTypedAsync` / `WriteTypedAsync`
-- `ReadWordsAsync` / `ReadDWordsAsync`
+- `ReadWordsSingleRequestAsync` / `ReadDWordsSingleRequestAsync`
+- `ReadWordsChunkedAsync` / `ReadDWordsChunkedAsync`
 - `WriteBitInWordAsync`
 - `ReadNamedAsync`
 - `PollAsync`
+- `SlmpAddress.Normalize`
 
 Low-level request builders and raw protocol methods remain available for maintainers, but they are not the primary user path.
 
@@ -48,11 +51,14 @@ Recommended high-level usage:
 ```csharp
 using PlcComm.Slmp;
 
-await using var client = await SlmpClient.OpenAndConnectAsync(
-    "192.168.250.100",
-    1025,
-    SlmpFrameType.Frame4E,
-    SlmpCompatibilityMode.Iqr);
+var options = new SlmpConnectionOptions("192.168.250.100")
+{
+    Port = 1025,
+    FrameType = SlmpFrameType.Frame4E,
+    CompatibilityMode = SlmpCompatibilityMode.Iqr,
+};
+
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 
 var snapshot = await client.ReadNamedAsync(["D100", "D200:F", "D50.3"]);
 Console.WriteLine(snapshot["D100"]);
@@ -93,11 +99,18 @@ For long-device families in the high-level helper layer:
 - plain `LTN`, `LSTN`, and `LCN` addresses default to 32-bit current-value access
 - `LTS`, `LTC`, `LSTS`, and `LSTC` are resolved through the corresponding `ReadLongTimerAsync` / `ReadLongRetentiveTimerAsync` helper-backed 4-word decode instead of direct state reads
 
-### Chunked reads
+### Single-request contiguous reads
 
 ```csharp
-ushort[] words = await client.ReadWordsAsync("D0", 1000, allowSplit: true);
-uint[] dwords = await client.ReadDWordsAsync("D200", 120, allowSplit: true);
+ushort[] words = await client.ReadWordsSingleRequestAsync("D0", 32);
+uint[] dwords = await client.ReadDWordsSingleRequestAsync("D200", 8);
+```
+
+### Explicit chunked reads
+
+```csharp
+ushort[] longWords = await client.ReadWordsChunkedAsync("D0", 1000, maxWordsPerRequest: 480);
+uint[] longDwords = await client.ReadDWordsChunkedAsync("D200", 120, maxDwordsPerRequest: 240);
 ```
 
 ### One-bit update inside a word
@@ -120,6 +133,17 @@ await foreach (var item in client.PollAsync(
     Console.WriteLine(item["D100"]);
 }
 ```
+
+### Address helper
+
+```csharp
+string canonical = SlmpAddress.Normalize("d100");
+Console.WriteLine(canonical); // D100
+```
+
+Use `*SingleRequestAsync` when one PLC request is required. Use
+`*ChunkedAsync` only when splitting across multiple protocol requests is
+acceptable for that data.
 
 ## Sample Programs
 
@@ -150,6 +174,7 @@ User-facing documents:
 
 - [User Guide](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/USER_GUIDE.md)
 - [Samples](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/samples/README.md)
+- [High-Level API Contract](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/HIGH_LEVEL_API_CONTRACT.md)
 
 Maintainer and validation material remains under `docsrc/maintainer/` and `docsrc/validation/`.
 

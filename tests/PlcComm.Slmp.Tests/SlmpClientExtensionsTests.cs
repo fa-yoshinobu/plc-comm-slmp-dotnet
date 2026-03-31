@@ -5,6 +5,22 @@ namespace PlcComm.Slmp.Tests;
 public sealed class SlmpClientExtensionsTests
 {
     [Fact]
+    public async Task ReadWordsSingleRequestAsync_RejectsOversizedRangeBeforeTransport()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.ReadWordsSingleRequestAsync("D0", 961));
+    }
+
+    [Fact]
+    public async Task ReadDWordsSingleRequestAsync_RejectsOversizedRangeBeforeTransport()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.ReadDWordsSingleRequestAsync("D0", 481));
+    }
+
+    [Fact]
     public void CompileReadPlan_BatchesWordDwordAndBitInWord()
     {
         var plan = SlmpClientExtensions.CompileReadPlan(["D100", "D100.3", "D101:F", "M10"]);

@@ -452,6 +452,218 @@ public static class SlmpClientExtensions
         CancellationToken ct = default)
         => client.WriteWordsBlockAsync(SlmpDeviceParser.Parse(start), values, ct);
 
+    /// <summary>
+    /// Writes a contiguous DWord-device range from 32-bit values.
+    /// </summary>
+    public static Task WriteDWordsBlockAsync(
+        this SlmpClient client,
+        SlmpDeviceAddress start,
+        IReadOnlyList<uint> values,
+        CancellationToken ct = default)
+        => client.WriteDWordsAsync(start, values, ct);
+
+    /// <summary>
+    /// Writes a contiguous DWord-device range using a string address.
+    /// </summary>
+    public static Task WriteDWordsBlockAsync(
+        this SlmpClient client,
+        string start,
+        IReadOnlyList<uint> values,
+        CancellationToken ct = default)
+        => client.WriteDWordsBlockAsync(SlmpDeviceParser.Parse(start), values, ct);
+
+    /// <summary>
+    /// Writes a contiguous DWord-device range through a queued client.
+    /// </summary>
+    public static Task WriteDWordsBlockAsync(
+        this QueuedSlmpClient client,
+        SlmpDeviceAddress start,
+        IReadOnlyList<uint> values,
+        CancellationToken ct = default)
+        => client.ExecuteAsync(inner => inner.WriteDWordsBlockAsync(start, values, ct), ct);
+
+    /// <summary>
+    /// Writes a contiguous DWord-device range using a string address through a queued client.
+    /// </summary>
+    public static Task WriteDWordsBlockAsync(
+        this QueuedSlmpClient client,
+        string start,
+        IReadOnlyList<uint> values,
+        CancellationToken ct = default)
+        => client.WriteDWordsBlockAsync(SlmpDeviceParser.Parse(start), values, ct);
+
+    /// <summary>
+    /// Reads contiguous word devices using one SLMP request or returns an error.
+    /// </summary>
+    public static Task<ushort[]> ReadWordsSingleRequestAsync(
+        this SlmpClient client,
+        SlmpDeviceAddress start,
+        int count,
+        CancellationToken ct = default)
+    {
+        ValidateSingleRequestCount(count, 960, nameof(count));
+        return client.ReadWordsRawAsync(start, (ushort)count, ct);
+    }
+
+    /// <summary>
+    /// Reads contiguous word devices using one SLMP request or returns an error.
+    /// </summary>
+    public static Task<ushort[]> ReadWordsSingleRequestAsync(
+        this SlmpClient client,
+        string start,
+        int count,
+        CancellationToken ct = default)
+        => client.ReadWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), count, ct);
+
+    /// <summary>
+    /// Reads contiguous word devices using one SLMP request or returns an error through a queued client.
+    /// </summary>
+    public static Task<ushort[]> ReadWordsSingleRequestAsync(
+        this QueuedSlmpClient client,
+        SlmpDeviceAddress start,
+        int count,
+        CancellationToken ct = default)
+        => client.ExecuteAsync(inner => inner.ReadWordsSingleRequestAsync(start, count, ct), ct);
+
+    /// <summary>
+    /// Reads contiguous word devices using one SLMP request or returns an error through a queued client.
+    /// </summary>
+    public static Task<ushort[]> ReadWordsSingleRequestAsync(
+        this QueuedSlmpClient client,
+        string start,
+        int count,
+        CancellationToken ct = default)
+        => client.ReadWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), count, ct);
+
+    /// <summary>
+    /// Reads contiguous DWord devices using one SLMP request or returns an error.
+    /// </summary>
+    public static Task<uint[]> ReadDWordsSingleRequestAsync(
+        this SlmpClient client,
+        SlmpDeviceAddress start,
+        int count,
+        CancellationToken ct = default)
+    {
+        ValidateSingleRequestCount(count, 480, nameof(count));
+        return client.ReadDWordsRawAsync(start, (ushort)count, ct);
+    }
+
+    /// <summary>
+    /// Reads contiguous DWord devices using one SLMP request or returns an error.
+    /// </summary>
+    public static Task<uint[]> ReadDWordsSingleRequestAsync(
+        this SlmpClient client,
+        string start,
+        int count,
+        CancellationToken ct = default)
+        => client.ReadDWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), count, ct);
+
+    /// <summary>
+    /// Reads contiguous DWord devices using one SLMP request or returns an error through a queued client.
+    /// </summary>
+    public static Task<uint[]> ReadDWordsSingleRequestAsync(
+        this QueuedSlmpClient client,
+        SlmpDeviceAddress start,
+        int count,
+        CancellationToken ct = default)
+        => client.ExecuteAsync(inner => inner.ReadDWordsSingleRequestAsync(start, count, ct), ct);
+
+    /// <summary>
+    /// Reads contiguous DWord devices using one SLMP request or returns an error through a queued client.
+    /// </summary>
+    public static Task<uint[]> ReadDWordsSingleRequestAsync(
+        this QueuedSlmpClient client,
+        string start,
+        int count,
+        CancellationToken ct = default)
+        => client.ReadDWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), count, ct);
+
+    /// <summary>
+    /// Writes contiguous word devices using one SLMP request or returns an error.
+    /// </summary>
+    public static Task WriteWordsSingleRequestAsync(
+        this SlmpClient client,
+        SlmpDeviceAddress start,
+        IReadOnlyList<ushort> values,
+        CancellationToken ct = default)
+    {
+        ValidateSingleRequestValues(values, 960, nameof(values));
+        return client.WriteWordsAsync(start, values, ct);
+    }
+
+    /// <summary>
+    /// Writes contiguous word devices using one SLMP request or returns an error.
+    /// </summary>
+    public static Task WriteWordsSingleRequestAsync(
+        this SlmpClient client,
+        string start,
+        IReadOnlyList<ushort> values,
+        CancellationToken ct = default)
+        => client.WriteWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), values, ct);
+
+    /// <summary>
+    /// Writes contiguous word devices using one SLMP request or returns an error through a queued client.
+    /// </summary>
+    public static Task WriteWordsSingleRequestAsync(
+        this QueuedSlmpClient client,
+        SlmpDeviceAddress start,
+        IReadOnlyList<ushort> values,
+        CancellationToken ct = default)
+        => client.ExecuteAsync(inner => inner.WriteWordsSingleRequestAsync(start, values, ct), ct);
+
+    /// <summary>
+    /// Writes contiguous word devices using one SLMP request or returns an error through a queued client.
+    /// </summary>
+    public static Task WriteWordsSingleRequestAsync(
+        this QueuedSlmpClient client,
+        string start,
+        IReadOnlyList<ushort> values,
+        CancellationToken ct = default)
+        => client.WriteWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), values, ct);
+
+    /// <summary>
+    /// Writes contiguous DWord devices using one SLMP request or returns an error.
+    /// </summary>
+    public static Task WriteDWordsSingleRequestAsync(
+        this SlmpClient client,
+        SlmpDeviceAddress start,
+        IReadOnlyList<uint> values,
+        CancellationToken ct = default)
+    {
+        ValidateSingleRequestValues(values, 480, nameof(values));
+        return client.WriteDWordsAsync(start, values, ct);
+    }
+
+    /// <summary>
+    /// Writes contiguous DWord devices using one SLMP request or returns an error.
+    /// </summary>
+    public static Task WriteDWordsSingleRequestAsync(
+        this SlmpClient client,
+        string start,
+        IReadOnlyList<uint> values,
+        CancellationToken ct = default)
+        => client.WriteDWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), values, ct);
+
+    /// <summary>
+    /// Writes contiguous DWord devices using one SLMP request or returns an error through a queued client.
+    /// </summary>
+    public static Task WriteDWordsSingleRequestAsync(
+        this QueuedSlmpClient client,
+        SlmpDeviceAddress start,
+        IReadOnlyList<uint> values,
+        CancellationToken ct = default)
+        => client.ExecuteAsync(inner => inner.WriteDWordsSingleRequestAsync(start, values, ct), ct);
+
+    /// <summary>
+    /// Writes contiguous DWord devices using one SLMP request or returns an error through a queued client.
+    /// </summary>
+    public static Task WriteDWordsSingleRequestAsync(
+        this QueuedSlmpClient client,
+        string start,
+        IReadOnlyList<uint> values,
+        CancellationToken ct = default)
+        => client.WriteDWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), values, ct);
+
     // -----------------------------------------------------------------------
     // Chunked reads
     // -----------------------------------------------------------------------
@@ -631,6 +843,210 @@ public static class SlmpClientExtensions
         CancellationToken ct = default)
         => client.ReadDWordsAsync(SlmpDeviceParser.Parse(start), count, maxDwordsPerRequest, allowSplit, ct);
 
+    /// <summary>
+    /// Reads contiguous word devices using explicit chunking.
+    /// </summary>
+    public static Task<ushort[]> ReadWordsChunkedAsync(
+        this SlmpClient client,
+        SlmpDeviceAddress start,
+        int count,
+        int maxWordsPerRequest,
+        CancellationToken ct = default)
+        => client.ReadWordsAsync(start, count, maxWordsPerRequest, allowSplit: true, ct);
+
+    /// <summary>
+    /// Reads contiguous word devices using explicit chunking.
+    /// </summary>
+    public static Task<ushort[]> ReadWordsChunkedAsync(
+        this SlmpClient client,
+        string start,
+        int count,
+        int maxWordsPerRequest,
+        CancellationToken ct = default)
+        => client.ReadWordsChunkedAsync(SlmpDeviceParser.Parse(start), count, maxWordsPerRequest, ct);
+
+    /// <summary>
+    /// Reads contiguous word devices using explicit chunking through a queued client.
+    /// </summary>
+    public static Task<ushort[]> ReadWordsChunkedAsync(
+        this QueuedSlmpClient client,
+        SlmpDeviceAddress start,
+        int count,
+        int maxWordsPerRequest,
+        CancellationToken ct = default)
+        => client.ExecuteAsync(inner => inner.ReadWordsChunkedAsync(start, count, maxWordsPerRequest, ct), ct);
+
+    /// <summary>
+    /// Reads contiguous word devices using explicit chunking through a queued client.
+    /// </summary>
+    public static Task<ushort[]> ReadWordsChunkedAsync(
+        this QueuedSlmpClient client,
+        string start,
+        int count,
+        int maxWordsPerRequest,
+        CancellationToken ct = default)
+        => client.ReadWordsChunkedAsync(SlmpDeviceParser.Parse(start), count, maxWordsPerRequest, ct);
+
+    /// <summary>
+    /// Reads contiguous DWord devices using explicit chunking.
+    /// </summary>
+    public static Task<uint[]> ReadDWordsChunkedAsync(
+        this SlmpClient client,
+        SlmpDeviceAddress start,
+        int count,
+        int maxDwordsPerRequest,
+        CancellationToken ct = default)
+        => client.ReadDWordsAsync(start, count, maxDwordsPerRequest, allowSplit: true, ct);
+
+    /// <summary>
+    /// Reads contiguous DWord devices using explicit chunking.
+    /// </summary>
+    public static Task<uint[]> ReadDWordsChunkedAsync(
+        this SlmpClient client,
+        string start,
+        int count,
+        int maxDwordsPerRequest,
+        CancellationToken ct = default)
+        => client.ReadDWordsChunkedAsync(SlmpDeviceParser.Parse(start), count, maxDwordsPerRequest, ct);
+
+    /// <summary>
+    /// Reads contiguous DWord devices using explicit chunking through a queued client.
+    /// </summary>
+    public static Task<uint[]> ReadDWordsChunkedAsync(
+        this QueuedSlmpClient client,
+        SlmpDeviceAddress start,
+        int count,
+        int maxDwordsPerRequest,
+        CancellationToken ct = default)
+        => client.ExecuteAsync(inner => inner.ReadDWordsChunkedAsync(start, count, maxDwordsPerRequest, ct), ct);
+
+    /// <summary>
+    /// Reads contiguous DWord devices using explicit chunking through a queued client.
+    /// </summary>
+    public static Task<uint[]> ReadDWordsChunkedAsync(
+        this QueuedSlmpClient client,
+        string start,
+        int count,
+        int maxDwordsPerRequest,
+        CancellationToken ct = default)
+        => client.ReadDWordsChunkedAsync(SlmpDeviceParser.Parse(start), count, maxDwordsPerRequest, ct);
+
+    /// <summary>
+    /// Writes contiguous word devices using explicit chunking.
+    /// </summary>
+    public static async Task WriteWordsChunkedAsync(
+        this SlmpClient client,
+        SlmpDeviceAddress start,
+        IReadOnlyList<ushort> values,
+        int maxWordsPerRequest,
+        CancellationToken ct = default)
+    {
+        ValidateChunkedValues(values, nameof(values));
+        ValidateChunkSize(maxWordsPerRequest, nameof(maxWordsPerRequest));
+
+        int remaining = values.Count;
+        int offset = 0;
+        while (remaining > 0)
+        {
+            int chunk = Math.Min(remaining, maxWordsPerRequest);
+            var address = new SlmpDeviceAddress(start.Code, start.Number + (uint)offset);
+            await client.WriteWordsAsync(address, values.Skip(offset).Take(chunk).ToArray(), ct).ConfigureAwait(false);
+            offset += chunk;
+            remaining -= chunk;
+        }
+    }
+
+    /// <summary>
+    /// Writes contiguous word devices using explicit chunking.
+    /// </summary>
+    public static Task WriteWordsChunkedAsync(
+        this SlmpClient client,
+        string start,
+        IReadOnlyList<ushort> values,
+        int maxWordsPerRequest,
+        CancellationToken ct = default)
+        => client.WriteWordsChunkedAsync(SlmpDeviceParser.Parse(start), values, maxWordsPerRequest, ct);
+
+    /// <summary>
+    /// Writes contiguous word devices using explicit chunking through a queued client.
+    /// </summary>
+    public static Task WriteWordsChunkedAsync(
+        this QueuedSlmpClient client,
+        SlmpDeviceAddress start,
+        IReadOnlyList<ushort> values,
+        int maxWordsPerRequest,
+        CancellationToken ct = default)
+        => client.ExecuteAsync(inner => inner.WriteWordsChunkedAsync(start, values, maxWordsPerRequest, ct), ct);
+
+    /// <summary>
+    /// Writes contiguous word devices using explicit chunking through a queued client.
+    /// </summary>
+    public static Task WriteWordsChunkedAsync(
+        this QueuedSlmpClient client,
+        string start,
+        IReadOnlyList<ushort> values,
+        int maxWordsPerRequest,
+        CancellationToken ct = default)
+        => client.WriteWordsChunkedAsync(SlmpDeviceParser.Parse(start), values, maxWordsPerRequest, ct);
+
+    /// <summary>
+    /// Writes contiguous DWord devices using explicit chunking.
+    /// </summary>
+    public static async Task WriteDWordsChunkedAsync(
+        this SlmpClient client,
+        SlmpDeviceAddress start,
+        IReadOnlyList<uint> values,
+        int maxDwordsPerRequest,
+        CancellationToken ct = default)
+    {
+        ValidateChunkedValues(values, nameof(values));
+        ValidateChunkSize(maxDwordsPerRequest, nameof(maxDwordsPerRequest));
+
+        int remaining = values.Count;
+        int offset = 0;
+        while (remaining > 0)
+        {
+            int chunk = Math.Min(remaining, maxDwordsPerRequest);
+            var address = new SlmpDeviceAddress(start.Code, start.Number + (uint)(offset * 2));
+            await client.WriteDWordsAsync(address, values.Skip(offset).Take(chunk).ToArray(), ct).ConfigureAwait(false);
+            offset += chunk;
+            remaining -= chunk;
+        }
+    }
+
+    /// <summary>
+    /// Writes contiguous DWord devices using explicit chunking.
+    /// </summary>
+    public static Task WriteDWordsChunkedAsync(
+        this SlmpClient client,
+        string start,
+        IReadOnlyList<uint> values,
+        int maxDwordsPerRequest,
+        CancellationToken ct = default)
+        => client.WriteDWordsChunkedAsync(SlmpDeviceParser.Parse(start), values, maxDwordsPerRequest, ct);
+
+    /// <summary>
+    /// Writes contiguous DWord devices using explicit chunking through a queued client.
+    /// </summary>
+    public static Task WriteDWordsChunkedAsync(
+        this QueuedSlmpClient client,
+        SlmpDeviceAddress start,
+        IReadOnlyList<uint> values,
+        int maxDwordsPerRequest,
+        CancellationToken ct = default)
+        => client.ExecuteAsync(inner => inner.WriteDWordsChunkedAsync(start, values, maxDwordsPerRequest, ct), ct);
+
+    /// <summary>
+    /// Writes contiguous DWord devices using explicit chunking through a queued client.
+    /// </summary>
+    public static Task WriteDWordsChunkedAsync(
+        this QueuedSlmpClient client,
+        string start,
+        IReadOnlyList<uint> values,
+        int maxDwordsPerRequest,
+        CancellationToken ct = default)
+        => client.WriteDWordsChunkedAsync(SlmpDeviceParser.Parse(start), values, maxDwordsPerRequest, ct);
+
     // -----------------------------------------------------------------------
     // Named-device read
     // -----------------------------------------------------------------------
@@ -768,6 +1184,32 @@ public static class SlmpClientExtensions
     // -----------------------------------------------------------------------
     // Internal helpers
     // -----------------------------------------------------------------------
+
+    private static void ValidateSingleRequestCount(int count, int maxCount, string paramName)
+    {
+        if (count < 1 || count > maxCount)
+            throw new ArgumentOutOfRangeException(paramName, $"count must be in the range 1-{maxCount}.");
+    }
+
+    private static void ValidateSingleRequestValues<T>(IReadOnlyList<T> values, int maxCount, string paramName)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        if (values.Count == 0 || values.Count > maxCount)
+            throw new ArgumentOutOfRangeException(paramName, $"values.Count must be in the range 1-{maxCount}.");
+    }
+
+    private static void ValidateChunkedValues<T>(IReadOnlyList<T> values, string paramName)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        if (values.Count == 0)
+            throw new ArgumentOutOfRangeException(paramName, "values.Count must be 1 or greater.");
+    }
+
+    private static void ValidateChunkSize(int chunkSize, string paramName)
+    {
+        if (chunkSize < 1)
+            throw new ArgumentOutOfRangeException(paramName, "Chunk size must be 1 or greater.");
+    }
 
     internal static (string Base, string DType, int? BitIdx) ParseAddress(string address)
     {

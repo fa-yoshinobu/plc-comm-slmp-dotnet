@@ -18,8 +18,9 @@ namespace PlcComm.Slmp;
 /// <see cref="QueuedSlmpClient"/>, which serializes all operations with a semaphore.
 /// </para>
 /// <para>
-/// The static factory <see cref="OpenAndConnectAsync"/> returns a ready-to-use
-/// <see cref="QueuedSlmpClient"/> and is the recommended entry point for most use cases.
+/// The factory <see cref="SlmpClientFactory.OpenAndConnectAsync(SlmpConnectionOptions, CancellationToken)"/>
+/// returns a ready-to-use <see cref="QueuedSlmpClient"/> and is the recommended
+/// entry point for most use cases.
 /// </para>
 /// </remarks>
 public sealed class SlmpClient : IDisposable, IAsyncDisposable
@@ -151,16 +152,14 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         SlmpFrameType frameType,
         SlmpCompatibilityMode compatibilityMode,
         CancellationToken cancellationToken = default)
-    {
-        var inner = new SlmpClient(host, port)
-        {
-            FrameType = frameType,
-            CompatibilityMode = compatibilityMode,
-        };
-        var queued = new QueuedSlmpClient(inner);
-        await queued.OpenAsync(cancellationToken).ConfigureAwait(false);
-        return queued;
-    }
+        => await SlmpClientFactory.OpenAndConnectAsync(
+            new SlmpConnectionOptions(host)
+            {
+                Port = port,
+                FrameType = frameType,
+                CompatibilityMode = compatibilityMode,
+            },
+            cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Reads the PLC model and type name info asynchronously.

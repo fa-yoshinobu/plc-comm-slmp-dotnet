@@ -11,11 +11,14 @@ Create a connected queued client with explicit stable settings:
 ```csharp
 using PlcComm.Slmp;
 
-await using var client = await SlmpClient.OpenAndConnectAsync(
-    "192.168.250.100",
-    1025,
-    SlmpFrameType.Frame4E,
-    SlmpCompatibilityMode.Iqr);
+var options = new SlmpConnectionOptions("192.168.250.100")
+{
+    Port = 1025,
+    FrameType = SlmpFrameType.Frame4E,
+    CompatibilityMode = SlmpCompatibilityMode.Iqr,
+};
+
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 ```
 
 Typical pairs:
@@ -26,6 +29,10 @@ Typical pairs:
 | Q / L | `Frame3E` | `Legacy` |
 
 Use the queued client as the default application object. It is the safest choice when more than one task may touch the same connection.
+
+Use `*SingleRequestAsync` when one protocol request is required. Use
+`*ChunkedAsync` only when it is acceptable to split the operation across
+multiple requests at word or dword boundaries.
 
 ## High-Level Helpers
 
@@ -99,24 +106,32 @@ Long-device notes for the high-level helper layer:
 
 This is the recommended helper for dashboards, periodic snapshots, and application logic that needs mixed values.
 
-### `ReadWordsAsync`
+### `ReadWordsSingleRequestAsync`
 
 Read a contiguous word range.
 
 ```csharp
-ushort[] words = await client.ReadWordsAsync("D0", 10);
-ushort[] largeWords = await client.ReadWordsAsync("D0", 1000, allowSplit: true);
+ushort[] words = await client.ReadWordsSingleRequestAsync("D0", 10);
 ```
 
-Use `allowSplit: true` when the request exceeds one SLMP frame.
+This helper does not silently split one logical request.
 
-### `ReadDWordsAsync`
+### `ReadDWordsSingleRequestAsync`
 
 Read contiguous 32-bit values.
 
 ```csharp
-uint[] dwords = await client.ReadDWordsAsync("D200", 8);
-uint[] largeDwords = await client.ReadDWordsAsync("D200", 200, allowSplit: true);
+uint[] dwords = await client.ReadDWordsSingleRequestAsync("D200", 8);
+```
+
+### `ReadWordsChunkedAsync` / `ReadDWordsChunkedAsync`
+
+Use explicit chunked helpers when the range is too large for one request and
+splitting is acceptable:
+
+```csharp
+ushort[] largeWords = await client.ReadWordsChunkedAsync("D0", 1000, maxWordsPerRequest: 480);
+uint[] largeDwords = await client.ReadDWordsChunkedAsync("D200", 200, maxDwordsPerRequest: 240);
 ```
 
 ### `PollAsync`
@@ -163,8 +178,8 @@ await client.WriteTypedAsync("D202", "F", 6.75f);
 ### Example 3: historian-style reads
 
 ```csharp
-ushort[] historyWords = await client.ReadWordsAsync("D1000", 1200, allowSplit: true);
-uint[] historyDwords = await client.ReadDWordsAsync("D2000", 240, allowSplit: true);
+ushort[] historyWords = await client.ReadWordsChunkedAsync("D1000", 1200, maxWordsPerRequest: 480);
+uint[] historyDwords = await client.ReadDWordsChunkedAsync("D2000", 240, maxDwordsPerRequest: 240);
 ```
 
 ### Example 4: one shared connection for many tasks
@@ -174,6 +189,15 @@ var first = client.ReadNamedAsync(["D100", "D200:F"]);
 var second = client.ReadNamedAsync(["D300", "D50.3"]);
 
 await Task.WhenAll(first, second);
+```
+
+## Address Normalization
+
+Use `SlmpAddress.Normalize` when you need one stable string form:
+
+```csharp
+string canonical = SlmpAddress.Normalize("d100");
+Console.WriteLine(canonical); // D100
 ```
 
 ## Sample Projects

@@ -14,7 +14,7 @@ Included examples:
 
 - explicit high-level connect
 - typed reads and writes
-- chunked word and dword reads
+- contiguous word and dword reads
 - bit-in-word updates
 - mixed `ReadNamedAsync`
 - `PollAsync`
@@ -34,4 +34,7 @@ Included examples:
 ## Notes
 
 - These two projects are the recommended user-facing examples.
+- The newer explicit APIs such as `SlmpClientFactory.OpenAndConnectAsync`,
+  `ReadWordsSingleRequestAsync`, and `ReadWordsChunkedAsync` use the same
+  queued-client and device-string model shown in these samples.
 - The CLI sample remains in the repository as an operational tool, but the user manual now centers on the high-level library APIs.

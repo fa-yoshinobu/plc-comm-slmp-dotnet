@@ -26,6 +26,16 @@ public sealed class SlmpParserTests
         Assert.Throws<FormatException>(() => SlmpDeviceParser.Parse("S0"));
     }
 
+    [Theory]
+    [InlineData("d100", "D100")]
+    [InlineData("x1f", "X1F")]
+    [InlineData("sw10", "SW10")]
+    [InlineData("zr123", "ZR123")]
+    public void SlmpAddress_Normalize_ReturnsCanonicalText(string input, string expected)
+    {
+        Assert.Equal(expected, SlmpAddress.Normalize(input));
+    }
+
     [Fact]
     public void ParseNamedTarget_SelfCpu_Succeeds()
     {
