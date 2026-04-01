@@ -3,6 +3,11 @@ namespace PlcComm.Slmp;
 /// <summary>
 /// Factory helpers for creating connected queued SLMP clients.
 /// </summary>
+/// <remarks>
+/// This factory is the preferred high-level entry point for applications that want an
+/// already-connected client with explicit session settings captured by
+/// <see cref="SlmpConnectionOptions"/>.
+/// </remarks>
 public static class SlmpClientFactory
 {
     /// <summary>
@@ -11,6 +16,13 @@ public static class SlmpClientFactory
     /// <param name="options">Explicit connection options.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A connected queued client.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The host name is empty or whitespace.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The configured port is outside the valid TCP/UDP range.</exception>
+    /// <remarks>
+    /// The returned <see cref="QueuedSlmpClient"/> serializes multi-step operations through a single gate,
+    /// which makes it suitable for documentation samples and shared-session application code.
+    /// </remarks>
     public static async Task<QueuedSlmpClient> OpenAndConnectAsync(
         SlmpConnectionOptions options,
         CancellationToken cancellationToken = default)

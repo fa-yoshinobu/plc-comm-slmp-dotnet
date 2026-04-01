@@ -6,6 +6,11 @@ namespace PlcComm.Slmp;
 /// A wrapper for <see cref="SlmpClient"/> that serializes all operations using a semaphore.
 /// Useful for environments where a single shared connection must handle multiple concurrent callers.
 /// </summary>
+/// <remarks>
+/// This type is intentionally thin: it keeps the low-level client visible through
+/// <see cref="InnerClient"/>, but ensures that compound async helper flows can reuse a single
+/// transport session without overlapping request lifetimes.
+/// </remarks>
 public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
 {
     private readonly SlmpClient _client;
@@ -20,7 +25,12 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
         _client = client ?? throw new ArgumentNullException(nameof(client));
     }
 
-    /// <summary>Gets the underlying client.</summary>
+    /// <summary>Gets the underlying low-level SLMP client.</summary>
+    /// <remarks>
+    /// Advanced callers can use this property for APIs that are not surfaced directly on
+    /// <see cref="QueuedSlmpClient"/>, while still using <see cref="ExecuteAsync{T}(Func{SlmpClient, Task{T}}, CancellationToken)"/>
+    /// to preserve serialized access.
+    /// </remarks>
     public SlmpClient InnerClient => _client;
 
     /// <summary>Gets or sets the SLMP frame format (3E or 4E).</summary>
@@ -64,6 +74,9 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     /// <summary>
     /// Opens the connection asynchronously, ensuring exclusive access during the operation.
     /// </summary>
+    /// <remarks>
+    /// Repeated calls are safe as long as the underlying client supports reopening the session.
+    /// </remarks>
     public async Task OpenAsync(CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -80,6 +93,10 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     /// <summary>
     /// Executes a custom operation on the underlying client with exclusive access.
     /// </summary>
+    /// <typeparam name="T">Result type produced by the custom operation.</typeparam>
+    /// <param name="operation">Delegate that receives the wrapped <see cref="SlmpClient"/>.</param>
+    /// <param name="cancellationToken">Cancellation token used while waiting for the queue gate.</param>
+    /// <returns>The value returned by <paramref name="operation"/>.</returns>
     public async Task<T> ExecuteAsync<T>(Func<SlmpClient, Task<T>> operation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);
@@ -97,6 +114,8 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     /// <summary>
     /// Executes a custom action on the underlying client with exclusive access.
     /// </summary>
+    /// <param name="operation">Delegate that receives the wrapped <see cref="SlmpClient"/>.</param>
+    /// <param name="cancellationToken">Cancellation token used while waiting for the queue gate.</param>
     public async Task ExecuteAsync(Func<SlmpClient, Task> operation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);

@@ -23,11 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - User-facing docs now describe the high-level helper layer as the primary API surface.
 - `PlcComm.Slmp.HighLevelSample` and `PlcComm.Slmp.QueuedSample` now use only the high-level API path in their recommended flows.
 - Expanded XML comments for user-facing high-level helpers so DocFX output carries clearer parameter, return, and usage guidance.
+- Refreshed the published DocFX site after the high-level API unification and the explicit `SingleRequest` / `Chunked` helper split.
 
 ### Fixed
 - `ReadNamedAsync` / `PollAsync` now compile the address plan once and batch direct word/DWord reads via `0403 random read` when possible.
 - Reduced TCP request overhead by removing redundant `NetworkStream.FlushAsync`, trimming TCP receive-path allocations, and replacing several `List<byte>.ToArray()` builders with exact-size payload builders in extended random / monitor-ext / label commands.
 - `SlmpQualifiedDeviceParser.Parse`: `U\G` now sets `DirectMemorySpecification = 0xF8` (`DIRECT_MEMORY_MODULE_ACCESS`) and `U\HG` sets `0xFA` (`DIRECT_MEMORY_CPU_BUFFER`); previously both defaulted to `0x00`, causing the wrong 10-byte generic format instead of the pcap-verified 11-byte format.
+- `WriteWordsSingleRequestAsync` and `WriteDWordsSingleRequestAsync` now stay covered by regression tests that fail before transport dispatch when the requested point count exceeds the single-request limits.
 
 ## [0.1.2] - 2026-03-22
 
