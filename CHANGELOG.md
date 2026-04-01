@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-04-01
+
 ### Removed
 - `Step Relay S`: removed from the public device parser and device-code table. `TS/LTS/STS/LSTS/CS/LCS` remain supported.
 - Stale current-doc references to file commands and PLC-initiated ondemand (`2101`), which are not part of the implemented public API.
