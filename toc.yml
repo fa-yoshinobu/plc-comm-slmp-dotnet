@@ -1,5 +1,5 @@
 - name: Introduction
-  href: docsrc/user/USER_GUIDE.md
+  href: README.md
 - name: User Guide
   href: docsrc/user/
 - name: API Reference

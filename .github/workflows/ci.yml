@@ -45,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: validation-reports
-          path: docsrc/validation/reports/**
+          path: internal_docs/validation/reports/**
           if-no-files-found: ignore
 
       - name: Install docfx

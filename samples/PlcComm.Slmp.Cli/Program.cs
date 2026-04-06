@@ -280,7 +280,7 @@ async Task<int> RunCompatibilityProbeAsync(IReadOnlyList<string> args)
         }
     }
 
-    var reportDir = GetOption(args, "--report-dir", "docs/validation/reports");
+    var reportDir = GetOption(args, "--report-dir", "internal_docs/validation/reports");
     Directory.CreateDirectory(reportDir);
     var mdPath = Path.Combine(reportDir, "compatibility_probe_latest.md");
     var jsonPath = Path.Combine(reportDir, "compatibility_probe_latest.json");
@@ -405,7 +405,7 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
         }
     }
 
-    var reportDir = GetOption(args, "--report-dir", "docs/validation/reports");
+    var reportDir = GetOption(args, "--report-dir", "internal_docs/validation/reports");
     Directory.CreateDirectory(reportDir);
     var reportPath = Path.Combine(reportDir, "g_hg_ExtendedDevice_coverage_latest.md");
     var report = new StringBuilder();
@@ -432,7 +432,7 @@ async Task<int> RunCompatibilityMatrixRenderAsync(IReadOnlyList<string> args)
     var inputPaths = GetOptions(args, "--input");
     if (inputPaths.Count == 0)
     {
-        inputPaths.Add("docs/validation/reports/compatibility_probe_latest.json");
+        inputPaths.Add("internal_docs/validation/reports/compatibility_probe_latest.json");
     }
 
     var loaded = new List<ProbeItemResult>();
@@ -461,7 +461,7 @@ async Task<int> RunCompatibilityMatrixRenderAsync(IReadOnlyList<string> args)
         }
     }
 
-    var outputPath = GetOption(args, "--output", "docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md");
+    var outputPath = GetOption(args, "--output", "internal_docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md");
     Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? ".");
     var sb = new StringBuilder();
     sb.AppendLine("# PLC Compatibility (Dotnet Probe)");
@@ -515,7 +515,7 @@ async Task<int> RunExtendedDeviceDeviceRecheckAsync(IReadOnlyList<string> args)
         detail = $"device={deviceText}, points={points}, before=[{string.Join(", ", before.Select(x => $"0x{x:X4}"))}], write=[{string.Join(", ", write.Select(x => $"0x{x:X4}"))}], readback=[{string.Join(", ", readback.Select(x => $"0x{x:X4}"))}]";
     }
 
-    var reportDir = GetOption(args, "--report-dir", "docs/validation/reports");
+    var reportDir = GetOption(args, "--report-dir", "internal_docs/validation/reports");
     Directory.CreateDirectory(reportDir);
     var reportPath = Path.Combine(reportDir, "ExtendedDevice_device_recheck_latest.md");
     var report = new StringBuilder();
@@ -559,7 +559,7 @@ async Task<int> RunReadSoakAsync(IReadOnlyList<string> args)
         if (intervalMs > 0) await Task.Delay(intervalMs).ConfigureAwait(false);
     }
 
-    var reportDir = GetOption(args, "--report-dir", "docs/validation/reports");
+    var reportDir = GetOption(args, "--report-dir", "internal_docs/validation/reports");
     Directory.CreateDirectory(reportDir);
     var reportPath = Path.Combine(reportDir, "read_soak_latest.md");
     var report = new StringBuilder();
@@ -594,7 +594,7 @@ async Task<int> RunMixedReadLoadAsync(IReadOnlyList<string> args)
         }
     }
 
-    var reportDir = GetOption(args, "--report-dir", "docs/validation/reports");
+    var reportDir = GetOption(args, "--report-dir", "internal_docs/validation/reports");
     Directory.CreateDirectory(reportDir);
     var reportPath = Path.Combine(reportDir, "mixed_read_load_latest.md");
     var report = $"# Mixed Read Load Latest{Environment.NewLine}{Environment.NewLine}- Timestamp: {GetTimestamp()}{Environment.NewLine}- Iterations: {iterations}{Environment.NewLine}- Failures: {failures}{Environment.NewLine}";
@@ -668,7 +668,7 @@ async Task<int> RunTcpConcurrencyAsync(IReadOnlyList<string> args)
         }
     }
 
-    var reportDir = GetOption(args, "--report-dir", "docs/validation/reports");
+    var reportDir = GetOption(args, "--report-dir", "internal_docs/validation/reports");
     Directory.CreateDirectory(reportDir);
     var reportPath = Path.Combine(reportDir, "tcp_concurrency_latest.md");
     var totalFailures = connectFailures + readFailures;
@@ -718,7 +718,7 @@ async Task<int> RunSingleConnectionLoadAsync(IReadOnlyList<string> args)
         readFailures += result;
     }
 
-    var reportDir = GetOption(args, "--report-dir", "docs/validation/reports");
+    var reportDir = GetOption(args, "--report-dir", "internal_docs/validation/reports");
     Directory.CreateDirectory(reportDir);
     var reportPath = Path.Combine(reportDir, "single_connection_load_latest.md");
     var report = $"# Single Connection Load Latest{Environment.NewLine}{Environment.NewLine}- Timestamp: {GetTimestamp()}{Environment.NewLine}- Workers: {workers}{Environment.NewLine}- Iterations per worker: {iterations}{Environment.NewLine}- Read failures: {readFailures}{Environment.NewLine}";
@@ -734,14 +734,14 @@ if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
     Console.WriteLine("  other-station-check [--host ... --port ... --transport tcp|udp --series ql|iqr --frame-type 3e|4e --target ... (repeatable) --quiet]");
     Console.WriteLine("  random-check [--host ... --port ... --transport tcp|udp --target ... --write-check --quiet]");
     Console.WriteLine("  block-check [--host ... --port ... --transport tcp|udp --target ... --write-check --quiet]");
-    Console.WriteLine("  compatibility-probe [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --write-check --report-dir docs/validation/reports --quiet]");
-    Console.WriteLine("  compatibility-matrix-render [--input ... (repeatable) --output docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md --quiet]");
-    Console.WriteLine(@"  ExtendedDevice-device-recheck [--host ... --port ... --transport tcp|udp --target SELF --device U3E0\G10 --points 1 --direct-memory 0xFA --write-check --report-dir docs/validation/reports --quiet]");
-    Console.WriteLine(@"  g-hg-ExtendedDevice-coverage [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --device U3E0\G10 (repeatable) --points 1 (repeatable) --direct-memory 0xFA (repeatable) --write-check --report-dir docs/validation/reports --quiet]");
-    Console.WriteLine("  read-soak [--host ... --port ... --transport tcp|udp --target SELF --device D1000 --points 1 --iterations 100 --interval-ms 0 --report-dir docs/validation/reports --quiet]");
-    Console.WriteLine("  mixed-read-load [--host ... --port ... --transport tcp|udp --target SELF --iterations 100 --report-dir docs/validation/reports --quiet]");
-    Console.WriteLine("  tcp-concurrency [--host ... --port ... --transport tcp --target SELF --clients 4 --iterations 50 --stagger-ms 50 --report-dir docs/validation/reports --quiet]");
-    Console.WriteLine("  single-connection-load [--host ... --port ... --transport tcp --target SELF --workers 4 --iterations 200 --report-dir docs/validation/reports --quiet]");
+    Console.WriteLine("  compatibility-probe [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --write-check --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine("  compatibility-matrix-render [--input ... (repeatable) --output internal_docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md --quiet]");
+    Console.WriteLine(@"  ExtendedDevice-device-recheck [--host ... --port ... --transport tcp|udp --target SELF --device U3E0\G10 --points 1 --direct-memory 0xFA --write-check --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine(@"  g-hg-ExtendedDevice-coverage [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --device U3E0\G10 (repeatable) --points 1 (repeatable) --direct-memory 0xFA (repeatable) --write-check --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine("  read-soak [--host ... --port ... --transport tcp|udp --target SELF --device D1000 --points 1 --iterations 100 --interval-ms 0 --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine("  mixed-read-load [--host ... --port ... --transport tcp|udp --target SELF --iterations 100 --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine("  tcp-concurrency [--host ... --port ... --transport tcp --target SELF --clients 4 --iterations 50 --stagger-ms 50 --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine("  single-connection-load [--host ... --port ... --transport tcp --target SELF --workers 4 --iterations 200 --report-dir internal_docs/validation/reports --quiet]");
     return;
 }
 

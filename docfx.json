@@ -22,13 +22,13 @@
         "src": "docsrc"
       },
       {
-        "files": ["index.md", "toc.yml"],
+        "files": ["README.md", "toc.yml"],
         "exclude": ["**/maintainer/**", "**/validation/**", "**/internal_docs/**"]
       }
     ],
     "resource": [
       {
-        "files": ["docsrc/user/assets/**", "docsrc/maintainer/assets/**"]
+        "files": ["docsrc/user/assets/**"]
       }
     ],
     "dest": "docs",
