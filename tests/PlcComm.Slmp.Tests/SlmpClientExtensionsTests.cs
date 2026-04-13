@@ -189,7 +189,30 @@ public sealed class SlmpClientExtensionsTests
             "D",
             SlmpClientExtensions.ResolveDTypeForAddress("LCN30", new SlmpDeviceAddress(SlmpDeviceCode.LCN, 30), "U", null));
         Assert.Equal(
+            "D",
+            SlmpClientExtensions.ResolveDTypeForAddress("LZ0", new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0), "U", null));
+        Assert.Equal(
             "BIT",
             SlmpClientExtensions.ResolveDTypeForAddress("LTS10", new SlmpDeviceAddress(SlmpDeviceCode.LTS, 10), "U", null));
+    }
+
+    [Theory]
+    [InlineData(SlmpDeviceCode.LTN, "D", (int)SlmpNamedWriteRoute.RandomDWords)]
+    [InlineData(SlmpDeviceCode.LSTN, "L", (int)SlmpNamedWriteRoute.RandomDWords)]
+    [InlineData(SlmpDeviceCode.LZ, "D", (int)SlmpNamedWriteRoute.RandomDWords)]
+    [InlineData(SlmpDeviceCode.LCN, "D", (int)SlmpNamedWriteRoute.ContiguousDWords)]
+    [InlineData(SlmpDeviceCode.LTC, "BIT", (int)SlmpNamedWriteRoute.RandomBits)]
+    [InlineData(SlmpDeviceCode.LTS, "BIT", (int)SlmpNamedWriteRoute.RandomBits)]
+    [InlineData(SlmpDeviceCode.LSTC, "BIT", (int)SlmpNamedWriteRoute.RandomBits)]
+    [InlineData(SlmpDeviceCode.LSTS, "BIT", (int)SlmpNamedWriteRoute.RandomBits)]
+    [InlineData(SlmpDeviceCode.LCC, "BIT", (int)SlmpNamedWriteRoute.ContiguousBits)]
+    [InlineData(SlmpDeviceCode.D, "D", (int)SlmpNamedWriteRoute.ContiguousDWords)]
+    public void ResolveWriteRoute_UsesLongFamilySpecialCases(
+        SlmpDeviceCode code,
+        string dtype,
+        int expected)
+    {
+        var route = SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(code, 10), dtype);
+        Assert.Equal((SlmpNamedWriteRoute)expected, route);
     }
 }

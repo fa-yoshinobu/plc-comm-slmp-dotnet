@@ -19,6 +19,15 @@ internal enum SlmpLongTimerReadKind
     Coil,
 }
 
+internal enum SlmpNamedWriteRoute
+{
+    ContiguousBits,
+    ContiguousWords,
+    ContiguousDWords,
+    RandomBits,
+    RandomDWords,
+}
+
 internal readonly record struct SlmpLongTimerReadSpec(
     SlmpDeviceCode BaseCode,
     SlmpLongTimerReadKind Kind
@@ -177,28 +186,48 @@ public static class SlmpClientExtensions
         object value,
         CancellationToken ct = default)
     {
-        switch (dtype.ToUpperInvariant())
+        switch (ResolveWriteRoute(device, dtype))
         {
-            case "BIT":
+            case SlmpNamedWriteRoute.RandomBits:
+                await client.WriteRandomBitsAsync(
+                        [(device, Convert.ToBoolean(value, CultureInfo.InvariantCulture))],
+                        ct)
+                    .ConfigureAwait(false);
+                break;
+            case SlmpNamedWriteRoute.ContiguousBits:
                 await client.WriteBitsAsync(device, [Convert.ToBoolean(value, CultureInfo.InvariantCulture)], ct)
                     .ConfigureAwait(false);
                 break;
-            case "F":
+            case SlmpNamedWriteRoute.ContiguousDWords when string.Equals(dtype, "F", StringComparison.OrdinalIgnoreCase):
                 await client.WriteDWordsAsync(
                         device,
                         [unchecked((uint)BitConverter.SingleToInt32Bits(Convert.ToSingle(value, CultureInfo.InvariantCulture)))],
                         ct)
                     .ConfigureAwait(false);
                 break;
-            case "D":
-                await client.WriteDWordsAsync(device, [Convert.ToUInt32(value, CultureInfo.InvariantCulture)], ct)
+            case SlmpNamedWriteRoute.RandomDWords when string.Equals(dtype, "L", StringComparison.OrdinalIgnoreCase):
+                await client.WriteRandomWordsAsync(
+                        [],
+                        [(device, unchecked((uint)Convert.ToInt32(value, CultureInfo.InvariantCulture)))],
+                        ct)
                     .ConfigureAwait(false);
                 break;
-            case "L":
+            case SlmpNamedWriteRoute.RandomDWords:
+                await client.WriteRandomWordsAsync(
+                        [],
+                        [(device, Convert.ToUInt32(value, CultureInfo.InvariantCulture))],
+                        ct)
+                    .ConfigureAwait(false);
+                break;
+            case SlmpNamedWriteRoute.ContiguousDWords when string.Equals(dtype, "L", StringComparison.OrdinalIgnoreCase):
                 await client.WriteDWordsAsync(
                         device,
                         [unchecked((uint)Convert.ToInt32(value, CultureInfo.InvariantCulture))],
                         ct)
+                    .ConfigureAwait(false);
+                break;
+            case SlmpNamedWriteRoute.ContiguousDWords:
+                await client.WriteDWordsAsync(device, [Convert.ToUInt32(value, CultureInfo.InvariantCulture)], ct)
                     .ConfigureAwait(false);
                 break;
             default:
@@ -1453,10 +1482,27 @@ public static class SlmpClientExtensions
     internal static string ResolveDTypeForAddress(string address, SlmpDeviceAddress device, string dtype, int? bitIdx)
     {
         var normalized = NormalizeDTypeForDevice(device, dtype);
-        if (!HasExplicitDType(address) && bitIdx is null && device.Code is SlmpDeviceCode.LTN or SlmpDeviceCode.LSTN or SlmpDeviceCode.LCN)
+        if (!HasExplicitDType(address) && bitIdx is null && device.Code is SlmpDeviceCode.LTN or SlmpDeviceCode.LSTN or SlmpDeviceCode.LCN or SlmpDeviceCode.LZ)
             return "D";
         return normalized;
     }
+
+    internal static SlmpNamedWriteRoute ResolveWriteRoute(SlmpDeviceAddress device, string dtype)
+        => NormalizeDTypeForDevice(device, dtype) switch
+        {
+            "BIT" when device.Code is SlmpDeviceCode.LTS
+                or SlmpDeviceCode.LTC
+                or SlmpDeviceCode.LSTS
+                or SlmpDeviceCode.LSTC
+                => SlmpNamedWriteRoute.RandomBits,
+            "BIT" => SlmpNamedWriteRoute.ContiguousBits,
+            "D" or "L" when device.Code is SlmpDeviceCode.LTN
+                or SlmpDeviceCode.LSTN
+                or SlmpDeviceCode.LZ
+                => SlmpNamedWriteRoute.RandomDWords,
+            "D" or "L" or "F" => SlmpNamedWriteRoute.ContiguousDWords,
+            _ => SlmpNamedWriteRoute.ContiguousWords,
+        };
 
     internal static SlmpLongTimerReadSpec? GetLongTimerReadSpec(SlmpDeviceCode code)
         => code switch
