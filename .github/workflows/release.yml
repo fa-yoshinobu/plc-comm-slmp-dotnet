@@ -30,7 +30,7 @@ jobs:
           path: plc-comm-slmp-cross-verify
           sparse-checkout: |
             specs/shared
-          token: ${{ secrets.CROSS_VERIFY_REPO_TOKEN != '' && secrets.CROSS_VERIFY_REPO_TOKEN || github.token }}
+          token: ${{ secrets.CROSS_VERIFY_REPO_TOKEN }}
 
       - name: Expose shared vectors at sibling path
         shell: pwsh
