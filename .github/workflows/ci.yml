@@ -20,21 +20,12 @@ jobs:
       - name: Clone shared verification vectors
         shell: pwsh
         run: |
-          if (Test-Path plc-comm-slmp-cross-verify) {
-            Remove-Item plc-comm-slmp-cross-verify -Force -Recurse
+          $target = Join-Path (Split-Path $env:GITHUB_WORKSPACE -Parent) "plc-comm-slmp-cross-verify"
+          if (Test-Path $target) {
+            Remove-Item $target -Force -Recurse
           }
-          git clone --depth 1 --filter=blob:none --sparse https://github.com/fa-yoshinobu/plc-comm-slmp-cross-verify.git plc-comm-slmp-cross-verify
-          git -C plc-comm-slmp-cross-verify sparse-checkout set specs/shared
-
-      - name: Expose shared vectors at sibling path
-        shell: pwsh
-        run: |
-          $source = Join-Path $env:GITHUB_WORKSPACE "plc-comm-slmp-cross-verify"
-          $link = Join-Path (Split-Path $env:GITHUB_WORKSPACE -Parent) "plc-comm-slmp-cross-verify"
-          if (Test-Path $link) {
-            Remove-Item $link -Force -Recurse
-          }
-          New-Item -ItemType Junction -Path $link -Target $source | Out-Null
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/fa-yoshinobu/plc-comm-slmp-cross-verify.git $target
+          git -C $target sparse-checkout set specs/shared
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v5
