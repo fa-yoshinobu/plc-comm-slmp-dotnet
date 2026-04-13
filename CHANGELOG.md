@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-04-13
+
+### Changed
+- CI and release workflows now materialize `plc-comm-slmp-cross-verify/specs/shared` before build and test so the packaged library keeps using the canonical shared verification vectors.
+
 ## [0.1.4] - 2026-04-01
 
 ### Removed
@@ -60,4 +65,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - iQ-R random bit write payload encoding for `1402` write-check path.
-

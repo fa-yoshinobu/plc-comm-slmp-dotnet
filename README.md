@@ -35,7 +35,7 @@ dotnet add package PlcComm.Slmp
 Or add a package reference directly:
 
 ```xml
-<PackageReference Include="PlcComm.Slmp" Version="0.1.3" />
+<PackageReference Include="PlcComm.Slmp" Version="0.1.5" />
 ```
 
 ### Recommended High-Level Usage
