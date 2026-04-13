@@ -22,15 +22,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Checkout shared verification vectors
-        uses: actions/checkout@v6
-        with:
-          repository: fa-yoshinobu/plc-comm-slmp-cross-verify
-          ref: main
-          path: plc-comm-slmp-cross-verify
-          sparse-checkout: |
-            specs/shared
-          token: ${{ secrets.CROSS_VERIFY_REPO_TOKEN }}
+      - name: Clone shared verification vectors
+        shell: pwsh
+        run: |
+          if (Test-Path plc-comm-slmp-cross-verify) {
+            Remove-Item plc-comm-slmp-cross-verify -Force -Recurse
+          }
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/fa-yoshinobu/plc-comm-slmp-cross-verify.git plc-comm-slmp-cross-verify
+          git -C plc-comm-slmp-cross-verify sparse-checkout set specs/shared
 
       - name: Expose shared vectors at sibling path
         shell: pwsh
