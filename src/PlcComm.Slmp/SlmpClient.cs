@@ -187,6 +187,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <returns>An array of word values (ushort).</returns>
     public async Task<ushort[]> ReadWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
     {
+        ValidateDirectWordReadDevice(device, points);
         var payload = BuildReadWritePayload(device, points, null, bitUnit: false);
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0000 : (ushort)0x0002;
         var data = await RequestAsync(SlmpCommand.DeviceRead, sub, payload, true, cancellationToken).ConfigureAwait(false);
@@ -205,6 +206,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task<bool[]> ReadBitsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
     {
+        ValidateDirectBitReadDevice(device);
         var payload = BuildReadWritePayload(device, points, null, bitUnit: true);
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0001 : (ushort)0x0003;
         var data = await RequestAsync(SlmpCommand.DeviceRead, sub, payload, true, cancellationToken).ConfigureAwait(false);
@@ -345,6 +347,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(wordDevices), "random counts must be <= 255");
         }
+        ValidateRandomReadDevices(wordDevices, dwordDevices);
 
         var payload = new byte[2 + ((wordDevices.Count + dwordDevices.Count) * DeviceSpecSize())];
         payload[0] = (byte)wordDevices.Count;
@@ -692,6 +695,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(wordBlocks), "block counts must be <= 255");
         }
+        ValidateBlockReadDevices(wordBlocks, bitBlocks);
 
         var specSize = DeviceSpecSize();
         var totalWordPoints = wordBlocks.Sum(static x => (int)x.Points);
@@ -756,6 +760,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(wordBlocks), "block counts must be <= 255");
         }
+        ValidateBlockWriteDevices(wordBlocks, bitBlocks);
 
         var specSize = DeviceSpecSize();
         var totalWordPoints = wordBlocks.Sum(static x => x.Values.Count);
@@ -830,6 +835,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             throw new ArgumentException("wordDevices and dwordDevices must not both be empty.");
         if (wordDevices.Count > 0xFF || dwordDevices.Count > 0xFF)
             throw new ArgumentOutOfRangeException(nameof(wordDevices), "device counts must be <= 255.");
+        ValidateMonitorRegisterDevices(wordDevices, dwordDevices);
 
         var payload = new byte[2 + (wordDevices.Count + dwordDevices.Count) * DeviceSpecSize()];
         payload[0] = (byte)wordDevices.Count;
@@ -1572,6 +1578,82 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         BinaryPrimitives.WriteUInt16LittleEndian(output.Slice(4, 2), (ushort)device.Code);
         return 6;
     }
+
+    private static void ValidateDirectBitReadDevice(SlmpDeviceAddress device)
+    {
+        if (device.Code is SlmpDeviceCode.LTS or SlmpDeviceCode.LTC or SlmpDeviceCode.LSTS or SlmpDeviceCode.LSTC)
+        {
+            throw new ArgumentException(
+                $"Direct bit read is not supported for {device.Code}. Use the long timer helpers or 4-word status blocks instead.",
+                nameof(device));
+        }
+    }
+
+    private static void ValidateDirectWordReadDevice(SlmpDeviceAddress device, ushort points)
+    {
+        if (device.Code is SlmpDeviceCode.LTN or SlmpDeviceCode.LSTN)
+        {
+            if (points == 0 || points % 4 != 0)
+            {
+                throw new ArgumentException(
+                    $"Direct read of {device.Code} requires 4-word blocks. Requested points={points}; use a multiple of 4 or the long timer helpers.",
+                    nameof(points));
+            }
+        }
+    }
+
+    private static void ValidateRandomReadDevices(
+        IReadOnlyList<SlmpDeviceAddress> wordDevices,
+        IReadOnlyList<SlmpDeviceAddress> dwordDevices)
+    {
+        if (wordDevices.Any(IsLongCounterContactDevice) || dwordDevices.Any(IsLongCounterContactDevice))
+        {
+            throw new ArgumentException(
+                "Read Random (0x0403) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync or read the LCN 4-word status block instead.",
+                nameof(wordDevices));
+        }
+    }
+
+    private static void ValidateBlockReadDevices(
+        IReadOnlyList<SlmpBlockRead> wordBlocks,
+        IReadOnlyList<SlmpBlockRead> bitBlocks)
+    {
+        if (wordBlocks.Any(block => IsLongCounterContactDevice(block.Device)) ||
+            bitBlocks.Any(block => IsLongCounterContactDevice(block.Device)))
+        {
+            throw new ArgumentException(
+                "Read Block (0x0406) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync or read the LCN 4-word status block instead.",
+                nameof(wordBlocks));
+        }
+    }
+
+    private static void ValidateBlockWriteDevices(
+        IReadOnlyList<SlmpBlockWrite> wordBlocks,
+        IReadOnlyList<SlmpBlockWrite> bitBlocks)
+    {
+        if (wordBlocks.Any(block => IsLongCounterContactDevice(block.Device)) ||
+            bitBlocks.Any(block => IsLongCounterContactDevice(block.Device)))
+        {
+            throw new ArgumentException(
+                "Write Block (0x1406) does not support LCS/LCC. Use WriteTypedAsync/WriteNamedAsync or direct bit/word writes instead.",
+                nameof(wordBlocks));
+        }
+    }
+
+    private static void ValidateMonitorRegisterDevices(
+        IReadOnlyList<SlmpDeviceAddress> wordDevices,
+        IReadOnlyList<SlmpDeviceAddress> dwordDevices)
+    {
+        if (wordDevices.Any(IsLongCounterContactDevice) || dwordDevices.Any(IsLongCounterContactDevice))
+        {
+            throw new ArgumentException(
+                "Entry Monitor Device (0x0801) does not support LCS/LCC. Monitor the LCN 4-word status block instead.",
+                nameof(wordDevices));
+        }
+    }
+
+    private static bool IsLongCounterContactDevice(SlmpDeviceAddress device)
+        => device.Code is SlmpDeviceCode.LCS or SlmpDeviceCode.LCC;
 
     private byte[] BuildReadWritePayload(SlmpDeviceAddress device, ushort points, IReadOnlyList<ushort>? values, bool bitUnit)
     {

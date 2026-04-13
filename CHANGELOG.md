@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-04-13
+
+### Added
+- Guard tests for unsupported long-timer direct reads and unsupported `LCS/LCC` random, block, and monitor-registration command paths.
+
+### Changed
+- `SlmpClient` now rejects unsupported long-timer and long-counter-state command combinations before any PLC I/O so the .NET client matches the cross-library consistency rules.
+
 ## [0.1.5] - 2026-04-13
 
 ### Changed
