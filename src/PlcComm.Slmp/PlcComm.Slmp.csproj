@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Version>0.1.4</Version>
+    <Version>0.1.5</Version>
     <TargetFramework>net9.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -33,7 +33,6 @@
     </AssemblyAttribute>
   </ItemGroup>
 </Project>
-
 
 
 
