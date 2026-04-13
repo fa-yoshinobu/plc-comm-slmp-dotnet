@@ -31,7 +31,7 @@
         "files": ["docsrc/user/assets/**"]
       }
     ],
-    "dest": "docs",
+    "dest": "_site",
     "globalMetadata": {
       "_disablePdf": true,
       "_appTitle": "Mitsubishi SLMP .NET Documentation",

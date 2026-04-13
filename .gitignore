@@ -14,4 +14,4 @@ publish/
 *.trx
 .docfx/
 artifacts/
-
+_site/

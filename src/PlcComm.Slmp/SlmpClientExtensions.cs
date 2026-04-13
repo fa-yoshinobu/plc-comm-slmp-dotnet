@@ -1242,20 +1242,36 @@ public static class SlmpClientExtensions
 
     internal static (string Base, string DType, int? BitIdx) ParseAddress(string address)
     {
+        address = address.Trim();
         if (address.Contains(':'))
         {
             int index = address.IndexOf(':');
-            return (address[..index], address[(index + 1)..].ToUpperInvariant(), null);
+            return (address[..index].Trim(), address[(index + 1)..].Trim().ToUpperInvariant(), null);
         }
 
         if (address.Contains('.'))
         {
             int index = address.IndexOf('.');
             if (int.TryParse(address[(index + 1)..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int bit))
-                return (address[..index], "BIT_IN_WORD", bit);
+                return (address[..index].Trim(), "BIT_IN_WORD", bit);
         }
 
-        return (address, "U", null);
+        return (address.Trim(), "U", null);
+    }
+
+    internal static string NormalizeNamedAddress(string address)
+    {
+        var trimmed = address.Trim();
+        var (baseAddress, dtype, bitIdx) = ParseAddress(trimmed);
+        var canonicalBase = SlmpAddress.Normalize(baseAddress);
+        if (bitIdx is int bit)
+        {
+            return $"{canonicalBase}.{bit.ToString("X", CultureInfo.InvariantCulture)}";
+        }
+
+        return trimmed.Contains(':', StringComparison.Ordinal)
+            ? $"{canonicalBase}:{dtype}"
+            : canonicalBase;
     }
 
     internal static SlmpNamedReadPlan CompileReadPlan(IEnumerable<string> addresses)

@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <None Include="vectors\**" CopyToOutputDirectory="Always" />
+    <None Include="..\..\..\slmp-shared-spec\**\*.json" CopyToOutputDirectory="Always" Link="shared-spec\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
 </Project>
-

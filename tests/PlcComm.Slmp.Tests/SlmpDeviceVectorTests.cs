@@ -10,7 +10,7 @@ namespace PlcComm.Slmp.Tests;
 public sealed class SlmpDeviceVectorTests
 {
     private static readonly string VectorsPath = Path.Combine(
-        AppDomain.CurrentDomain.BaseDirectory, "vectors", "slmp_device_vectors.json");
+        AppDomain.CurrentDomain.BaseDirectory, "shared-spec", "device_spec_vectors.json");
 
     public static IEnumerable<object[]> Vectors()
     {
