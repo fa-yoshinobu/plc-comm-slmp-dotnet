@@ -22,6 +22,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Checkout shared verification vectors
+        uses: actions/checkout@v6
+        with:
+          repository: fa-yoshinobu/plc-comm-slmp-cross-verify
+          ref: main
+          path: plc-comm-slmp-cross-verify
+          sparse-checkout: |
+            specs/shared
+          token: ${{ secrets.CROSS_VERIFY_REPO_TOKEN != '' && secrets.CROSS_VERIFY_REPO_TOKEN || github.token }}
+
+      - name: Expose shared vectors at sibling path
+        shell: pwsh
+        run: |
+          $source = Join-Path $env:GITHUB_WORKSPACE "plc-comm-slmp-cross-verify"
+          $link = Join-Path (Split-Path $env:GITHUB_WORKSPACE -Parent) "plc-comm-slmp-cross-verify"
+          if (Test-Path $link) {
+            Remove-Item $link -Force -Recurse
+          }
+          New-Item -ItemType Junction -Path $link -Target $source | Out-Null
+
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v5
         with:
