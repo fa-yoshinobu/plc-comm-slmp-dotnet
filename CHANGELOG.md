@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-04-14
+
+### Added
+- `SlmpPlcFamily` and fixed PLC-family default resolution for high-level client options, helper parsing, and device-range lookups.
+
+### Changed
+- High-level string address parsing and device-range catalog helpers now follow explicit PLC-family rules, with `iQ-F` `X/Y` as octal and other supported families as hexadecimal.
+
 ## [0.1.7] - 2026-04-14
 
 ### Added

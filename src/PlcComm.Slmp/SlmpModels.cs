@@ -172,6 +172,27 @@ public static class SlmpDeviceParser
     /// <exception cref="ArgumentException">Thrown when text is null or whitespace.</exception>
     /// <exception cref="FormatException">Thrown when the device format is invalid.</exception>
     public static SlmpDeviceAddress Parse(string text)
+        => Parse(text, null);
+
+    /// <summary>
+    /// Parses a device string using one explicit PLC family.
+    /// </summary>
+    public static SlmpDeviceAddress Parse(string text, SlmpPlcFamily plcFamily)
+        => Parse(text, (SlmpPlcFamily?)plcFamily);
+
+    internal static SlmpDeviceAddress ParseForHighLevel(string text, SlmpPlcFamily? plcFamily)
+    {
+        var device = Parse(text, plcFamily);
+        if (plcFamily is null && device.Code is SlmpDeviceCode.X or SlmpDeviceCode.Y)
+        {
+            throw new FormatException(
+                "X/Y string addresses require explicit PlcFamily. Use IqF for FX/iQ-F targets, choose an explicit non-iQ-F family, or pass a numeric SlmpDeviceAddress.");
+        }
+
+        return device;
+    }
+
+    private static SlmpDeviceAddress Parse(string text, SlmpPlcFamily? plcFamily)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -187,7 +208,7 @@ public static class SlmpDeviceParser
             }
 
             var numberPart = token[prefix.Length..];
-            if (uint.TryParse(numberPart, hexAddress ? NumberStyles.HexNumber : NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
+            if (TryParseDeviceNumber(numberPart, code, hexAddress, plcFamily, out var number))
             {
                 return new SlmpDeviceAddress(code, number);
             }
@@ -197,5 +218,48 @@ public static class SlmpDeviceParser
         throw new FormatException(
             $"Invalid SLMP device string '{text}'. " +
             $"Valid device codes: {validCodes}");
+    }
+
+    private static bool TryParseDeviceNumber(
+        string text,
+        SlmpDeviceCode code,
+        bool hexAddress,
+        SlmpPlcFamily? plcFamily,
+        out uint number)
+    {
+        if (plcFamily is SlmpPlcFamily family &&
+            SlmpPlcFamilyProfiles.UsesIqFXyOctal(family) &&
+            code is SlmpDeviceCode.X or SlmpDeviceCode.Y)
+        {
+            return TryConvertFromOctal(text, out number);
+        }
+
+        return uint.TryParse(
+            text,
+            hexAddress ? NumberStyles.HexNumber : NumberStyles.Integer,
+            CultureInfo.InvariantCulture,
+            out number);
+    }
+
+    private static bool TryConvertFromOctal(string text, out uint number)
+    {
+        number = 0;
+        foreach (var ch in text)
+        {
+            if (ch is < '0' or > '7')
+            {
+                return false;
+            }
+
+            var digit = (uint)(ch - '0');
+            if (number > ((uint.MaxValue - digit) / 8))
+            {
+                return false;
+            }
+
+            number = (number * 8) + digit;
+        }
+
+        return true;
     }
 }

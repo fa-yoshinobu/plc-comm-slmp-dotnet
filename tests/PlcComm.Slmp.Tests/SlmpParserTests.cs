@@ -21,6 +21,22 @@ public sealed class SlmpParserTests
     }
 
     [Fact]
+    public void ParseDevice_IqFXY_UsesOctal()
+    {
+        var device = SlmpDeviceParser.Parse("X100", SlmpPlcFamily.IqF);
+        Assert.Equal(SlmpDeviceCode.X, device.Code);
+        Assert.Equal((uint)0x40, device.Number);
+        Assert.Equal("Y217", SlmpAddress.Format(new SlmpDeviceAddress(SlmpDeviceCode.Y, 0x8F), SlmpPlcFamily.IqF));
+    }
+
+    [Fact]
+    public void ParseDevice_HighLevelXYWithoutFamily_Fails()
+    {
+        var error = Assert.Throws<FormatException>(() => SlmpDeviceParser.ParseForHighLevel("Y217", null));
+        Assert.Contains("explicit PlcFamily", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ParseDevice_StepRelay_Fails()
     {
         Assert.Throws<FormatException>(() => SlmpDeviceParser.Parse("S0"));
@@ -81,6 +97,20 @@ public sealed class SlmpParserTests
         Assert.Equal((byte)0x01, inner.TargetAddress.Network);
         Assert.Equal((ushort)0x0020, inner.MonitoringTimer);
         Assert.Equal(TimeSpan.FromSeconds(5), inner.Timeout);
+    }
+
+    [Fact]
+    public void ConnectionOptions_ResolveDefaultsFromPlcFamily()
+    {
+        var options = new SlmpConnectionOptions("127.0.0.1")
+        {
+            PlcFamily = SlmpPlcFamily.IqL,
+        };
+
+        Assert.Equal(SlmpFrameType.Frame4E, options.ResolvedFrameType);
+        Assert.Equal(SlmpCompatibilityMode.Iqr, options.ResolvedCompatibilityMode);
+        Assert.Equal(SlmpPlcFamily.IqR, options.ResolvedAddressFamily);
+        Assert.Equal(SlmpDeviceRangeFamily.IqR, options.ResolvedRangeFamily);
     }
 
     [Fact]

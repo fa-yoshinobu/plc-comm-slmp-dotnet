@@ -50,6 +50,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     public SlmpFrameType FrameType { get; set; } = SlmpFrameType.Frame4E;
     /// <summary>Gets or sets the device access compatibility mode (Legacy or iQ-R).</summary>
     public SlmpCompatibilityMode CompatibilityMode { get; set; } = SlmpCompatibilityMode.Iqr;
+    /// <summary>Gets or sets the canonical PLC family used by the high-level string helpers.</summary>
+    public SlmpPlcFamily? PlcFamily { get; set; }
     /// <summary>Gets or sets the destination routing information.</summary>
     public SlmpTargetAddress TargetAddress { get; set; } = new(Station: 0xFF, ModuleIo: 0x03FF);
     /// <summary>Gets or sets the monitoring timer value (multiples of 250ms). Default is 0x0010 (4s).</summary>
@@ -196,6 +198,14 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <returns>A catalog containing the resolved family and device upper-bound entries.</returns>
     public async Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
     {
+        if (PlcFamily is SlmpPlcFamily plcFamily)
+        {
+            var family = SlmpPlcFamilyProfiles.Resolve(plcFamily).RangeFamily;
+            var familyProfile = SlmpDeviceRangeResolver.ResolveProfile(family);
+            var familyRegisters = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, familyProfile, cancellationToken).ConfigureAwait(false);
+            return SlmpDeviceRangeResolver.BuildCatalog(family, familyRegisters);
+        }
+
         var typeInfo = await ReadTypeNameAsync(cancellationToken).ConfigureAwait(false);
         var profile = SlmpDeviceRangeResolver.ResolveProfile(typeInfo);
         var registers = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, profile, cancellationToken).ConfigureAwait(false);

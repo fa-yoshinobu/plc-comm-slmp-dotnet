@@ -36,8 +36,9 @@ public static class SlmpClientFactory
         var inner = new SlmpClient(options.Host, options.Port, options.Transport)
         {
             Timeout = options.Timeout,
-            FrameType = options.FrameType,
-            CompatibilityMode = options.CompatibilityMode,
+            PlcFamily = options.PlcFamily,
+            FrameType = options.ResolvedFrameType,
+            CompatibilityMode = options.ResolvedCompatibilityMode,
             TargetAddress = options.Target,
             MonitoringTimer = options.MonitoringTimer,
         };

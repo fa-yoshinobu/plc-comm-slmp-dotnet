@@ -54,6 +54,15 @@ internal sealed record SlmpNamedReadPlan(
 /// </summary>
 public static class SlmpClientExtensions
 {
+    private static SlmpDeviceAddress ParseDeviceForClient(SlmpClient client, string address)
+        => SlmpDeviceParser.ParseForHighLevel(address, client.PlcFamily);
+
+    private static SlmpDeviceAddress ParseDeviceForClient(QueuedSlmpClient client, string address)
+        => SlmpDeviceParser.ParseForHighLevel(address, client.PlcFamily);
+
+    private static string NormalizeDeviceForFamily(string address, SlmpPlcFamily? plcFamily)
+        => plcFamily is SlmpPlcFamily family ? SlmpAddress.Normalize(address, family) : SlmpAddress.Normalize(address);
+
     // -----------------------------------------------------------------------
     // Typed read / write
     // -----------------------------------------------------------------------
@@ -132,7 +141,7 @@ public static class SlmpClientExtensions
         string device,
         string dtype,
         CancellationToken ct = default)
-        => client.ReadTypedAsync(SlmpDeviceParser.Parse(device), dtype, ct);
+        => client.ReadTypedAsync(ParseDeviceForClient(client, device), dtype, ct);
 
     /// <summary>
     /// Reads one device value and converts it to the specified type through a queued client.
@@ -162,7 +171,7 @@ public static class SlmpClientExtensions
         string device,
         string dtype,
         CancellationToken ct = default)
-        => client.ReadTypedAsync(SlmpDeviceParser.Parse(device), dtype, ct);
+        => client.ReadTypedAsync(ParseDeviceForClient(client, device), dtype, ct);
 
     /// <summary>
     /// Writes one logical value using the requested type conversion.
@@ -251,7 +260,7 @@ public static class SlmpClientExtensions
         string dtype,
         object value,
         CancellationToken ct = default)
-        => client.WriteTypedAsync(SlmpDeviceParser.Parse(device), dtype, value, ct);
+        => client.WriteTypedAsync(ParseDeviceForClient(client, device), dtype, value, ct);
 
     /// <summary>
     /// Writes one device value through a queued client.
@@ -283,7 +292,7 @@ public static class SlmpClientExtensions
         string dtype,
         object value,
         CancellationToken ct = default)
-        => client.WriteTypedAsync(SlmpDeviceParser.Parse(device), dtype, value, ct);
+        => client.WriteTypedAsync(ParseDeviceForClient(client, device), dtype, value, ct);
 
     /// <summary>
     /// Performs a read-modify-write to set or clear one bit inside a word device.
@@ -324,7 +333,7 @@ public static class SlmpClientExtensions
         int bitIndex,
         bool value,
         CancellationToken ct = default)
-        => client.WriteBitInWordAsync(SlmpDeviceParser.Parse(device), bitIndex, value, ct);
+        => client.WriteBitInWordAsync(ParseDeviceForClient(client, device), bitIndex, value, ct);
 
     /// <summary>
     /// Performs a read-modify-write through a queued client.
@@ -346,7 +355,7 @@ public static class SlmpClientExtensions
         int bitIndex,
         bool value,
         CancellationToken ct = default)
-        => client.WriteBitInWordAsync(SlmpDeviceParser.Parse(device), bitIndex, value, ct);
+        => client.WriteBitInWordAsync(ParseDeviceForClient(client, device), bitIndex, value, ct);
 
     /// <summary>
     /// Reads a contiguous bit-device range and returns boolean values.
@@ -371,7 +380,7 @@ public static class SlmpClientExtensions
         string start,
         ushort count,
         CancellationToken ct = default)
-        => client.ReadBitsBlockAsync(SlmpDeviceParser.Parse(start), count, ct);
+        => client.ReadBitsBlockAsync(ParseDeviceForClient(client, start), count, ct);
 
     /// <summary>
     /// Reads a contiguous bit-device range through a queued client.
@@ -391,7 +400,7 @@ public static class SlmpClientExtensions
         string start,
         ushort count,
         CancellationToken ct = default)
-        => client.ReadBitsBlockAsync(SlmpDeviceParser.Parse(start), count, ct);
+        => client.ReadBitsBlockAsync(ParseDeviceForClient(client, start), count, ct);
 
     /// <summary>
     /// Writes a contiguous bit-device range from boolean values.
@@ -415,7 +424,7 @@ public static class SlmpClientExtensions
         string start,
         IReadOnlyList<bool> values,
         CancellationToken ct = default)
-        => client.WriteBitsBlockAsync(SlmpDeviceParser.Parse(start), values, ct);
+        => client.WriteBitsBlockAsync(ParseDeviceForClient(client, start), values, ct);
 
     /// <summary>
     /// Writes a contiguous bit-device range through a queued client.
@@ -435,7 +444,7 @@ public static class SlmpClientExtensions
         string start,
         IReadOnlyList<bool> values,
         CancellationToken ct = default)
-        => client.WriteBitsBlockAsync(SlmpDeviceParser.Parse(start), values, ct);
+        => client.WriteBitsBlockAsync(ParseDeviceForClient(client, start), values, ct);
 
     /// <summary>
     /// Writes a contiguous word-device range from 16-bit values.
@@ -459,7 +468,7 @@ public static class SlmpClientExtensions
         string start,
         IReadOnlyList<ushort> values,
         CancellationToken ct = default)
-        => client.WriteWordsBlockAsync(SlmpDeviceParser.Parse(start), values, ct);
+        => client.WriteWordsBlockAsync(ParseDeviceForClient(client, start), values, ct);
 
     /// <summary>
     /// Writes a contiguous word-device range through a queued client.
@@ -479,7 +488,7 @@ public static class SlmpClientExtensions
         string start,
         IReadOnlyList<ushort> values,
         CancellationToken ct = default)
-        => client.WriteWordsBlockAsync(SlmpDeviceParser.Parse(start), values, ct);
+        => client.WriteWordsBlockAsync(ParseDeviceForClient(client, start), values, ct);
 
     /// <summary>
     /// Writes a contiguous DWord-device range from 32-bit values.
@@ -499,7 +508,7 @@ public static class SlmpClientExtensions
         string start,
         IReadOnlyList<uint> values,
         CancellationToken ct = default)
-        => client.WriteDWordsBlockAsync(SlmpDeviceParser.Parse(start), values, ct);
+        => client.WriteDWordsBlockAsync(ParseDeviceForClient(client, start), values, ct);
 
     /// <summary>
     /// Writes a contiguous DWord-device range through a queued client.
@@ -519,7 +528,7 @@ public static class SlmpClientExtensions
         string start,
         IReadOnlyList<uint> values,
         CancellationToken ct = default)
-        => client.WriteDWordsBlockAsync(SlmpDeviceParser.Parse(start), values, ct);
+        => client.WriteDWordsBlockAsync(ParseDeviceForClient(client, start), values, ct);
 
     /// <summary>
     /// Reads contiguous word devices using one SLMP request or returns an error.
@@ -542,7 +551,7 @@ public static class SlmpClientExtensions
         string start,
         int count,
         CancellationToken ct = default)
-        => client.ReadWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), count, ct);
+        => client.ReadWordsSingleRequestAsync(ParseDeviceForClient(client, start), count, ct);
 
     /// <summary>
     /// Reads contiguous word devices using one SLMP request or returns an error through a queued client.
@@ -562,7 +571,7 @@ public static class SlmpClientExtensions
         string start,
         int count,
         CancellationToken ct = default)
-        => client.ReadWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), count, ct);
+        => client.ReadWordsSingleRequestAsync(ParseDeviceForClient(client, start), count, ct);
 
     /// <summary>
     /// Reads contiguous DWord devices using one SLMP request or returns an error.
@@ -585,7 +594,7 @@ public static class SlmpClientExtensions
         string start,
         int count,
         CancellationToken ct = default)
-        => client.ReadDWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), count, ct);
+        => client.ReadDWordsSingleRequestAsync(ParseDeviceForClient(client, start), count, ct);
 
     /// <summary>
     /// Reads contiguous DWord devices using one SLMP request or returns an error through a queued client.
@@ -605,7 +614,7 @@ public static class SlmpClientExtensions
         string start,
         int count,
         CancellationToken ct = default)
-        => client.ReadDWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), count, ct);
+        => client.ReadDWordsSingleRequestAsync(ParseDeviceForClient(client, start), count, ct);
 
     /// <summary>
     /// Writes contiguous word devices using one SLMP request or returns an error.
@@ -628,7 +637,7 @@ public static class SlmpClientExtensions
         string start,
         IReadOnlyList<ushort> values,
         CancellationToken ct = default)
-        => client.WriteWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), values, ct);
+        => client.WriteWordsSingleRequestAsync(ParseDeviceForClient(client, start), values, ct);
 
     /// <summary>
     /// Writes contiguous word devices using one SLMP request or returns an error through a queued client.
@@ -648,7 +657,7 @@ public static class SlmpClientExtensions
         string start,
         IReadOnlyList<ushort> values,
         CancellationToken ct = default)
-        => client.WriteWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), values, ct);
+        => client.WriteWordsSingleRequestAsync(ParseDeviceForClient(client, start), values, ct);
 
     /// <summary>
     /// Writes contiguous DWord devices using one SLMP request or returns an error.
@@ -671,7 +680,7 @@ public static class SlmpClientExtensions
         string start,
         IReadOnlyList<uint> values,
         CancellationToken ct = default)
-        => client.WriteDWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), values, ct);
+        => client.WriteDWordsSingleRequestAsync(ParseDeviceForClient(client, start), values, ct);
 
     /// <summary>
     /// Writes contiguous DWord devices using one SLMP request or returns an error through a queued client.
@@ -691,7 +700,7 @@ public static class SlmpClientExtensions
         string start,
         IReadOnlyList<uint> values,
         CancellationToken ct = default)
-        => client.WriteDWordsSingleRequestAsync(SlmpDeviceParser.Parse(start), values, ct);
+        => client.WriteDWordsSingleRequestAsync(ParseDeviceForClient(client, start), values, ct);
 
     // -----------------------------------------------------------------------
     // Chunked reads
@@ -768,7 +777,7 @@ public static class SlmpClientExtensions
         int maxPerRequest = 960,
         bool allowSplit = false,
         CancellationToken ct = default)
-        => client.ReadWordsAsync(SlmpDeviceParser.Parse(start), count, maxPerRequest, allowSplit, ct);
+        => client.ReadWordsAsync(ParseDeviceForClient(client, start), count, maxPerRequest, allowSplit, ct);
 
     /// <summary>
     /// Reads word devices through a queued client.
@@ -792,7 +801,7 @@ public static class SlmpClientExtensions
         int maxPerRequest = 960,
         bool allowSplit = false,
         CancellationToken ct = default)
-        => client.ReadWordsAsync(SlmpDeviceParser.Parse(start), count, maxPerRequest, allowSplit, ct);
+        => client.ReadWordsAsync(ParseDeviceForClient(client, start), count, maxPerRequest, allowSplit, ct);
 
     /// <summary>
     /// Reads a contiguous range of 32-bit unsigned values.
@@ -846,7 +855,7 @@ public static class SlmpClientExtensions
         int maxDwordsPerRequest = 480,
         bool allowSplit = false,
         CancellationToken ct = default)
-        => client.ReadDWordsAsync(SlmpDeviceParser.Parse(start), count, maxDwordsPerRequest, allowSplit, ct);
+        => client.ReadDWordsAsync(ParseDeviceForClient(client, start), count, maxDwordsPerRequest, allowSplit, ct);
 
     /// <summary>
     /// Reads DWord devices through a queued client.
@@ -870,7 +879,7 @@ public static class SlmpClientExtensions
         int maxDwordsPerRequest = 480,
         bool allowSplit = false,
         CancellationToken ct = default)
-        => client.ReadDWordsAsync(SlmpDeviceParser.Parse(start), count, maxDwordsPerRequest, allowSplit, ct);
+        => client.ReadDWordsAsync(ParseDeviceForClient(client, start), count, maxDwordsPerRequest, allowSplit, ct);
 
     /// <summary>
     /// Reads contiguous word devices using explicit chunking.
@@ -892,7 +901,7 @@ public static class SlmpClientExtensions
         int count,
         int maxWordsPerRequest,
         CancellationToken ct = default)
-        => client.ReadWordsChunkedAsync(SlmpDeviceParser.Parse(start), count, maxWordsPerRequest, ct);
+        => client.ReadWordsChunkedAsync(ParseDeviceForClient(client, start), count, maxWordsPerRequest, ct);
 
     /// <summary>
     /// Reads contiguous word devices using explicit chunking through a queued client.
@@ -914,7 +923,7 @@ public static class SlmpClientExtensions
         int count,
         int maxWordsPerRequest,
         CancellationToken ct = default)
-        => client.ReadWordsChunkedAsync(SlmpDeviceParser.Parse(start), count, maxWordsPerRequest, ct);
+        => client.ReadWordsChunkedAsync(ParseDeviceForClient(client, start), count, maxWordsPerRequest, ct);
 
     /// <summary>
     /// Reads contiguous DWord devices using explicit chunking.
@@ -936,7 +945,7 @@ public static class SlmpClientExtensions
         int count,
         int maxDwordsPerRequest,
         CancellationToken ct = default)
-        => client.ReadDWordsChunkedAsync(SlmpDeviceParser.Parse(start), count, maxDwordsPerRequest, ct);
+        => client.ReadDWordsChunkedAsync(ParseDeviceForClient(client, start), count, maxDwordsPerRequest, ct);
 
     /// <summary>
     /// Reads contiguous DWord devices using explicit chunking through a queued client.
@@ -958,7 +967,7 @@ public static class SlmpClientExtensions
         int count,
         int maxDwordsPerRequest,
         CancellationToken ct = default)
-        => client.ReadDWordsChunkedAsync(SlmpDeviceParser.Parse(start), count, maxDwordsPerRequest, ct);
+        => client.ReadDWordsChunkedAsync(ParseDeviceForClient(client, start), count, maxDwordsPerRequest, ct);
 
     /// <summary>
     /// Writes contiguous word devices using explicit chunking.
@@ -994,7 +1003,7 @@ public static class SlmpClientExtensions
         IReadOnlyList<ushort> values,
         int maxWordsPerRequest,
         CancellationToken ct = default)
-        => client.WriteWordsChunkedAsync(SlmpDeviceParser.Parse(start), values, maxWordsPerRequest, ct);
+        => client.WriteWordsChunkedAsync(ParseDeviceForClient(client, start), values, maxWordsPerRequest, ct);
 
     /// <summary>
     /// Writes contiguous word devices using explicit chunking through a queued client.
@@ -1016,7 +1025,7 @@ public static class SlmpClientExtensions
         IReadOnlyList<ushort> values,
         int maxWordsPerRequest,
         CancellationToken ct = default)
-        => client.WriteWordsChunkedAsync(SlmpDeviceParser.Parse(start), values, maxWordsPerRequest, ct);
+        => client.WriteWordsChunkedAsync(ParseDeviceForClient(client, start), values, maxWordsPerRequest, ct);
 
     /// <summary>
     /// Writes contiguous DWord devices using explicit chunking.
@@ -1052,7 +1061,7 @@ public static class SlmpClientExtensions
         IReadOnlyList<uint> values,
         int maxDwordsPerRequest,
         CancellationToken ct = default)
-        => client.WriteDWordsChunkedAsync(SlmpDeviceParser.Parse(start), values, maxDwordsPerRequest, ct);
+        => client.WriteDWordsChunkedAsync(ParseDeviceForClient(client, start), values, maxDwordsPerRequest, ct);
 
     /// <summary>
     /// Writes contiguous DWord devices using explicit chunking through a queued client.
@@ -1074,7 +1083,7 @@ public static class SlmpClientExtensions
         IReadOnlyList<uint> values,
         int maxDwordsPerRequest,
         CancellationToken ct = default)
-        => client.WriteDWordsChunkedAsync(SlmpDeviceParser.Parse(start), values, maxDwordsPerRequest, ct);
+        => client.WriteDWordsChunkedAsync(ParseDeviceForClient(client, start), values, maxDwordsPerRequest, ct);
 
     // -----------------------------------------------------------------------
     // Named-device read
@@ -1098,7 +1107,7 @@ public static class SlmpClientExtensions
         IEnumerable<string> addresses,
         CancellationToken ct = default)
     {
-        var plan = CompileReadPlan(addresses);
+        var plan = CompileReadPlan(addresses, client.PlcFamily);
         return await ReadNamedCompiledAsync(client, plan, ct).ConfigureAwait(false);
     }
 
@@ -1110,7 +1119,7 @@ public static class SlmpClientExtensions
         IEnumerable<string> addresses,
         CancellationToken ct = default)
     {
-        var plan = CompileReadPlan(addresses);
+        var plan = CompileReadPlan(addresses, client.PlcFamily);
         return client.ExecuteAsync(inner => ReadNamedCompiledAsync(inner, plan, ct), ct);
     }
 
@@ -1131,7 +1140,7 @@ public static class SlmpClientExtensions
         foreach (var pair in updates)
         {
             var (baseAddress, dtype, bitIdx) = ParseAddress(pair.Key);
-            var device = SlmpDeviceParser.Parse(baseAddress);
+            var device = ParseDeviceForClient(client, baseAddress);
             var resolvedDType = ResolveDTypeForAddress(pair.Key, device, dtype, bitIdx);
             ValidateLongTimerEntry(pair.Key, device, resolvedDType);
             if (dtype == "BIT_IN_WORD")
@@ -1180,7 +1189,7 @@ public static class SlmpClientExtensions
         TimeSpan interval,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var plan = CompileReadPlan(addresses);
+        var plan = CompileReadPlan(addresses, client.PlcFamily);
         while (!ct.IsCancellationRequested)
         {
             yield return await ReadNamedCompiledAsync(client, plan, ct).ConfigureAwait(false);
@@ -1202,7 +1211,7 @@ public static class SlmpClientExtensions
         TimeSpan interval,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var plan = CompileReadPlan(addresses);
+        var plan = CompileReadPlan(addresses, client.PlcFamily);
         while (!ct.IsCancellationRequested)
         {
             yield return await client.ExecuteAsync(inner => ReadNamedCompiledAsync(inner, plan, ct), ct).ConfigureAwait(false);
@@ -1261,9 +1270,14 @@ public static class SlmpClientExtensions
 
     internal static string NormalizeNamedAddress(string address)
     {
+        return NormalizeNamedAddress(address, null);
+    }
+
+    internal static string NormalizeNamedAddress(string address, SlmpPlcFamily? plcFamily)
+    {
         var trimmed = address.Trim();
         var (baseAddress, dtype, bitIdx) = ParseAddress(trimmed);
-        var canonicalBase = SlmpAddress.Normalize(baseAddress);
+        var canonicalBase = NormalizeDeviceForFamily(baseAddress, plcFamily);
         if (bitIdx is int bit)
         {
             return $"{canonicalBase}.{bit.ToString("X", CultureInfo.InvariantCulture)}";
@@ -1274,7 +1288,7 @@ public static class SlmpClientExtensions
             : canonicalBase;
     }
 
-    internal static SlmpNamedReadPlan CompileReadPlan(IEnumerable<string> addresses)
+    internal static SlmpNamedReadPlan CompileReadPlan(IEnumerable<string> addresses, SlmpPlcFamily? plcFamily = null)
     {
         var entries = new List<SlmpNamedReadEntry>();
         var wordDevices = new List<SlmpDeviceAddress>();
@@ -1285,7 +1299,7 @@ public static class SlmpClientExtensions
         foreach (var address in addresses)
         {
             var (baseAddress, dtype, bitIdx) = ParseAddress(address);
-            var device = SlmpDeviceParser.Parse(baseAddress);
+            var device = SlmpDeviceParser.ParseForHighLevel(baseAddress, plcFamily);
             dtype = ResolveDTypeForAddress(address, device, dtype, bitIdx);
             ValidateLongTimerEntry(address, device, dtype);
             var kind = SlmpNamedReadKind.Fallback;

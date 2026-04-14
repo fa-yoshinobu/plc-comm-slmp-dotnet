@@ -40,6 +40,13 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
         set => _client.FrameType = value;
     }
 
+    /// <summary>Gets or sets the canonical PLC family used by the high-level string helpers.</summary>
+    public SlmpPlcFamily? PlcFamily
+    {
+        get => _client.PlcFamily;
+        set => _client.PlcFamily = value;
+    }
+
     /// <summary>Gets or sets the device access compatibility mode (Legacy or iQ-R).</summary>
     public SlmpCompatibilityMode CompatibilityMode
     {

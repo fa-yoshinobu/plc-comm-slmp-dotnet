@@ -27,6 +27,20 @@ public enum SlmpCompatibilityMode : byte
     Iqr = 1,
 }
 
+/// <summary>Canonical PLC family used by the high-level API.</summary>
+public enum SlmpPlcFamily : byte
+{
+    IqF,
+    IqR,
+    IqL,
+    MxF,
+    MxR,
+    QCpu,
+    LCpu,
+    QnU,
+    QnUDV,
+}
+
 /// <summary>Direction of a frame captured by <see cref="SlmpClient.TraceHook"/>.</summary>
 public enum SlmpTraceDirection
 {
