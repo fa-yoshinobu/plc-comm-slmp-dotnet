@@ -143,21 +143,9 @@ public sealed class SlmpDeviceRangeCatalogTests
     }
 
     [Fact]
-    public async Task ReadDeviceRangeCatalogAsync_UsesReadTypeAndFamilySpecificSdWindow()
+    public async Task ReadDeviceRangeCatalogAsync_WithoutConfiguredFamily_Throws()
     {
-        var typePayload = BuildTypeNamePayload("Q00CPU", 0x0251);
-        var sdValues = new ushort[]
-        {
-            123, 456, 50000, 789, 50000,
-            50, 60, 70, 80, 90,
-            100, 110, 50000, 60000, 120,
-        };
-
-        await using var server = new MultiResponseSlmpServer(
-        [
-            typePayload,
-            BuildWordPayload(sdValues),
-        ]);
+        await using var server = new MultiResponseSlmpServer([]);
         await server.StartAsync();
 
         using var client = new SlmpClient("127.0.0.1", server.Port)
@@ -166,22 +154,9 @@ public sealed class SlmpDeviceRangeCatalogTests
             MonitoringTimer = 0x0010,
         };
 
-        var catalog = await client.ReadDeviceRangeCatalogAsync();
-
-        Assert.Equal(2, server.RequestFrames.Count);
-        Assert.Equal(SlmpDeviceRangeFamily.QCpu, catalog.Family);
-        Assert.Equal(123u, GetEntry(catalog, "X").PointCount);
-        Assert.Equal(122u, GetEntry(catalog, "X").UpperBound);
-        Assert.Equal("X000-X07A", GetEntry(catalog, "X").AddressRange);
-        Assert.Equal(32768u, GetEntry(catalog, "M").PointCount);
-        Assert.Equal(32767u, GetEntry(catalog, "M").UpperBound);
-        Assert.Equal(32768u, GetEntry(catalog, "D").PointCount);
-        Assert.Equal(32767u, GetEntry(catalog, "D").UpperBound);
-        Assert.Equal(120u, GetEntry(catalog, "SW").PointCount);
-        Assert.Equal(119u, GetEntry(catalog, "SW").UpperBound);
-        Assert.Equal("SW000-SW077", GetEntry(catalog, "SW").AddressRange);
-        Assert.Equal(10u, GetEntry(catalog, "Z").PointCount);
-        Assert.Equal(9u, GetEntry(catalog, "Z").UpperBound);
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => client.ReadDeviceRangeCatalogAsync());
+        Assert.Contains("requires an explicit PlcFamily", error.Message, StringComparison.Ordinal);
+        Assert.Empty(server.RequestFrames);
     }
 
     [Fact]
@@ -282,12 +257,10 @@ public sealed class SlmpDeviceRangeCatalogTests
         await server.StartAsync();
 
         var resolved = await SlmpConnectionProfileProbe.ReadDeviceRangeCatalogWithThreeELegacyFallbackAsync(
-            new SlmpConnectionOptions("127.0.0.1")
+            new SlmpConnectionOptions("127.0.0.1", SlmpPlcFamily.IqR)
             {
                 Port = server.Port,
                 Timeout = TimeSpan.FromSeconds(1),
-                FrameType = SlmpFrameType.Frame4E,
-                CompatibilityMode = SlmpCompatibilityMode.Iqr,
             });
 
         Assert.True(resolved.UsedThreeELegacyFallback);

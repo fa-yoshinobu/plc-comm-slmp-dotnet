@@ -7,7 +7,7 @@ Use this package when you want the shortest .NET path to Mitsubishi SLMP communi
 Recommended first path:
 
 1. Install `PlcComm.Slmp`.
-2. Set `CompatibilityMode` and `FrameType` explicitly.
+2. Choose one explicit `SlmpPlcFamily`.
 3. Open one client with `SlmpClientFactory.OpenAndConnectAsync`.
 4. Read one safe `D` word.
 5. Write only to a known-safe test word or bit after the first read is stable.
@@ -31,11 +31,9 @@ Do not start with these:
 ## Minimal Connection Pattern
 
 ```csharp
-var options = new SlmpConnectionOptions("192.168.250.100")
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcFamily.IqR)
 {
     Port = 1025,
-    FrameType = SlmpFrameType.Frame4E,
-    CompatibilityMode = SlmpCompatibilityMode.Iqr,
 };
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
@@ -54,8 +52,7 @@ Recommended order:
 If the first read fails, check these in order:
 
 - correct host and port
-- correct frame type
-- correct compatibility mode
+- correct `SlmpPlcFamily`
 - start with `D` instead of a routed, module, or future-tracked family
 
 ## Next Pages

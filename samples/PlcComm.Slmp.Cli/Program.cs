@@ -153,7 +153,7 @@ async Task<int> RunConnectionProfileProbeAsync(IReadOnlyList<string> args)
         : SlmpTransportMode.Tcp;
 
     var results = await SlmpConnectionProfileProbe.ProbeAsync(
-        new SlmpConnectionOptions(host)
+        new SlmpConnectionOptions(host, SlmpPlcFamily.IqR)
         {
             Port = port,
             Transport = transport,

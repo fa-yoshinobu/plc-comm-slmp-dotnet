@@ -99,8 +99,8 @@ public static class SlmpConnectionProfileProbe
 
         var initialFailure = await TryReadDeviceRangeCatalogAsync(
             options,
-            options.FrameType,
-            options.CompatibilityMode,
+            options.ResolvedFrameType,
+            options.ResolvedCompatibilityMode,
             cancellationToken).ConfigureAwait(false);
         if (initialFailure.Result is not null)
         {
@@ -108,7 +108,7 @@ public static class SlmpConnectionProfileProbe
         }
 
         if (!initialFailure.ReadTypeNameFailed ||
-            (options.FrameType == SlmpFrameType.Frame3E && options.CompatibilityMode == SlmpCompatibilityMode.Legacy))
+            (options.ResolvedFrameType == SlmpFrameType.Frame3E && options.ResolvedCompatibilityMode == SlmpCompatibilityMode.Legacy))
         {
             throw initialFailure.Error ?? new SlmpError("Device-range catalog read failed.");
         }

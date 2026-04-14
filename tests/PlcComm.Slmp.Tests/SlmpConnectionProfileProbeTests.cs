@@ -18,11 +18,9 @@ public sealed class SlmpConnectionProfileProbeTests
         ]);
         await server.StartAsync();
 
-        var options = new SlmpConnectionOptions("127.0.0.1")
+        var options = new SlmpConnectionOptions("127.0.0.1", SlmpPlcFamily.IqR)
         {
             Port = server.Port,
-            FrameType = SlmpFrameType.Frame4E,
-            CompatibilityMode = SlmpCompatibilityMode.Iqr,
         };
 
         var result = await SlmpConnectionProfileProbe.ProbeProfileAsync(
@@ -52,11 +50,9 @@ public sealed class SlmpConnectionProfileProbeTests
         ]);
         await server.StartAsync();
 
-        var options = new SlmpConnectionOptions("127.0.0.1")
+        var options = new SlmpConnectionOptions("127.0.0.1", SlmpPlcFamily.IqR)
         {
             Port = server.Port,
-            FrameType = SlmpFrameType.Frame4E,
-            CompatibilityMode = SlmpCompatibilityMode.Iqr,
         };
 
         var result = await SlmpConnectionProfileProbe.ProbeProfileAsync(

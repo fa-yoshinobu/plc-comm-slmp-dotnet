@@ -25,12 +25,23 @@ Target shape:
 ```csharp
 public sealed record SlmpConnectionOptions(
     string Host,
-    int Port = 1025,
-    TimeSpan Timeout = default,
-    SlmpFrameType FrameType = SlmpFrameType.Frame4E,
-    SlmpCompatibilityMode CompatibilityMode = SlmpCompatibilityMode.Iqr,
-    SlmpTargetAddress Target = default
-);
+    SlmpPlcFamily PlcFamily)
+{
+    public int Port { get; init; } = 1025;
+    public TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(3);
+    public SlmpTargetAddress Target { get; init; } = default;
+}
+
+public sealed record SlmpPlcFamilyDefaults(
+    SlmpFrameType FrameType,
+    SlmpCompatibilityMode CompatibilityMode,
+    SlmpPlcFamily AddressFamily,
+    SlmpDeviceRangeFamily RangeFamily);
+
+public static class SlmpPlcFamilyProfiles
+{
+    public static SlmpPlcFamilyDefaults Resolve(SlmpPlcFamily family);
+}
 
 public static class SlmpClientFactory
 {
@@ -43,7 +54,8 @@ public static class SlmpClientFactory
 Notes:
 
 - the returned client must be safe to share across multiple async callers
-- frame type, compatibility mode, and target routing must stay explicit
+- `PlcFamily` is the single explicit high-level selection
+- frame type, compatibility mode, string-address rules, and device-range rules are derived from that family
 - automatic profile probing is out of scope
 
 ## 3. Required High-Level Methods

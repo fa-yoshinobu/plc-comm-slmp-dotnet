@@ -136,8 +136,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// </summary>
     /// <param name="host">PLC IP address or hostname.</param>
     /// <param name="port">SLMP port number such as 1025 for iQ-R/iQ-F or 5007 for Q/L.</param>
-    /// <param name="frameType">Explicit frame type to use for the entire connection.</param>
-    /// <param name="compatibilityMode">Explicit access profile to use for device numbering and request shape.</param>
+    /// <param name="plcFamily">Canonical PLC family used to derive the standard connection defaults.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>
     /// A connected queued client ready for high-level helpers such as
@@ -145,21 +144,18 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// </returns>
     /// <remarks>
     /// This is the recommended entry point for application code because it
-    /// combines an explicit profile choice with a queued wrapper that is safe
+    /// combines one explicit PLC family with a queued wrapper that is safe
     /// to share across multiple tasks.
     /// </remarks>
     public static async Task<QueuedSlmpClient> OpenAndConnectAsync(
         string host,
         int port,
-        SlmpFrameType frameType,
-        SlmpCompatibilityMode compatibilityMode,
+        SlmpPlcFamily plcFamily,
         CancellationToken cancellationToken = default)
         => await SlmpClientFactory.OpenAndConnectAsync(
-            new SlmpConnectionOptions(host)
+            new SlmpConnectionOptions(host, plcFamily)
             {
                 Port = port,
-                FrameType = frameType,
-                CompatibilityMode = compatibilityMode,
             },
             cancellationToken).ConfigureAwait(false);
 
@@ -192,24 +188,22 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    /// Reads the PLC type information and resolves the family-specific device upper-bound catalog.
+    /// Reads the configured family-specific device upper-bound catalog.
     /// </summary>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns>A catalog containing the resolved family and device upper-bound entries.</returns>
+    /// <returns>A catalog containing the configured family and device upper-bound entries.</returns>
     public async Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
     {
-        if (PlcFamily is SlmpPlcFamily plcFamily)
+        if (PlcFamily is not SlmpPlcFamily plcFamily)
         {
-            var family = SlmpPlcFamilyProfiles.Resolve(plcFamily).RangeFamily;
-            var familyProfile = SlmpDeviceRangeResolver.ResolveProfile(family);
-            var familyRegisters = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, familyProfile, cancellationToken).ConfigureAwait(false);
-            return SlmpDeviceRangeResolver.BuildCatalog(family, familyRegisters);
+            throw new InvalidOperationException(
+                "ReadDeviceRangeCatalogAsync() requires an explicit PlcFamily. Configure the client through SlmpConnectionOptions/SlmpClientFactory or call ReadDeviceRangeCatalogAsync(family).");
         }
 
-        var typeInfo = await ReadTypeNameAsync(cancellationToken).ConfigureAwait(false);
-        var profile = SlmpDeviceRangeResolver.ResolveProfile(typeInfo);
-        var registers = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, profile, cancellationToken).ConfigureAwait(false);
-        return SlmpDeviceRangeResolver.BuildCatalog(typeInfo, profile, registers);
+        var family = SlmpPlcFamilyProfiles.Resolve(plcFamily).RangeFamily;
+        var familyProfile = SlmpDeviceRangeResolver.ResolveProfile(family);
+        var familyRegisters = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, familyProfile, cancellationToken).ConfigureAwait(false);
+        return SlmpDeviceRangeResolver.BuildCatalog(family, familyRegisters);
     }
 
     /// <summary>

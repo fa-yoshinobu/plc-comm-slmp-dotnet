@@ -102,10 +102,7 @@ public sealed class SlmpParserTests
     [Fact]
     public void ConnectionOptions_ResolveDefaultsFromPlcFamily()
     {
-        var options = new SlmpConnectionOptions("127.0.0.1")
-        {
-            PlcFamily = SlmpPlcFamily.IqL,
-        };
+        var options = new SlmpConnectionOptions("127.0.0.1", SlmpPlcFamily.IqL);
 
         Assert.Equal(SlmpFrameType.Frame4E, options.ResolvedFrameType);
         Assert.Equal(SlmpCompatibilityMode.Iqr, options.ResolvedCompatibilityMode);

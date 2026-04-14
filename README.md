@@ -44,11 +44,9 @@ Or add a package reference directly:
 ```csharp
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100")
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcFamily.IqR)
 {
     Port = 1025,
-    FrameType = SlmpFrameType.Frame4E,
-    CompatibilityMode = SlmpCompatibilityMode.Iqr,
 };
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);

@@ -7,7 +7,7 @@
 //   ReadNamedAsync, PollAsync, and SlmpAddress.Normalize.
 //
 // Usage:
-//   dotnet run --project samples/PlcComm.Slmp.HighLevelSample -- [host] [port] [series] [frame]
+//   dotnet run --project samples/PlcComm.Slmp.HighLevelSample -- [host] [port] [plc-family]
 //
 // Common SLMP port values:
 //   1025  iQ-R / iQ-F built-in Ethernet SLMP (default here)
@@ -18,19 +18,25 @@ using PlcComm.Slmp;
 
 var host = args.Length > 0 ? args[0] : "192.168.250.100";
 var port = args.Length > 1 ? int.Parse(args[1]) : 1025;
-var seriesArg = args.Length > 2 ? args[2].ToLowerInvariant() : "iqr";
-var frameArg = args.Length > 3 ? args[3].ToLowerInvariant() : "4e";
-if (seriesArg is not ("iqr" or "ql"))
-    throw new ArgumentException("series must be 'iqr' or 'ql'");
-if (frameArg is not ("3e" or "4e"))
-    throw new ArgumentException("frame must be '3e' or '4e'");
-var compatibilityMode = seriesArg == "ql" ? SlmpCompatibilityMode.Legacy : SlmpCompatibilityMode.Iqr;
-var frameType = frameArg == "3e" ? SlmpFrameType.Frame3E : SlmpFrameType.Frame4E;
+var plcFamilyArg = args.Length > 2 ? args[2].ToLowerInvariant() : "iq-r";
+var plcFamily = plcFamilyArg switch
+{
+    "iq-f" => SlmpPlcFamily.IqF,
+    "iq-r" => SlmpPlcFamily.IqR,
+    "iq-l" => SlmpPlcFamily.IqL,
+    "mx-f" => SlmpPlcFamily.MxF,
+    "mx-r" => SlmpPlcFamily.MxR,
+    "qcpu" => SlmpPlcFamily.QCpu,
+    "lcpu" => SlmpPlcFamily.LCpu,
+    "qnu" => SlmpPlcFamily.QnU,
+    "qnudv" => SlmpPlcFamily.QnUDV,
+    _ => throw new ArgumentException("plc-family must be iq-f, iq-r, iq-l, mx-f, mx-r, qcpu, lcpu, qnu, or qnudv"),
+};
 
 // -------------------------------------------------------------------------
 // 1. OpenAndConnectAsync  (recommended entry point)
 //
-// OpenAndConnectAsync opens a QueuedSlmpClient with explicit stable settings.
+// OpenAndConnectAsync opens a QueuedSlmpClient with one explicit PLC family.
 // QueuedSlmpClient is a thread-safe wrapper that serializes all requests
 // through a SemaphoreSlim, so multiple concurrent Tasks can share one TCP
 // connection without interleaving protocol frames. High-level helpers can
@@ -41,15 +47,13 @@ var frameType = frameArg == "3e" ? SlmpFrameType.Frame3E : SlmpFrameType.Frame4E
 //   5000  GX Works3 / GX Works2 simulation port
 //   5007  Q/L series Ethernet module SLMP port
 // -------------------------------------------------------------------------
-Console.WriteLine($"Connecting to {host}:{port} with frame={frameArg} series={seriesArg} ...");
-var options = new SlmpConnectionOptions(host)
+Console.WriteLine($"Connecting to {host}:{port} with plc_family={plcFamilyArg} ...");
+var options = new SlmpConnectionOptions(host, plcFamily)
 {
     Port = port,
-    FrameType = frameType,
-    CompatibilityMode = compatibilityMode,
 };
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
-Console.WriteLine($"[OpenAndConnectAsync] frame={client.FrameType}  series={client.CompatibilityMode}");
+Console.WriteLine($"[OpenAndConnectAsync] plc_family={plcFamilyArg} frame={client.FrameType}  series={client.CompatibilityMode}");
 
 string normalized = SlmpAddress.Normalize("d50");
 Console.WriteLine($"[Normalize] d50 -> {normalized}");
@@ -64,8 +68,9 @@ Console.WriteLine($"[Normalize] d50 -> {normalized}");
 //                     (Network, Station, ModuleIo, Multidrop)
 //   TraceHook       - optional Action<SlmpTraceFrame> for raw-frame logging;
 //                     set to a lambda to capture every send/receive byte
-//   FrameType       - SlmpFrameType.Frame3E or Frame4E
-//   CompatibilityMode - Legacy (Q/L) or Iqr (iQ-R)
+//   PlcFamily       - the selected canonical high-level family
+//   FrameType       - derived from PlcFamily
+//   CompatibilityMode - derived from PlcFamily
 // -------------------------------------------------------------------------
 client.Timeout = TimeSpan.FromSeconds(5);
 client.MonitoringTimer = 0x0040;  // 16 s

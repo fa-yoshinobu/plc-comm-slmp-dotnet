@@ -6,27 +6,21 @@ For normal application code, prefer the extension methods on `SlmpClient` and `Q
 
 ## Recommended Connection Pattern
 
-Create a connected queued client with explicit stable settings:
+Create a connected queued client with one explicit PLC family:
 
 ```csharp
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100")
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcFamily.IqR)
 {
     Port = 1025,
-    FrameType = SlmpFrameType.Frame4E,
-    CompatibilityMode = SlmpCompatibilityMode.Iqr,
 };
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 ```
 
-Typical pairs:
-
-| PLC family | Frame | Compatibility |
-| --- | --- | --- |
-| iQ-R / iQ-F | `Frame4E` | `Iqr` |
-| Q / L | `Frame3E` | `Legacy` |
+`SlmpConnectionOptions` derives frame type, compatibility mode, string `X/Y`
+rules, and the device-range family from the explicit `SlmpPlcFamily`.
 
 Use the queued client as the default application object. It is the safest choice when more than one task may touch the same connection.
 

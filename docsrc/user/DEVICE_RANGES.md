@@ -5,12 +5,13 @@ This document replaces `plc_device_range_registers - base.csv`.
 The library now owns the device-range rules in source code and reads live upper
 bounds from the PLC itself after the caller chooses the PLC family:
 
-1. caller selects `SlmpDeviceRangeFamily`
+1. caller selects `SlmpPlcFamily`
 2. read the family-specific `SD` register window
 3. build a `SlmpDeviceRangeCatalog` with point counts and 0-based address ranges
 
-`ReadTypeNameAsync`-based auto resolution still exists, but it is not required
-for device-range reads and is no longer the recommended path for monitor tools.
+The standard high-level API does not auto-resolve the family through
+`ReadTypeNameAsync()`. `ReadDeviceRangeCatalogAsync()` reads the configured
+family only.
 
 `PointCount` is the usable point count reported by the PLC or by a fixed family
 rule. `UpperBound` is the inclusive last address, so for 0-based devices it is
@@ -26,7 +27,6 @@ Both `SlmpClient` and `QueuedSlmpClient` expose:
 
 ```csharp
 Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(
-    SlmpDeviceRangeFamily family,
     CancellationToken cancellationToken = default)
 ```
 
@@ -35,15 +35,13 @@ Example:
 ```csharp
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100")
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcFamily.IqF)
 {
     Port = 1025,
-    FrameType = SlmpFrameType.Frame3E,
-    CompatibilityMode = SlmpCompatibilityMode.Legacy,
 };
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
-var catalog = await client.ReadDeviceRangeCatalogAsync(SlmpDeviceRangeFamily.IqF);
+var catalog = await client.ReadDeviceRangeCatalogAsync();
 
 Console.WriteLine($"selected={catalog.Model} -> {catalog.Family}");
 foreach (var entry in catalog.Entries)
@@ -65,14 +63,16 @@ Returned types:
 `SlmpDeviceRangeEntry.Notation` uses `Base10`, `Base8`, or `Base16` for the public
 address text this library expects.
 
-## Auto Resolution
+If you need an explicit low-level override, both clients also expose:
 
-If you still need automatic family resolution, `ReadDeviceRangeCatalogAsync()`
-without a family argument uses `ReadTypeNameAsync`, then the model-code and
-model-text rules below.
+```csharp
+Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(
+    SlmpDeviceRangeFamily family,
+    CancellationToken cancellationToken = default)
+```
 
-Resolution always prefers `ModelCode`. Normalized `Model` text is used only as
-a fallback.
+That overload is for manual compatibility work. It is not the standard
+application route.
 
 Embedded model-code tables cover the known codes shared during implementation
 for these families:
