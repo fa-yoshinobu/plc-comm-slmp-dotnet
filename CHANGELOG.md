@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-04-14
+
+### Changed
+- The standard high-level route now requires one explicit `SlmpPlcFamily`. `SlmpConnectionOptions`, `OpenAndConnectAsync`, samples, and user docs all derive frame, compatibility, string-address handling, and device-range defaults from that family.
+- `ReadDeviceRangeCatalogAsync()` without an explicit family override now uses the configured PLC family only. Automatic model-name resolution is no longer part of the standard application path.
+
 ## [0.1.8] - 2026-04-14
 
 ### Added
