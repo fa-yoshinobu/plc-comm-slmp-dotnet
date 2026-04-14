@@ -5,7 +5,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Version>0.1.6</Version>
+    <Version>0.1.7</Version>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -14,5 +14,4 @@
   </PropertyGroup>
 
 </Project>
-
 
