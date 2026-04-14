@@ -33,6 +33,17 @@ public readonly record struct SlmpDeviceAddress(SlmpDeviceCode Code, uint Number
 public sealed record SlmpTypeNameInfo(string Model, ushort ModelCode, bool HasModelCode);
 
 /// <summary>
+/// Decoded CPU operation state read from <c>SD203</c>.
+/// </summary>
+/// <param name="Status">Decoded PLC operation state.</param>
+/// <param name="RawStatusWord">Full raw word read from <c>SD203</c>.</param>
+/// <param name="RawCode">Lower 4-bit masked status code from <c>SD203</c>.</param>
+public sealed record SlmpCpuOperationState(
+    SlmpCpuOperationStatus Status,
+    ushort RawStatusWord,
+    byte RawCode);
+
+/// <summary>
 /// Description for a contiguous block of devices to read.
 /// </summary>
 public sealed record SlmpBlockRead(SlmpDeviceAddress Device, ushort Points);

@@ -2,6 +2,8 @@
   href: GETTING_STARTED.md
 - name: Supported PLC Registers
   href: SUPPORTED_REGISTERS.md
+- name: Device Range Catalog
+  href: DEVICE_RANGES.md
 - name: Latest Communication Verification
   href: LATEST_COMMUNICATION_VERIFICATION.md
 - name: User Guide

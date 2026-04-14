@@ -36,6 +36,15 @@ public enum SlmpTraceDirection
     Receive,
 }
 
+/// <summary>Decoded CPU operation state from the lower 4 bits of <c>SD203</c>.</summary>
+public enum SlmpCpuOperationStatus : byte
+{
+    Unknown = 0xFF,
+    Run = 0x00,
+    Stop = 0x02,
+    Pause = 0x03,
+}
+
 /// <summary>Standard SLMP command codes.</summary>
 public enum SlmpCommand : ushort
 {

@@ -179,6 +179,45 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
+    /// Reads <c>SD203</c> and decodes the CPU operation state from the lower 4 bits.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The decoded CPU operation state and raw masked code.</returns>
+    public async Task<SlmpCpuOperationState> ReadCpuOperationStateAsync(CancellationToken cancellationToken = default)
+    {
+        var statusWord = (await ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.SD, 203), 1, cancellationToken).ConfigureAwait(false))[0];
+        return DecodeCpuOperationState(statusWord);
+    }
+
+    /// <summary>
+    /// Reads the PLC type information and resolves the family-specific device upper-bound catalog.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A catalog containing the resolved family and device upper-bound entries.</returns>
+    public async Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
+    {
+        var typeInfo = await ReadTypeNameAsync(cancellationToken).ConfigureAwait(false);
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(typeInfo);
+        var registers = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, profile, cancellationToken).ConfigureAwait(false);
+        return SlmpDeviceRangeResolver.BuildCatalog(typeInfo, profile, registers);
+    }
+
+    /// <summary>
+    /// Reads the family-specific device upper-bound catalog without querying the PLC model name.
+    /// </summary>
+    /// <param name="family">User-selected PLC family.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A catalog containing the selected family and device upper-bound entries.</returns>
+    public async Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(
+        SlmpDeviceRangeFamily family,
+        CancellationToken cancellationToken = default)
+    {
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(family);
+        var registers = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, profile, cancellationToken).ConfigureAwait(false);
+        return SlmpDeviceRangeResolver.BuildCatalog(family, registers);
+    }
+
+    /// <summary>
     /// Reads word device values asynchronously.
     /// </summary>
     /// <param name="device">The starting device address.</param>
@@ -220,6 +259,19 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             if (idx < points) result[idx++] = (data[i] & 0x1) != 0;
         }
         return result;
+    }
+
+    private static SlmpCpuOperationState DecodeCpuOperationState(ushort statusWord)
+    {
+        var rawCode = (byte)(statusWord & 0x0F);
+        var status = rawCode switch
+        {
+            0x00 => SlmpCpuOperationStatus.Run,
+            0x02 => SlmpCpuOperationStatus.Stop,
+            0x03 => SlmpCpuOperationStatus.Pause,
+            _ => SlmpCpuOperationStatus.Unknown,
+        };
+        return new SlmpCpuOperationState(status, statusWord, rawCode);
     }
 
     public async Task<ushort[]> ReadWordsExtendedAsync(
