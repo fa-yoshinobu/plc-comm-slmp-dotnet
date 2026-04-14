@@ -38,3 +38,9 @@ Included examples:
   `ReadWordsSingleRequestAsync`, and `ReadWordsChunkedAsync` use the same
   queued-client and device-string model shown in these samples.
 - The CLI sample remains in the repository as an operational tool, but the user manual now centers on the high-level library APIs.
+- The CLI sample includes `connection-profile-probe` to test `ReadTypeNameAsync`
+  plus one family-specific `SD` block read for each frame and compatibility candidate:
+  `dotnet run --project samples/PlcComm.Slmp.Cli -- connection-profile-probe --host 192.168.250.100 --port 1025`
+- The CLI sample includes `device-range-catalog` for user-selected PLC family
+  plus one family-specific `SD` block read:
+  `dotnet run --project samples/PlcComm.Slmp.Cli -- device-range-catalog --plc-type iq-f --host 192.168.250.100 --port 1025 --series ql --frame-type 3e`

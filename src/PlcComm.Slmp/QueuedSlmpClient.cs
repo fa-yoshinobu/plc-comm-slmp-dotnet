@@ -134,6 +134,20 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     public Task<SlmpTypeNameInfo> ReadTypeNameAsync(CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.ReadTypeNameAsync(cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.ReadCpuOperationStateAsync"/>
+    public Task<SlmpCpuOperationState> ReadCpuOperationStateAsync(CancellationToken cancellationToken = default)
+        => ExecuteAsync(client => client.ReadCpuOperationStateAsync(cancellationToken), cancellationToken);
+
+    /// <inheritdoc cref="SlmpClient.ReadDeviceRangeCatalogAsync(CancellationToken)"/>
+    public Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
+        => ExecuteAsync(client => client.ReadDeviceRangeCatalogAsync(cancellationToken), cancellationToken);
+
+    /// <inheritdoc cref="SlmpClient.ReadDeviceRangeCatalogAsync(SlmpDeviceRangeFamily, CancellationToken)"/>
+    public Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(
+        SlmpDeviceRangeFamily family,
+        CancellationToken cancellationToken = default)
+        => ExecuteAsync(client => client.ReadDeviceRangeCatalogAsync(family, cancellationToken), cancellationToken);
+
     /// <inheritdoc cref="SlmpClient.ReadWordsRawAsync"/>
     public Task<ushort[]> ReadWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.ReadWordsRawAsync(device, points, cancellationToken), cancellationToken);

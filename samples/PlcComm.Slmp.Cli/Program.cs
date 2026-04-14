@@ -49,6 +49,29 @@ string GetFrameTypeOption(IReadOnlyList<string> args, string defaultValue)
     throw new ArgumentException("--frame-type must be 3e or 4e.");
 }
 
+SlmpDeviceRangeFamily GetPlcTypeOption(IReadOnlyList<string> args)
+{
+    var raw = GetOption(args, "--plc-type", string.Empty);
+    if (string.IsNullOrWhiteSpace(raw))
+    {
+        throw new ArgumentException("--plc-type is required. Use iq-r, mx-f, mx-r, iq-f, qcpu, lcpu, qnu, or qnudv.");
+    }
+
+    var normalized = raw.Trim().ToLowerInvariant().Replace("-", string.Empty).Replace("_", string.Empty);
+    return normalized switch
+    {
+        "iqr" => SlmpDeviceRangeFamily.IqR,
+        "mxf" => SlmpDeviceRangeFamily.MxF,
+        "mxr" => SlmpDeviceRangeFamily.MxR,
+        "iqf" => SlmpDeviceRangeFamily.IqF,
+        "qcpu" or "q" => SlmpDeviceRangeFamily.QCpu,
+        "lcpu" or "l" => SlmpDeviceRangeFamily.LCpu,
+        "qnu" => SlmpDeviceRangeFamily.QnU,
+        "qnudv" or "qnudvcpu" => SlmpDeviceRangeFamily.QnUDV,
+        _ => throw new ArgumentException("--plc-type must be iq-r, mx-f, mx-r, iq-f, qcpu, lcpu, qnu, or qnudv."),
+    };
+}
+
 List<string> GetOptions(IReadOnlyList<string> args, string name)
 {
     var values = new List<string>();
@@ -101,6 +124,60 @@ async Task<int> RunConnectionCheckAsync(IReadOnlyList<string> args)
     var values = await client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400), 1).ConfigureAwait(false);
     Console.WriteLine($"[OK] Read SM400 values=[{values[0]}]");
     return 0;
+}
+
+async Task<int> RunDeviceRangeCatalogAsync(IReadOnlyList<string> args)
+{
+    var target = ParseTargets(args)[0];
+    var plcType = GetPlcTypeOption(args);
+    using var client = await CreateClientAsync(args, target.Target, "iqr", "4e").ConfigureAwait(false);
+    var catalog = await client.ReadDeviceRangeCatalogAsync(plcType).ConfigureAwait(false);
+
+    Console.WriteLine($"[OK] selected_family={plcType} connection_frame={client.FrameType} connection_compatibility={client.CompatibilityMode} family={catalog.Family}");
+    foreach (var entry in catalog.Entries)
+    {
+        Console.WriteLine(
+            $"{entry.Device} supported={entry.Supported} notation={entry.Notation} points={entry.PointCount?.ToString(CultureInfo.InvariantCulture) ?? "open"} range={entry.AddressRange ?? "-"}");
+    }
+
+    return 0;
+}
+
+async Task<int> RunConnectionProfileProbeAsync(IReadOnlyList<string> args)
+{
+    var target = ParseTargets(args)[0];
+    var host = GetOption(args, "--host", "192.168.250.100");
+    var port = int.Parse(GetOption(args, "--port", "1025"), CultureInfo.InvariantCulture);
+    var transport = GetOption(args, "--transport", "tcp").Equals("udp", StringComparison.OrdinalIgnoreCase)
+        ? SlmpTransportMode.Udp
+        : SlmpTransportMode.Tcp;
+
+    var results = await SlmpConnectionProfileProbe.ProbeAsync(
+        new SlmpConnectionOptions(host)
+        {
+            Port = port,
+            Transport = transport,
+            Target = target.Target,
+        }).ConfigureAwait(false);
+
+    foreach (var result in results)
+    {
+        var typeNameText = result.TypeNameInfo is null
+            ? "type_name=-"
+            : $"model={result.TypeNameInfo.Model} model_code=0x{result.TypeNameInfo.ModelCode:X4}";
+        var familyText = result.Family?.ToString() ?? "-";
+        var sdText = result.SdRegisterStart is null || result.SdRegisterCount is null
+            ? "sd_block=-"
+            : $"sd_block=SD{result.SdRegisterStart}-SD{result.SdRegisterStart + result.SdRegisterCount - 1} count={result.SdRegisterCount}";
+        var errorText = string.IsNullOrWhiteSpace(result.ErrorMessage)
+            ? string.Empty
+            : $" error={result.ErrorMessage}";
+
+        Console.WriteLine(
+            $"{result.FrameType}/{result.CompatibilityMode} status={result.Status} family={familyText} sd_read={result.SdReadSucceeded} {sdText} {typeNameText}{errorText}");
+    }
+
+    return results.Any(static result => result.Status == SlmpConnectionProfileProbeStatus.Validated) ? 0 : 1;
 }
 
 string FormatTarget(SlmpNamedTarget row)
@@ -731,6 +808,8 @@ if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
 {
     Console.WriteLine("SLMP .NET CLI");
     Console.WriteLine("  connection-check [--host ... --port ... --transport tcp|udp --series ql|iqr --frame-type 3e|4e --target SELF|SELF-CPU1|NW1-ST2|name,0x00,0xFF,0x03FF,0x00 --quiet]");
+    Console.WriteLine("  connection-profile-probe [--host ... --port ... --transport tcp|udp --target SELF --quiet]");
+    Console.WriteLine("  device-range-catalog --plc-type iq-r|mx-f|mx-r|iq-f|qcpu|lcpu|qnu|qnudv [--host ... --port ... --transport tcp|udp --series ql|iqr --frame-type 3e|4e --target SELF --quiet]");
     Console.WriteLine("  other-station-check [--host ... --port ... --transport tcp|udp --series ql|iqr --frame-type 3e|4e --target ... (repeatable) --quiet]");
     Console.WriteLine("  random-check [--host ... --port ... --transport tcp|udp --target ... --write-check --quiet]");
     Console.WriteLine("  block-check [--host ... --port ... --transport tcp|udp --target ... --write-check --quiet]");
@@ -753,6 +832,8 @@ try
     var exitCode = command switch
     {
         "connection-check" => await RunConnectionCheckAsync(argList).ConfigureAwait(false),
+        "connection-profile-probe" => await RunConnectionProfileProbeAsync(argList).ConfigureAwait(false),
+        "device-range-catalog" => await RunDeviceRangeCatalogAsync(argList).ConfigureAwait(false),
         "other-station-check" => await RunOtherStationCheckAsync(argList).ConfigureAwait(false),
         "random-check" => await RunRandomCheckAsync(argList).ConfigureAwait(false),
         "block-check" => await RunBlockCheckAsync(argList).ConfigureAwait(false),

@@ -21,6 +21,7 @@ The recommended user surface is the extension-method layer:
 - `ReadNamedAsync`
 - `PollAsync`
 - `SlmpAddress.Normalize`
+- `ReadDeviceRangeCatalogAsync`
 
 ## Quick Start
 
@@ -70,10 +71,14 @@ Start with these public high-level families first:
 
 See the full public table in [Supported PLC Registers](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/SUPPORTED_REGISTERS.md).
 
+For live PLC-dependent device limits resolved from a user-selected PLC family
+plus family `SD` registers, see [Device Range Catalog](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/DEVICE_RANGES.md).
+
 ## Public Documentation
 
 - [Getting Started](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/GETTING_STARTED.md)
 - [Supported PLC Registers](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/SUPPORTED_REGISTERS.md)
+- [Device Range Catalog](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/DEVICE_RANGES.md)
 - [Latest Communication Verification](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/LATEST_COMMUNICATION_VERIFICATION.md)
 - [User Guide](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/USER_GUIDE.md)
 - [Samples](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/samples/README.md)
