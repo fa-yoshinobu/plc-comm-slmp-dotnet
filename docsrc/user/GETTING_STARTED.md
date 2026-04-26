@@ -26,7 +26,7 @@ Do not start with these:
 
 - module/extension routing
 - large chunked reads
-- future-tracked families such as `G`, `HG`, `LTS`, `LTC`, `LSTS`, `LSTC`, `LCS`, `LCC`, `LZ`
+- module-buffer families such as `G` and `HG`
 
 ## Minimal Connection Pattern
 
@@ -53,7 +53,7 @@ If the first read fails, check these in order:
 
 - correct host and port
 - correct `SlmpPlcFamily`
-- start with `D` instead of a routed, module, or future-tracked family
+- start with `D` instead of a routed or module-buffer family
 
 ## Next Pages
 

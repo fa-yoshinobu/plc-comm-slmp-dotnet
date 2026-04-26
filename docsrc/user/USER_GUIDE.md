@@ -95,8 +95,10 @@ Address bit devices directly as `M1000`, `M1001`, `X20`, or `Y20`.
 
 Long-device notes for the high-level helper layer:
 
-- plain `LTN`, `LSTN`, and `LCN` addresses default to 32-bit current-value access
+- plain `LTN`, `LSTN`, `LCN`, and `LZ` addresses default to 32-bit access
+- `LCN` current-value reads and writes use random dword access in the high-level helpers
 - `LTS`, `LTC`, `LSTS`, and `LSTC` are resolved through the corresponding `ReadLongTimerAsync` / `ReadLongRetentiveTimerAsync` helper-backed 4-word decode instead of direct state reads
+- `LCS` and `LCC` use direct bit read, and high-level state writes use random bit write (`0x1402`)
 
 This is the recommended helper for dashboards, periodic snapshots, and application logic that needs mixed values.
 

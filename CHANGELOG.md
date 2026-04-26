@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.10] - 2026-04-27
+
+### Changed
+- Tightened long-device route guards so `LTN/LSTN/LCN/LZ` avoid unsupported direct/raw word and dword paths, while supported random/named dword paths remain available.
+- Aligned `LCS/LCC` write validation with the random/named bit route policy.
+
 ## [0.1.9] - 2026-04-14
 
 ### Changed

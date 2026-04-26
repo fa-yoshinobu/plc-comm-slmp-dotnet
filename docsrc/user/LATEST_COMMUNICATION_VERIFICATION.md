@@ -17,7 +17,7 @@ This page keeps the current public summary only. Older detailed notes are not ke
 ## Current Cautions
 
 - keep frame type and compatibility mode explicit for every connection
-- keep future-tracked families such as `G`, `HG`, and the `LTS`/`LTC` group out of the first smoke test
+- keep module-buffer families such as `G` and `HG` out of the first smoke test
 - public docs keep only the current recommendation-level summary, not the historical probe archive
 
 ## Where Older Evidence Went

@@ -37,7 +37,7 @@ dotnet add package PlcComm.Slmp
 Or add a package reference directly:
 
 ```xml
-<PackageReference Include="PlcComm.Slmp" Version="0.1.9" />
+<PackageReference Include="PlcComm.Slmp" Version="0.1.10" />
 ```
 
 ### Recommended High-Level Usage
@@ -93,10 +93,11 @@ await client.WriteNamedAsync(new Dictionary<string, object>
 });
 ```
 
-The low-level word block APIs intentionally reject `LTN` / `LSTN` / `LCN` /
-`LZ` as word writes. Direct DWord writes are also rejected for these families so
-the 32-bit write route is selected explicitly through `WriteTypedAsync` or
-`WriteNamedAsync`.
+`LCN` current values use random dword access in the high-level helpers. The
+low-level word block APIs intentionally reject `LTN` / `LSTN` / `LCN` / `LZ`
+as word writes and random word entries. Direct DWord reads/writes are also
+rejected for these families so the 32-bit route is selected explicitly through
+`ReadTypedAsync` / `ReadNamedAsync` or `WriteTypedAsync` / `WriteNamedAsync`.
 
 Contact and coil devices in the long families, such as `LTS`, `LTC`, `LSTS`,
 `LSTC`, `LCS`, and `LCC`, are bit-style addresses. Do not treat them as
