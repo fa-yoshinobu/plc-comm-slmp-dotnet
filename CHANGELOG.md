@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.11] - 2026-04-27
+
+### Changed
+- Bumped the library revision for the cross-library SLMP parity release. The .NET route guards from `0.1.10` are unchanged and remain aligned with the updated shared verification suite.
+
 ## [0.1.10] - 2026-04-27
 
 ### Changed
