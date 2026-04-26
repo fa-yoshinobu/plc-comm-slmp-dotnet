@@ -206,6 +206,31 @@ public sealed class SlmpClientExtensionsTests
     }
 
     [Fact]
+    public async Task ReadTypedAsync_RejectsWordDTypeForLz()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 10), "U"));
+        Assert.Contains("32-bit device", ex.Message);
+    }
+
+    [Fact]
+    public void CompileReadPlan_RejectsWordDTypeForLz()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => SlmpClientExtensions.CompileReadPlan(["LZ10:U"]));
+        Assert.Contains("32-bit device", ex.Message);
+    }
+
+    [Fact]
+    public async Task ReadDWordsAsync_LzUsesRandomDwordLimit()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadDWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0), 256, maxDwordsPerRequest: 255));
+        Assert.Contains("count 256 exceeds maxDwordsPerRequest 255", ex.Message);
+    }
+
+    [Fact]
     public async Task WriteTypedAsync_RejectsWordDTypeForLongCurrentValues()
     {
         using var client = new SlmpClient("127.0.0.1");
@@ -223,7 +248,8 @@ public sealed class SlmpClientExtensionsTests
     [InlineData(SlmpDeviceCode.LTS, "BIT", (int)SlmpNamedWriteRoute.RandomBits)]
     [InlineData(SlmpDeviceCode.LSTC, "BIT", (int)SlmpNamedWriteRoute.RandomBits)]
     [InlineData(SlmpDeviceCode.LSTS, "BIT", (int)SlmpNamedWriteRoute.RandomBits)]
-    [InlineData(SlmpDeviceCode.LCC, "BIT", (int)SlmpNamedWriteRoute.ContiguousBits)]
+    [InlineData(SlmpDeviceCode.LCS, "BIT", (int)SlmpNamedWriteRoute.RandomBits)]
+    [InlineData(SlmpDeviceCode.LCC, "BIT", (int)SlmpNamedWriteRoute.RandomBits)]
     [InlineData(SlmpDeviceCode.D, "D", (int)SlmpNamedWriteRoute.ContiguousDWords)]
     public void ResolveWriteRoute_UsesLongFamilySpecialCases(
         SlmpDeviceCode code,
@@ -243,5 +269,17 @@ public sealed class SlmpClientExtensionsTests
         var ex = Assert.Throws<ArgumentException>(
             () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(code, 10), dtype));
         Assert.Contains("32-bit long current value", ex.Message);
+    }
+
+    [Theory]
+    [InlineData("U")]
+    [InlineData("S")]
+    [InlineData("F")]
+    [InlineData("BIT")]
+    public void ResolveWriteRoute_RejectsInvalidLzDTypes(string dtype)
+    {
+        var ex = Assert.Throws<ArgumentException>(
+            () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 10), dtype));
+        Assert.Contains("32-bit device", ex.Message);
     }
 }

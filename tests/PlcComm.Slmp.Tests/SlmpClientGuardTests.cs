@@ -4,14 +4,7 @@ namespace PlcComm.Slmp.Tests;
 
 public sealed class SlmpClientGuardTests
 {
-    [Fact]
-    public async Task ReadBitsAsync_RejectsLongTimerStateDevices()
-    {
-        using var client = new SlmpClient("127.0.0.1");
-        var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LTC, 0), 1));
-        Assert.Contains("Direct bit read is not supported for LTC", ex.Message);
-    }
+    private static readonly bool[] SingleTrue = [true];
 
     [Fact]
     public async Task ReadWordsRawAsync_RejectsNonBlockLongTimerCurrentReads()
@@ -41,6 +34,15 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task ReadWordsRawAsync_RejectsDirectLzWordReads()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0), 1));
+        Assert.Contains("Direct word read is not supported for LZ", ex.Message);
+    }
+
+    [Fact]
     public async Task WriteWordsAsync_RejectsLongCurrentValueDevices()
     {
         using var client = new SlmpClient("127.0.0.1");
@@ -59,6 +61,49 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task WriteWordsAsync_RejectsLzWordWrites()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0), new ushort[] { 1 }));
+        Assert.Contains("Direct word write is not supported for LZ", ex.Message);
+    }
+
+    [Fact]
+    public async Task ReadBitsAsync_RejectsDirectLongTimerStateReads()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LTS, 10), 1));
+        Assert.Contains("Direct bit read is not supported for LTS", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(SlmpDeviceCode.LTC)]
+    [InlineData(SlmpDeviceCode.LCC)]
+    public async Task WriteBitsAsync_RejectsDirectLongFamilyStateWrites(SlmpDeviceCode code)
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteBitsAsync(new SlmpDeviceAddress(code, 10), SingleTrue));
+        Assert.Contains($"Direct bit write is not supported for {code}", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(SlmpDeviceCode.LSTS)]
+    [InlineData(SlmpDeviceCode.LCS)]
+    public async Task WriteBitsExtendedAsync_RejectsDirectLongFamilyStateWrites(SlmpDeviceCode code)
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteBitsExtendedAsync(
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(code, 10), null),
+                SingleTrue,
+                new SlmpExtensionSpec()));
+        Assert.Contains($"Direct bit write is not supported for {code}", ex.Message);
+    }
+
+    [Fact]
     public async Task ReadRandomAsync_RejectsLongCounterContacts()
     {
         using var client = new SlmpClient("127.0.0.1");
@@ -67,6 +112,28 @@ public sealed class SlmpClientGuardTests
                 new[] { new SlmpDeviceAddress(SlmpDeviceCode.LCS, 10) },
                 Array.Empty<SlmpDeviceAddress>()));
         Assert.Contains("Read Random (0x0403) does not support LCS/LCC", ex.Message);
+    }
+
+    [Fact]
+    public async Task ReadRandomAsync_RejectsLongTimerStateDevices()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadRandomAsync(
+                new[] { new SlmpDeviceAddress(SlmpDeviceCode.LTC, 10) },
+                Array.Empty<SlmpDeviceAddress>()));
+        Assert.Contains("Read Random (0x0403) does not support LTS/LTC/LSTS/LSTC", ex.Message);
+    }
+
+    [Fact]
+    public async Task ReadRandomAsync_RejectsLzWordEntries()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadRandomAsync(
+                new[] { new SlmpDeviceAddress(SlmpDeviceCode.LZ, 10) },
+                Array.Empty<SlmpDeviceAddress>()));
+        Assert.Contains("does not support LZ as a word entry", ex.Message);
     }
 
     [Fact]
@@ -110,7 +177,7 @@ public sealed class SlmpClientGuardTests
             () => client.WriteRandomWordsAsync(
                 new[] { (new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10), (ushort)1) },
                 Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
-        Assert.Contains("does not support LTN/LSTN/LCN as word entries", ex.Message);
+        Assert.Contains("does not support LTN/LSTN/LCN/LZ as word entries", ex.Message);
     }
 
     [Fact]

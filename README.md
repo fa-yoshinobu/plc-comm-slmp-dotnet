@@ -67,37 +67,52 @@ Start with these public high-level families first:
 - typed forms: `D200:F`, `D300:L`, `D100:S`
 - mixed snapshot forms: `D50.3`, `D100`, `D200:F`
 - current-value long families: `LTN`, `LSTN`, `LCN`
+- 32-bit index register: `LZ`
 
 See the full public table in [Supported PLC Registers](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/SUPPORTED_REGISTERS.md).
 
 For live PLC-dependent device limits resolved from a user-selected PLC family
 plus family `SD` registers, see [Device Range Catalog](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/DEVICE_RANGES.md).
 
-### Long Current Values
+### Long Current / 32-bit Values
 
 `LTN`, `LSTN`, and `LCN` are not normal 16-bit word devices in the high-level
-API. They represent 32-bit current values. Use the typed or named API with `:D`
-or `:L`:
+API. They represent 32-bit current values. `LZ` is also a 32-bit device. Use
+the typed or named API with `:D` or `:L`:
 
 ```csharp
 var timer = await client.ReadTypedAsync("LTN100", "L");
 await client.WriteTypedAsync("LTN100", "L", 1234);
 
-var snapshot = await client.ReadNamedAsync(["LTN100:L", "LSTN10:D", "LCN0:L"]);
+var lz = await client.ReadTypedAsync("LZ0", "D");
+var snapshot = await client.ReadNamedAsync(["LTN100:L", "LSTN10:D", "LCN0:L", "LZ0:D"]);
 await client.WriteNamedAsync(new Dictionary<string, object>
 {
     ["LCN0:L"] = 10,
+    ["LZ0:D"] = 0,
 });
 ```
 
-The low-level word block APIs intentionally reject `LTN` / `LSTN` / `LCN` as
-word writes. Direct DWord writes are also rejected for these families so the
-long-current write route is selected explicitly through `WriteTypedAsync` or
+The low-level word block APIs intentionally reject `LTN` / `LSTN` / `LCN` /
+`LZ` as word writes. Direct DWord writes are also rejected for these families so
+the 32-bit write route is selected explicitly through `WriteTypedAsync` or
 `WriteNamedAsync`.
 
 Contact and coil devices in the long families, such as `LTS`, `LTC`, `LSTS`,
 `LSTC`, `LCS`, and `LCC`, are bit-style addresses. Do not treat them as
-current-value words.
+current-value words. `ReadLtsStatesAsync`, `ReadLtcStatesAsync`,
+`ReadLstsStatesAsync`, and `ReadLstcStatesAsync` read the `LTN` / `LSTN`
+4-word status block and use the third word (`b1` for contact, `b0` for coil).
+`LCS` and `LCC` reads use direct bit read through the typed/named helpers.
+For `LTS`, `LTC`, `LSTS`, `LSTC`, `LCS`, and `LCC` writes, `WriteTypedAsync` /
+`WriteNamedAsync` select the random bit write route (`0x1402`) instead of the
+contiguous bit write route (`0x1401`).
+
+Route guard note: direct bit read/write (`0x0401` / `0x1401`) and Read Random
+(`0x0403`) are intentionally rejected for `LTS`, `LTC`, `LSTS`, and `LSTC`
+before a PLC request is sent. Direct bit write (`0x1401`) is also rejected for
+`LCS` and `LCC`; use `WriteTypedAsync` / `WriteNamedAsync` so `0x1402` is
+selected.
 
 ### Device Range Catalog
 

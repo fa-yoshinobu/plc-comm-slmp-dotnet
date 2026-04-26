@@ -323,6 +323,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ValidateDirectBitReadDevice(device.Device);
         var effectiveExtension = ResolveEffectiveExtension(device, extension);
         var payload = BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: true);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0081
@@ -338,6 +339,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ValidateDirectBitWriteDevice(device.Device);
         var effectiveExtension = ResolveEffectiveExtension(device, extension);
         var wordValues = new ushort[values.Count];
         for (var i = 0; i < values.Count; i++) wordValues[i] = values[i] ? (ushort)1 : (ushort)0;
@@ -349,6 +351,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task WriteBitsAsync(SlmpDeviceAddress device, IReadOnlyList<bool> values, CancellationToken cancellationToken = default)
     {
+        ValidateDirectBitWriteDevice(device);
         var wordValues = new ushort[values.Count];
         for (var i = 0; i < values.Count; i++) wordValues[i] = values[i] ? (ushort)1 : (ushort)0;
         var payload = BuildReadWritePayload(device, checked((ushort)values.Count), wordValues, bitUnit: true);
@@ -1430,8 +1433,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         int points = 1,
         CancellationToken cancellationToken = default)
     {
-        var device = new SlmpDeviceAddress(SlmpDeviceCode.LTN, (uint)headNo);
-        var words = await ReadWordsRawAsync(device, (ushort)(points * 4), cancellationToken).ConfigureAwait(false);
+        var words = await ReadLongTimerStatusWordsAsync(SlmpDeviceCode.LTN, headNo, points, cancellationToken).ConfigureAwait(false);
         return ParseLongTimerWords(words, headNo, "LTN", points);
     }
 
@@ -1447,8 +1449,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         int points = 1,
         CancellationToken cancellationToken = default)
     {
-        var device = new SlmpDeviceAddress(SlmpDeviceCode.LSTN, (uint)headNo);
-        var words = await ReadWordsRawAsync(device, (ushort)(points * 4), cancellationToken).ConfigureAwait(false);
+        var words = await ReadLongTimerStatusWordsAsync(SlmpDeviceCode.LSTN, headNo, points, cancellationToken).ConfigureAwait(false);
         return ParseLongTimerWords(words, headNo, "LSTN", points);
     }
 
@@ -1456,28 +1457,50 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     public async Task<bool[]> ReadLtcStatesAsync(int headNo = 0, int points = 1, CancellationToken cancellationToken = default)
     {
         var timers = await ReadLongTimerAsync(headNo, points, cancellationToken).ConfigureAwait(false);
-        return timers.Select(static t => t.Coil).ToArray();
+        return timers.Select(static timer => timer.Coil).ToArray();
     }
 
     /// <summary>Returns the contact state of each long timer in the range.</summary>
     public async Task<bool[]> ReadLtsStatesAsync(int headNo = 0, int points = 1, CancellationToken cancellationToken = default)
     {
         var timers = await ReadLongTimerAsync(headNo, points, cancellationToken).ConfigureAwait(false);
-        return timers.Select(static t => t.Contact).ToArray();
+        return timers.Select(static timer => timer.Contact).ToArray();
     }
 
     /// <summary>Returns the coil state of each long retentive timer in the range.</summary>
     public async Task<bool[]> ReadLstcStatesAsync(int headNo = 0, int points = 1, CancellationToken cancellationToken = default)
     {
         var timers = await ReadLongRetentiveTimerAsync(headNo, points, cancellationToken).ConfigureAwait(false);
-        return timers.Select(static t => t.Coil).ToArray();
+        return timers.Select(static timer => timer.Coil).ToArray();
     }
 
     /// <summary>Returns the contact state of each long retentive timer in the range.</summary>
     public async Task<bool[]> ReadLstsStatesAsync(int headNo = 0, int points = 1, CancellationToken cancellationToken = default)
     {
         var timers = await ReadLongRetentiveTimerAsync(headNo, points, cancellationToken).ConfigureAwait(false);
-        return timers.Select(static t => t.Contact).ToArray();
+        return timers.Select(static timer => timer.Contact).ToArray();
+    }
+
+    private async Task<ushort[]> ReadLongTimerStatusWordsAsync(
+        SlmpDeviceCode currentValueDevice,
+        int headNo,
+        int points,
+        CancellationToken cancellationToken)
+    {
+        if (headNo < 0)
+            throw new ArgumentOutOfRangeException(nameof(headNo), "headNo must be >= 0.");
+        if (points < 0)
+            throw new ArgumentOutOfRangeException(nameof(points), "points must be >= 0.");
+
+        var words = new ushort[checked(points * 4)];
+        for (var index = 0; index < points; index++)
+        {
+            var device = new SlmpDeviceAddress(currentValueDevice, checked((uint)(headNo + index)));
+            var block = await ReadWordsRawAsync(device, 4, cancellationToken).ConfigureAwait(false);
+            Array.Copy(block, 0, words, index * 4, block.Length);
+        }
+
+        return words;
     }
 
     private static SlmpLongTimerResult[] ParseLongTimerWords(ushort[] words, int headNo, string prefix, int points)
@@ -1645,16 +1668,37 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private static void ValidateDirectBitReadDevice(SlmpDeviceAddress device)
     {
-        if (device.Code is SlmpDeviceCode.LTS or SlmpDeviceCode.LTC or SlmpDeviceCode.LSTS or SlmpDeviceCode.LSTC)
+        // Long timer state bits are decoded from the LTN/LSTN 4-word status block.
+        // Do not send direct bit read (0x0401) for these devices.
+        if (IsLongTimerStateDevice(device.Code))
         {
             throw new ArgumentException(
-                $"Direct bit read is not supported for {device.Code}. Use the long timer helpers or 4-word status blocks instead.",
+                $"Direct bit read is not supported for {device.Code}. Use ReadTypedAsync/ReadNamedAsync or the long timer status helpers so the LTN/LSTN 4-word status block is decoded.",
+                nameof(device));
+        }
+    }
+
+    private static void ValidateDirectBitWriteDevice(SlmpDeviceAddress device)
+    {
+        // PLCs reject direct bit write (0x1401) for these state bits. The
+        // supported write path is the typed/named route, which selects 0x1402.
+        if (RequiresRandomBitWrite(device.Code))
+        {
+            throw new ArgumentException(
+                $"Direct bit write is not supported for {device.Code}. Use WriteTypedAsync/WriteNamedAsync with dtype 'BIT' so random bit write (0x1402) is selected.",
                 nameof(device));
         }
     }
 
     private static void ValidateDirectWordReadDevice(SlmpDeviceAddress device, ushort points)
     {
+        if (IsDWordOnlyScalarDevice(device.Code))
+        {
+            throw new ArgumentException(
+                $"Direct word read is not supported for {device.Code}. {device.Code} is a 32-bit device; use ReadTypedAsync/ReadNamedAsync with ':D' or ':L' instead.",
+                nameof(device));
+        }
+
         if (IsLongCurrentValueDevice(device.Code))
         {
             if (points == 0 || points % 4 != 0)
@@ -1668,20 +1712,20 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private static void ValidateDirectWordWriteDevice(SlmpDeviceAddress device)
     {
-        if (IsLongCurrentValueDevice(device.Code))
+        if (IsLongCurrentValueDevice(device.Code) || IsDWordOnlyScalarDevice(device.Code))
         {
             throw new ArgumentException(
-                $"Direct word write is not supported for {device.Code}. {device.Code} is a 32-bit long current value; use WriteTypedAsync/WriteNamedAsync with ':D' or ':L' instead.",
+                $"Direct word write is not supported for {device.Code}. {device.Code} is a 32-bit device; use WriteTypedAsync/WriteNamedAsync with ':D' or ':L' instead.",
                 nameof(device));
         }
     }
 
     private static void ValidateDirectDWordWriteDevice(SlmpDeviceAddress device)
     {
-        if (IsLongCurrentValueDevice(device.Code))
+        if (IsLongCurrentValueDevice(device.Code) || IsDWordOnlyScalarDevice(device.Code))
         {
             throw new ArgumentException(
-                $"Direct DWord write is not supported for {device.Code}. Use WriteTypedAsync/WriteNamedAsync with ':D' or ':L' so the long-current write route is selected.",
+                $"Direct DWord write is not supported for {device.Code}. Use WriteTypedAsync/WriteNamedAsync with ':D' or ':L' so the 32-bit write route is selected.",
                 nameof(device));
         }
     }
@@ -1690,10 +1734,26 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<SlmpDeviceAddress> wordDevices,
         IReadOnlyList<SlmpDeviceAddress> dwordDevices)
     {
+        // LTS/LTC/LSTS/LSTC can be written by random bit write, but they are not
+        // readable by Read Random (0x0403); use the status-block helpers instead.
+        if (wordDevices.Any(device => IsLongTimerStateDevice(device.Code)) || dwordDevices.Any(device => IsLongTimerStateDevice(device.Code)))
+        {
+            throw new ArgumentException(
+                "Read Random (0x0403) does not support LTS/LTC/LSTS/LSTC. Use ReadTypedAsync/ReadNamedAsync or the long timer status helpers instead.",
+                nameof(wordDevices));
+        }
+
         if (wordDevices.Any(IsLongCounterContactDevice) || dwordDevices.Any(IsLongCounterContactDevice))
         {
             throw new ArgumentException(
-                "Read Random (0x0403) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync or read the LCN 4-word status block instead.",
+                "Read Random (0x0403) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync so direct bit read is selected.",
+                nameof(wordDevices));
+        }
+
+        if (wordDevices.Any(device => IsDWordOnlyScalarDevice(device.Code)))
+        {
+            throw new ArgumentException(
+                "Read Random (0x0403) does not support LZ as a word entry. Use a dword entry or ReadTypedAsync/ReadNamedAsync with ':D' or ':L' instead.",
                 nameof(wordDevices));
         }
     }
@@ -1715,7 +1775,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             bitBlocks.Any(block => IsLongCounterContactDevice(block.Device)))
         {
             throw new ArgumentException(
-                "Read Block (0x0406) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync or read the LCN 4-word status block instead.",
+                "Read Block (0x0406) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync so direct bit read is selected.",
                 nameof(wordBlocks));
         }
     }
@@ -1747,7 +1807,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (wordDevices.Any(IsLongCounterContactDevice) || dwordDevices.Any(IsLongCounterContactDevice))
         {
             throw new ArgumentException(
-                "Entry Monitor Device (0x0801) does not support LCS/LCC. Monitor the LCN 4-word status block instead.",
+                "Entry Monitor Device (0x0801) does not support LCS/LCC. Poll them through ReadTypedAsync/ReadNamedAsync instead.",
                 nameof(wordDevices));
         }
     }
@@ -1755,15 +1815,28 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     private static bool IsLongCounterContactDevice(SlmpDeviceAddress device)
         => device.Code is SlmpDeviceCode.LCS or SlmpDeviceCode.LCC;
 
+    private static bool RequiresRandomBitWrite(SlmpDeviceCode code)
+        => IsLongTimerStateDevice(code)
+            || code is SlmpDeviceCode.LCS or SlmpDeviceCode.LCC;
+
+    private static bool IsLongTimerStateDevice(SlmpDeviceCode code)
+        => code is SlmpDeviceCode.LTS
+            or SlmpDeviceCode.LTC
+            or SlmpDeviceCode.LSTS
+            or SlmpDeviceCode.LSTC;
+
     private static bool IsLongCurrentValueDevice(SlmpDeviceCode code)
         => code is SlmpDeviceCode.LTN or SlmpDeviceCode.LSTN or SlmpDeviceCode.LCN;
 
+    private static bool IsDWordOnlyScalarDevice(SlmpDeviceCode code)
+        => code is SlmpDeviceCode.LZ;
+
     private static void ValidateRandomWriteDevices(IReadOnlyList<(SlmpDeviceAddress Device, ushort Value)> wordEntries)
     {
-        if (wordEntries.Any(entry => IsLongCurrentValueDevice(entry.Device.Code)))
+        if (wordEntries.Any(entry => IsLongCurrentValueDevice(entry.Device.Code) || IsDWordOnlyScalarDevice(entry.Device.Code)))
         {
             throw new ArgumentException(
-                "Write Random (0x1402) does not support LTN/LSTN/LCN as word entries. Use dword entries or WriteTypedAsync/WriteNamedAsync with ':D' or ':L' instead.",
+                "Write Random (0x1402) does not support LTN/LSTN/LCN/LZ as word entries. Use dword entries or WriteTypedAsync/WriteNamedAsync with ':D' or ':L' instead.",
                 nameof(wordEntries));
         }
     }

@@ -93,9 +93,23 @@ public static class SlmpClientExtensions
         if (longRead is not null)
         {
             ValidateLongFamilyDType(device, normalizedDType, nameof(dtype));
+            if (longRead.Value.Kind == SlmpLongTimerReadKind.Current && device.Code == SlmpDeviceCode.LCN)
+            {
+                var value = await ReadRandomDWordValueAsync(client, device, ct).ConfigureAwait(false);
+                return normalizedDType == "L" ? DecodeSignedDWord(value) : value;
+            }
+
+            if (IsLongCounterStateDevice(device.Code))
+            {
+                var bits = await client.ReadBitsAsync(device, 1, ct).ConfigureAwait(false);
+                return bits[0];
+            }
+
             var timer = await ReadLongLikePointAsync(client, longRead.Value.BaseCode, device.Number, ct).ConfigureAwait(false);
             return DecodeLongLikeValue(normalizedDType, longRead.Value, timer);
         }
+
+        ValidateDWordOnlyDType(device, normalizedDType, nameof(dtype));
 
         switch (normalizedDType)
         {
@@ -108,12 +122,14 @@ public static class SlmpClientExtensions
             case "D":
             case "L":
                 {
-                    var dwords = await client.ReadDWordsRawAsync(device, 1, ct).ConfigureAwait(false);
+                    var dword = IsRandomDWordAddressedDevice(device.Code)
+                        ? await ReadRandomDWordValueAsync(client, device, ct).ConfigureAwait(false)
+                        : (await client.ReadDWordsRawAsync(device, 1, ct).ConfigureAwait(false))[0];
                     return dtype.ToUpperInvariant() switch
                     {
-                        "F" => DecodeFloatDWord(dwords[0]),
-                        "L" => DecodeSignedDWord(dwords[0]),
-                        _ => dwords[0],
+                        "F" => DecodeFloatDWord(dword),
+                        "L" => DecodeSignedDWord(dword),
+                        _ => dword,
                     };
                 }
             case "S":
@@ -826,6 +842,11 @@ public static class SlmpClientExtensions
         bool allowSplit = false,
         CancellationToken ct = default)
     {
+        if (IsRandomDWordAddressedDevice(start.Code))
+        {
+            return await ReadRandomDWordsAsync(client, start, count, maxDwordsPerRequest, allowSplit, ct).ConfigureAwait(false);
+        }
+
         var words = await client.ReadWordsAsync(
                 start,
                 count * 2,
@@ -1304,6 +1325,7 @@ public static class SlmpClientExtensions
             var device = SlmpDeviceParser.ParseForHighLevel(baseAddress, plcFamily);
             dtype = ResolveDTypeForAddress(address, device, dtype, bitIdx);
             ValidateLongTimerEntry(address, device, dtype);
+            ValidateDWordOnlyEntry(address, device, dtype);
             var kind = SlmpNamedReadKind.Fallback;
             var longTimerRead = GetLongTimerReadSpec(device.Code);
 
@@ -1396,6 +1418,18 @@ public static class SlmpClientExtensions
         CancellationToken ct)
     {
         var spec = entry.LongTimerRead ?? throw new InvalidOperationException("Long timer read metadata is missing.");
+        if (spec.BaseCode == SlmpDeviceCode.LCN && spec.Kind == SlmpLongTimerReadKind.Current)
+        {
+            var value = await ReadRandomDWordValueAsync(client, entry.Device, ct).ConfigureAwait(false);
+            return string.Equals(entry.DType, "L", StringComparison.OrdinalIgnoreCase) ? DecodeSignedDWord(value) : value;
+        }
+
+        if (IsLongCounterStateDevice(entry.Device.Code))
+        {
+            var bits = await client.ReadBitsAsync(entry.Device, 1, ct).ConfigureAwait(false);
+            return bits[0];
+        }
+
         var key = (spec.BaseCode, entry.Device.Number);
         if (!cache.TryGetValue(key, out var timer))
         {
@@ -1464,6 +1498,55 @@ public static class SlmpClientExtensions
         };
     }
 
+    private static async Task<uint> ReadRandomDWordValueAsync(
+        SlmpClient client,
+        SlmpDeviceAddress device,
+        CancellationToken ct)
+    {
+        var values = await ReadRandomDWordsAsync(client, device, 1, 1, allowSplit: false, ct).ConfigureAwait(false);
+        return values[0];
+    }
+
+    private static async Task<uint[]> ReadRandomDWordsAsync(
+        SlmpClient client,
+        SlmpDeviceAddress start,
+        int count,
+        int maxDwordsPerRequest,
+        bool allowSplit,
+        CancellationToken ct)
+    {
+        if (count < 0)
+            throw new ArgumentOutOfRangeException(nameof(count), "count must be >= 0.");
+
+        var effectiveMax = Math.Min(maxDwordsPerRequest, 0xFF);
+        if (effectiveMax <= 0)
+            throw new ArgumentOutOfRangeException(nameof(maxDwordsPerRequest), "maxDwordsPerRequest must be >= 1.");
+
+        if (!allowSplit && count > effectiveMax)
+        {
+            throw new ArgumentException(
+                $"count {count} exceeds maxDwordsPerRequest {effectiveMax}; pass allowSplit: true to split the read across multiple requests.",
+                nameof(count));
+        }
+
+        var result = new uint[count];
+        var remaining = count;
+        var offset = 0;
+        while (remaining > 0)
+        {
+            var chunkCount = Math.Min(remaining, effectiveMax);
+            var devices = Enumerable.Range(0, chunkCount)
+                .Select(index => start with { Number = checked(start.Number + (uint)(offset + index)) })
+                .ToArray();
+            var (_, dwords) = await client.ReadRandomAsync([], devices, ct).ConfigureAwait(false);
+            Array.Copy(dwords, 0, result, offset, dwords.Length);
+            offset += chunkCount;
+            remaining -= chunkCount;
+        }
+
+        return result;
+    }
+
     private static async Task<(Dictionary<SlmpDeviceAddress, ushort> Words, Dictionary<SlmpDeviceAddress, uint> DWords)> ReadRandomMapsAsync(
         SlmpClient client,
         IReadOnlyList<SlmpDeviceAddress> wordDevices,
@@ -1524,13 +1607,12 @@ public static class SlmpClientExtensions
     {
         var normalized = NormalizeDTypeForDevice(device, dtype.ToUpperInvariant());
         ValidateLongFamilyDType(device, normalized, nameof(dtype));
+        ValidateDWordOnlyDType(device, normalized, nameof(dtype));
         return normalized switch
         {
-            "BIT" when device.Code is SlmpDeviceCode.LTS
-                or SlmpDeviceCode.LTC
-                or SlmpDeviceCode.LSTS
-                or SlmpDeviceCode.LSTC
-                => SlmpNamedWriteRoute.RandomBits,
+            // Long-family state writes must use Device Write Random
+            // (0x1402). Direct bit write (0x1401) is guarded in SlmpClient.
+            "BIT" when IsRandomBitWriteDevice(device.Code) => SlmpNamedWriteRoute.RandomBits,
             "BIT" => SlmpNamedWriteRoute.ContiguousBits,
             "D" or "L" when device.Code is SlmpDeviceCode.LTN
                 or SlmpDeviceCode.LSTN
@@ -1582,6 +1664,19 @@ public static class SlmpClientExtensions
         }
     }
 
+    private static void ValidateDWordOnlyEntry(string address, SlmpDeviceAddress device, string dtype)
+    {
+        if (!IsDWordOnlyScalarDevice(device.Code))
+            return;
+
+        if (dtype is not "D" and not "L")
+        {
+            throw new ArgumentException(
+                $"Address '{address}' uses a 32-bit device. Use the plain form or ':D' / ':L'.",
+                nameof(address));
+        }
+    }
+
     private static void ValidateLongFamilyDType(SlmpDeviceAddress device, string dtype, string paramName)
     {
         var spec = GetLongTimerReadSpec(device.Code);
@@ -1606,6 +1701,36 @@ public static class SlmpClientExtensions
                 paramName);
         }
     }
+
+    private static void ValidateDWordOnlyDType(SlmpDeviceAddress device, string dtype, string paramName)
+    {
+        if (!IsDWordOnlyScalarDevice(device.Code))
+            return;
+
+        if (dtype is not "D" and not "L")
+        {
+            throw new ArgumentException(
+                $"{device.Code} is a 32-bit device. Use dtype 'D' or 'L'.",
+                paramName);
+        }
+    }
+
+    private static bool IsDWordOnlyScalarDevice(SlmpDeviceCode code)
+        => code is SlmpDeviceCode.LZ;
+
+    private static bool IsRandomDWordAddressedDevice(SlmpDeviceCode code)
+        => code is SlmpDeviceCode.LZ;
+
+    private static bool IsRandomBitWriteDevice(SlmpDeviceCode code)
+        => code is SlmpDeviceCode.LTS
+            or SlmpDeviceCode.LTC
+            or SlmpDeviceCode.LSTS
+            or SlmpDeviceCode.LSTC
+            or SlmpDeviceCode.LCS
+            or SlmpDeviceCode.LCC;
+
+    private static bool IsLongCounterStateDevice(SlmpDeviceCode code)
+        => code is SlmpDeviceCode.LCS or SlmpDeviceCode.LCC;
 
     private static bool IsWordDevice(SlmpDeviceCode code)
         => code is SlmpDeviceCode.SD
