@@ -242,6 +242,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task WriteWordsAsync(SlmpDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
     {
+        ValidateDirectWordWriteDevice(device);
+        await WriteWordsUncheckedAsync(device, values, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task WriteWordsUncheckedAsync(SlmpDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
+    {
         var payload = BuildReadWritePayload(device, checked((ushort)values.Count), values, bitUnit: false);
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0000 : (ushort)0x0002;
         _ = await RequestAsync(SlmpCommand.DeviceWrite, sub, payload, true, cancellationToken).ConfigureAwait(false);
@@ -363,13 +369,14 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task WriteDWordsAsync(SlmpDeviceAddress device, IReadOnlyList<uint> values, CancellationToken cancellationToken = default)
     {
+        ValidateDirectDWordWriteDevice(device);
         var words = new ushort[values.Count * 2];
         for (var i = 0; i < values.Count; i++)
         {
             words[i * 2] = (ushort)(values[i] & 0xFFFF);
             words[(i * 2) + 1] = (ushort)((values[i] >> 16) & 0xFFFF);
         }
-        await WriteWordsAsync(device, words, cancellationToken).ConfigureAwait(false);
+        await WriteWordsUncheckedAsync(device, words, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<float[]> ReadFloat32sAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
@@ -452,6 +459,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(wordEntries), "random counts must be <= 255");
         }
+        ValidateRandomWriteDevices(wordEntries);
 
         var payload = new byte[2 + (wordEntries.Count * (DeviceSpecSize() + 2)) + (dwordEntries.Count * (DeviceSpecSize() + 4))];
         payload[0] = (byte)wordEntries.Count;
@@ -1647,7 +1655,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private static void ValidateDirectWordReadDevice(SlmpDeviceAddress device, ushort points)
     {
-        if (device.Code is SlmpDeviceCode.LTN or SlmpDeviceCode.LSTN)
+        if (IsLongCurrentValueDevice(device.Code))
         {
             if (points == 0 || points % 4 != 0)
             {
@@ -1655,6 +1663,26 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                     $"Direct read of {device.Code} requires 4-word blocks. Requested points={points}; use a multiple of 4 or the long timer helpers.",
                     nameof(points));
             }
+        }
+    }
+
+    private static void ValidateDirectWordWriteDevice(SlmpDeviceAddress device)
+    {
+        if (IsLongCurrentValueDevice(device.Code))
+        {
+            throw new ArgumentException(
+                $"Direct word write is not supported for {device.Code}. {device.Code} is a 32-bit long current value; use WriteTypedAsync/WriteNamedAsync with ':D' or ':L' instead.",
+                nameof(device));
+        }
+    }
+
+    private static void ValidateDirectDWordWriteDevice(SlmpDeviceAddress device)
+    {
+        if (IsLongCurrentValueDevice(device.Code))
+        {
+            throw new ArgumentException(
+                $"Direct DWord write is not supported for {device.Code}. Use WriteTypedAsync/WriteNamedAsync with ':D' or ':L' so the long-current write route is selected.",
+                nameof(device));
         }
     }
 
@@ -1674,6 +1702,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<SlmpBlockRead> wordBlocks,
         IReadOnlyList<SlmpBlockRead> bitBlocks)
     {
+        var invalidLongCurrentBlock = wordBlocks.FirstOrDefault(block =>
+            IsLongCurrentValueDevice(block.Device.Code) && (block.Points == 0 || block.Points % 4 != 0));
+        if (invalidLongCurrentBlock is not null)
+        {
+            throw new ArgumentException(
+                $"Read Block (0x0406) direct read of {invalidLongCurrentBlock.Device.Code} requires 4-word blocks. Requested points={invalidLongCurrentBlock.Points}; use ReadTypedAsync/ReadNamedAsync for 32-bit current values.",
+                nameof(wordBlocks));
+        }
+
         if (wordBlocks.Any(block => IsLongCounterContactDevice(block.Device)) ||
             bitBlocks.Any(block => IsLongCounterContactDevice(block.Device)))
         {
@@ -1687,6 +1724,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<SlmpBlockWrite> wordBlocks,
         IReadOnlyList<SlmpBlockWrite> bitBlocks)
     {
+        if (wordBlocks.Any(block => IsLongCurrentValueDevice(block.Device.Code)))
+        {
+            throw new ArgumentException(
+                "Write Block (0x1406) does not support LTN/LSTN/LCN as word blocks. Use WriteTypedAsync/WriteNamedAsync with ':D' or ':L' instead.",
+                nameof(wordBlocks));
+        }
+
         if (wordBlocks.Any(block => IsLongCounterContactDevice(block.Device)) ||
             bitBlocks.Any(block => IsLongCounterContactDevice(block.Device)))
         {
@@ -1710,6 +1754,19 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private static bool IsLongCounterContactDevice(SlmpDeviceAddress device)
         => device.Code is SlmpDeviceCode.LCS or SlmpDeviceCode.LCC;
+
+    private static bool IsLongCurrentValueDevice(SlmpDeviceCode code)
+        => code is SlmpDeviceCode.LTN or SlmpDeviceCode.LSTN or SlmpDeviceCode.LCN;
+
+    private static void ValidateRandomWriteDevices(IReadOnlyList<(SlmpDeviceAddress Device, ushort Value)> wordEntries)
+    {
+        if (wordEntries.Any(entry => IsLongCurrentValueDevice(entry.Device.Code)))
+        {
+            throw new ArgumentException(
+                "Write Random (0x1402) does not support LTN/LSTN/LCN as word entries. Use dword entries or WriteTypedAsync/WriteNamedAsync with ':D' or ':L' instead.",
+                nameof(wordEntries));
+        }
+    }
 
     private byte[] BuildReadWritePayload(SlmpDeviceAddress device, ushort points, IReadOnlyList<ushort>? values, bool bitUnit)
     {

@@ -92,6 +92,7 @@ public static class SlmpClientExtensions
         var longRead = GetLongTimerReadSpec(device.Code);
         if (longRead is not null)
         {
+            ValidateLongFamilyDType(device, normalizedDType, nameof(dtype));
             var timer = await ReadLongLikePointAsync(client, longRead.Value.BaseCode, device.Number, ct).ConfigureAwait(false);
             return DecodeLongLikeValue(normalizedDType, longRead.Value, timer);
         }
@@ -195,7 +196,8 @@ public static class SlmpClientExtensions
         object value,
         CancellationToken ct = default)
     {
-        switch (ResolveWriteRoute(device, dtype))
+        var normalizedDType = dtype.ToUpperInvariant();
+        switch (ResolveWriteRoute(device, normalizedDType))
         {
             case SlmpNamedWriteRoute.RandomBits:
                 await client.WriteRandomBitsAsync(
@@ -207,14 +209,14 @@ public static class SlmpClientExtensions
                 await client.WriteBitsAsync(device, [Convert.ToBoolean(value, CultureInfo.InvariantCulture)], ct)
                     .ConfigureAwait(false);
                 break;
-            case SlmpNamedWriteRoute.ContiguousDWords when string.Equals(dtype, "F", StringComparison.OrdinalIgnoreCase):
+            case SlmpNamedWriteRoute.ContiguousDWords when normalizedDType == "F":
                 await client.WriteDWordsAsync(
                         device,
                         [unchecked((uint)BitConverter.SingleToInt32Bits(Convert.ToSingle(value, CultureInfo.InvariantCulture)))],
                         ct)
                     .ConfigureAwait(false);
                 break;
-            case SlmpNamedWriteRoute.RandomDWords when string.Equals(dtype, "L", StringComparison.OrdinalIgnoreCase):
+            case SlmpNamedWriteRoute.RandomDWords when normalizedDType == "L":
                 await client.WriteRandomWordsAsync(
                         [],
                         [(device, unchecked((uint)Convert.ToInt32(value, CultureInfo.InvariantCulture)))],
@@ -228,7 +230,7 @@ public static class SlmpClientExtensions
                         ct)
                     .ConfigureAwait(false);
                 break;
-            case SlmpNamedWriteRoute.ContiguousDWords when string.Equals(dtype, "L", StringComparison.OrdinalIgnoreCase):
+            case SlmpNamedWriteRoute.ContiguousDWords when normalizedDType == "L":
                 await client.WriteDWordsAsync(
                         device,
                         [unchecked((uint)Convert.ToInt32(value, CultureInfo.InvariantCulture))],
@@ -1452,11 +1454,12 @@ public static class SlmpClientExtensions
         {
             SlmpLongTimerReadKind.Current => dtype.ToUpperInvariant() switch
             {
+                "D" => timer.CurrentValue,
                 "L" => DecodeSignedDWord(timer.CurrentValue),
-                _ => timer.CurrentValue,
+                _ => throw new ArgumentException($"{spec.BaseCode} current value requires dtype 'D' or 'L'.", nameof(dtype)),
             },
-            SlmpLongTimerReadKind.Contact => timer.Contact,
-            SlmpLongTimerReadKind.Coil => timer.Coil,
+            SlmpLongTimerReadKind.Contact => string.Equals(dtype, "BIT", StringComparison.OrdinalIgnoreCase) ? timer.Contact : throw new ArgumentException($"{spec.BaseCode} contact requires dtype 'BIT'.", nameof(dtype)),
+            SlmpLongTimerReadKind.Coil => string.Equals(dtype, "BIT", StringComparison.OrdinalIgnoreCase) ? timer.Coil : throw new ArgumentException($"{spec.BaseCode} coil requires dtype 'BIT'.", nameof(dtype)),
             _ => throw new InvalidOperationException($"Unsupported long timer read kind: {spec.Kind}"),
         };
     }
@@ -1518,7 +1521,10 @@ public static class SlmpClientExtensions
     }
 
     internal static SlmpNamedWriteRoute ResolveWriteRoute(SlmpDeviceAddress device, string dtype)
-        => NormalizeDTypeForDevice(device, dtype) switch
+    {
+        var normalized = NormalizeDTypeForDevice(device, dtype.ToUpperInvariant());
+        ValidateLongFamilyDType(device, normalized, nameof(dtype));
+        return normalized switch
         {
             "BIT" when device.Code is SlmpDeviceCode.LTS
                 or SlmpDeviceCode.LTC
@@ -1528,11 +1534,13 @@ public static class SlmpClientExtensions
             "BIT" => SlmpNamedWriteRoute.ContiguousBits,
             "D" or "L" when device.Code is SlmpDeviceCode.LTN
                 or SlmpDeviceCode.LSTN
+                or SlmpDeviceCode.LCN
                 or SlmpDeviceCode.LZ
                 => SlmpNamedWriteRoute.RandomDWords,
             "D" or "L" or "F" => SlmpNamedWriteRoute.ContiguousDWords,
             _ => SlmpNamedWriteRoute.ContiguousWords,
         };
+    }
 
     internal static SlmpLongTimerReadSpec? GetLongTimerReadSpec(SlmpDeviceCode code)
         => code switch
@@ -1571,6 +1579,31 @@ public static class SlmpClientExtensions
             throw new ArgumentException(
                 $"Address '{address}' is a long timer state device. Use the plain device form without a dtype override.",
                 nameof(address));
+        }
+    }
+
+    private static void ValidateLongFamilyDType(SlmpDeviceAddress device, string dtype, string paramName)
+    {
+        var spec = GetLongTimerReadSpec(device.Code);
+        if (spec is null)
+            return;
+
+        if (spec.Value.Kind == SlmpLongTimerReadKind.Current)
+        {
+            if (dtype is not "D" and not "L")
+            {
+                throw new ArgumentException(
+                    $"{device.Code} is a 32-bit long current value. Use dtype 'D' or 'L'.",
+                    paramName);
+            }
+            return;
+        }
+
+        if (dtype != "BIT")
+        {
+            throw new ArgumentException(
+                $"{device.Code} is a long-family state device. Use dtype 'BIT'.",
+                paramName);
         }
     }
 
