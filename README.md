@@ -19,6 +19,7 @@ The recommended user surface is the extension-method layer:
 - `ReadWordsChunkedAsync` / `ReadDWordsChunkedAsync`
 - `WriteBitInWordAsync`
 - `ReadNamedAsync`
+- `WriteNamedAsync`
 - `PollAsync`
 - `SlmpAddress.Normalize`
 - `ReadDeviceRangeCatalogAsync`
@@ -72,6 +73,51 @@ See the full public table in [Supported PLC Registers](https://github.com/fa-yos
 For live PLC-dependent device limits resolved from a user-selected PLC family
 plus family `SD` registers, see [Device Range Catalog](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/DEVICE_RANGES.md).
 
+### Long Current Values
+
+`LTN`, `LSTN`, and `LCN` are not normal 16-bit word devices in the high-level
+API. They represent 32-bit current values. Use the typed or named API with `:D`
+or `:L`:
+
+```csharp
+var timer = await client.ReadTypedAsync("LTN100", "L");
+await client.WriteTypedAsync("LTN100", "L", 1234);
+
+var snapshot = await client.ReadNamedAsync(["LTN100:L", "LSTN10:D", "LCN0:L"]);
+await client.WriteNamedAsync(new Dictionary<string, object>
+{
+    ["LCN0:L"] = 10,
+});
+```
+
+The low-level word block APIs intentionally reject `LTN` / `LSTN` / `LCN` as
+word writes. Direct DWord writes are also rejected for these families so the
+long-current write route is selected explicitly through `WriteTypedAsync` or
+`WriteNamedAsync`.
+
+Contact and coil devices in the long families, such as `LTS`, `LTC`, `LSTS`,
+`LSTC`, `LCS`, and `LCC`, are bit-style addresses. Do not treat them as
+current-value words.
+
+### Device Range Catalog
+
+Use `ReadDeviceRangeCatalogAsync` after opening a connection with a selected
+`SlmpPlcFamily`. The catalog reports whether each device is supported, its
+point count, lower bound, upper bound, display range, notation, and source.
+
+```csharp
+var catalog = await client.ReadDeviceRangeCatalogAsync();
+var stn = catalog.Entries.First(entry => entry.Device == "STN");
+
+if (!stn.Supported || stn.PointCount == 0)
+{
+    Console.WriteLine("STN is unavailable in the current PLC settings.");
+}
+```
+
+Applications should use this catalog to clamp monitor scroll ranges and reject
+out-of-range reads or writes before issuing SLMP commands.
+
 ## Public Documentation
 
 - [Getting Started](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/GETTING_STARTED.md)
@@ -95,6 +141,7 @@ int position = (int)await client.ReadTypedAsync("D300", "L");
 await client.WriteTypedAsync("D100", "U", (ushort)42);
 await client.WriteTypedAsync("D200", "F", 3.14f);
 await client.WriteTypedAsync("D300", "L", -100);
+await client.WriteTypedAsync("LTN100", "L", 1000);
 ```
 
 ### Mixed Reads
@@ -111,6 +158,8 @@ var snapshot = await client.ReadNamedAsync(
 
 Use `.bit` notation only with word devices such as `D50.3`.
 Address bit devices directly as `M1000`, `M1001`, `X20`, or `Y20`.
+
+Use `:D` or `:L` with `LTN`, `LSTN`, and `LCN`.
 
 ## Development
 

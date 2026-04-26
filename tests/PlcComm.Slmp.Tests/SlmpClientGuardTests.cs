@@ -23,12 +23,39 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task ReadWordsRawAsync_RejectsNonBlockLongCounterCurrentReads()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 0), 2));
+        Assert.Contains("requires 4-word blocks", ex.Message);
+    }
+
+    [Fact]
     public async Task ReadDWordsRawAsync_RejectsDirectLongTimerCurrentReads()
     {
         using var client = new SlmpClient("127.0.0.1");
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadDWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.LTN, 0), 1));
         Assert.Contains("requires 4-word blocks", ex.Message);
+    }
+
+    [Fact]
+    public async Task WriteWordsAsync_RejectsLongCurrentValueDevices()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LTN, 0), new ushort[] { 1 }));
+        Assert.Contains("Direct word write is not supported for LTN", ex.Message);
+    }
+
+    [Fact]
+    public async Task WriteDWordsAsync_RejectsDirectLongCurrentWrites()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteDWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 0), new uint[] { 1 }));
+        Assert.Contains("Direct DWord write is not supported for LCN", ex.Message);
     }
 
     [Fact]
@@ -62,6 +89,28 @@ public sealed class SlmpClientGuardTests
                 Array.Empty<SlmpBlockWrite>(),
                 new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.LCC, 10), new ushort[] { 1 }) }));
         Assert.Contains("Write Block (0x1406) does not support LCS/LCC", ex.Message);
+    }
+
+    [Fact]
+    public async Task WriteBlockAsync_RejectsLongCurrentWordBlocks()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteBlockAsync(
+                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 10), new ushort[] { 1 }) },
+                Array.Empty<SlmpBlockWrite>()));
+        Assert.Contains("does not support LTN/LSTN/LCN as word blocks", ex.Message);
+    }
+
+    [Fact]
+    public async Task WriteRandomWordsAsync_RejectsLongCurrentWordEntries()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteRandomWordsAsync(
+                new[] { (new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10), (ushort)1) },
+                Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
+        Assert.Contains("does not support LTN/LSTN/LCN as word entries", ex.Message);
     }
 
     [Fact]

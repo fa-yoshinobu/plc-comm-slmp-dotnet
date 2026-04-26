@@ -196,11 +196,29 @@ public sealed class SlmpClientExtensionsTests
             SlmpClientExtensions.ResolveDTypeForAddress("LTS10", new SlmpDeviceAddress(SlmpDeviceCode.LTS, 10), "U", null));
     }
 
+    [Fact]
+    public async Task ReadTypedAsync_RejectsWordDTypeForLongCurrentValues()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10), "U"));
+        Assert.Contains("32-bit long current value", ex.Message);
+    }
+
+    [Fact]
+    public async Task WriteTypedAsync_RejectsWordDTypeForLongCurrentValues()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 10), "S", (short)1));
+        Assert.Contains("32-bit long current value", ex.Message);
+    }
+
     [Theory]
     [InlineData(SlmpDeviceCode.LTN, "D", (int)SlmpNamedWriteRoute.RandomDWords)]
     [InlineData(SlmpDeviceCode.LSTN, "L", (int)SlmpNamedWriteRoute.RandomDWords)]
     [InlineData(SlmpDeviceCode.LZ, "D", (int)SlmpNamedWriteRoute.RandomDWords)]
-    [InlineData(SlmpDeviceCode.LCN, "D", (int)SlmpNamedWriteRoute.ContiguousDWords)]
+    [InlineData(SlmpDeviceCode.LCN, "D", (int)SlmpNamedWriteRoute.RandomDWords)]
     [InlineData(SlmpDeviceCode.LTC, "BIT", (int)SlmpNamedWriteRoute.RandomBits)]
     [InlineData(SlmpDeviceCode.LTS, "BIT", (int)SlmpNamedWriteRoute.RandomBits)]
     [InlineData(SlmpDeviceCode.LSTC, "BIT", (int)SlmpNamedWriteRoute.RandomBits)]
@@ -214,5 +232,16 @@ public sealed class SlmpClientExtensionsTests
     {
         var route = SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(code, 10), dtype);
         Assert.Equal((SlmpNamedWriteRoute)expected, route);
+    }
+
+    [Theory]
+    [InlineData(SlmpDeviceCode.LTN, "U")]
+    [InlineData(SlmpDeviceCode.LSTN, "S")]
+    [InlineData(SlmpDeviceCode.LCN, "F")]
+    public void ResolveWriteRoute_RejectsInvalidLongCurrentDTypes(SlmpDeviceCode code, string dtype)
+    {
+        var ex = Assert.Throws<ArgumentException>(
+            () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(code, 10), dtype));
+        Assert.Contains("32-bit long current value", ex.Message);
     }
 }
