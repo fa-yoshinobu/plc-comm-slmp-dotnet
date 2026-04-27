@@ -21,6 +21,21 @@ public sealed class SlmpParserTests
     }
 
     [Fact]
+    public void ParseDevice_HexNumberCanBeAllLetters()
+    {
+        var device = SlmpDeviceParser.Parse("XFF");
+        Assert.Equal(SlmpDeviceCode.X, device.Code);
+        Assert.Equal((uint)0xFF, device.Number);
+    }
+
+    [Fact]
+    public void ParseDevice_KnownCodeWithInvalidNumberDoesNotFallback()
+    {
+        var error = Assert.Throws<FormatException>(() => SlmpDeviceParser.Parse("DFFFF"));
+        Assert.Contains("device code 'D'", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ParseDevice_IqFXY_UsesOctal()
     {
         var device = SlmpDeviceParser.Parse("X100", SlmpPlcFamily.IqF);

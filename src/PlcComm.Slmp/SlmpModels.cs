@@ -212,6 +212,9 @@ public static class SlmpDeviceParser
             {
                 return new SlmpDeviceAddress(code, number);
             }
+
+            throw new FormatException(
+                $"Invalid SLMP device number '{numberPart}' for device code '{prefix}' in '{text}'.");
         }
 
         var validCodes = string.Join(", ", Prefixes.Select(static p => p.Prefix));

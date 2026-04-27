@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.12] - 2026-04-27
+
+### Fixed
+- Tightened SLMP device-name parsing so a matched device code with an invalid number fails immediately instead of checking shorter code candidates.
+- Added regression coverage for hexadecimal device numbers whose number text is entirely `A-F`.
+
 ## [0.1.11] - 2026-04-27
 
 ### Changed
