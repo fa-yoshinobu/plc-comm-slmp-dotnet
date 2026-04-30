@@ -113,14 +113,14 @@ public sealed class SlmpDeviceRangeCatalogTests
     }
 
     [Fact]
-    public void BuildCatalog_QnUUsesSd300ForStFamilyAndSd305ForZ()
+    public void BuildCatalog_QnUUsesSd300ForStFamilyAndFixedZRange()
     {
         var typeInfo = new SlmpTypeNameInfo("Q03UDECPU", 0x0268, true);
         var profile = SlmpDeviceRangeResolver.ResolveProfile(typeInfo);
         var registers = CreateRegisterSnapshot(profile);
         registers[300] = 16;
         registers[301] = 1024;
-        registers[305] = 20;
+        registers[305] = 65535;
 
         var catalog = SlmpDeviceRangeResolver.BuildCatalog(typeInfo, profile, registers);
 
@@ -142,10 +142,27 @@ public sealed class SlmpDeviceRangeCatalogTests
         Assert.Equal("Z0-Z19", GetEntry(catalog, "Z").AddressRange);
     }
 
+    [Theory]
+    [InlineData(SlmpDeviceRangeFamily.LCpu)]
+    [InlineData(SlmpDeviceRangeFamily.QnUDV)]
+    public void BuildCatalog_QSeriesDerivedFamiliesUseFixedZRange(SlmpDeviceRangeFamily family)
+    {
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(family);
+        var registers = CreateRegisterSnapshot(profile);
+        registers[305] = 65535;
+
+        var catalog = SlmpDeviceRangeResolver.BuildCatalog(family, registers);
+
+        Assert.Equal(20u, GetEntry(catalog, "Z").PointCount);
+        Assert.Equal(19u, GetEntry(catalog, "Z").UpperBound);
+        Assert.Equal("Z0-Z19", GetEntry(catalog, "Z").AddressRange);
+        Assert.Equal("Fixed family limit", GetEntry(catalog, "Z").Source);
+    }
+
     [Fact]
     public async Task ReadDeviceRangeCatalogAsync_WithoutConfiguredFamily_Throws()
     {
-        await using var server = new MultiResponseSlmpServer([]);
+        await using var server = new MultiResponseSlmpServer(Array.Empty<byte[]>());
         await server.StartAsync();
 
         using var client = new SlmpClient("127.0.0.1", server.Port)
@@ -192,6 +209,87 @@ public sealed class SlmpDeviceRangeCatalogTests
         Assert.Equal("X0000-X1777", GetEntry(catalog, "X").AddressRange);
         Assert.Equal("D0-D9999", GetEntry(catalog, "D").AddressRange);
         Assert.Equal("SD0-SD11999", GetEntry(catalog, "SD").AddressRange);
+    }
+
+    [Fact]
+    public async Task ReadDeviceRangeCatalogAsync_QCpuUsesSixteenPointZWhenZ15IsReadable()
+    {
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpDeviceRangeFamily.QCpu);
+        var sdValues = new ushort[profile.RegisterCount];
+
+        await using var server = new MultiResponseSlmpServer(
+        [
+            (BuildWordPayload(sdValues), (ushort)0),
+            (BuildWordPayload([0]), (ushort)0),
+            (BuildWordPayload([0]), (ushort)0),
+            (BuildWordPayload([0]), (ushort)0),
+            (BuildWordPayload([0]), (ushort)0),
+            (BuildWordPayload([0]), (ushort)0),
+            (BuildWordPayload([0]), (ushort)0),
+            (Array.Empty<byte>(), (ushort)0x4031),
+            (Array.Empty<byte>(), (ushort)0x4031),
+            (Array.Empty<byte>(), (ushort)0x4031),
+            (Array.Empty<byte>(), (ushort)0x4031),
+            (Array.Empty<byte>(), (ushort)0x4031),
+        ]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", server.Port)
+        {
+            CompatibilityMode = SlmpCompatibilityMode.Iqr,
+            FrameType = SlmpFrameType.Frame4E,
+            MonitoringTimer = 0x0010,
+        };
+
+        var catalog = await client.ReadDeviceRangeCatalogAsync(SlmpDeviceRangeFamily.QCpu);
+
+        Assert.Equal(12, server.RequestFrames.Count);
+        Assert.Equal(16u, GetEntry(catalog, "Z").PointCount);
+        Assert.Equal(15u, GetEntry(catalog, "Z").UpperBound);
+        Assert.Equal("Z0-Z15", GetEntry(catalog, "Z").AddressRange);
+        Assert.Equal("Runtime access check", GetEntry(catalog, "Z").Source);
+        Assert.Equal(16u, GetEntry(catalog, "ZR").PointCount);
+        Assert.Equal(15u, GetEntry(catalog, "ZR").UpperBound);
+        Assert.Equal("ZR0-ZR15", GetEntry(catalog, "ZR").AddressRange);
+        Assert.Equal(16u, GetEntry(catalog, "R").PointCount);
+        Assert.Equal(15u, GetEntry(catalog, "R").UpperBound);
+        Assert.Equal("R0-R15", GetEntry(catalog, "R").AddressRange);
+    }
+
+    [Fact]
+    public async Task ReadDeviceRangeCatalogAsync_QCpuUsesTenPointZWhenZ15IsRejected()
+    {
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpDeviceRangeFamily.QCpu);
+        var sdValues = new ushort[profile.RegisterCount];
+
+        await using var server = new MultiResponseSlmpServer(
+        [
+            (BuildWordPayload(sdValues), (ushort)0),
+            (Array.Empty<byte>(), (ushort)0x4031),
+            (Array.Empty<byte>(), (ushort)0x4031),
+        ]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", server.Port)
+        {
+            CompatibilityMode = SlmpCompatibilityMode.Iqr,
+            FrameType = SlmpFrameType.Frame4E,
+            MonitoringTimer = 0x0010,
+        };
+
+        var catalog = await client.ReadDeviceRangeCatalogAsync(SlmpDeviceRangeFamily.QCpu);
+
+        Assert.Equal(3, server.RequestFrames.Count);
+        Assert.Equal(10u, GetEntry(catalog, "Z").PointCount);
+        Assert.Equal(9u, GetEntry(catalog, "Z").UpperBound);
+        Assert.Equal("Z0-Z9", GetEntry(catalog, "Z").AddressRange);
+        Assert.Equal("Runtime access check", GetEntry(catalog, "Z").Source);
+        Assert.Equal(0u, GetEntry(catalog, "ZR").PointCount);
+        Assert.Null(GetEntry(catalog, "ZR").UpperBound);
+        Assert.Null(GetEntry(catalog, "ZR").AddressRange);
+        Assert.Equal(0u, GetEntry(catalog, "R").PointCount);
+        Assert.Null(GetEntry(catalog, "R").UpperBound);
+        Assert.Null(GetEntry(catalog, "R").AddressRange);
     }
 
     [Fact]
@@ -306,13 +404,19 @@ public sealed class SlmpDeviceRangeCatalogTests
 
     private sealed class MultiResponseSlmpServer : IAsyncDisposable
     {
-        private readonly Queue<byte[]> _responsePayloads;
+        private readonly Queue<(byte[] Payload, ushort EndCode)> _responses;
         private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
         private Task? _serverTask;
 
         public MultiResponseSlmpServer(IEnumerable<byte[]> responsePayloads)
         {
-            _responsePayloads = new Queue<byte[]>(responsePayloads);
+            _responses = new Queue<(byte[] Payload, ushort EndCode)>(
+                responsePayloads.Select(static payload => (payload, (ushort)0)));
+        }
+
+        public MultiResponseSlmpServer(IEnumerable<(byte[] Payload, ushort EndCode)> responses)
+        {
+            _responses = new Queue<(byte[] Payload, ushort EndCode)>(responses);
         }
 
         public int Port => ((IPEndPoint)_listener.LocalEndpoint).Port;
@@ -342,7 +446,7 @@ public sealed class SlmpDeviceRangeCatalogTests
                 using var client = await _listener.AcceptTcpClientAsync().ConfigureAwait(false);
                 using var stream = client.GetStream();
 
-                while (_responsePayloads.Count > 0)
+                while (_responses.Count > 0)
                 {
                     var head = await ReadExactAsync(stream, 13).ConfigureAwait(false);
                     var bodyLength = BinaryPrimitives.ReadUInt16LittleEndian(head.AsSpan(11, 2));
@@ -352,7 +456,8 @@ public sealed class SlmpDeviceRangeCatalogTests
                     Buffer.BlockCopy(body, 0, request, head.Length, body.Length);
                     RequestFrames.Add(request);
 
-                    var response = Build4EResponse(request, _responsePayloads.Dequeue());
+                    var (payload, endCode) = _responses.Dequeue();
+                    var response = Build4EResponse(request, payload, endCode);
                     await stream.WriteAsync(response).ConfigureAwait(false);
                     await stream.FlushAsync().ConfigureAwait(false);
                 }
