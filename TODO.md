@@ -17,21 +17,13 @@ This file tracks active follow-up items for the SLMP .NET library.
   Transport-level acceptance is confirmed, but the operator-visible behavior on
   real hardware still needs better evidence.
 
-- **Device-range runtime exploration method**
-  Some MELSEC families report device range values that can exceed the range
-  accepted by device read commands. Fix the range resolution method by adding
-  reusable runtime exploration that verifies actual readable bounds with device
-  reads and caches the result per PLC family/device. This must be a general
-  mechanism, not hard-coded correction for individual devices. Q/Qn-series
-  `Z`, `R`, and `ZR` are known examples where PLC-reported ranges can be
-  misleading.
-
 ## 2. Practical Limits
 
 - ASCII mode is intentionally out of scope.
 
 ## 3. Completed Recently
 
+- [x] **Resolve Q-series runtime device ranges**: QCPU/LCPU/QnU/QnUDV `ZR` ranges are selected by probing readable addresses, `R` follows the probed `ZR` count capped at `R32767`, QCPU `Z` is selected by probing `Z15`, and LCPU/QnU/QnUDV `Z` is fixed at 20 points.
 - [x] **Stabilize the shared high-level contract**: The public surface is aligned with the sibling .NET libraries around `OpenAndConnectAsync`, `ReadTypedAsync`, `WriteTypedAsync`, `WriteBitInWordAsync`, `ReadNamedAsync`, and `PollAsync`.
 - [x] **Promote reusable address helpers**: Address normalization and formatting helpers are exposed in the public `SlmpAddress` surface for application-facing code.
 - [x] **Keep protocol-specific options explicit**: `FrameType`, `CompatibilityMode`, and target routing remain first-class connection options.
