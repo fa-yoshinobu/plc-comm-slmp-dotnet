@@ -506,7 +506,7 @@ internal static class SlmpDeviceRangeResolver
                     ("LT", Unsupported("Not supported on LCPU.")),
                     ("LST", Unsupported("Not supported on LCPU.")),
                     ("LC", Unsupported("Not supported on LCPU.")),
-                    ("Z", WordRegister(305, "SD305", "Requires ZZ = FFFFh for the reported upper bound.")),
+                    ("Z", Fixed(20, "Fixed family limit")),
                     ("LZ", Unsupported("Not supported on LCPU.")),
                     ("ZR", DWordRegister(306, "SD306-SD307 (32-bit)")),
                     ("RD", Unsupported("Not supported on LCPU.")),
@@ -535,7 +535,7 @@ internal static class SlmpDeviceRangeResolver
                     ("LT", Unsupported("Not supported on QnU.")),
                     ("LST", Unsupported("Not supported on QnU.")),
                     ("LC", Unsupported("Not supported on QnU.")),
-                    ("Z", WordRegister(305, "SD305", "Requires ZZ = FFFFh for the reported upper bound.")),
+                    ("Z", Fixed(20, "Fixed family limit")),
                     ("LZ", Unsupported("Not supported on QnU.")),
                     ("ZR", DWordRegister(306, "SD306-SD307 (32-bit)")),
                     ("RD", Unsupported("Not supported on QnU.")),
@@ -564,7 +564,7 @@ internal static class SlmpDeviceRangeResolver
                     ("LT", Unsupported("Not supported on QnUDV.")),
                     ("LST", Unsupported("Not supported on QnUDV.")),
                     ("LC", Unsupported("Not supported on QnUDV.")),
-                    ("Z", WordRegister(305, "SD305", "Requires ZZ = FFFFh for the reported upper bound.")),
+                    ("Z", Fixed(20, "Fixed family limit")),
                     ("LZ", Unsupported("Not supported on QnUDV.")),
                     ("ZR", DWordRegister(306, "SD306-SD307 (32-bit)")),
                     ("RD", Unsupported("Not supported on QnUDV.")),
@@ -684,6 +684,36 @@ internal static class SlmpDeviceRangeResolver
             new SlmpTypeNameInfo(GetFamilyLabel(family), 0, false),
             ResolveProfile(family),
             registers);
+    }
+
+    internal static SlmpDeviceRangeCatalog ReplaceFixedPointCount(
+        SlmpDeviceRangeCatalog catalog,
+        string device,
+        uint pointCount,
+        string source,
+        string note)
+    {
+        var upperBound = ToUpperBound(pointCount);
+        var entries = catalog.Entries
+            .Select(entry =>
+            {
+                if (!string.Equals(entry.Device, device, StringComparison.Ordinal))
+                    return entry;
+
+                return entry with
+                {
+                    UpperBound = upperBound,
+                    PointCount = pointCount,
+                    AddressRange = FormatAddressRange(entry.Device, entry.Notation, upperBound),
+                    Source = source,
+                    Notes = string.IsNullOrWhiteSpace(entry.Notes)
+                        ? note
+                        : $"{entry.Notes} {note}",
+                };
+            })
+            .ToArray();
+
+        return catalog with { Entries = entries };
     }
 
     public static string GetFamilyLabel(SlmpDeviceRangeFamily family)

@@ -25,6 +25,7 @@ namespace PlcComm.Slmp;
 /// </remarks>
 public sealed class SlmpClient : IDisposable, IAsyncDisposable
 {
+    private const uint MaxRuntimeRangeProbeCount = 1_048_576;
     private readonly string _host;
     private readonly int _port;
     private readonly SlmpTransportMode _transportMode;
@@ -203,7 +204,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var family = SlmpPlcFamilyProfiles.Resolve(plcFamily).RangeFamily;
         var familyProfile = SlmpDeviceRangeResolver.ResolveProfile(family);
         var familyRegisters = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, familyProfile, cancellationToken).ConfigureAwait(false);
-        return SlmpDeviceRangeResolver.BuildCatalog(family, familyRegisters);
+        var catalog = SlmpDeviceRangeResolver.BuildCatalog(family, familyRegisters);
+        return await ResolveDeviceRangeCatalogRuntimeLimitsAsync(catalog, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -218,7 +220,100 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         var profile = SlmpDeviceRangeResolver.ResolveProfile(family);
         var registers = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, profile, cancellationToken).ConfigureAwait(false);
-        return SlmpDeviceRangeResolver.BuildCatalog(family, registers);
+        var catalog = SlmpDeviceRangeResolver.BuildCatalog(family, registers);
+        return await ResolveDeviceRangeCatalogRuntimeLimitsAsync(catalog, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<SlmpDeviceRangeCatalog> ResolveDeviceRangeCatalogRuntimeLimitsAsync(
+        SlmpDeviceRangeCatalog catalog,
+        CancellationToken cancellationToken)
+    {
+        if (catalog.Family is not (SlmpDeviceRangeFamily.QCpu or SlmpDeviceRangeFamily.LCpu or SlmpDeviceRangeFamily.QnU or SlmpDeviceRangeFamily.QnUDV))
+            return catalog;
+
+        if (catalog.Family == SlmpDeviceRangeFamily.QCpu)
+        {
+            var zCount = await CanReadWordAddressAsync(SlmpDeviceCode.Z, 15, cancellationToken).ConfigureAwait(false)
+                ? 16u
+                : 10u;
+            catalog = SlmpDeviceRangeResolver.ReplaceFixedPointCount(
+                catalog,
+                "Z",
+                zCount,
+                "Runtime access check",
+                "QCPU Z register count is selected by probing Z15.");
+        }
+
+        var zrCount = await ResolveReadablePointCountAsync(SlmpDeviceCode.ZR, cancellationToken).ConfigureAwait(false);
+        catalog = SlmpDeviceRangeResolver.ReplaceFixedPointCount(
+            catalog,
+            "ZR",
+            zrCount,
+            "Runtime access check",
+            "ZR register count is selected by probing readable ZR addresses.");
+        return SlmpDeviceRangeResolver.ReplaceFixedPointCount(
+            catalog,
+            "R",
+            Math.Min(zrCount, 32_768u),
+            "Runtime access check",
+            "R register count follows the probed ZR count and is capped at R32767.");
+    }
+
+    private async Task<uint> ResolveReadablePointCountAsync(
+        SlmpDeviceCode device,
+        CancellationToken cancellationToken)
+    {
+        if (!await CanReadWordAddressAsync(device, 0, cancellationToken).ConfigureAwait(false))
+            return 0;
+
+        var upperLimit = MaxRuntimeRangeProbeCount - 1;
+        var low = 0u;
+        var high = 1u;
+        while (high < upperLimit && await CanReadWordAddressAsync(device, high, cancellationToken).ConfigureAwait(false))
+        {
+            low = high;
+            high = Math.Min(upperLimit, checked((high * 2) + 1));
+        }
+
+        if (high == upperLimit && await CanReadWordAddressAsync(device, high, cancellationToken).ConfigureAwait(false))
+            return MaxRuntimeRangeProbeCount;
+
+        var left = low + 1;
+        var right = high - 1;
+        while (left <= right)
+        {
+            var mid = left + ((right - left) / 2);
+            if (await CanReadWordAddressAsync(device, mid, cancellationToken).ConfigureAwait(false))
+            {
+                low = mid;
+                left = mid + 1;
+            }
+            else
+            {
+                if (mid == 0)
+                    break;
+
+                right = mid - 1;
+            }
+        }
+
+        return low + 1;
+    }
+
+    private async Task<bool> CanReadWordAddressAsync(
+        SlmpDeviceCode device,
+        uint number,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            _ = await ReadWordsRawAsync(new SlmpDeviceAddress(device, number), 1, cancellationToken).ConfigureAwait(false);
+            return true;
+        }
+        catch (SlmpError exception) when (exception.Command == SlmpCommand.DeviceRead)
+        {
+            return false;
+        }
     }
 
     /// <summary>
