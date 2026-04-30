@@ -17,6 +17,15 @@ This file tracks active follow-up items for the SLMP .NET library.
   Transport-level acceptance is confirmed, but the operator-visible behavior on
   real hardware still needs better evidence.
 
+- **Device-range runtime exploration method**
+  Some MELSEC families report device range values that can exceed the range
+  accepted by device read commands. Fix the range resolution method by adding
+  reusable runtime exploration that verifies actual readable bounds with device
+  reads and caches the result per PLC family/device. This must be a general
+  mechanism, not hard-coded correction for individual devices. Q/Qn-series
+  `Z`, `R`, and `ZR` are known examples where PLC-reported ranges can be
+  misleading.
+
 ## 2. Practical Limits
 
 - ASCII mode is intentionally out of scope.
