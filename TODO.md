@@ -20,12 +20,3 @@ This file tracks active follow-up items for the SLMP .NET library.
 ## 2. Practical Limits
 
 - ASCII mode is intentionally out of scope.
-
-## 3. Completed Recently
-
-- [x] **Validate iQ-F X/Y octal handling on FX5 hardware**: FX5UC-32MT/D returned `X0000-X1777` and `Y0000-Y1777` as `Base8`; `X100` and `Y100` read successfully through iQ-F octal address parsing.
-- [x] **Resolve Q-series runtime device ranges**: QCPU/LCPU/QnU/QnUDV `ZR` ranges are selected by probing readable addresses, `R` follows the probed `ZR` count capped at `R32767`, QCPU `Z` is selected by probing `Z15`, and LCPU/QnU/QnUDV `Z` is fixed at 20 points.
-- [x] **Stabilize the shared high-level contract**: The public surface is aligned with the sibling .NET libraries around `OpenAndConnectAsync`, `ReadTypedAsync`, `WriteTypedAsync`, `WriteBitInWordAsync`, `ReadNamedAsync`, and `PollAsync`.
-- [x] **Promote reusable address helpers**: Address normalization and formatting helpers are exposed in the public `SlmpAddress` surface for application-facing code.
-- [x] **Keep protocol-specific options explicit**: `FrameType`, `CompatibilityMode`, and target routing remain first-class connection options.
-- [x] **Preserve semantic atomicity by default**: Explicit `*SingleRequestAsync` and `*ChunkedAsync` helpers now separate one-request operations from opt-in multi-request transfers.
