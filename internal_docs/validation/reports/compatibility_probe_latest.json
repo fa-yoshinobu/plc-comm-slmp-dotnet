@@ -4,7 +4,7 @@
     "Transport": "tcp",
     "Name": "0101 read_type_name",
     "Status": "OK",
-    "Detail": "model=R120PCPU, model_code=0x4844"
+    "Detail": "model=L16HCPU, model_code=0x48C2"
   },
   {
     "Target": "SELF",
@@ -18,27 +18,13 @@
     "Transport": "tcp",
     "Name": "0403 random_read",
     "Status": "OK",
-    "Detail": "words=[4660], dwords=[305419896]"
+    "Detail": "words=[0], dwords=[0]"
   },
   {
     "Target": "SELF",
     "Transport": "tcp",
     "Name": "0406 block_read",
     "Status": "OK",
-    "Detail": "words=[4096, 4097], bit_words=[1]"
-  },
-  {
-    "Target": "SELF",
-    "Transport": "tcp",
-    "Name": "1402 random_write",
-    "Status": "OK",
-    "Detail": "completed"
-  },
-  {
-    "Target": "SELF",
-    "Transport": "tcp",
-    "Name": "1406 block_write",
-    "Status": "OK",
-    "Detail": "completed"
+    "Detail": "words=[0, 0], bit_words=[0]"
   }
 ]

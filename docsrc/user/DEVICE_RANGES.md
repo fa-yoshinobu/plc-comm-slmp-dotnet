@@ -99,7 +99,8 @@ Other notable model-name fallback groups:
 - `FX5U...`, `FX5UC...`, `FX5UJ...`, `FX5S...` -> `IqF`
 - `Q00U...`, `Q03UD...`, `Q50UDEH...` -> `QnU`
 - `Q03UDV...`, `Q04UDPV...` -> `QnUDV`
-- `L02...`, `L04HCPU`, `LJ72GF15-T2` -> `LCpu`
+- `L04HCPU`, `L08HCPU`, `L16HCPU`, `L32HCPU` -> `IqL`
+- `L02...`, `L06CPU`, `L26CPU`, `LJ72GF15-T2` -> `LCpu`
 
 Unknown models return `SlmpError`.
 

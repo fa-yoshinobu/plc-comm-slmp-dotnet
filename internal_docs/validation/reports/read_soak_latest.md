@@ -1,6 +1,6 @@
-# Read Soak Latest
+﻿# Read Soak Latest
 
-- Timestamp: 2026-03-19 20:36:57 +09:00
-- Iterations: 2000
-- Failures: 0
-- Min/Avg/Max latency (ms): 2/3/91
+- Timestamp: 2026-05-01 10:32:56 +09:00
+- Iterations: 1
+- Failures: 1
+- Min/Avg/Max latency (ms): 12/12/12
