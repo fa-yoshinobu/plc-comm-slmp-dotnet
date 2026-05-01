@@ -122,7 +122,7 @@ public sealed class SlmpParserTests
         Assert.Equal(SlmpFrameType.Frame4E, options.ResolvedFrameType);
         Assert.Equal(SlmpCompatibilityMode.Iqr, options.ResolvedCompatibilityMode);
         Assert.Equal(SlmpPlcFamily.IqR, options.ResolvedAddressFamily);
-        Assert.Equal(SlmpDeviceRangeFamily.IqR, options.ResolvedRangeFamily);
+        Assert.Equal(SlmpDeviceRangeFamily.IqL, options.ResolvedRangeFamily);
     }
 
     [Fact]

@@ -21,9 +21,11 @@ public sealed class SlmpDeviceRangeCatalogTests
     {
         var qnUdv = SlmpDeviceRangeResolver.ResolveFamily(new SlmpTypeNameInfo("Q03UDVCPU", 0x0366, true));
         var mxf = SlmpDeviceRangeResolver.ResolveFamily(new SlmpTypeNameInfo("MXF100-8-N32", 0, false));
+        var iqL = SlmpDeviceRangeResolver.ResolveFamily(new SlmpTypeNameInfo("L16HCPU", 0x48C2, true));
 
         Assert.Equal(SlmpDeviceRangeFamily.QnUDV, qnUdv);
         Assert.Equal(SlmpDeviceRangeFamily.MxF, mxf);
+        Assert.Equal(SlmpDeviceRangeFamily.IqL, iqL);
     }
 
     [Fact]
@@ -86,6 +88,32 @@ public sealed class SlmpDeviceRangeCatalogTests
         Assert.Equal(32768u, GetEntry(catalog, "R").PointCount);
         Assert.Equal(32767u, GetEntry(catalog, "R").UpperBound);
         Assert.Equal("R0-R32767", GetEntry(catalog, "R").AddressRange);
+    }
+
+    [Fact]
+    public void BuildCatalog_IqLUsesOwnFamilyWithIqLRangeRegisters()
+    {
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpDeviceRangeFamily.IqL);
+        var registers = CreateRegisterSnapshot(profile);
+        registers[280] = 18432;
+        registers[281] = 0;
+        registers[306] = 0;
+        registers[307] = 12;
+
+        var catalog = SlmpDeviceRangeResolver.BuildCatalog(SlmpDeviceRangeFamily.IqL, registers);
+
+        Assert.Equal(SlmpDeviceRangeFamily.IqL, catalog.Family);
+        Assert.Equal(18432u, GetEntry(catalog, "D").PointCount);
+        Assert.Equal(18431u, GetEntry(catalog, "D").UpperBound);
+        Assert.Equal("D0-D18431", GetEntry(catalog, "D").AddressRange);
+        Assert.Equal(32768u, GetEntry(catalog, "R").PointCount);
+        Assert.Equal(786432u, GetEntry(catalog, "ZR").PointCount);
+        Assert.Equal(4096u, GetEntry(catalog, "SM").PointCount);
+        Assert.Equal(4095u, GetEntry(catalog, "SM").UpperBound);
+        Assert.Equal("SM0-SM4095", GetEntry(catalog, "SM").AddressRange);
+        Assert.Equal(4096u, GetEntry(catalog, "SD").PointCount);
+        Assert.Equal(4095u, GetEntry(catalog, "SD").UpperBound);
+        Assert.Equal("SD0-SD4095", GetEntry(catalog, "SD").AddressRange);
     }
 
     [Fact]

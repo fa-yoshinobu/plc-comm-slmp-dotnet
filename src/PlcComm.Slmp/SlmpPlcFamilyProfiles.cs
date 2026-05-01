@@ -28,7 +28,7 @@ public static class SlmpPlcFamilyProfiles
                 SlmpFrameType.Frame4E,
                 SlmpCompatibilityMode.Iqr,
                 SlmpPlcFamily.IqR,
-                SlmpDeviceRangeFamily.IqR),
+                SlmpDeviceRangeFamily.IqL),
             SlmpPlcFamily.MxF => new(
                 SlmpFrameType.Frame4E,
                 SlmpCompatibilityMode.Iqr,
