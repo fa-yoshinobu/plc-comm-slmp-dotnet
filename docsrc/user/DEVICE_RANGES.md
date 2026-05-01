@@ -130,7 +130,7 @@ used in Mitsubishi manuals.
 | `LT` | `LTS`, `LTC`, `LTN` | base10 | `SD294-SD295` | `SD294-SD295` | `SD294-SD295` | `n/a` | `n/a` | `n/a` |
 | `LST` | `LSTS`, `LSTC`, `LSTN` | base10 | `SD296-SD297` | `SD296-SD297` | `SD296-SD297` | `n/a` | `n/a` | `n/a` |
 | `LC` | `LCS`, `LCC`, `LCN` | base10 | `SD298-SD299` | `SD298-SD299` | `SD298-SD299` | `SD298-SD299` | `n/a` | `n/a` |
-| `Z` | `Z` | base10 | `SD300` | `SD300` | `SD300` | `SD300` | fixed `10` | `SD305` |
+| `Z` | `Z` | base10 | `SD300` | `SD300` | `SD300` | `SD300` | fixed `10` | fixed `20` |
 | `LZ` | `LZ` | base10 | `SD302` | `SD302` | `SD302` | `SD302` | `n/a` | `n/a` |
 | `ZR` | `ZR` | base10 | `SD306-SD307` | `SD306-SD307` | `SD306-SD307` | `n/a` | open | `SD306-SD307` |
 | `RD` | `RD` | base10 | `SD308-SD309` | `SD308-SD309` | `SD308-SD309` | `n/a` | `n/a` | `n/a` |
@@ -144,7 +144,12 @@ used in Mitsubishi manuals.
   the catalog reports `Supported = true`, `PointCount = null`, and `AddressRange = null`.
 - `LCPU`, `QnU`, and `QnUDV` share the same range-register layout in this
   implementation.
-- `Z` on `LCPU`, `QnU`, and `QnUDV` comes from `SD305`; Mitsubishi documents
-  this together with `ZZ = FFFFh`.
+- `Z` on `LCPU`, `QnU`, and `QnUDV` is treated as the fixed `Z0-Z19` family
+  limit. `QnUDV` was live-checked on 2026-05-01: `Z19` read successfully and
+  `Z20` returned `0x4031`.
+- `ZR` and `R` on `LCPU`, `QnU`, and `QnUDV` are runtime-limited by probing
+  readable `ZR` addresses. `QnUDV` was live-checked on 2026-05-01 with
+  `ZR393215` accepted, `ZR393216` returning `0x4031`, `R32767` accepted, and
+  `R32768` returning `0x4031`.
 - `iQ-F` `X` and `Y` are documented in Mitsubishi manuals with octal addressing.
   This library emits `Base8` and formats ranges such as `X0000-X1777`.
