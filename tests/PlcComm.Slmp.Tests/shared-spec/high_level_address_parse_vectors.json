@@ -1,0 +1,29 @@
+{
+  "_comment": "Shared parse expectations for helper-layer address parsers that return base + dtype + bit index.",
+  "cases": [
+    {
+      "id": "plain_word",
+      "input": "D100",
+      "expected": { "base": "D100", "dtype": "U", "bit_index": null },
+      "implementations": ["python", "dotnet", "node"]
+    },
+    {
+      "id": "plain_bit_device",
+      "input": "M1000",
+      "expected": { "base": "M1000", "dtype": "U", "bit_index": null },
+      "implementations": ["python", "dotnet", "node"]
+    },
+    {
+      "id": "float_suffix",
+      "input": "D200:F",
+      "expected": { "base": "D200", "dtype": "F", "bit_index": null },
+      "implementations": ["python", "dotnet", "node"]
+    },
+    {
+      "id": "bit_in_word_hex",
+      "input": "D50.A",
+      "expected": { "base": "D50", "dtype": "BIT_IN_WORD", "bit_index": 10 },
+      "implementations": ["python", "dotnet", "node"]
+    }
+  ]
+}

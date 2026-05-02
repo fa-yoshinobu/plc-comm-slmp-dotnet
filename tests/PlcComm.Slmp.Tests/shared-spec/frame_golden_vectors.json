@@ -1,0 +1,87 @@
+{
+  "_comment": "Golden SLMP request frames captured from the common iQ-R / 4E / monitoring_timer=0x0010 request profile.",
+  "defaults": {
+    "frame_type": "4e",
+    "series": "iqr",
+    "monitoring_timer": 16,
+    "serial": 0,
+    "target": {
+      "network": 0,
+      "station": 255,
+      "module_io": 1023,
+      "multidrop": 0
+    }
+  },
+  "cases": [
+    {
+      "id": "read_type_name",
+      "operation": "read_type_name",
+      "request_hex": "54000000000000FFFF03000600100001010000",
+      "response_data_hex": "513033554456435055202020202020203412",
+      "implementations": ["python", "dotnet", "cpp", "node"]
+    },
+    {
+      "id": "read_words_d100_2",
+      "operation": "read_words",
+      "args": { "device": "D100", "points": 2 },
+      "request_hex": "54000000000000FFFF03000E0010000104020064000000A8000200",
+      "response_data_hex": "34127856",
+      "implementations": ["python", "dotnet", "cpp", "node"]
+    },
+    {
+      "id": "write_bits_m101_true",
+      "operation": "write_bits",
+      "args": { "device": "M101", "values": [true] },
+      "request_hex": "54000000000000FFFF03000F00100001140300650000009000010010",
+      "response_data_hex": "",
+      "implementations": ["python", "dotnet", "cpp", "node"]
+    },
+    {
+      "id": "read_random_d100_d101_d200",
+      "operation": "read_random",
+      "args": {
+        "word_devices": ["D100", "D101"],
+        "dword_devices": ["D200"]
+      },
+      "request_hex": "54000000000000FFFF03001A00100003040200020164000000A80065000000A800C8000000A800",
+      "response_data_hex": "1111222278563412",
+      "implementations": ["python", "dotnet", "cpp", "node"]
+    },
+    {
+      "id": "write_random_bits_m100_y20",
+      "operation": "write_random_bits",
+      "args": {
+        "bit_values": [
+          { "device": "M100", "value": true },
+          { "device": "Y20", "value": false }
+        ]
+      },
+      "request_hex": "54000000000000FFFF03001700100002140300026400000090000100200000009D000000",
+      "response_data_hex": "",
+      "implementations": ["python", "dotnet", "cpp", "node"]
+    },
+    {
+      "id": "read_block_d300_2_m200_1",
+      "operation": "read_block",
+      "args": {
+        "word_blocks": [
+          { "device": "D300", "points": 2 }
+        ],
+        "bit_blocks": [
+          { "device": "M200", "points": 1 }
+        ]
+      },
+      "request_hex": "54000000000000FFFF0300180010000604020001012C010000A8000200C800000090000100",
+      "response_data_hex": "341278560500",
+      "implementations": ["python", "dotnet", "cpp", "node"]
+    },
+    {
+      "id": "remote_password_unlock_secret1",
+      "operation": "remote_password_unlock",
+      "args": { "password": "secret1" },
+      "request_hex": "54000000000000FFFF03000F00100030160000070073656372657431",
+      "response_data_hex": "",
+      "implementations": ["python", "dotnet", "cpp", "node"]
+    }
+  ]
+}

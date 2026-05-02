@@ -1,0 +1,9 @@
+{
+  "_comment": "Canonical high-level address normalization vectors shared across SLMP implementations.",
+  "cases": [
+    { "id": "float_suffix", "input": " d200:f ", "expected": "D200:F", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "hex_device", "input": " x1a ", "expected": "X1A", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "bit_in_word_hex", "input": "d50.a", "expected": "D50.A", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "explicit_dword", "input": "rd100:d", "expected": "RD100:D", "implementations": ["python", "dotnet", "cpp", "node"] }
+  ]
+}

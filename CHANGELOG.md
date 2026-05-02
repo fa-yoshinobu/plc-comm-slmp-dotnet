@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Bumped the library revision for README alignment and refreshed test package dependencies.
+- Vendored the SLMP shared test vectors into this repository so local release checks and CI no longer require a sibling `plc-comm-slmp-cross-verify` checkout.
 
 ## [0.1.12] - 2026-04-27
 

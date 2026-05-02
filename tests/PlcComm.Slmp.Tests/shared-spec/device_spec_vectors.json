@@ -1,0 +1,23 @@
+{
+  "_comment": "Cross-implementation SLMP device spec encoding vectors.",
+  "vectors": [
+    { "id": "d0_iqr", "device": "D0", "series": "iqr", "hex": "00000000A800", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "d0_legacy", "device": "D0", "series": "legacy", "hex": "000000A8", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "d100_iqr", "device": "D100", "series": "iqr", "hex": "64000000A800", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "d100_legacy", "device": "D100", "series": "legacy", "hex": "640000A8", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "m500_iqr", "device": "M500", "series": "iqr", "hex": "F40100009000", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "m500_legacy", "device": "M500", "series": "legacy", "hex": "F4010090", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "x10_iqr", "device": "X10", "series": "iqr", "hex": "100000009C00", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "x10_legacy", "device": "X10", "series": "legacy", "hex": "1000009C", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "w1a0_iqr", "device": "W1A0", "series": "iqr", "hex": "A0010000B400", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "w1a0_legacy", "device": "W1A0", "series": "legacy", "hex": "A00100B4", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "y20_iqr", "device": "Y20", "series": "iqr", "hex": "200000009D00", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "y20_legacy", "device": "Y20", "series": "legacy", "hex": "2000009D", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "b10_iqr", "device": "B10", "series": "iqr", "hex": "10000000A000", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "b10_legacy", "device": "B10", "series": "legacy", "hex": "100000A0", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "tn5_iqr", "device": "TN5", "series": "iqr", "hex": "05000000C200", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "tn5_legacy", "device": "TN5", "series": "legacy", "hex": "050000C2", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "sd0_iqr", "device": "SD0", "series": "iqr", "hex": "00000000A900", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "sd0_legacy", "device": "SD0", "series": "legacy", "hex": "000000A9", "implementations": ["python", "dotnet", "cpp", "node"] }
+  ]
+}
