@@ -44,6 +44,16 @@ public sealed class SlmpParserTests
         Assert.Equal("Y217", SlmpAddress.Format(new SlmpDeviceAddress(SlmpDeviceCode.Y, 0x8F), SlmpPlcFamily.IqF));
     }
 
+    [Theory]
+    [InlineData("DX10")]
+    [InlineData("DY10")]
+    public void ParseDevice_IqFDirectIo_Fails(string text)
+    {
+        var error = Assert.Throws<NotSupportedException>(() => SlmpDeviceParser.Parse(text, SlmpPlcFamily.IqF));
+        Assert.Contains("not supported", error.Message, StringComparison.Ordinal);
+        Assert.False(SlmpAddress.TryParse(text, SlmpPlcFamily.IqF, out _));
+    }
+
     [Fact]
     public void ParseDevice_HighLevelXYWithoutFamily_Fails()
     {

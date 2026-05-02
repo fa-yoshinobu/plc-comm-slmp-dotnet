@@ -31,7 +31,7 @@ public static class SlmpAddress
             address = Parse(text);
             return true;
         }
-        catch (Exception ex) when (ex is FormatException or ArgumentException)
+        catch (Exception ex) when (ex is FormatException or ArgumentException or NotSupportedException)
         {
             address = default;
             return false;
@@ -46,7 +46,7 @@ public static class SlmpAddress
             address = Parse(text, plcFamily);
             return true;
         }
-        catch (Exception ex) when (ex is FormatException or ArgumentException)
+        catch (Exception ex) when (ex is FormatException or ArgumentException or NotSupportedException)
         {
             address = default;
             return false;
@@ -68,7 +68,10 @@ public static class SlmpAddress
 
     /// <summary>Formats one parsed device address using the explicit PLC family.</summary>
     public static string Format(SlmpDeviceAddress address, SlmpPlcFamily plcFamily)
-        => $"{address.Code}{FormatNumber(address, plcFamily)}";
+    {
+        ThrowIfDeviceCodeUnsupportedForFamily(address.Code, plcFamily);
+        return $"{address.Code}{FormatNumber(address, plcFamily)}";
+    }
 
     /// <summary>Normalizes one SLMP device string to canonical text.</summary>
     /// <param name="text">Input device text in any supported spelling.</param>
@@ -89,6 +92,16 @@ public static class SlmpAddress
         return IsHexAddressed(address.Code)
             ? address.Number.ToString("X", CultureInfo.InvariantCulture)
             : address.Number.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private static void ThrowIfDeviceCodeUnsupportedForFamily(SlmpDeviceCode code, SlmpPlcFamily plcFamily)
+    {
+        if (plcFamily is SlmpPlcFamily.IqF &&
+            code is SlmpDeviceCode.DX or SlmpDeviceCode.DY)
+        {
+            throw new NotSupportedException(
+                $"SLMP device code '{code}' is not supported for PlcFamily 'IqF'.");
+        }
     }
 
     private static bool IsHexAddressed(SlmpDeviceCode code)
