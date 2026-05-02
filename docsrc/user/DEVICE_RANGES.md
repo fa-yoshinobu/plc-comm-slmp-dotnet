@@ -2,6 +2,13 @@
 
 This document replaces `plc_device_range_registers - base.csv`.
 
+This catalog is a connected-diagnostics catalog, not an editor-side address
+range validator. It is only accurate after a PLC family has been selected and
+the client can read the family-specific registers or apply a fixed family rule.
+Node-RED uses the supported/unsupported device-code part of this table to avoid
+sending clearly unsupported device codes for a selected family, but it does not
+pre-check PLC model-specific address upper bounds.
+
 The library now owns the device-range rules in source code and reads live upper
 bounds from the PLC itself after the caller chooses the PLC family:
 
@@ -20,6 +27,8 @@ rule. `UpperBound` is the inclusive last address, so for 0-based devices it is
 `Supported = false` means the family does not expose that device.
 `Supported = true` with `PointCount = null` means the PLC family supports the
 device but does not publish a finite bound register.
+Family-aware string parsing also rejects `DX` and `DY` for `SlmpPlcFamily.IqF`
+before transport.
 
 ## API
 

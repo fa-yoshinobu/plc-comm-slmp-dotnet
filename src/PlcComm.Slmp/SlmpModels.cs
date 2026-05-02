@@ -208,6 +208,7 @@ public static class SlmpDeviceParser
             }
 
             var numberPart = token[prefix.Length..];
+            ThrowIfDeviceCodeUnsupportedForFamily(prefix, code, plcFamily);
             if (TryParseDeviceNumber(numberPart, code, hexAddress, plcFamily, out var number))
             {
                 return new SlmpDeviceAddress(code, number);
@@ -221,6 +222,19 @@ public static class SlmpDeviceParser
         throw new FormatException(
             $"Invalid SLMP device string '{text}'. " +
             $"Valid device codes: {validCodes}");
+    }
+
+    private static void ThrowIfDeviceCodeUnsupportedForFamily(
+        string prefix,
+        SlmpDeviceCode code,
+        SlmpPlcFamily? plcFamily)
+    {
+        if (plcFamily is SlmpPlcFamily.IqF &&
+            code is SlmpDeviceCode.DX or SlmpDeviceCode.DY)
+        {
+            throw new NotSupportedException(
+                $"SLMP device code '{prefix}' is not supported for PlcFamily 'IqF'.");
+        }
     }
 
     private static bool TryParseDeviceNumber(
