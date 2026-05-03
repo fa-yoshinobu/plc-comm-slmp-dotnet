@@ -263,6 +263,37 @@ async Task<int> RunBlockCheckAsync(IReadOnlyList<string> args)
     return 0;
 }
 
+static bool IsBitExtendedDevice(SlmpDeviceCode code)
+    => code is SlmpDeviceCode.SM
+        or SlmpDeviceCode.X
+        or SlmpDeviceCode.Y
+        or SlmpDeviceCode.M
+        or SlmpDeviceCode.L
+        or SlmpDeviceCode.F
+        or SlmpDeviceCode.V
+        or SlmpDeviceCode.B
+        or SlmpDeviceCode.TS
+        or SlmpDeviceCode.TC
+        or SlmpDeviceCode.LTS
+        or SlmpDeviceCode.LTC
+        or SlmpDeviceCode.STS
+        or SlmpDeviceCode.STC
+        or SlmpDeviceCode.LSTS
+        or SlmpDeviceCode.LSTC
+        or SlmpDeviceCode.CS
+        or SlmpDeviceCode.CC
+        or SlmpDeviceCode.LCS
+        or SlmpDeviceCode.LCC
+        or SlmpDeviceCode.SB
+        or SlmpDeviceCode.DX
+        or SlmpDeviceCode.DY;
+
+static string FormatBits(IEnumerable<bool> values)
+    => string.Join(", ", values.Select(x => x ? "1" : "0"));
+
+static string FormatWords(IEnumerable<ushort> values)
+    => string.Join(", ", values.Select(x => $"0x{x:X4}"));
+
 async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
 {
     var targets = ParseTargets(args);
@@ -274,12 +305,12 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
     if (pointsTexts.Count == 0) pointsTexts.Add("1");
     var pointList = pointsTexts.Select(x => checked((ushort)SlmpTargetParser.ParseAutoNumber(x))).ToArray();
     var directTexts = GetOptions(args, "--direct-memory");
-    if (directTexts.Count == 0) directTexts.Add("0xFA");
+    if (directTexts.Count == 0) directTexts.Add("0xF8");
     var directMemories = directTexts.Select(x => checked((byte)SlmpTargetParser.ParseAutoNumber(x))).ToArray();
     var writeCheck = HasFlag(args, "--write-check");
     var rows = new List<CoverageRow>();
 
-    Console.WriteLine("=== G/HG Extended Device Coverage Sweep ===");
+    Console.WriteLine("=== Extended Device Coverage Sweep ===");
     Console.WriteLine($"Host={GetOption(args, "--host", "192.168.250.100")}, Port={GetOption(args, "--port", "1025")}, Transports=[{string.Join(", ", transports)}], Series={ParseSeriesOption(GetRequiredOption(args, "--series"))}");
     Console.WriteLine($"[INFO] Targets=[{string.Join(", ", targets.Select(x => x.Name))}]");
     Console.WriteLine($"[INFO] Devices=[{string.Join(", ", deviceTexts)}]");
@@ -311,47 +342,84 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
             foreach (var deviceText in deviceTexts)
             {
                 var qualified = SlmpQualifiedDeviceParser.Parse(deviceText);
+                var unit = IsBitExtendedDevice(qualified.Device.Code) ? "bit" : "word";
                 foreach (var directMemory in directMemories)
                 {
                     var ext = new SlmpExtensionSpec(DirectMemorySpecification: directMemory);
+                    var effectiveDirectMemory = qualified.DirectMemorySpecification ?? directMemory;
                     foreach (var points in pointList)
                     {
                         try
                         {
-                            var before = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
-                            if (!writeCheck)
+                            if (unit == "bit")
                             {
-                                var detail = $"device={deviceText}, points={points}, before=[{string.Join(", ", before.Select(x => $"0x{x:X4}"))}], mode=read_only";
-                                Console.WriteLine($"[OK] {target.Name} {deviceText} points={points} direct=0x{directMemory:X2}: {detail}");
-                                rows.Add(new CoverageRow(target.Name, transport, deviceText, points, directMemory, "OK", detail));
-                                continue;
-                            }
+                                var before = await client.ReadBitsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+                                if (!writeCheck)
+                                {
+                                    var detail = $"device={deviceText}, points={points}, before=[{FormatBits(before)}], mode=read_only";
+                                    Console.WriteLine($"[OK] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {detail}");
+                                    rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, "OK", detail));
+                                    continue;
+                                }
 
-                            var write = Enumerable.Range(0, points).Select(i => (ushort)(0x001E + i)).ToArray();
-                            await client.WriteWordsExtendedAsync(qualified, write, ext).ConfigureAwait(false);
-                            var readback = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
-                            var restoredState = "ok";
-                            try
-                            {
-                                await client.WriteWordsExtendedAsync(qualified, before, ext).ConfigureAwait(false);
-                            }
-                            catch
-                            {
-                                restoredState = "failed";
-                            }
+                                var write = Enumerable.Range(0, points).Select(i => i % 2 == 0).ToArray();
+                                await client.WriteBitsExtendedAsync(qualified, write, ext).ConfigureAwait(false);
+                                var readback = await client.ReadBitsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+                                var restoredState = "ok";
+                                try
+                                {
+                                    await client.WriteBitsExtendedAsync(qualified, before, ext).ConfigureAwait(false);
+                                }
+                                catch
+                                {
+                                    restoredState = "failed";
+                                }
 
-                            var mismatch = !readback.SequenceEqual(write);
-                            var resultDetail = mismatch
-                                ? $"device={deviceText}, points={points}, before=[{string.Join(", ", before.Select(x => $"0x{x:X4}"))}], write=[{string.Join(", ", write.Select(x => $"0x{x:X4}"))}], readback=[{string.Join(", ", readback.Select(x => $"0x{x:X4}"))}], readback_mismatch=yes, restore={restoredState}"
-                                : $"device={deviceText}, points={points}, before=[{string.Join(", ", before.Select(x => $"0x{x:X4}"))}], write=[{string.Join(", ", write.Select(x => $"0x{x:X4}"))}], readback=[{string.Join(", ", readback.Select(x => $"0x{x:X4}"))}], restore={restoredState}";
-                            var status = mismatch ? "NG" : "OK";
-                            Console.WriteLine($"[{status}] {target.Name} {deviceText} points={points} direct=0x{directMemory:X2}: {resultDetail}");
-                            rows.Add(new CoverageRow(target.Name, transport, deviceText, points, directMemory, status, resultDetail));
+                                var mismatch = !readback.SequenceEqual(write);
+                                var resultDetail = mismatch
+                                    ? $"device={deviceText}, points={points}, before=[{FormatBits(before)}], write=[{FormatBits(write)}], readback=[{FormatBits(readback)}], readback_mismatch=yes, restore={restoredState}"
+                                    : $"device={deviceText}, points={points}, before=[{FormatBits(before)}], write=[{FormatBits(write)}], readback=[{FormatBits(readback)}], restore={restoredState}";
+                                var status = mismatch ? "NG" : "OK";
+                                Console.WriteLine($"[{status}] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {resultDetail}");
+                                rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, status, resultDetail));
+                            }
+                            else
+                            {
+                                var before = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+                                if (!writeCheck)
+                                {
+                                    var detail = $"device={deviceText}, points={points}, before=[{FormatWords(before)}], mode=read_only";
+                                    Console.WriteLine($"[OK] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {detail}");
+                                    rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, "OK", detail));
+                                    continue;
+                                }
+
+                                var write = Enumerable.Range(0, points).Select(i => (ushort)(0x001E + i)).ToArray();
+                                await client.WriteWordsExtendedAsync(qualified, write, ext).ConfigureAwait(false);
+                                var readback = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+                                var restoredState = "ok";
+                                try
+                                {
+                                    await client.WriteWordsExtendedAsync(qualified, before, ext).ConfigureAwait(false);
+                                }
+                                catch
+                                {
+                                    restoredState = "failed";
+                                }
+
+                                var mismatch = !readback.SequenceEqual(write);
+                                var resultDetail = mismatch
+                                    ? $"device={deviceText}, points={points}, before=[{FormatWords(before)}], write=[{FormatWords(write)}], readback=[{FormatWords(readback)}], readback_mismatch=yes, restore={restoredState}"
+                                    : $"device={deviceText}, points={points}, before=[{FormatWords(before)}], write=[{FormatWords(write)}], readback=[{FormatWords(readback)}], restore={restoredState}";
+                                var status = mismatch ? "NG" : "OK";
+                                Console.WriteLine($"[{status}] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {resultDetail}");
+                                rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, status, resultDetail));
+                            }
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"[NG] {target.Name} {deviceText} points={points} direct=0x{directMemory:X2}: {ex.Message}");
-                            rows.Add(new CoverageRow(target.Name, transport, deviceText, points, directMemory, "NG", ex.Message));
+                            Console.WriteLine($"[NG] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {ex.Message}");
+                            rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, "NG", ex.Message));
                         }
                     }
                 }
@@ -361,20 +429,20 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
 
     var reportDir = GetOption(args, "--report-dir", "internal_docs/validation/reports");
     Directory.CreateDirectory(reportDir);
-    var reportPath = Path.Combine(reportDir, "g_hg_ExtendedDevice_coverage_latest.md");
+    var reportPath = Path.Combine(reportDir, "ExtendedDevice_coverage_latest.md");
     var report = new StringBuilder();
-    report.AppendLine("# G/HG Extended Device Coverage Latest");
+    report.AppendLine("# Extended Device Coverage Latest");
     report.AppendLine();
     report.AppendLine($"- Timestamp: {GetTimestamp()}");
     report.AppendLine($"- Host: {GetOption(args, "--host", "192.168.250.100")}");
     report.AppendLine($"- Port: {GetOption(args, "--port", "1025")}");
     report.AppendLine($"- Write check: {(writeCheck ? "enabled" : "disabled")}");
     report.AppendLine();
-    report.AppendLine("| Target | Transport | Device | Points | Direct | Status | Detail |");
-    report.AppendLine("|---|---|---|---|---|---|---|");
+    report.AppendLine("| Target | Transport | Device | Points | Unit | Direct | Status | Detail |");
+    report.AppendLine("|---|---|---|---|---|---|---|---|");
     foreach (var row in rows)
     {
-        report.AppendLine($"| {row.Target} | {row.Transport} | {row.Device} | {row.Points} | 0x{row.DirectMemory:X2} | {row.Status} | {row.Detail.Replace("|", "/")} |");
+        report.AppendLine($"| {row.Target} | {row.Transport} | {row.Device} | {row.Points} | {row.Unit} | 0x{row.DirectMemory:X2} | {row.Status} | {row.Detail.Replace("|", "/")} |");
     }
     await File.WriteAllTextAsync(reportPath, report.ToString(), Encoding.UTF8).ConfigureAwait(false);
     Console.WriteLine($"[DONE] report={reportPath}");
@@ -386,7 +454,7 @@ async Task<int> RunExtendedDeviceDeviceRecheckAsync(IReadOnlyList<string> args)
     var target = ParseTargets(args)[0];
     var deviceText = GetOption(args, "--device", @"U3E0\G10");
     var points = checked((ushort)SlmpTargetParser.ParseAutoNumber(GetOption(args, "--points", "1")));
-    var directMemory = checked((byte)SlmpTargetParser.ParseAutoNumber(GetOption(args, "--direct-memory", "0xFA")));
+    var directMemory = checked((byte)SlmpTargetParser.ParseAutoNumber(GetOption(args, "--direct-memory", "0xF8")));
     var writeCheck = HasFlag(args, "--write-check");
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
     var qualified = SlmpQualifiedDeviceParser.Parse(deviceText);
@@ -625,8 +693,8 @@ if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
     Console.WriteLine("  other-station-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... (repeatable) --quiet]");
     Console.WriteLine("  random-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... --write-check --quiet]");
     Console.WriteLine("  block-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... --write-check --quiet]");
-    Console.WriteLine(@"  ExtendedDevice-device-recheck --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --device U3E0\G10 --points 1 --direct-memory 0xFA --write-check --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine(@"  g-hg-ExtendedDevice-coverage --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --device U3E0\G10 (repeatable) --points 1 (repeatable) --direct-memory 0xFA (repeatable) --write-check --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine(@"  ExtendedDevice-device-recheck --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --device U3E0\G10 --points 1 --direct-memory 0xF8 --write-check --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine(@"  extendeddevice-coverage --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --device U3E0\G10 (repeatable) --points 1 (repeatable) --direct-memory 0xF8 (repeatable) --write-check --report-dir internal_docs/validation/reports --quiet]");
     Console.WriteLine("  read-soak --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --device D1000 --points 1 --iterations 100 --interval-ms 0 --report-dir internal_docs/validation/reports --quiet]");
     Console.WriteLine("  mixed-read-load --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --iterations 100 --report-dir internal_docs/validation/reports --quiet]");
     Console.WriteLine("  tcp-concurrency --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp --target SELF --clients 4 --iterations 50 --stagger-ms 50 --report-dir internal_docs/validation/reports --quiet]");
@@ -647,7 +715,7 @@ try
         "random-check" => await RunRandomCheckAsync(argList).ConfigureAwait(false),
         "block-check" => await RunBlockCheckAsync(argList).ConfigureAwait(false),
         "extendeddevice-device-recheck" => await RunExtendedDeviceDeviceRecheckAsync(argList).ConfigureAwait(false),
-        "g-hg-extendeddevice-coverage" => await RunGhCoverageAsync(argList).ConfigureAwait(false),
+        "extendeddevice-coverage" or "g-hg-extendeddevice-coverage" => await RunGhCoverageAsync(argList).ConfigureAwait(false),
         "read-soak" => await RunReadSoakAsync(argList).ConfigureAwait(false),
         "mixed-read-load" => await RunMixedReadLoadAsync(argList).ConfigureAwait(false),
         "tcp-concurrency" => await RunTcpConcurrencyAsync(argList).ConfigureAwait(false),
@@ -677,6 +745,7 @@ internal sealed record CoverageRow(
     string Device,
     ushort Points,
     byte DirectMemory,
+    string Unit,
     string Status,
     string Detail
 );

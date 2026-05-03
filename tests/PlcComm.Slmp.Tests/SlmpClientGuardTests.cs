@@ -1,3 +1,6 @@
+using System.Buffers.Binary;
+using System.Net;
+using System.Net.Sockets;
 using PlcComm.Slmp;
 
 namespace PlcComm.Slmp.Tests;
@@ -242,6 +245,33 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task WriteBlockAsync_RetriesMixedBlockRejectAsSplitRequests()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0xC05B, Array.Empty<byte>()),
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, Array.Empty<byte>()),
+        ]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", server.Port)
+        {
+            FrameType = SlmpFrameType.Frame4E,
+            CompatibilityMode = SlmpCompatibilityMode.Iqr,
+        };
+
+        await client.WriteBlockAsync(
+            [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), [0x1234])],
+            [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.M, 200), [0x0005])],
+            new SlmpBlockWriteOptions(SplitMixedBlocks: false, RetryMixedOnError: true));
+
+        Assert.Equal(3, server.RequestFrames.Count);
+        AssertBlockWriteShape(server.RequestFrames[0], wordBlocks: 1, bitBlocks: 1);
+        AssertBlockWriteShape(server.RequestFrames[1], wordBlocks: 1, bitBlocks: 0);
+        AssertBlockWriteShape(server.RequestFrames[2], wordBlocks: 0, bitBlocks: 1);
+    }
+
+    [Fact]
     public async Task WriteRandomWordsAsync_RejectsLongCurrentWordEntries()
     {
         using var client = new SlmpClient("127.0.0.1");
@@ -250,6 +280,109 @@ public sealed class SlmpClientGuardTests
                 new[] { (new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10), (ushort)1) },
                 Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
         Assert.Contains("does not support LTN/LSTN/LCN/LZ as word entries", ex.Message);
+    }
+
+    private static void AssertBlockWriteShape(byte[] request, byte wordBlocks, byte bitBlocks)
+    {
+        var body = request.AsSpan(13);
+        Assert.Equal((ushort)0x1406, BinaryPrimitives.ReadUInt16LittleEndian(body[2..4]));
+        Assert.Equal((ushort)0x0002, BinaryPrimitives.ReadUInt16LittleEndian(body[4..6]));
+        Assert.Equal(wordBlocks, body[6]);
+        Assert.Equal(bitBlocks, body[7]);
+    }
+
+    private sealed class MultiShotSlmpServer : IAsyncDisposable
+    {
+        private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
+        private readonly Queue<(ushort EndCode, byte[] ResponseData)> _responses;
+        private Task? _serverTask;
+
+        public MultiShotSlmpServer(IEnumerable<(ushort EndCode, byte[] ResponseData)> responses)
+        {
+            _responses = new Queue<(ushort EndCode, byte[] ResponseData)>(responses);
+        }
+
+        public int Port => ((IPEndPoint)_listener.LocalEndpoint).Port;
+
+        public List<byte[]> RequestFrames { get; } = [];
+
+        public Task StartAsync()
+        {
+            _listener.Start();
+            _serverTask = RunAsync();
+            return Task.CompletedTask;
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            _listener.Stop();
+            if (_serverTask is not null)
+            {
+                await _serverTask.ConfigureAwait(false);
+            }
+        }
+
+        private async Task RunAsync()
+        {
+            try
+            {
+                using var client = await _listener.AcceptTcpClientAsync().ConfigureAwait(false);
+                using var stream = client.GetStream();
+                while (_responses.Count > 0)
+                {
+                    var head = await ReadExactAsync(stream, 13).ConfigureAwait(false);
+                    var bodyLength = BinaryPrimitives.ReadUInt16LittleEndian(head.AsSpan(11, 2));
+                    var body = await ReadExactAsync(stream, bodyLength).ConfigureAwait(false);
+                    var request = new byte[head.Length + body.Length];
+                    head.CopyTo(request, 0);
+                    body.CopyTo(request, head.Length);
+                    RequestFrames.Add(request);
+
+                    var (endCode, responseData) = _responses.Dequeue();
+                    var response = Build4EResponse(request, responseData, endCode);
+                    await stream.WriteAsync(response).ConfigureAwait(false);
+                    await stream.FlushAsync().ConfigureAwait(false);
+                }
+            }
+            catch (SocketException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+
+        private static byte[] Build4EResponse(ReadOnlySpan<byte> request, ReadOnlySpan<byte> responseData, ushort endCode)
+        {
+            var payload = new byte[2 + responseData.Length];
+            BinaryPrimitives.WriteUInt16LittleEndian(payload, endCode);
+            responseData.CopyTo(payload.AsSpan(2));
+
+            var response = new byte[13 + payload.Length];
+            response[0] = 0xD4;
+            response[1] = 0x00;
+            request.Slice(2, 2).CopyTo(response.AsSpan(2));
+            request.Slice(6, 5).CopyTo(response.AsSpan(6));
+            BinaryPrimitives.WriteUInt16LittleEndian(response.AsSpan(11, 2), checked((ushort)payload.Length));
+            payload.CopyTo(response.AsSpan(13));
+            return response;
+        }
+
+        private static async Task<byte[]> ReadExactAsync(NetworkStream stream, int size)
+        {
+            var buffer = new byte[size];
+            var read = 0;
+            while (read < size)
+            {
+                var chunk = await stream.ReadAsync(buffer.AsMemory(read, size - read)).ConfigureAwait(false);
+                if (chunk == 0)
+                {
+                    throw new IOException("Unexpected end of stream.");
+                }
+                read += chunk;
+            }
+            return buffer;
+        }
     }
 
     [Fact]

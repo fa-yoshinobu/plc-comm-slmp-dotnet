@@ -41,3 +41,7 @@ Included examples:
 - The CLI sample includes `device-range-catalog` for user-selected PLC family
   plus one family-specific `SD` block read:
   `dotnet run --project samples/PlcComm.Slmp.Cli -- device-range-catalog --plc-type iq-f --host 192.168.250.100 --port 1025 --series ql --frame-type 3e`
+- The CLI sample includes `extendeddevice-coverage` for Extended Specification
+  live sweeps. It keeps OK/NG rows in a Markdown report and supports both word
+  and bit extended devices:
+  `dotnet run --project samples/PlcComm.Slmp.Cli -- extendeddevice-coverage --host 192.168.250.100 --port 1025 --series iqr --frame-type 4e --device U3E0\G10 --points 1 --write-check`

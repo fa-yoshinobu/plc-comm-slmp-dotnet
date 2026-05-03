@@ -29,6 +29,14 @@
       "implementations": ["python", "dotnet", "cpp", "node"]
     },
     {
+      "id": "read_words_rd524286_2_iqr",
+      "operation": "read_words",
+      "args": { "device": "RD524286", "points": 2 },
+      "request_hex": "54000000000000FFFF03000E00100001040200FEFF07002C000200",
+      "response_data_hex": "34127856",
+      "implementations": ["python", "dotnet", "cpp", "node"]
+    },
+    {
       "id": "write_bits_m101_true",
       "operation": "write_bits",
       "args": { "device": "M101", "values": [true] },

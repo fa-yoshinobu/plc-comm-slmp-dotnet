@@ -18,6 +18,10 @@
     { "id": "tn5_iqr", "device": "TN5", "series": "iqr", "hex": "05000000C200", "implementations": ["python", "dotnet", "cpp", "node"] },
     { "id": "tn5_legacy", "device": "TN5", "series": "legacy", "hex": "050000C2", "implementations": ["python", "dotnet", "cpp", "node"] },
     { "id": "sd0_iqr", "device": "SD0", "series": "iqr", "hex": "00000000A900", "implementations": ["python", "dotnet", "cpp", "node"] },
-    { "id": "sd0_legacy", "device": "SD0", "series": "legacy", "hex": "000000A9", "implementations": ["python", "dotnet", "cpp", "node"] }
+    { "id": "sd0_legacy", "device": "SD0", "series": "legacy", "hex": "000000A9", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "rd0_iqr", "device": "RD0", "series": "iqr", "hex": "000000002C00", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "rd0_legacy", "device": "RD0", "series": "legacy", "hex": "0000002C", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "rd524287_iqr", "device": "RD524287", "series": "iqr", "hex": "FFFF07002C00", "implementations": ["python", "dotnet", "cpp", "node"] },
+    { "id": "rd524287_legacy", "device": "RD524287", "series": "legacy", "hex": "FFFF072C", "implementations": ["python", "dotnet", "cpp", "node"] }
   ]
 }
