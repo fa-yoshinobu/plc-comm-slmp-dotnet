@@ -48,10 +48,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Public device-range catalog APIs and user docs for supported SLMP device families and ranges.
-- `SlmpConnectionProfileProbe` support, CLI coverage, and regression tests for profile probing and CPU operation-state inspection flows.
+- Regression tests for device-range catalog and CPU operation-state inspection flows.
 
 ### Changed
-- `QueuedSlmpClient` and the sample CLI now expose the new device-range and connection-profile probe helpers alongside the existing high-level API surface.
+- `QueuedSlmpClient` and the sample CLI now expose the device-range helpers alongside the existing high-level API surface.
 
 ## [0.1.6] - 2026-04-13
 

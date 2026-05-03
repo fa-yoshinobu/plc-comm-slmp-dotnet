@@ -167,43 +167,6 @@ async Task<int> RunDeviceRangeCatalogAsync(IReadOnlyList<string> args)
     return 0;
 }
 
-async Task<int> RunConnectionProfileProbeAsync(IReadOnlyList<string> args)
-{
-    var target = ParseTargets(args)[0];
-    var host = GetOption(args, "--host", "192.168.250.100");
-    var port = int.Parse(GetOption(args, "--port", "1025"), CultureInfo.InvariantCulture);
-    var transport = GetOption(args, "--transport", "tcp").Equals("udp", StringComparison.OrdinalIgnoreCase)
-        ? SlmpTransportMode.Udp
-        : SlmpTransportMode.Tcp;
-
-    var results = await SlmpConnectionProfileProbe.ProbeAsync(
-        new SlmpConnectionOptions(host, SlmpPlcFamily.IqR)
-        {
-            Port = port,
-            Transport = transport,
-            Target = target.Target,
-        }).ConfigureAwait(false);
-
-    foreach (var result in results)
-    {
-        var typeNameText = result.TypeNameInfo is null
-            ? "type_name=-"
-            : $"model={result.TypeNameInfo.Model} model_code=0x{result.TypeNameInfo.ModelCode:X4}";
-        var familyText = result.Family?.ToString() ?? "-";
-        var sdText = result.SdRegisterStart is null || result.SdRegisterCount is null
-            ? "sd_block=-"
-            : $"sd_block=SD{result.SdRegisterStart}-SD{result.SdRegisterStart + result.SdRegisterCount - 1} count={result.SdRegisterCount}";
-        var errorText = string.IsNullOrWhiteSpace(result.ErrorMessage)
-            ? string.Empty
-            : $" error={result.ErrorMessage}";
-
-        Console.WriteLine(
-            $"{result.FrameType}/{result.CompatibilityMode} status={result.Status} family={familyText} sd_read={result.SdReadSucceeded} {sdText} {typeNameText}{errorText}");
-    }
-
-    return results.Any(static result => result.Status == SlmpConnectionProfileProbeStatus.Validated) ? 0 : 1;
-}
-
 string FormatTarget(SlmpNamedTarget row)
 {
     return $"name={row.Name}, network=0x{row.Target.Network:X2}, station=0x{row.Target.Station:X2}, module_io=0x{row.Target.ModuleIo:X4}, multidrop=0x{row.Target.Multidrop:X2}";
@@ -832,7 +795,6 @@ if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
 {
     Console.WriteLine("SLMP .NET CLI");
     Console.WriteLine("  connection-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF|SELF-CPU1|NW1-ST2|name,0x00,0xFF,0x03FF,0x00 --quiet]");
-    Console.WriteLine("  connection-profile-probe [--host ... --port ... --transport tcp|udp --target SELF --quiet]");
     Console.WriteLine("  device-range-catalog --plc-type iq-r|iq-l|mx-f|mx-r|iq-f|qcpu|lcpu|qnu|qnudv --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --quiet]");
     Console.WriteLine("  other-station-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... (repeatable) --quiet]");
     Console.WriteLine("  random-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... --write-check --quiet]");
@@ -856,7 +818,6 @@ try
     var exitCode = command switch
     {
         "connection-check" => await RunConnectionCheckAsync(argList).ConfigureAwait(false),
-        "connection-profile-probe" => await RunConnectionProfileProbeAsync(argList).ConfigureAwait(false),
         "device-range-catalog" => await RunDeviceRangeCatalogAsync(argList).ConfigureAwait(false),
         "other-station-check" => await RunOtherStationCheckAsync(argList).ConfigureAwait(false),
         "random-check" => await RunRandomCheckAsync(argList).ConfigureAwait(false),
