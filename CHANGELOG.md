@@ -108,9 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core read/write, type-name, remote control, and clear-error APIs.
 - `connection-check` and `other-station-check` CLI commands.
 - Mixed block write retry handling for `0xC056`/`0xC05B`/`0xC061`/`0x414A`.
-- `compatibility-probe` CLI command with markdown/json report output.
 - `g-hg-ExtendedDevice-coverage` CLI command with optional write-check flow.
-- `compatibility-matrix-render` command for dotnet probe outputs.
 - `ExtendedDevice-device-recheck`, `read-soak`, `mixed-read-load`, and `tcp-concurrency` CLI probes.
 - `QueuedSlmpClient` for single-TCP-connection serialized execution.
 - Extended Specification extended device read/write support.

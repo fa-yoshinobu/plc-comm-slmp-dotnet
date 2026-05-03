@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text;
-using System.Text.Json;
 using PlcComm.Slmp;
 
 string GetOption(IReadOnlyList<string> args, string name, string defaultValue)
@@ -264,115 +263,6 @@ async Task<int> RunBlockCheckAsync(IReadOnlyList<string> args)
     return 0;
 }
 
-async Task<ProbeItemResult> RunProbeItemAsync(SlmpClient client, SlmpNamedTarget target, string transport, string name, Func<Task<string>> body)
-{
-    try
-    {
-        var detail = await body().ConfigureAwait(false);
-        Console.WriteLine($"[OK] {target.Name} {transport} {name}: {detail}");
-        return new ProbeItemResult(target.Name, transport, name, "OK", detail);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[NG] {target.Name} {transport} {name}: {ex.Message}");
-        return new ProbeItemResult(target.Name, transport, name, "NG", ex.Message);
-    }
-}
-
-async Task<int> RunCompatibilityProbeAsync(IReadOnlyList<string> args)
-{
-    var targets = ParseTargets(args);
-    var transports = GetOptions(args, "--transport");
-    if (transports.Count == 0) transports.Add("tcp");
-    var writeCheck = HasFlag(args, "--write-check");
-
-    var results = new List<ProbeItemResult>();
-    foreach (var transport in transports)
-    {
-        var scopedArgs = args.ToList();
-        scopedArgs.RemoveAll(x => x.Equals("--transport", StringComparison.OrdinalIgnoreCase));
-        scopedArgs.RemoveAll(x => x.Equals("tcp", StringComparison.OrdinalIgnoreCase) || x.Equals("udp", StringComparison.OrdinalIgnoreCase));
-        scopedArgs.Add("--transport");
-        scopedArgs.Add(transport);
-
-        foreach (var target in targets)
-        {
-            using var client = await CreateClientAsync(scopedArgs, target.Target).ConfigureAwait(false);
-            results.Add(await RunProbeItemAsync(client, target, transport, "0101 read_type_name", async () =>
-            {
-                var info = await client.ReadTypeNameAsync().ConfigureAwait(false);
-                return $"model={info.Model}, model_code=0x{info.ModelCode:X4}";
-            }).ConfigureAwait(false));
-
-            results.Add(await RunProbeItemAsync(client, target, transport, "0401 read_sm400", async () =>
-            {
-                var v = await client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400), 1).ConfigureAwait(false);
-                return $"values=[{v[0]}]";
-            }).ConfigureAwait(false));
-
-            results.Add(await RunProbeItemAsync(client, target, transport, "0403 random_read", async () =>
-            {
-                var rr = await client.ReadRandomAsync([new SlmpDeviceAddress(SlmpDeviceCode.D, 100)], [new SlmpDeviceAddress(SlmpDeviceCode.D, 200)]).ConfigureAwait(false);
-                return $"words=[{string.Join(", ", rr.WordValues)}], dwords=[{string.Join(", ", rr.DwordValues)}]";
-            }).ConfigureAwait(false));
-
-            results.Add(await RunProbeItemAsync(client, target, transport, "0406 block_read", async () =>
-            {
-                var br = await client.ReadBlockAsync([new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 300), 2)], [new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.M, 200), 1)]).ConfigureAwait(false);
-                return $"words=[{string.Join(", ", br.WordValues)}], bit_words=[{string.Join(", ", br.BitWordValues)}]";
-            }).ConfigureAwait(false));
-
-            if (writeCheck)
-            {
-                results.Add(await RunProbeItemAsync(client, target, transport, "1402 random_write", async () =>
-                {
-                    await client.WriteRandomWordsAsync([(new SlmpDeviceAddress(SlmpDeviceCode.D, 135), (ushort)0x1234)], [(new SlmpDeviceAddress(SlmpDeviceCode.D, 235), 0x12345678)]).ConfigureAwait(false);
-                    await client.WriteRandomBitsAsync([(new SlmpDeviceAddress(SlmpDeviceCode.M, 125), true)]).ConfigureAwait(false);
-                    return "completed";
-                }).ConfigureAwait(false));
-
-                results.Add(await RunProbeItemAsync(client, target, transport, "1406 block_write", async () =>
-                {
-                    await client.WriteBlockAsync(
-                        [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 140), [0x0001])],
-                        [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.M, 220), [0x0001])],
-                        new SlmpBlockWriteOptions(SplitMixedBlocks: false, RetryMixedOnError: true)
-                    ).ConfigureAwait(false);
-                    return "completed";
-                }).ConfigureAwait(false));
-            }
-        }
-    }
-
-    var reportDir = GetOption(args, "--report-dir", "internal_docs/validation/reports");
-    Directory.CreateDirectory(reportDir);
-    var mdPath = Path.Combine(reportDir, "compatibility_probe_latest.md");
-    var jsonPath = Path.Combine(reportDir, "compatibility_probe_latest.json");
-    var md = new StringBuilder();
-    md.AppendLine("# Compatibility Probe Latest");
-    md.AppendLine();
-    md.AppendLine($"- Timestamp: {GetTimestamp()}");
-    md.AppendLine($"- Host: {GetOption(args, "--host", "192.168.250.100")}");
-    md.AppendLine($"- Port: {GetOption(args, "--port", "1025")}");
-    md.AppendLine($"- Write check: {(writeCheck ? "enabled" : "disabled")}");
-    md.AppendLine();
-    md.AppendLine("| Target | Transport | Command | Status | Detail |");
-    md.AppendLine("|---|---|---|---|---|");
-    foreach (var row in results)
-    {
-        md.AppendLine($"| {row.Target} | {row.Transport} | {row.Name} | {row.Status} | {row.Detail.Replace("|", "/")} |");
-    }
-    await File.WriteAllTextAsync(mdPath, md.ToString(), Encoding.UTF8).ConfigureAwait(false);
-#pragma warning disable CA1869 // One-time serialization in a CLI tool; caching not beneficial here
-    var json = JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true });
-#pragma warning restore CA1869
-    await File.WriteAllTextAsync(jsonPath, json, Encoding.UTF8).ConfigureAwait(false);
-    Console.WriteLine($"[DONE] markdown={mdPath}");
-    Console.WriteLine($"[DONE] json={jsonPath}");
-
-    return results.Any(x => x.Status == "NG") ? 1 : 0;
-}
-
 async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
 {
     var targets = ParseTargets(args);
@@ -489,70 +379,6 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
     await File.WriteAllTextAsync(reportPath, report.ToString(), Encoding.UTF8).ConfigureAwait(false);
     Console.WriteLine($"[DONE] report={reportPath}");
     return rows.Any(x => x.Status == "NG") ? 1 : 0;
-}
-
-async Task<int> RunCompatibilityMatrixRenderAsync(IReadOnlyList<string> args)
-{
-    var inputPaths = GetOptions(args, "--input");
-    if (inputPaths.Count == 0)
-    {
-        inputPaths.Add("internal_docs/validation/reports/compatibility_probe_latest.json");
-    }
-
-    var loaded = new List<ProbeItemResult>();
-    foreach (var input in inputPaths)
-    {
-        var text = await File.ReadAllTextAsync(input, Encoding.UTF8).ConfigureAwait(false);
-        var items = JsonSerializer.Deserialize<List<ProbeItemResult>>(text) ?? [];
-        loaded.AddRange(items);
-    }
-
-    var commands = loaded.Select(x => x.Name).Distinct(StringComparer.Ordinal).OrderBy(x => x, StringComparer.Ordinal).ToArray();
-    var targets = loaded.Select(x => x.Target).Distinct(StringComparer.Ordinal).OrderBy(x => x, StringComparer.Ordinal).ToArray();
-    var statusMap = new Dictionary<(string Target, string Command), string>();
-    foreach (var row in loaded)
-    {
-        var key = (row.Target, row.Name);
-        if (!statusMap.TryGetValue(key, out var existing))
-        {
-            statusMap[key] = row.Status;
-            continue;
-        }
-
-        if (existing != "NG" && row.Status == "NG")
-        {
-            statusMap[key] = "NG";
-        }
-    }
-
-    var outputPath = GetOption(args, "--output", "internal_docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md");
-    Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? ".");
-    var sb = new StringBuilder();
-    sb.AppendLine("# PLC Compatibility (Dotnet Probe)");
-    sb.AppendLine();
-    sb.AppendLine($"- Timestamp: {GetTimestamp()}");
-    sb.AppendLine($"- Sources: {string.Join(", ", inputPaths)}");
-    sb.AppendLine();
-    sb.Append("| Target |");
-    foreach (var command in commands) sb.Append($" {command} |");
-    sb.AppendLine();
-    sb.Append("|---|");
-    foreach (var _unused in commands) sb.Append("---|");
-    sb.AppendLine();
-    foreach (var target in targets)
-    {
-        sb.Append($"| {target} |");
-        foreach (var command in commands)
-        {
-            var status = statusMap.TryGetValue((target, command), out var s) ? s : "PENDING";
-            sb.Append($" {status} |");
-        }
-        sb.AppendLine();
-    }
-
-    await File.WriteAllTextAsync(outputPath, sb.ToString(), Encoding.UTF8).ConfigureAwait(false);
-    Console.WriteLine($"[DONE] output={outputPath}");
-    return 0;
 }
 
 async Task<int> RunExtendedDeviceDeviceRecheckAsync(IReadOnlyList<string> args)
@@ -799,8 +625,6 @@ if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
     Console.WriteLine("  other-station-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... (repeatable) --quiet]");
     Console.WriteLine("  random-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... --write-check --quiet]");
     Console.WriteLine("  block-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... --write-check --quiet]");
-    Console.WriteLine("  compatibility-probe --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --write-check --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine("  compatibility-matrix-render [--input ... (repeatable) --output internal_docs/validation/reports/PLC_COMPATIBILITY_DOTNET.md --quiet]");
     Console.WriteLine(@"  ExtendedDevice-device-recheck --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --device U3E0\G10 --points 1 --direct-memory 0xFA --write-check --report-dir internal_docs/validation/reports --quiet]");
     Console.WriteLine(@"  g-hg-ExtendedDevice-coverage --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --device U3E0\G10 (repeatable) --points 1 (repeatable) --direct-memory 0xFA (repeatable) --write-check --report-dir internal_docs/validation/reports --quiet]");
     Console.WriteLine("  read-soak --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --device D1000 --points 1 --iterations 100 --interval-ms 0 --report-dir internal_docs/validation/reports --quiet]");
@@ -822,8 +646,6 @@ try
         "other-station-check" => await RunOtherStationCheckAsync(argList).ConfigureAwait(false),
         "random-check" => await RunRandomCheckAsync(argList).ConfigureAwait(false),
         "block-check" => await RunBlockCheckAsync(argList).ConfigureAwait(false),
-        "compatibility-probe" => await RunCompatibilityProbeAsync(argList).ConfigureAwait(false),
-        "compatibility-matrix-render" => await RunCompatibilityMatrixRenderAsync(argList).ConfigureAwait(false),
         "extendeddevice-device-recheck" => await RunExtendedDeviceDeviceRecheckAsync(argList).ConfigureAwait(false),
         "g-hg-extendeddevice-coverage" => await RunGhCoverageAsync(argList).ConfigureAwait(false),
         "read-soak" => await RunReadSoakAsync(argList).ConfigureAwait(false),
@@ -848,8 +670,6 @@ catch (Exception ex)
     Console.Error.WriteLine($"[NG] {ex.Message}");
     Environment.ExitCode = 1;
 }
-
-internal sealed record ProbeItemResult(string Target, string Transport, string Name, string Status, string Detail);
 
 internal sealed record CoverageRow(
     string Target,
