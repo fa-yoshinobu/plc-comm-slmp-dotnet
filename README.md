@@ -8,6 +8,11 @@
 
 ![Illustration](https://raw.githubusercontent.com/fa-yoshinobu/plc-comm-slmp-dotnet/main/docsrc/assets/melsec.png)
 
+[![Release](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/actions/workflows/release.yml/badge.svg)](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/actions/workflows/release.yml)
+
+[![.NET 9](https://img.shields.io/badge/.NET-9-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![C#](https://img.shields.io/badge/C%23-239120?logo=csharp&logoColor=white)](https://learn.microsoft.com/dotnet/csharp/)
+
 High-level SLMP helpers for Mitsubishi PLC communication over Binary 3E and 4E frames.
 
 The recommended user surface is the extension-method layer:
