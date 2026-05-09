@@ -118,6 +118,33 @@ Unknown models return `SlmpError`.
 `Addr` is the library-facing address notation, not necessarily the notation
 used in Mitsubishi manuals.
 
+For iQ-R-series range rows, the `SD` register value is the PLC-configured
+current point count. The catalog must cap that value at the iQ-R-series maximum
+below, then derive `UpperBound = PointCount - 1`. In other words, use
+`PointCount = min(SD point count, MaxPointCount)` for the rows listed here.
+The iQ-R-series `0002/0003` device access format uses a 4-byte device number,
+so these maximum addresses are representable by the protocol format.
+
+| Item | Devices | Max address | MaxPointCount | Setting unit |
+| --- | --- | --- | --- | --- |
+| `X` | `X` | `X2FFF` | `12288` (`0x3000`) | n/a |
+| `Y` | `Y` | `Y2FFF` | `12288` (`0x3000`) | n/a |
+| `M` | `M` | `M94674943` | `94674944` (`0x5A4A000`) | 64 points |
+| `B` | `B` | `B5A49FFF` | `94674944` (`0x5A4A000`) | 64 points |
+| `F` | `F` | `F32767` | `32768` | 64 points |
+| `SB` | `SB` | `SB5A49FFF` | `94674944` (`0x5A4A000`) | 64 points |
+| `V` | `V` | `V32767` | `32768` | 64 points |
+| `L` | `L` | `L32767` | `32768` | 64 points |
+| `T` | `TS`, `TC`, `TN` | `T5259711` | `5259712` | 32 points |
+| `ST` | `STS`, `STC`, `STN` | `ST5259711` | `5259712` | 32 points |
+| `LT` | `LTS`, `LTC`, `LTN` | `LT1479295` | `1479296` | 1 point |
+| `LST` | `LSTS`, `LSTC`, `LSTN` | `LST1479295` | `1479296` | 1 point |
+| `C` | `CS`, `CC`, `CN` | `C5259711` | `5259712` | 32 points |
+| `LC` | `LCS`, `LCC`, `LCN` | `LC2784543` | `2784544` | 32 points |
+| `D` | `D` | `D5917183` | `5917184` (`0x5A4A00`) | 4 points |
+| `W` | `W` | `W5A49FF` | `5917184` (`0x5A4A00`) | 4 points |
+| `SW` | `SW` | `SW5A49FF` | `5917184` (`0x5A4A00`) | 4 points |
+
 | Item | Devices | Addr | iQ-R | MX-F | MX-R | iQ-F | QCPU | LCPU / QnU / QnUDV |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `X` | `X` | base16 | `SD260-SD261` | `SD260-SD261` | `SD260-SD261` | `SD260-SD261` | `SD290` | `SD290` |
