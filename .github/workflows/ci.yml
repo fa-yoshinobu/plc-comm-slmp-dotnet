@@ -40,6 +40,7 @@ jobs:
           name: test-results
           path: "**/test-results.trx"
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload validation reports
         uses: actions/upload-artifact@v7
@@ -47,6 +48,7 @@ jobs:
           name: validation-reports
           path: internal_docs/validation/reports/**
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Install docfx
         run: dotnet tool install -g docfx

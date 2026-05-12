@@ -49,6 +49,7 @@ jobs:
         with:
           name: nuget-packages
           path: out\*
+          retention-days: 7
 
       - name: Publish to GitHub Release
         shell: pwsh
