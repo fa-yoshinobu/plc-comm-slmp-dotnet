@@ -60,7 +60,6 @@ Repository workflows:
 - `.github/workflows/release.yml`
   - build release artifacts on tag pushes
   - create or update a GitHub Release for `v*` tags
-  - optionally push `.nupkg` to NuGet when `NUGET_API_KEY` is configured
 
 ## NuGet Readiness
 
@@ -96,4 +95,4 @@ Recommended order:
 2. Verify CI on that commit.
 3. Create and push the version tag.
 4. Let the release workflow build the package artifacts.
-5. If `NUGET_API_KEY` is configured, let the workflow publish to NuGet.
+5. Publish the `.nupkg` and `.snupkg` to NuGet manually after the GitHub Release artifacts are verified.
