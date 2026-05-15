@@ -245,12 +245,10 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
-    public async Task WriteBlockAsync_RetriesMixedBlockRejectAsSplitRequests()
+    public async Task WriteBlockAsync_DoesNotRetryC05BAsSplitRequests()
     {
         await using var server = new MultiShotSlmpServer([
             (0xC05B, Array.Empty<byte>()),
-            (0x0000, Array.Empty<byte>()),
-            (0x0000, Array.Empty<byte>()),
         ]);
         await server.StartAsync();
 
@@ -260,15 +258,14 @@ public sealed class SlmpClientGuardTests
             CompatibilityMode = SlmpCompatibilityMode.Iqr,
         };
 
-        await client.WriteBlockAsync(
+        var ex = await Assert.ThrowsAsync<SlmpError>(() => client.WriteBlockAsync(
             [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), [0x1234])],
             [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.M, 200), [0x0005])],
-            new SlmpBlockWriteOptions(SplitMixedBlocks: false, RetryMixedOnError: true));
+            new SlmpBlockWriteOptions(SplitMixedBlocks: false, RetryMixedOnError: true)));
+        Assert.Equal((ushort)0xC05B, ex.EndCode);
 
-        Assert.Equal(3, server.RequestFrames.Count);
+        Assert.Single(server.RequestFrames);
         AssertBlockWriteShape(server.RequestFrames[0], wordBlocks: 1, bitBlocks: 1);
-        AssertBlockWriteShape(server.RequestFrames[1], wordBlocks: 1, bitBlocks: 0);
-        AssertBlockWriteShape(server.RequestFrames[2], wordBlocks: 0, bitBlocks: 1);
     }
 
     [Fact]

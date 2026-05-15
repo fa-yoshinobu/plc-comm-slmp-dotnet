@@ -976,7 +976,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             writeOptions.RetryMixedOnError
             && wordBlocks.Count > 0
             && bitBlocks.Count > 0
-            && ex.EndCode is 0xC056 or 0xC05B or 0xC061 or 0x414A
+            && ex.EndCode is 0xC056 or 0xC061 or 0x414A
         )
         {
             await WriteBlockAsync(wordBlocks, [], new SlmpBlockWriteOptions(false, false), cancellationToken).ConfigureAwait(false);
