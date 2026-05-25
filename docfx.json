@@ -22,7 +22,7 @@
         "src": "docsrc"
       },
       {
-        "files": ["README.md", "toc.yml"],
+        "files": ["README.md", "RELEASING.md", "toc.yml"],
         "exclude": ["**/maintainer/**", "**/validation/**", "**/internal_docs/**"]
       }
     ],

@@ -1,5 +1,7 @@
 - name: Introduction
   href: README.md
+- name: Release Process
+  href: RELEASING.md
 - name: User Guide
   href: docsrc/user/
 - name: API Reference

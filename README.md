@@ -14,6 +14,8 @@
 
 High-level SLMP helpers for Mitsubishi PLC communication over Binary 3E and 4E frames.
 
+Maintainer release steps are documented in [Release Process](RELEASING.md).
+
 The recommended user surface is the extension-method layer:
 
 - `SlmpClientFactory.OpenAndConnectAsync`
