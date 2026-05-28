@@ -269,6 +269,29 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task RemoteRunAsync_DefaultClearModeDoesNotClearDevices()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, Array.Empty<byte>()),
+        ]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", server.Port)
+        {
+            FrameType = SlmpFrameType.Frame4E,
+            CompatibilityMode = SlmpCompatibilityMode.Iqr,
+        };
+
+        await client.RemoteRunAsync();
+
+        var request = Assert.Single(server.RequestFrames);
+        var body = request.AsSpan(13);
+        Assert.Equal((ushort)0x1001, BinaryPrimitives.ReadUInt16LittleEndian(body[2..4]));
+        Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(body[4..6]));
+        Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00 }, body[6..10].ToArray());
+    }
+
+    [Fact]
     public async Task WriteRandomWordsAsync_RejectsLongCurrentWordEntries()
     {
         using var client = new SlmpClient("127.0.0.1");
