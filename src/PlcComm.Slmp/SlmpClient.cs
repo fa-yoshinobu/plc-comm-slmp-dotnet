@@ -1070,7 +1070,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         _ = await RequestAsync(SlmpCommand.RemoteRun, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task RemoteStopAsync(CancellationToken cancellationToken = default) => _ = await RequestAsync(SlmpCommand.RemoteStop, 0x0000, new byte[] { 0x01, 0x00 }, true, cancellationToken).ConfigureAwait(false);
+    public Task RemoteStopAsync(CancellationToken cancellationToken = default) => RemoteStopAsync(false, cancellationToken);
+
+    public async Task RemoteStopAsync(bool force, CancellationToken cancellationToken = default)
+    {
+        var mode = force ? (ushort)0x0003 : (ushort)0x0001;
+        _ = await RequestAsync(SlmpCommand.RemoteStop, 0x0000, new byte[] { (byte)mode, 0x00 }, true, cancellationToken).ConfigureAwait(false);
+    }
+
+    public Task RemoteForceStopAsync(CancellationToken cancellationToken = default) => RemoteStopAsync(true, cancellationToken);
 
     public async Task RemotePauseAsync(bool force = false, CancellationToken cancellationToken = default)
     {

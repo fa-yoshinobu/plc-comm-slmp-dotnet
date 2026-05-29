@@ -292,6 +292,32 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task ForcedCpuOperations_UseForceWithoutLatchClear()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, Array.Empty<byte>()),
+        ]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", server.Port)
+        {
+            FrameType = SlmpFrameType.Frame4E,
+            CompatibilityMode = SlmpCompatibilityMode.Iqr,
+        };
+
+        await client.RemoteRunAsync(force: true);
+        await client.RemoteForceStopAsync();
+        await client.RemotePauseAsync(force: true);
+
+        Assert.Equal(3, server.RequestFrames.Count);
+        AssertCpuOperationShape(server.RequestFrames[0], 0x1001, [0x03, 0x00, 0x00, 0x00]);
+        AssertCpuOperationShape(server.RequestFrames[1], 0x1002, [0x03, 0x00]);
+        AssertCpuOperationShape(server.RequestFrames[2], 0x1003, [0x03, 0x00]);
+    }
+
+    [Fact]
     public async Task WriteRandomWordsAsync_RejectsLongCurrentWordEntries()
     {
         using var client = new SlmpClient("127.0.0.1");
@@ -309,6 +335,14 @@ public sealed class SlmpClientGuardTests
         Assert.Equal((ushort)0x0002, BinaryPrimitives.ReadUInt16LittleEndian(body[4..6]));
         Assert.Equal(wordBlocks, body[6]);
         Assert.Equal(bitBlocks, body[7]);
+    }
+
+    private static void AssertCpuOperationShape(byte[] request, ushort command, byte[] payload)
+    {
+        var body = request.AsSpan(13);
+        Assert.Equal(command, BinaryPrimitives.ReadUInt16LittleEndian(body[2..4]));
+        Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(body[4..6]));
+        Assert.Equal(payload, body[6..(6 + payload.Length)].ToArray());
     }
 
     private sealed class MultiShotSlmpServer : IAsyncDisposable
