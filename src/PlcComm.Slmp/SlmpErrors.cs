@@ -29,4 +29,19 @@ public class SlmpError : Exception
     /// The SLMP subcommand that triggered the error.
     /// </summary>
     public ushort? Subcommand { get; }
+
+    /// <summary>
+    /// Compact symbolic name for <see cref="EndCode"/>, or null when no end code is available.
+    /// </summary>
+    public string? EndCodeName => EndCode is { } endCode ? SlmpEndCodes.GetName(endCode) : null;
+
+    /// <summary>
+    /// English error detail/cause message for <see cref="EndCode"/>, or null when unknown.
+    /// </summary>
+    public string? EndCodeMessage => EndCode is { } endCode ? SlmpEndCodes.GetMessage(endCode) : null;
+
+    /// <summary>
+    /// True when <see cref="EndCode"/> is a remote-password-related SLMP error.
+    /// </summary>
+    public bool IsRemotePasswordError => EndCode is { } endCode && SlmpEndCodes.IsRemotePasswordEndCode(endCode);
 }
