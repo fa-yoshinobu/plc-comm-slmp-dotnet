@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added SLMP end-code name/message helpers for the full communication error-code table, and exposed them from `SlmpError`.
+
 ## [0.1.13] - 2026-05-02
 
 ### Changed
