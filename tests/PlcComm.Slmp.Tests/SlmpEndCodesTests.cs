@@ -12,7 +12,8 @@ public sealed class SlmpEndCodesTests
     [InlineData(0xC814, "slmp_end_code_c814", "Remote password authentication has failed when required. Set a correct password and retry after 60 minutes.", "リモートパスワード認証が必要なアクセス時に，リモートパスワードのパスワード認証に失敗した。60分後に正しいパスワードを設定して再度実行してください。")]
     [InlineData(0xC815, "slmp_end_code_c815", "Remote password authentication has failed when required. Set a correct password and retry after 60 minutes.", "リモートパスワード認証が必要なアクセス時に，リモートパスワードのパスワード認証に失敗した。60分後に正しいパスワードを設定して再度実行してください。")]
     [InlineData(0xCFBF, "slmp_end_code_cfbf", "The simple CPU communication cannot be executed.", "シンプルCPU通信を実行できない。")]
-    [InlineData(0xE504, "slmp_end_code_e504", "Transient transmission was executed while the own station did not perform baton pass.", "自局がバトンパスを行っていない状態で，トランジェント伝送が実行された。")]
+    [InlineData(0xD913, "slmp_end_code_d913", "An error was detected in the network module.", "ネットワークユニットの異常を検出した。")]
+    [InlineData(0xE504, "slmp_end_code_e504", "Transient transmission (dedicated instruction, engineering tool connection) was executed while the own station did not perform baton pass.", "自局がバトンパス未実施中に，トランジェント伝送(専用命令，エンジニアリングツール接続)を実行した。")]
     public void GetNameAndMessage_KnownCodes_ReturnExpectedValues(int endCode, string expectedName, string expectedEnglish, string expectedJapanese)
     {
         var code = checked((ushort)endCode);
