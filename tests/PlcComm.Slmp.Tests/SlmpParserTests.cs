@@ -88,6 +88,13 @@ public sealed class SlmpParserTests
     }
 
     [Fact]
+    public void ParseNamedTarget_NetworkStationShortcut_IsRejected()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => SlmpTargetParser.ParseNamed("NW1-ST2"));
+        Assert.Contains("NAME,NETWORK,STATION,MODULE_IO,MULTIDROP", ex.Message);
+    }
+
+    [Fact]
     public void ParseQualifiedDevice_UsesExtensionSpec()
     {
         var qualified = SlmpQualifiedDeviceParser.Parse(@"U3E0\G10");

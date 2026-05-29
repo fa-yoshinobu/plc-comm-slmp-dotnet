@@ -80,7 +80,6 @@ public static class SlmpQualifiedDeviceParser
 /// </summary>
 public static class SlmpTargetParser
 {
-    private static readonly Regex NwStationPattern = new(@"^NW(?<network>\d+)-ST(?<station>\d+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex SelfCpuPattern = new(@"^SELF-CPU(?<cpu>[1-4])$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private const byte DefaultSelfNetwork = 0x00;
     private const byte DefaultSelfStation = 0xFF;
@@ -89,7 +88,7 @@ public static class SlmpTargetParser
 
     /// <summary>
     /// Parses a single target string. 
-    /// Supports "SELF", "SELF-CPU1..4", "NWx-STy", or "NAME,NETWORK,STATION,MODULE_IO,MULTIDROP".
+    /// Supports "SELF", "SELF-CPU1..4", or "NAME,NETWORK,STATION,MODULE_IO,MULTIDROP".
     /// </summary>
     public static SlmpNamedTarget ParseNamed(string text)
     {
@@ -106,7 +105,7 @@ public static class SlmpTargetParser
 
         if (parts.Length != 5)
         {
-            throw new ArgumentException("target must be SELF, SELF-CPU1..4, NWx-STy, or NAME,NETWORK,STATION,MODULE_IO,MULTIDROP");
+            throw new ArgumentException("target must be SELF, SELF-CPU1..4, or NAME,NETWORK,STATION,MODULE_IO,MULTIDROP");
         }
 
         var name = parts[0];
@@ -151,15 +150,7 @@ public static class SlmpTargetParser
             return new SlmpNamedTarget($"SELF-CPU{cpuIndex}", new SlmpTargetAddress(DefaultSelfNetwork, DefaultSelfStation, moduleIo, DefaultMultidrop));
         }
 
-        var nwSt = NwStationPattern.Match(name);
-        if (nwSt.Success)
-        {
-            var network = checked((byte)int.Parse(nwSt.Groups["network"].Value, CultureInfo.InvariantCulture));
-            var station = checked((byte)int.Parse(nwSt.Groups["station"].Value, CultureInfo.InvariantCulture));
-            return new SlmpNamedTarget($"NW{network}-ST{station}", new SlmpTargetAddress(network, station, DefaultModuleIo, DefaultMultidrop));
-        }
-
-        throw new ArgumentException("target must be SELF, SELF-CPU1..4, NWx-STy, or NAME,NETWORK,STATION,MODULE_IO,MULTIDROP");
+        throw new ArgumentException("target must be SELF, SELF-CPU1..4, or NAME,NETWORK,STATION,MODULE_IO,MULTIDROP");
     }
 
     /// <summary>
@@ -175,4 +166,3 @@ public static class SlmpTargetParser
         return int.Parse(text, CultureInfo.InvariantCulture);
     }
 }
-

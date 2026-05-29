@@ -107,6 +107,35 @@ bool HasFlag(IReadOnlyList<string> args, string name) => args.Contains(name, Str
 
 string GetTimestamp() => DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture);
 
+bool HasOption(IReadOnlyList<string> args, string name)
+{
+    for (var i = 0; i < args.Count; i++)
+    {
+        if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+string GetRemotePassword(IReadOnlyList<string> args)
+{
+    var password = GetOption(args, "--remote-password", string.Empty);
+    if (string.IsNullOrWhiteSpace(password))
+    {
+        password = GetOption(args, "--password", string.Empty);
+    }
+
+    if (string.IsNullOrWhiteSpace(password))
+    {
+        password = Environment.GetEnvironmentVariable("SLMP_REMOTE_PASSWORD") ?? string.Empty;
+    }
+
+    return password;
+}
+
 async Task<SlmpClient> CreateClientAsync(IReadOnlyList<string> args, SlmpTargetAddress target)
 {
     var host = GetOption(args, "--host", "192.168.250.100");
@@ -128,6 +157,60 @@ async Task<SlmpClient> CreateClientAsync(IReadOnlyList<string> args, SlmpTargetA
 IReadOnlyList<SlmpNamedTarget> ParseTargets(IReadOnlyList<string> args)
 {
     var targetInputs = GetOptions(args, "--target");
+    var networks = GetOptions(args, "--network");
+    var stations = GetOptions(args, "--station");
+    var moduleIos = GetOptions(args, "--module-io");
+    var multidrops = GetOptions(args, "--multidrop");
+    var hasNetworkStationTarget = networks.Count > 0
+        || stations.Count > 0
+        || HasOption(args, "--module-io")
+        || HasOption(args, "--multidrop");
+
+    if (hasNetworkStationTarget)
+    {
+        if (targetInputs.Count > 0)
+        {
+            throw new ArgumentException("Use either --target or --network/--station, not both.");
+        }
+
+        if (networks.Count == 0 || stations.Count == 0)
+        {
+            throw new ArgumentException("--network and --station must be specified together.");
+        }
+
+        if (networks.Count != stations.Count)
+        {
+            throw new ArgumentException("--network and --station counts must match.");
+        }
+
+        return networks.Select((networkText, index) =>
+        {
+            var stationText = stations[index];
+            var moduleIoText = moduleIos.Count == 0
+                ? "0x03FF"
+                : moduleIos.Count == 1
+                    ? moduleIos[0]
+                    : moduleIos.Count == networks.Count
+                        ? moduleIos[index]
+                        : throw new ArgumentException("--module-io count must be 1 or match --network/--station count.");
+            var multidropText = multidrops.Count == 0
+                ? "0x00"
+                : multidrops.Count == 1
+                    ? multidrops[0]
+                    : multidrops.Count == networks.Count
+                        ? multidrops[index]
+                        : throw new ArgumentException("--multidrop count must be 1 or match --network/--station count.");
+            var network = checked((byte)SlmpTargetParser.ParseAutoNumber(networkText));
+            var station = checked((byte)SlmpTargetParser.ParseAutoNumber(stationText));
+            var moduleIo = checked((ushort)SlmpTargetParser.ParseAutoNumber(moduleIoText));
+            var multidrop = checked((byte)SlmpTargetParser.ParseAutoNumber(multidropText));
+            var target = new SlmpTargetAddress(network, station, moduleIo, multidrop);
+            return new SlmpNamedTarget(
+                FormatTargetAddress(target),
+                target);
+        }).ToArray();
+    }
+
     if (targetInputs.Count == 0)
     {
         targetInputs.Add("SELF");
@@ -168,8 +251,14 @@ async Task<int> RunDeviceRangeCatalogAsync(IReadOnlyList<string> args)
 
 string FormatTarget(SlmpNamedTarget row)
 {
-    return $"name={row.Name}, network=0x{row.Target.Network:X2}, station=0x{row.Target.Station:X2}, module_io=0x{row.Target.ModuleIo:X4}, multidrop=0x{row.Target.Multidrop:X2}";
+    var address = FormatTargetAddress(row.Target);
+    return string.Equals(row.Name, address, StringComparison.Ordinal)
+        ? address
+        : $"name={row.Name}, {address}";
 }
+
+string FormatTargetAddress(SlmpTargetAddress target) =>
+    $"network={target.Network}, station={target.Station}, module_io=0x{target.ModuleIo:X4}, multidrop=0x{target.Multidrop:X2}";
 
 async Task<int> RunOtherStationCheckAsync(IReadOnlyList<string> args)
 {
@@ -194,12 +283,12 @@ async Task<int> RunOtherStationCheckAsync(IReadOnlyList<string> args)
                 typeInfo = $", type_name_error={ex.Message}";
             }
 
-            Console.WriteLine($"[OK] {namedTarget.Name}: {FormatTarget(namedTarget)}, device=D1000, points=1, values=[{value[0]}]{typeInfo}");
+            Console.WriteLine($"[OK] {FormatTarget(namedTarget)}, device=D1000, points=1, values=[{value[0]}]{typeInfo}");
         }
         catch (Exception ex)
         {
             anyNg = true;
-            Console.WriteLine($"[NG] {namedTarget.Name}: {FormatTarget(namedTarget)}, error={ex.Message}");
+            Console.WriteLine($"[NG] {FormatTarget(namedTarget)}, error={ex.Message}");
         }
     }
 
@@ -308,6 +397,7 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
     if (directTexts.Count == 0) directTexts.Add("0xF8");
     var directMemories = directTexts.Select(x => checked((byte)SlmpTargetParser.ParseAutoNumber(x))).ToArray();
     var writeCheck = HasFlag(args, "--write-check");
+    var remotePassword = GetRemotePassword(args);
     var rows = new List<CoverageRow>();
 
     Console.WriteLine("=== Extended Device Coverage Sweep ===");
@@ -328,99 +418,126 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
         foreach (var target in targets)
         {
             using var client = await CreateClientAsync(scopedArgs, target.Target).ConfigureAwait(false);
-            Console.WriteLine($"[INFO] Sweep target={target.Name}, transport={transport}, network=0x{target.Target.Network:X2}, station=0x{target.Target.Station:X2}, module_io=0x{target.Target.ModuleIo:X4}, multidrop=0x{target.Target.Multidrop:X2}");
+            var unlocked = false;
             try
             {
-                var info = await client.ReadTypeNameAsync().ConfigureAwait(false);
-                Console.WriteLine($"[OK] Read Type Name: target={target.Name}, transport={transport}, model={info.Model}, model_code=0x{info.ModelCode:X4} ({info.ModelCode})");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[INFO] Read Type Name unavailable: target={target.Name}, transport={transport}, error={ex.Message}");
-            }
-
-            foreach (var deviceText in deviceTexts)
-            {
-                var qualified = SlmpQualifiedDeviceParser.Parse(deviceText);
-                var unit = IsBitExtendedDevice(qualified.Device.Code) ? "bit" : "word";
-                foreach (var directMemory in directMemories)
+                if (!string.IsNullOrWhiteSpace(remotePassword))
                 {
-                    var ext = new SlmpExtensionSpec(DirectMemorySpecification: directMemory);
-                    var effectiveDirectMemory = qualified.DirectMemorySpecification ?? directMemory;
-                    foreach (var points in pointList)
+                    Console.WriteLine($"[INFO] Remote password unlock: target={target.Name}, transport={transport}");
+                    await client.RemotePasswordUnlockAsync(remotePassword).ConfigureAwait(false);
+                    unlocked = true;
+                }
+
+                Console.WriteLine($"[INFO] Sweep target={target.Name}, transport={transport}, {FormatTargetAddress(target.Target)}");
+                try
+                {
+                    var info = await client.ReadTypeNameAsync().ConfigureAwait(false);
+                    Console.WriteLine($"[OK] Read Type Name: target={target.Name}, transport={transport}, model={info.Model}, model_code=0x{info.ModelCode:X4} ({info.ModelCode})");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[INFO] Read Type Name unavailable: target={target.Name}, transport={transport}, error={ex.Message}");
+                }
+
+                foreach (var deviceText in deviceTexts)
+                {
+                    var qualified = SlmpQualifiedDeviceParser.Parse(deviceText);
+                    var unit = IsBitExtendedDevice(qualified.Device.Code) ? "bit" : "word";
+                    foreach (var directMemory in directMemories)
                     {
-                        try
+                        var ext = new SlmpExtensionSpec(DirectMemorySpecification: directMemory);
+                        var effectiveDirectMemory = qualified.DirectMemorySpecification ?? directMemory;
+                        foreach (var points in pointList)
                         {
-                            if (unit == "bit")
+                            try
                             {
-                                var before = await client.ReadBitsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
-                                if (!writeCheck)
+                                if (unit == "bit")
                                 {
-                                    var detail = $"device={deviceText}, points={points}, before=[{FormatBits(before)}], mode=read_only";
-                                    Console.WriteLine($"[OK] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {detail}");
-                                    rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, "OK", detail));
-                                    continue;
-                                }
+                                    var before = await client.ReadBitsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+                                    if (!writeCheck)
+                                    {
+                                        var detail = $"device={deviceText}, points={points}, before=[{FormatBits(before)}], mode=read_only";
+                                        Console.WriteLine($"[OK] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {detail}");
+                                        rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, "OK", detail));
+                                        continue;
+                                    }
 
-                                var write = Enumerable.Range(0, points).Select(i => i % 2 == 0).ToArray();
-                                await client.WriteBitsExtendedAsync(qualified, write, ext).ConfigureAwait(false);
-                                var readback = await client.ReadBitsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
-                                var restoredState = "ok";
-                                try
-                                {
-                                    await client.WriteBitsExtendedAsync(qualified, before, ext).ConfigureAwait(false);
-                                }
-                                catch
-                                {
-                                    restoredState = "failed";
-                                }
+                                    var write = Enumerable.Range(0, points).Select(i => i % 2 == 0).ToArray();
+                                    await client.WriteBitsExtendedAsync(qualified, write, ext).ConfigureAwait(false);
+                                    var readback = await client.ReadBitsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+                                    var restoredState = "ok";
+                                    try
+                                    {
+                                        await client.WriteBitsExtendedAsync(qualified, before, ext).ConfigureAwait(false);
+                                    }
+                                    catch
+                                    {
+                                        restoredState = "failed";
+                                    }
 
-                                var mismatch = !readback.SequenceEqual(write);
-                                var resultDetail = mismatch
-                                    ? $"device={deviceText}, points={points}, before=[{FormatBits(before)}], write=[{FormatBits(write)}], readback=[{FormatBits(readback)}], readback_mismatch=yes, restore={restoredState}"
-                                    : $"device={deviceText}, points={points}, before=[{FormatBits(before)}], write=[{FormatBits(write)}], readback=[{FormatBits(readback)}], restore={restoredState}";
-                                var status = mismatch ? "NG" : "OK";
-                                Console.WriteLine($"[{status}] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {resultDetail}");
-                                rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, status, resultDetail));
+                                    var mismatch = !readback.SequenceEqual(write);
+                                    var resultDetail = mismatch
+                                        ? $"device={deviceText}, points={points}, before=[{FormatBits(before)}], write=[{FormatBits(write)}], readback=[{FormatBits(readback)}], readback_mismatch=yes, restore={restoredState}"
+                                        : $"device={deviceText}, points={points}, before=[{FormatBits(before)}], write=[{FormatBits(write)}], readback=[{FormatBits(readback)}], restore={restoredState}";
+                                    var status = mismatch ? "NG" : "OK";
+                                    Console.WriteLine($"[{status}] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {resultDetail}");
+                                    rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, status, resultDetail));
+                                }
+                                else
+                                {
+                                    var before = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+                                    if (!writeCheck)
+                                    {
+                                        var detail = $"device={deviceText}, points={points}, before=[{FormatWords(before)}], mode=read_only";
+                                        Console.WriteLine($"[OK] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {detail}");
+                                        rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, "OK", detail));
+                                        continue;
+                                    }
+
+                                    var write = Enumerable.Range(0, points).Select(i => (ushort)(0x001E + i)).ToArray();
+                                    await client.WriteWordsExtendedAsync(qualified, write, ext).ConfigureAwait(false);
+                                    var readback = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+                                    var restoredState = "ok";
+                                    try
+                                    {
+                                        await client.WriteWordsExtendedAsync(qualified, before, ext).ConfigureAwait(false);
+                                    }
+                                    catch
+                                    {
+                                        restoredState = "failed";
+                                    }
+
+                                    var mismatch = !readback.SequenceEqual(write);
+                                    var resultDetail = mismatch
+                                        ? $"device={deviceText}, points={points}, before=[{FormatWords(before)}], write=[{FormatWords(write)}], readback=[{FormatWords(readback)}], readback_mismatch=yes, restore={restoredState}"
+                                        : $"device={deviceText}, points={points}, before=[{FormatWords(before)}], write=[{FormatWords(write)}], readback=[{FormatWords(readback)}], restore={restoredState}";
+                                    var status = mismatch ? "NG" : "OK";
+                                    Console.WriteLine($"[{status}] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {resultDetail}");
+                                    rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, status, resultDetail));
+                                }
                             }
-                            else
+                            catch (Exception ex)
                             {
-                                var before = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
-                                if (!writeCheck)
-                                {
-                                    var detail = $"device={deviceText}, points={points}, before=[{FormatWords(before)}], mode=read_only";
-                                    Console.WriteLine($"[OK] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {detail}");
-                                    rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, "OK", detail));
-                                    continue;
-                                }
-
-                                var write = Enumerable.Range(0, points).Select(i => (ushort)(0x001E + i)).ToArray();
-                                await client.WriteWordsExtendedAsync(qualified, write, ext).ConfigureAwait(false);
-                                var readback = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
-                                var restoredState = "ok";
-                                try
-                                {
-                                    await client.WriteWordsExtendedAsync(qualified, before, ext).ConfigureAwait(false);
-                                }
-                                catch
-                                {
-                                    restoredState = "failed";
-                                }
-
-                                var mismatch = !readback.SequenceEqual(write);
-                                var resultDetail = mismatch
-                                    ? $"device={deviceText}, points={points}, before=[{FormatWords(before)}], write=[{FormatWords(write)}], readback=[{FormatWords(readback)}], readback_mismatch=yes, restore={restoredState}"
-                                    : $"device={deviceText}, points={points}, before=[{FormatWords(before)}], write=[{FormatWords(write)}], readback=[{FormatWords(readback)}], restore={restoredState}";
-                                var status = mismatch ? "NG" : "OK";
-                                Console.WriteLine($"[{status}] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {resultDetail}");
-                                rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, status, resultDetail));
+                                Console.WriteLine($"[NG] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {ex.Message}");
+                                rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, "NG", ex.Message));
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"[NG] {target.Name} {deviceText} points={points} unit={unit} direct=0x{effectiveDirectMemory:X2}: {ex.Message}");
-                            rows.Add(new CoverageRow(target.Name, transport, deviceText, points, effectiveDirectMemory, unit, "NG", ex.Message));
-                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (unlocked)
+                {
+                    try
+                    {
+                        await client.RemotePasswordLockAsync(remotePassword).ConfigureAwait(false);
+                        Console.WriteLine($"[INFO] Remote password lock: target={target.Name}, transport={transport}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[NG] Remote password lock failed: target={target.Name}, transport={transport}, error={ex.Message}");
+                        rows.Add(new CoverageRow(target.Name, transport, "remote-password-lock", 0, 0, "control", "NG", ex.Message));
                     }
                 }
             }
@@ -688,17 +805,17 @@ async Task<int> RunSingleConnectionLoadAsync(IReadOnlyList<string> args)
 if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
 {
     Console.WriteLine("SLMP .NET CLI");
-    Console.WriteLine("  connection-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF|SELF-CPU1|NW1-ST2|name,0x00,0xFF,0x03FF,0x00 --quiet]");
-    Console.WriteLine("  device-range-catalog --plc-type iq-r|iq-l|mx-f|mx-r|iq-f|qcpu|lcpu|qnu|qnudv --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --quiet]");
-    Console.WriteLine("  other-station-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... (repeatable) --quiet]");
-    Console.WriteLine("  random-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... --write-check --quiet]");
-    Console.WriteLine("  block-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... --write-check --quiet]");
-    Console.WriteLine(@"  ExtendedDevice-device-recheck --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --device U3E0\G10 --points 1 --direct-memory 0xF8 --write-check --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine(@"  extendeddevice-coverage --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp (repeatable) --target ... (repeatable) --device U3E0\G10 (repeatable) --points 1 (repeatable) --direct-memory 0xF8 (repeatable) --write-check --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine("  read-soak --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --device D1000 --points 1 --iterations 100 --interval-ms 0 --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine("  mixed-read-load --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --iterations 100 --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine("  tcp-concurrency --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp --target SELF --clients 4 --iterations 50 --stagger-ms 50 --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine("  single-connection-load --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp --target SELF --workers 4 --iterations 200 --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine("  connection-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF|SELF-CPU1|name,0x00,0xFF,0x03FF,0x00 --network ... --station ... --quiet]");
+    Console.WriteLine("  device-range-catalog --plc-type iq-r|iq-l|mx-f|mx-r|iq-f|qcpu|lcpu|qnu|qnudv --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --quiet]");
+    Console.WriteLine("  other-station-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --network ... --station ... (repeatable) --quiet]");
+    Console.WriteLine("  random-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... --network ... --station ... --write-check --quiet]");
+    Console.WriteLine("  block-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... --network ... --station ... --write-check --quiet]");
+    Console.WriteLine(@"  ExtendedDevice-device-recheck --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --device U3E0\G10 --points 1 --direct-memory 0xF8 --write-check --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine(@"  extendeddevice-coverage --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp (repeatable) --network ... --station ... (repeatable) --device U3E0\G10 (repeatable) --points 1 (repeatable) --direct-memory 0xF8 (repeatable) --write-check --remote-password ... --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine("  read-soak --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --device D1000 --points 1 --iterations 100 --interval-ms 0 --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine("  mixed-read-load --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --iterations 100 --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine("  tcp-concurrency --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp --target SELF --network ... --station ... --clients 4 --iterations 50 --stagger-ms 50 --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine("  single-connection-load --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp --target SELF --network ... --station ... --workers 4 --iterations 200 --report-dir internal_docs/validation/reports --quiet]");
     return;
 }
 

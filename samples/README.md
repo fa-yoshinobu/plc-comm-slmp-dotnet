@@ -45,3 +45,6 @@ Included examples:
   live sweeps. It keeps OK/NG rows in a Markdown report and supports both word
   and bit extended devices:
   `dotnet run --project samples/PlcComm.Slmp.Cli -- extendeddevice-coverage --host 192.168.250.100 --port 1025 --series iqr --frame-type 4e --device U3E0\G10 --points 1 --write-check`
+- If the PLC port is protected by a remote password, pass
+  `--remote-password <password>` or set `SLMP_REMOTE_PASSWORD=<password>`. The
+  CLI unlocks before the sweep and locks the port again before exiting.
