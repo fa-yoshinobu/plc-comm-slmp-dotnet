@@ -289,6 +289,7 @@ public static class SlmpEndCodes
         [0xCFBD] = "slmp_end_code_cfbd",
         [0xCFBE] = "slmp_end_code_cfbe",
         [0xCFBF] = "slmp_end_code_cfbf",
+        [0xE504] = "slmp_end_code_e504",
     };
 
     private static readonly Dictionary<ushort, string> EnglishMessages = new()
@@ -568,6 +569,7 @@ public static class SlmpEndCodes
         [0xCFBD] = "The device specified as the communication destination is out of specification range for the simple CPU communication.",
         [0xCFBE] = "A communication error has occurred with an engineering tool during the simple CPU communication diagnostics.",
         [0xCFBF] = "The simple CPU communication cannot be executed.",
+        [0xE504] = "Transient transmission was executed while the own station did not perform baton pass.",
     };
 
     private static readonly Dictionary<ushort, string> JapaneseMessages = new()
@@ -847,6 +849,7 @@ public static class SlmpEndCodes
         [0xCFBD] = "シンプルCPU通信で，交信相手側に指定したデバイスが仕様の範囲外である。",
         [0xCFBE] = "シンプルCPU通信診断実行時にエンジニアリングツールとの交信異常が発生した。",
         [0xCFBF] = "シンプルCPU通信を実行できない。",
+        [0xE504] = "自局がバトンパスを行っていない状態で，トランジェント伝送が実行された。",
     };
 
     /// <summary>Returns a compact code-derived diagnostic label for an SLMP end code. Use numeric codes or category helpers for branching.</summary>
