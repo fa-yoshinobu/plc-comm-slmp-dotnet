@@ -387,8 +387,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     )
     {
         ValidateDirectWordReadDevice(device.Device, points);
-        var effectiveExtension = ResolveEffectiveExtension(device, extension);
-        var payload = BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: false);
+        var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, extension);
+        var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: false, CompatibilityMode);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0080
             : CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
         var data = await RequestAsync(SlmpCommand.DeviceRead, sub, payload, true, cancellationToken).ConfigureAwait(false);
@@ -406,8 +406,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     )
     {
         ValidateDirectWordWriteDevice(device.Device);
-        var effectiveExtension = ResolveEffectiveExtension(device, extension);
-        var payload = BuildReadWritePayloadExtended(device.Device, checked((ushort)values.Count), values, effectiveExtension, bitUnit: false);
+        var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, extension);
+        var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, checked((ushort)values.Count), values, effectiveExtension, bitUnit: false, CompatibilityMode);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0080
             : CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
         _ = await RequestAsync(SlmpCommand.DeviceWrite, sub, payload, true, cancellationToken).ConfigureAwait(false);
@@ -421,8 +421,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     )
     {
         ValidateDirectBitReadDevice(device.Device);
-        var effectiveExtension = ResolveEffectiveExtension(device, extension);
-        var payload = BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: true);
+        var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, extension);
+        var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: true, CompatibilityMode);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0081
             : CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0081 : (ushort)0x0083;
         var data = await RequestAsync(SlmpCommand.DeviceRead, sub, payload, true, cancellationToken).ConfigureAwait(false);
@@ -437,10 +437,10 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     )
     {
         ValidateDirectBitWriteDevice(device.Device);
-        var effectiveExtension = ResolveEffectiveExtension(device, extension);
+        var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, extension);
         var wordValues = new ushort[values.Count];
         for (var i = 0; i < values.Count; i++) wordValues[i] = values[i] ? (ushort)1 : (ushort)0;
-        var payload = BuildReadWritePayloadExtended(device.Device, checked((ushort)values.Count), wordValues, effectiveExtension, bitUnit: true);
+        var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, checked((ushort)values.Count), wordValues, effectiveExtension, bitUnit: true, CompatibilityMode);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0081
             : CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0081 : (ushort)0x0083;
         _ = await RequestAsync(SlmpCommand.DeviceWrite, sub, payload, true, cancellationToken).ConfigureAwait(false);
@@ -630,7 +630,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             dwordDevices.Select(entry => entry.Device.Device).ToArray());
 
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
-        var payload = BuildExtendedRandomReadPayload(wordDevices, dwordDevices);
+        var payload = SlmpPayloads.BuildExtendedRandomReadPayload(wordDevices, dwordDevices, CompatibilityMode);
         var data = await RequestAsync(SlmpCommand.DeviceReadRandom, sub, payload, true, cancellationToken).ConfigureAwait(false);
         var expected = (wordDevices.Count * 2) + (dwordDevices.Count * 4);
         if (data.Length != expected)
@@ -667,7 +667,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ValidateRandomWriteDevices(wordEntries.Select(entry => (entry.Device.Device, entry.Value)).ToArray());
 
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
-        var payload = BuildExtendedRandomWordWritePayload(wordEntries, dwordEntries);
+        var payload = SlmpPayloads.BuildExtendedRandomWordWritePayload(wordEntries, dwordEntries, CompatibilityMode);
         _ = await RequestAsync(SlmpCommand.DeviceWriteRandom, sub, payload, true, cancellationToken).ConfigureAwait(false);
     }
 
@@ -682,7 +682,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         }
 
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0081 : (ushort)0x0083;
-        var payload = BuildExtendedRandomBitWritePayload(bitEntries);
+        var payload = SlmpPayloads.BuildExtendedRandomBitWritePayload(bitEntries, CompatibilityMode);
         _ = await RequestAsync(SlmpCommand.DeviceWriteRandom, sub, payload, true, cancellationToken).ConfigureAwait(false);
     }
 
@@ -690,169 +690,24 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)> wordDevices,
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)> dwordDevices
     )
-    {
-        var encodedWords = new byte[wordDevices.Count][];
-        var encodedDwords = new byte[dwordDevices.Count][];
-        var size = 2;
-        for (var i = 0; i < wordDevices.Count; i++)
-        {
-            var (device, extension) = wordDevices[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension));
-            encodedWords[i] = spec;
-            size += spec.Length;
-        }
-
-        for (var i = 0; i < dwordDevices.Count; i++)
-        {
-            var (device, extension) = dwordDevices[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension));
-            encodedDwords[i] = spec;
-            size += spec.Length;
-        }
-
-        var payload = new byte[size];
-        payload[0] = (byte)wordDevices.Count;
-        payload[1] = (byte)dwordDevices.Count;
-        var offset = 2;
-        foreach (var spec in encodedWords)
-        {
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
-        }
-        foreach (var spec in encodedDwords)
-        {
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
-        }
-        return payload;
-    }
+        => SlmpPayloads.BuildExtendedRandomReadPayload(wordDevices, dwordDevices, CompatibilityMode);
 
     internal byte[] BuildExtendedRandomWordWritePayload(
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, ushort Value, SlmpExtensionSpec Extension)> wordEntries,
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, uint Value, SlmpExtensionSpec Extension)> dwordEntries
     )
-    {
-        var encodedWords = new byte[wordEntries.Count][];
-        var encodedDwords = new byte[dwordEntries.Count][];
-        var size = 2 + (wordEntries.Count * 2) + (dwordEntries.Count * 4);
-        for (var i = 0; i < wordEntries.Count; i++)
-        {
-            var (device, _, extension) = wordEntries[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension));
-            encodedWords[i] = spec;
-            size += spec.Length;
-        }
-
-        for (var i = 0; i < dwordEntries.Count; i++)
-        {
-            var (device, _, extension) = dwordEntries[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension));
-            encodedDwords[i] = spec;
-            size += spec.Length;
-        }
-
-        var payload = new byte[size];
-        payload[0] = (byte)wordEntries.Count;
-        payload[1] = (byte)dwordEntries.Count;
-        var offset = 2;
-        for (var i = 0; i < wordEntries.Count; i++)
-        {
-            var spec = encodedWords[i];
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
-            BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), wordEntries[i].Value);
-            offset += 2;
-        }
-
-        for (var i = 0; i < dwordEntries.Count; i++)
-        {
-            var spec = encodedDwords[i];
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
-            BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(offset, 4), dwordEntries[i].Value);
-            offset += 4;
-        }
-
-        return payload;
-    }
+        => SlmpPayloads.BuildExtendedRandomWordWritePayload(wordEntries, dwordEntries, CompatibilityMode);
 
     internal byte[] BuildExtendedRandomBitWritePayload(
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, bool Value, SlmpExtensionSpec Extension)> bitEntries
     )
-    {
-        var valueSize = CompatibilityMode == SlmpCompatibilityMode.Legacy ? 1 : 2;
-        var encodedSpecs = new byte[bitEntries.Count][];
-        var size = 1 + (bitEntries.Count * valueSize);
-        for (var i = 0; i < bitEntries.Count; i++)
-        {
-            var (device, _, extension) = bitEntries[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension));
-            encodedSpecs[i] = spec;
-            size += spec.Length;
-        }
-
-        var payload = new byte[size];
-        payload[0] = (byte)bitEntries.Count;
-        var offset = 1;
-        for (var i = 0; i < bitEntries.Count; i++)
-        {
-            var spec = encodedSpecs[i];
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
-            if (CompatibilityMode == SlmpCompatibilityMode.Legacy)
-            {
-                payload[offset++] = bitEntries[i].Value ? (byte)1 : (byte)0;
-            }
-            else
-            {
-                BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), bitEntries[i].Value ? (ushort)1 : (ushort)0);
-                offset += 2;
-            }
-        }
-
-        return payload;
-    }
+        => SlmpPayloads.BuildExtendedRandomBitWritePayload(bitEntries, CompatibilityMode);
 
     internal byte[] BuildExtendedMonitorRegisterPayload(
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)> wordDevices,
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)> dwordDevices
     )
-    {
-        var encodedWords = new byte[wordDevices.Count][];
-        var encodedDwords = new byte[dwordDevices.Count][];
-        var size = 2;
-        for (var i = 0; i < wordDevices.Count; i++)
-        {
-            var (device, extension) = wordDevices[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension));
-            encodedWords[i] = spec;
-            size += spec.Length;
-        }
-
-        for (var i = 0; i < dwordDevices.Count; i++)
-        {
-            var (device, extension) = dwordDevices[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension));
-            encodedDwords[i] = spec;
-            size += spec.Length;
-        }
-
-        var payload = new byte[size];
-        payload[0] = (byte)wordDevices.Count;
-        payload[1] = (byte)dwordDevices.Count;
-        var offset = 2;
-        foreach (var spec in encodedWords)
-        {
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
-        }
-        foreach (var spec in encodedDwords)
-        {
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
-        }
-        return payload;
-    }
+        => SlmpPayloads.BuildExtendedMonitorRegisterPayload(wordDevices, dwordDevices, CompatibilityMode);
 
     public async Task<(ushort[] WordValues, ushort[] BitWordValues)> ReadBlockAsync(
         IReadOnlyList<SlmpBlockRead> wordBlocks,
@@ -1033,7 +888,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             dwordDevices.Select(entry => entry.Device.Device).ToArray());
 
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
-        var payload = BuildExtendedMonitorRegisterPayload(wordDevices, dwordDevices);
+        var payload = SlmpPayloads.BuildExtendedMonitorRegisterPayload(wordDevices, dwordDevices, CompatibilityMode);
         _ = await RequestAsync(SlmpCommand.MonitorRegister, sub, payload, true, cancellationToken).ConfigureAwait(false);
     }
 
@@ -1143,9 +998,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default)
     {
         var abbrevs = abbreviationLabels ?? [];
-        var payload = BuildLabelArrayReadPayload(points, abbrevs);
+        var payload = SlmpPayloads.BuildLabelArrayReadPayload(points, abbrevs);
         var data = await RequestAsync(SlmpCommand.LabelArrayRead, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
-        return ParseArrayLabelReadResponse(data);
+        return SlmpPayloads.ParseArrayLabelReadResponse(data);
     }
 
     /// <summary>
@@ -1157,7 +1012,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default)
     {
         var abbrevs = abbreviationLabels ?? [];
-        var payload = BuildLabelArrayWritePayload(points, abbrevs);
+        var payload = SlmpPayloads.BuildLabelArrayWritePayload(points, abbrevs);
         _ = await RequestAsync(SlmpCommand.LabelArrayWrite, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
     }
 
@@ -1170,9 +1025,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default)
     {
         var abbrevs = abbreviationLabels ?? [];
-        var payload = BuildLabelRandomReadPayload(labels, abbrevs);
+        var payload = SlmpPayloads.BuildLabelRandomReadPayload(labels, abbrevs);
         var data = await RequestAsync(SlmpCommand.LabelReadRandom, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
-        return ParseRandomLabelReadResponse(data);
+        return SlmpPayloads.ParseRandomLabelReadResponse(data);
     }
 
     /// <summary>
@@ -1184,160 +1039,21 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default)
     {
         var abbrevs = abbreviationLabels ?? [];
-        var payload = BuildLabelRandomWritePayload(points, abbrevs);
+        var payload = SlmpPayloads.BuildLabelRandomWritePayload(points, abbrevs);
         _ = await RequestAsync(SlmpCommand.LabelWriteRandom, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
     }
 
     internal static byte[] BuildLabelArrayReadPayload(IReadOnlyList<SlmpLabelArrayReadPoint> points, IReadOnlyList<string> abbreviationLabels)
-    {
-        var size = 4;
-        foreach (var name in abbreviationLabels)
-            size += GetEncodedLabelNameSize(name);
-        foreach (var pt in points)
-            size += GetEncodedLabelNameSize(pt.Label) + 4;
-
-        var payload = new byte[size];
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(0, 2), checked((ushort)points.Count));
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(2, 2), checked((ushort)abbreviationLabels.Count));
-        var offset = 4;
-        foreach (var name in abbreviationLabels)
-            offset += WriteLabelName(payload.AsSpan(offset), name);
-        foreach (var pt in points)
-        {
-            offset += WriteLabelName(payload.AsSpan(offset), pt.Label);
-            payload[offset++] = pt.UnitSpecification;
-            payload[offset++] = 0x00;
-            BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), pt.ArrayDataLength);
-            offset += 2;
-        }
-
-        return payload;
-    }
+        => SlmpPayloads.BuildLabelArrayReadPayload(points, abbreviationLabels);
 
     internal static byte[] BuildLabelArrayWritePayload(IReadOnlyList<SlmpLabelArrayWritePoint> points, IReadOnlyList<string> abbreviationLabels)
-    {
-        var size = 4;
-        foreach (var name in abbreviationLabels)
-            size += GetEncodedLabelNameSize(name);
-        foreach (var pt in points)
-            size += GetEncodedLabelNameSize(pt.Label) + 4 + pt.Data.Length;
-
-        var payload = new byte[size];
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(0, 2), checked((ushort)points.Count));
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(2, 2), checked((ushort)abbreviationLabels.Count));
-        var offset = 4;
-        foreach (var name in abbreviationLabels)
-            offset += WriteLabelName(payload.AsSpan(offset), name);
-        foreach (var pt in points)
-        {
-            offset += WriteLabelName(payload.AsSpan(offset), pt.Label);
-            payload[offset++] = pt.UnitSpecification;
-            payload[offset++] = 0x00;
-            BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), pt.ArrayDataLength);
-            offset += 2;
-            pt.Data.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += pt.Data.Length;
-        }
-
-        return payload;
-    }
+        => SlmpPayloads.BuildLabelArrayWritePayload(points, abbreviationLabels);
 
     internal static byte[] BuildLabelRandomReadPayload(IReadOnlyList<string> labels, IReadOnlyList<string> abbreviationLabels)
-    {
-        var size = 4;
-        foreach (var name in abbreviationLabels)
-            size += GetEncodedLabelNameSize(name);
-        foreach (var label in labels)
-            size += GetEncodedLabelNameSize(label);
-
-        var payload = new byte[size];
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(0, 2), checked((ushort)labels.Count));
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(2, 2), checked((ushort)abbreviationLabels.Count));
-        var offset = 4;
-        foreach (var name in abbreviationLabels)
-            offset += WriteLabelName(payload.AsSpan(offset), name);
-        foreach (var label in labels)
-            offset += WriteLabelName(payload.AsSpan(offset), label);
-        return payload;
-    }
+        => SlmpPayloads.BuildLabelRandomReadPayload(labels, abbreviationLabels);
 
     internal static byte[] BuildLabelRandomWritePayload(IReadOnlyList<SlmpLabelRandomWritePoint> points, IReadOnlyList<string> abbreviationLabels)
-    {
-        var size = 4;
-        foreach (var name in abbreviationLabels)
-            size += GetEncodedLabelNameSize(name);
-        foreach (var pt in points)
-            size += GetEncodedLabelNameSize(pt.Label) + 2 + pt.Data.Length;
-
-        var payload = new byte[size];
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(0, 2), checked((ushort)points.Count));
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(2, 2), checked((ushort)abbreviationLabels.Count));
-        var offset = 4;
-        foreach (var name in abbreviationLabels)
-            offset += WriteLabelName(payload.AsSpan(offset), name);
-        foreach (var pt in points)
-        {
-            offset += WriteLabelName(payload.AsSpan(offset), pt.Label);
-            BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), checked((ushort)pt.Data.Length));
-            offset += 2;
-            pt.Data.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += pt.Data.Length;
-        }
-
-        return payload;
-    }
-
-    private static SlmpLabelArrayReadResult[] ParseArrayLabelReadResponse(byte[] data)
-    {
-        var count = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(0, 2));
-        var results = new SlmpLabelArrayReadResult[count];
-        var offset = 2;
-        for (var i = 0; i < count; i++)
-        {
-            var dtId = data[offset];
-            var uSpec = data[offset + 1];
-            var aLen = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(offset + 2, 2));
-            offset += 4;
-            var dataSize = uSpec == 0 ? aLen * 2 : aLen;
-            results[i] = new SlmpLabelArrayReadResult(dtId, uSpec, aLen, data[offset..(offset + dataSize)]);
-            offset += dataSize;
-        }
-        return results;
-    }
-
-    private static SlmpLabelRandomReadResult[] ParseRandomLabelReadResponse(byte[] data)
-    {
-        var count = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(0, 2));
-        var results = new SlmpLabelRandomReadResult[count];
-        var offset = 2;
-        for (var i = 0; i < count; i++)
-        {
-            var dtId = data[offset];
-            var spare = data[offset + 1];
-            var rLen = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(offset + 2, 2));
-            offset += 4;
-            results[i] = new SlmpLabelRandomReadResult(dtId, spare, rLen, data[offset..(offset + rLen)]);
-            offset += rLen;
-        }
-        return results;
-    }
-
-    private static int GetEncodedLabelNameSize(string label)
-    {
-        if (string.IsNullOrEmpty(label))
-            throw new ArgumentException("Label name must not be empty.", nameof(label));
-        return 2 + Encoding.Unicode.GetByteCount(label);
-    }
-
-    private static int WriteLabelName(Span<byte> buffer, string label)
-    {
-        if (string.IsNullOrEmpty(label))
-            throw new ArgumentException("Label name must not be empty.", nameof(label));
-        var byteCount = Encoding.Unicode.GetByteCount(label);
-        BinaryPrimitives.WriteUInt16LittleEndian(buffer[..2], checked((ushort)(byteCount / 2)));
-        _ = Encoding.Unicode.GetBytes(label.AsSpan(), buffer.Slice(2, byteCount));
-        return 2 + byteCount;
-    }
+        => SlmpPayloads.BuildLabelRandomWritePayload(points, abbreviationLabels);
 
     // -----------------------------------------------------------------------
     // Memory read / write (command 0x0613 / 0x1613)
@@ -1761,23 +1477,10 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         }
     }
 
-    internal int DeviceSpecSize() => CompatibilityMode == SlmpCompatibilityMode.Legacy ? 4 : 6;
+    internal int DeviceSpecSize() => SlmpPayloads.DeviceSpecSize(CompatibilityMode);
 
     internal int EncodeDeviceSpec(SlmpDeviceAddress device, Span<byte> output)
-    {
-        if (CompatibilityMode == SlmpCompatibilityMode.Legacy)
-        {
-            output[0] = (byte)(device.Number & 0xFF);
-            output[1] = (byte)((device.Number >> 8) & 0xFF);
-            output[2] = (byte)((device.Number >> 16) & 0xFF);
-            output[3] = (byte)((ushort)device.Code & 0xFF);
-            return 4;
-        }
-
-        BinaryPrimitives.WriteUInt32LittleEndian(output[..4], device.Number);
-        BinaryPrimitives.WriteUInt16LittleEndian(output.Slice(4, 2), (ushort)device.Code);
-        return 6;
-    }
+        => SlmpPayloads.EncodeDeviceSpec(device, output, CompatibilityMode);
 
     private static void ValidateDirectBitReadDevice(SlmpDeviceAddress device)
     {
@@ -2011,56 +1714,6 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         return payload;
     }
 
-    private static SlmpExtensionSpec ResolveEffectiveExtension(SlmpQualifiedDeviceAddress device, SlmpExtensionSpec extension)
-    {
-        var result = extension;
-        if (device.ExtensionSpecification is not null && device.ExtensionSpecification.Value != result.ExtensionSpecification)
-            result = result with { ExtensionSpecification = device.ExtensionSpecification.Value };
-        if (device.DirectMemorySpecification is not null && device.DirectMemorySpecification.Value != result.DirectMemorySpecification)
-            result = result with { DirectMemorySpecification = device.DirectMemorySpecification.Value };
-        return result;
-    }
-
-    private byte[] BuildReadWritePayloadExtended(
-        SlmpDeviceAddress device,
-        ushort points,
-        IReadOnlyList<ushort>? values,
-        SlmpExtensionSpec extension,
-        bool bitUnit
-    )
-    {
-        var extendedSpec = EncodeExtendedDeviceSpec(device, extension);
-        var writeBytes = values is null ? 0 : bitUnit ? (values.Count + 1) / 2 : values.Count * 2;
-        var payload = new byte[extendedSpec.Length + 2 + writeBytes];
-        extendedSpec.CopyTo(payload, 0);
-        var offset = extendedSpec.Length;
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), points);
-        offset += 2;
-        if (values is null) return payload;
-
-        if (bitUnit)
-        {
-            var idx = 0;
-            while (idx < values.Count)
-            {
-                var high = values[idx] != 0 ? 0x10 : 0x00;
-                idx++;
-                var low = idx < values.Count && values[idx] != 0 ? 0x01 : 0x00;
-                if (idx < values.Count) idx++;
-                payload[offset++] = (byte)(high | low);
-            }
-            return payload;
-        }
-
-        foreach (var value in values)
-        {
-            BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), value);
-            offset += 2;
-        }
-
-        return payload;
-    }
-
     private static bool[] UnpackBitValues(byte[] data, int points)
     {
         var result = new bool[points];
@@ -2075,60 +1728,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         return result;
     }
 
-    private static byte[] EncodeLinkDirectDeviceSpec(SlmpDeviceAddress device, SlmpExtensionSpec extension)
-    {
-        // Format verified by GOT pcap (J2\SW10):
-        // reserved(2) + dev_no(3 LE) + dev_code(1) + reserved(2) + j_net(1) + reserved(1) + 0xF9
-        var jNet = (byte)(extension.ExtensionSpecification & 0xFF);
-        var devCode = (byte)((ushort)device.Code & 0xFF);
-        return
-        [
-            0x00, 0x00,
-            (byte)(device.Number & 0xFF), (byte)((device.Number >> 8) & 0xFF), (byte)((device.Number >> 16) & 0xFF),
-            devCode,
-            0x00, 0x00,
-            jNet,
-            0x00,
-            0xF9,
-        ];
-    }
-
     internal byte[] EncodeExtendedDeviceSpec(SlmpDeviceAddress device, SlmpExtensionSpec extension)
-    {
-        if (extension.DirectMemorySpecification == 0xF9)
-            return EncodeLinkDirectDeviceSpec(device, extension);
-
-        var captureAligned = (device.Code is SlmpDeviceCode.G or SlmpDeviceCode.HG) && (extension.DirectMemorySpecification is 0xF8 or 0xFA);
-        var deviceSpec = new byte[DeviceSpecSize()];
-        _ = EncodeDeviceSpec(device, deviceSpec);
-        if (captureAligned)
-        {
-            var payload = new byte[2 + deviceSpec.Length + 1 + 1 + 2 + 1];
-            var offset = 0;
-            payload[offset++] = extension.ExtensionSpecificationModification;
-            payload[offset++] = extension.DeviceModificationIndex;
-            deviceSpec.CopyTo(payload, offset);
-            offset += deviceSpec.Length;
-            payload[offset++] = extension.DeviceModificationFlags;
-            payload[offset++] = 0x00;
-            BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), extension.ExtensionSpecification);
-            offset += 2;
-            payload[offset] = extension.DirectMemorySpecification;
-            return payload;
-        }
-
-        var data = new byte[2 + 1 + 1 + 1 + deviceSpec.Length + 1];
-        var cursor = 0;
-        BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(cursor, 2), extension.ExtensionSpecification);
-        cursor += 2;
-        data[cursor++] = extension.ExtensionSpecificationModification;
-        data[cursor++] = extension.DeviceModificationIndex;
-        data[cursor++] = extension.DeviceModificationFlags;
-        deviceSpec.CopyTo(data, cursor);
-        cursor += deviceSpec.Length;
-        data[cursor] = extension.DirectMemorySpecification;
-        return data;
-    }
+        => SlmpPayloads.EncodeExtendedDeviceSpec(device, extension, CompatibilityMode);
 
     private byte[] EncodePassword(string password)
     {
