@@ -346,7 +346,7 @@ async Task<int> RunBlockCheckAsync(IReadOnlyList<string> args)
     await client.WriteBlockAsync(
         [new SlmpBlockWrite(wordDevice, wordValues)],
         [new SlmpBlockWrite(bitDevice, bitWordValues)],
-        new SlmpBlockWriteOptions(SplitMixedBlocks: false, RetryMixedOnError: true)
+        new SlmpBlockWriteOptions(SplitMixedBlocks: false)
     ).ConfigureAwait(false);
     Console.WriteLine("[OK] block-write completed");
     return 0;

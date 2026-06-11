@@ -775,8 +775,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var writeOptions = options ?? new SlmpBlockWriteOptions();
         if (writeOptions.SplitMixedBlocks && wordBlocks.Count > 0 && bitBlocks.Count > 0)
         {
-            await WriteBlockAsync(wordBlocks, [], new SlmpBlockWriteOptions(false, false), cancellationToken).ConfigureAwait(false);
-            await WriteBlockAsync([], bitBlocks, new SlmpBlockWriteOptions(false, false), cancellationToken).ConfigureAwait(false);
+            await WriteBlockAsync(wordBlocks, [], new SlmpBlockWriteOptions(false), cancellationToken).ConfigureAwait(false);
+            await WriteBlockAsync([], bitBlocks, new SlmpBlockWriteOptions(false), cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -792,29 +792,16 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var payload = new byte[2 + ((wordBlocks.Count + bitBlocks.Count) * (specSize + 2)) + ((totalWordPoints + totalBitPoints) * 2)];
         payload[0] = (byte)wordBlocks.Count;
         payload[1] = (byte)bitBlocks.Count;
+        // Each block's write data follows that block's own spec (SLMP
+        // reference manual Write Block request format); data must not be
+        // batched after the block specs, or multi-block/mixed requests
+        // misparse on the PLC.
         var offset = 2;
-        foreach (var block in wordBlocks)
+        foreach (var block in wordBlocks.Concat(bitBlocks))
         {
             offset += EncodeDeviceSpec(block.Device, payload.AsSpan(offset));
             BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), checked((ushort)block.Values.Count));
             offset += 2;
-        }
-        foreach (var block in bitBlocks)
-        {
-            offset += EncodeDeviceSpec(block.Device, payload.AsSpan(offset));
-            BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), checked((ushort)block.Values.Count));
-            offset += 2;
-        }
-        foreach (var block in wordBlocks)
-        {
-            foreach (var value in block.Values)
-            {
-                BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), value);
-                offset += 2;
-            }
-        }
-        foreach (var block in bitBlocks)
-        {
             foreach (var value in block.Values)
             {
                 BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), value);
@@ -823,20 +810,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         }
 
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0000 : (ushort)0x0002;
-        try
-        {
-            _ = await RequestAsync(SlmpCommand.DeviceWriteBlock, sub, payload, true, cancellationToken).ConfigureAwait(false);
-        }
-        catch (SlmpError ex) when (
-            writeOptions.RetryMixedOnError
-            && wordBlocks.Count > 0
-            && bitBlocks.Count > 0
-            && ex.EndCode is 0xC056 or 0xC061 or 0x414A
-        )
-        {
-            await WriteBlockAsync(wordBlocks, [], new SlmpBlockWriteOptions(false, false), cancellationToken).ConfigureAwait(false);
-            await WriteBlockAsync([], bitBlocks, new SlmpBlockWriteOptions(false, false), cancellationToken).ConfigureAwait(false);
-        }
+        _ = await RequestAsync(SlmpCommand.DeviceWriteBlock, sub, payload, true, cancellationToken).ConfigureAwait(false);
     }
 
     // -----------------------------------------------------------------------
