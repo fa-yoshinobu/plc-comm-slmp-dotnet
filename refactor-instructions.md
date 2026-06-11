@@ -1,4 +1,4 @@
-# refactor-instructions.md
+# refactor-instructions.md okay
 
 plc-comm-slmp-dotnet のリファクタリング指示書。
 この文書は実装担当モデル向けの完結した作業指示である。実装前にこの文書全体を読むこと。
