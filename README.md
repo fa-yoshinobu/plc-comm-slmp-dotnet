@@ -7,7 +7,7 @@
 
 ![Illustration](https://raw.githubusercontent.com/fa-yoshinobu/plc-comm-slmp-dotnet/main/docsrc/assets/melsec.png)
 
-[![Release](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/actions/workflows/release.yml/badge.svg)](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/actions/workflows/release.yml)
+[![Release](https://img.shields.io/github/v/release/fa-yoshinobu/plc-comm-slmp-dotnet?label=release)](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/releases/latest)
 
 [![.NET 9](https://img.shields.io/badge/.NET-9-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![C#](https://img.shields.io/badge/C%23-239120?logo=csharp&logoColor=white)](https://learn.microsoft.com/dotnet/csharp/)
