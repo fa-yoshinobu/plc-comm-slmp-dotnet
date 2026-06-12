@@ -75,6 +75,15 @@ Start with these public high-level families first:
 - current-value long families: `LTN`, `LSTN`, `LCN`
 - 32-bit index register: `LZ`
 
+High-level address syntax is shared across the PLC helper libraries:
+
+- use `:` for data types and special views: `D100:U`, `D100:S`, `D100:D`,
+  `D100:L`, `D100:F`, `D100:STR`
+- use `.` only for bit-in-word access: `D50.0` through `D50.F`
+- `D50.D` is bit `0xD` / bit 13, not a 32-bit data type request
+- low-level SLMP routes still encode word/dword/float access internally; the
+  `:D` / `:F` spelling is the public helper-layer form
+
 See the full public table in [Supported PLC Registers](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/SUPPORTED_REGISTERS.md).
 
 For live PLC-dependent device limits resolved from a user-selected PLC family

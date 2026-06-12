@@ -174,6 +174,17 @@ public sealed class SlmpClientExtensionsTests
         Assert.Equal("D100", parsed.Base);
         Assert.Equal("BIT_IN_WORD", parsed.DType);
         Assert.Equal(10, parsed.BitIdx);
+
+        var bitD = SlmpClientExtensions.ParseAddress("D100.D");
+        Assert.Equal("D100", bitD.Base);
+        Assert.Equal("BIT_IN_WORD", bitD.DType);
+        Assert.Equal(13, bitD.BitIdx);
+    }
+
+    [Fact]
+    public void ParseAddress_InvalidBitInWordIndexThrows()
+    {
+        Assert.Throws<ArgumentException>(() => SlmpClientExtensions.ParseAddress("D100.10"));
     }
 
     [Fact]
