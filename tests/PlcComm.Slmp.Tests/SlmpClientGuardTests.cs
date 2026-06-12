@@ -10,6 +10,15 @@ public sealed class SlmpClientGuardTests
     private static readonly bool[] SingleTrue = [true];
 
     [Fact]
+    public async Task RemoteResetAsync_RejectsNonZeroSubcommand()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+        var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.RemoteResetAsync(0x0001));
+        Assert.Contains("remote reset subcommand must be 0x0000", ex.Message);
+    }
+
+    [Fact]
     public async Task ReadWordsRawAsync_RejectsNonBlockLongTimerCurrentReads()
     {
         using var client = new SlmpClient("127.0.0.1");
@@ -93,6 +102,21 @@ public sealed class SlmpClientGuardTests
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteBitsAsync(new SlmpDeviceAddress(code, 10), SingleTrue));
         Assert.Contains($"Direct bit write is not supported for {code}", ex.Message);
+    }
+
+    [Fact]
+    public async Task DirectAccess_RejectsManualPointLimitOverruns()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), 961));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), new ushort[961]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), 7169));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), new bool[7169]));
     }
 
     [Theory]
@@ -345,7 +369,7 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
-    public async Task ForcedCpuOperations_UseForceWithoutLatchClear()
+    public async Task ForcedCpuOperations_KeepRemoteStopOnManualFixedMode()
     {
         await using var server = new MultiShotSlmpServer([
             (0x0000, Array.Empty<byte>()),
@@ -366,7 +390,7 @@ public sealed class SlmpClientGuardTests
 
         Assert.Equal(3, server.RequestFrames.Count);
         AssertCpuOperationShape(server.RequestFrames[0], 0x1001, [0x03, 0x00, 0x00, 0x00]);
-        AssertCpuOperationShape(server.RequestFrames[1], 0x1002, [0x03, 0x00]);
+        AssertCpuOperationShape(server.RequestFrames[1], 0x1002, [0x01, 0x00]);
         AssertCpuOperationShape(server.RequestFrames[2], 0x1003, [0x03, 0x00]);
     }
 
@@ -379,6 +403,38 @@ public sealed class SlmpClientGuardTests
                 new[] { (new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10), (ushort)1) },
                 Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
         Assert.Contains("does not support LTN/LSTN/LCN/LZ as word entries", ex.Message);
+    }
+
+    [Fact]
+    public async Task RandomAndBlockAccess_RejectManualPointLimitOverruns()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.ReadRandomAsync(RandomWordDevices(97), Array.Empty<SlmpDeviceAddress>()));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.WriteRandomWordsAsync(RandomWordEntries(81), Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.WriteRandomWordsAsync(Array.Empty<(SlmpDeviceAddress Device, ushort Value)>(), RandomDwordEntries(69)));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.WriteRandomBitsAsync(RandomBitEntries(95)));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.ReadBlockAsync([new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), 961)], []));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.WriteBlockAsync([new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 8000), new ushort[952])], []));
+    }
+
+    [Fact]
+    public async Task MemoryAndExtendUnit_RejectManualPointLimitOverruns()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.MemoryReadWordsAsync(0, 481));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.MemoryWriteWordsAsync(0, new ushort[481]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ExtendUnitReadBytesAsync(0, 1921, 0x03E0));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ExtendUnitWriteBytesAsync(0, 0x03E0, new byte[1921]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ExtendUnitReadWordsAsync(0, 961, 0x03E0));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ExtendUnitWriteWordsAsync(0, 0x03E0, new ushort[961]));
     }
 
     private static void AssertBlockWriteShape(byte[] request, byte wordBlocks, byte bitBlocks)
@@ -397,6 +453,18 @@ public sealed class SlmpClientGuardTests
         Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(body[4..6]));
         Assert.Equal(payload, body[6..(6 + payload.Length)].ToArray());
     }
+
+    private static SlmpDeviceAddress[] RandomWordDevices(int count)
+        => Enumerable.Range(0, count).Select(i => new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8000 + i))).ToArray();
+
+    private static (SlmpDeviceAddress Device, ushort Value)[] RandomWordEntries(int count)
+        => Enumerable.Range(0, count).Select(i => (new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8000 + i)), (ushort)0)).ToArray();
+
+    private static (SlmpDeviceAddress Device, uint Value)[] RandomDwordEntries(int count)
+        => Enumerable.Range(0, count).Select(i => (new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8000 + (i * 2))), 0u)).ToArray();
+
+    private static (SlmpDeviceAddress Device, bool Value)[] RandomBitEntries(int count)
+        => Enumerable.Range(0, count).Select(i => (new SlmpDeviceAddress(SlmpDeviceCode.M, (uint)(4000 + i)), false)).ToArray();
 
     private sealed class MultiShotSlmpServer : IAsyncDisposable
     {

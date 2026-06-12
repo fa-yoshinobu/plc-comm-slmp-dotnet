@@ -90,6 +90,14 @@
       "request_hex": "54000000000000FFFF03000F00100030160000070073656372657431",
       "response_data_hex": "",
       "implementations": ["python", "dotnet", "cpp", "node"]
+    },
+    {
+      "id": "remote_reset_fixed_data",
+      "operation": "remote_reset",
+      "args": { "expect_response": true },
+      "request_hex": "54000000000000FFFF030008001000061000000100",
+      "response_data_hex": "",
+      "implementations": ["python", "dotnet", "rust", "cpp", "node"]
     }
   ]
 }

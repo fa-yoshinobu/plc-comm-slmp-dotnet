@@ -101,6 +101,21 @@ public sealed class SlmpClientPayloadTests
     }
 
     [Fact]
+    public async Task SelfTestLoopbackAsync_RejectsManualInvalidPayloadsBeforeTransport()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => client.SelfTestLoopbackAsync(new byte[] { (byte)'H', (byte)'E', (byte)'L', (byte)'L', (byte)'O' }));
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => client.SelfTestLoopbackAsync(new byte[] { 0x00, 0xFF }));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.SelfTestLoopbackAsync(Array.Empty<byte>()));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.SelfTestLoopbackAsync(new byte[961]));
+    }
+
+    [Fact]
     public void BuildLabelArrayReadPayload_MatchesKnownEncoding()
     {
         var payload = SlmpClient.BuildLabelArrayReadPayload(

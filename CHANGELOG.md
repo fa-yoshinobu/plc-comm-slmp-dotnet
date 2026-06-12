@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added SLMP end-code name/message helpers for the full communication error-code table, and exposed them from `SlmpError`.
 
 ### Changed
+- Aligned Remote STOP with the manual fixed request data `01 00`; `RemoteStopAsync(force: true)` and `RemoteForceStopAsync()` remain compatibility APIs but send the same payload as the default STOP.
+- Aligned Self Test loopback input validation with the manual: 1..960 bytes, ASCII `0`-`9`/`A`-`F` only.
 - Removed `RetryMixedOnError` from `SlmpBlockWriteOptions`; mixed block-write failures now return the PLC end code unchanged, and only explicit `SplitMixedBlocks` sends separate block writes.
 - Guarded Extended Specification `G`/`HG` access before transport: `G` now requires a `U...` qualified module path, and `HG` is accepted only for `U3E0\HG` through `U3E3\HG` with the matching direct-memory code.
 
