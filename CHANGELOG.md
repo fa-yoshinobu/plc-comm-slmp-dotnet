@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added SLMP end-code name/message helpers for the full communication error-code table, and exposed them from `SlmpError`.
 
+### Changed
+- Removed `RetryMixedOnError` from `SlmpBlockWriteOptions`; mixed block-write failures now return the PLC end code unchanged, and only explicit `SplitMixedBlocks` sends separate block writes.
+
 ## [0.1.13] - 2026-05-02
 
 ### Changed

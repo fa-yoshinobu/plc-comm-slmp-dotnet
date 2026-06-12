@@ -56,7 +56,8 @@ public sealed record SlmpBlockWrite(SlmpDeviceAddress Device, IReadOnlyList<usho
 /// <summary>
 /// Configuration for block write operations.
 /// </summary>
-public sealed record SlmpBlockWriteOptions(bool SplitMixedBlocks = false, bool RetryMixedOnError = false);
+/// <param name="SplitMixedBlocks">When true, send separate word-only and bit-only block writes.</param>
+public sealed record SlmpBlockWriteOptions(bool SplitMixedBlocks = false);
 
 /// <summary>
 /// A raw frame captured by <see cref="SlmpClient.TraceHook"/>.

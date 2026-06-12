@@ -261,11 +261,44 @@ public sealed class SlmpClientGuardTests
         var ex = await Assert.ThrowsAsync<SlmpError>(() => client.WriteBlockAsync(
             [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), [0x1234])],
             [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.M, 200), [0x0005])],
-            new SlmpBlockWriteOptions(SplitMixedBlocks: false, RetryMixedOnError: true)));
+            new SlmpBlockWriteOptions(SplitMixedBlocks: false)));
         Assert.Equal((ushort)0xC05B, ex.EndCode);
 
         Assert.Single(server.RequestFrames);
         AssertBlockWriteShape(server.RequestFrames[0], wordBlocks: 1, bitBlocks: 1);
+        // Manual-conformant layout: each block's data follows its own spec.
+        Assert.Equal(
+            new byte[]
+            {
+                0x01, 0x01,
+                0x64, 0x00, 0x00, 0x00, 0xA8, 0x00, 0x01, 0x00, 0x34, 0x12, // D100 x1 + data
+                0xC8, 0x00, 0x00, 0x00, 0x90, 0x00, 0x01, 0x00, 0x05, 0x00, // M200 x1 + data
+            },
+            server.RequestFrames[0].AsSpan(13 + 6).ToArray());
+    }
+
+    [Fact]
+    public async Task WriteBlockAsync_DoesNotRetryC056AsSplitRequests()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0xC056, Array.Empty<byte>()),
+        ]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", server.Port)
+        {
+            FrameType = SlmpFrameType.Frame4E,
+            CompatibilityMode = SlmpCompatibilityMode.Iqr,
+        };
+
+        var ex = await Assert.ThrowsAsync<SlmpError>(() => client.WriteBlockAsync(
+            [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), [0x1234])],
+            [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.M, 200), [0x0005])],
+            new SlmpBlockWriteOptions(SplitMixedBlocks: false)));
+        Assert.Equal((ushort)0xC056, ex.EndCode);
+
+        var request = Assert.Single(server.RequestFrames);
+        AssertBlockWriteShape(request, wordBlocks: 1, bitBlocks: 1);
     }
 
     [Fact]
