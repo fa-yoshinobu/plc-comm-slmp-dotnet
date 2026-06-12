@@ -1284,8 +1284,11 @@ public static class SlmpClientExtensions
         if (address.Contains('.'))
         {
             int index = address.IndexOf('.');
-            if (int.TryParse(address[(index + 1)..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int bit))
+            var bitText = address[(index + 1)..].Trim();
+            if (bitText.Length == 1 &&
+                int.TryParse(bitText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int bit))
                 return (address[..index].Trim(), "BIT_IN_WORD", bit);
+            throw new ArgumentException($"Invalid bit-in-word index in '{address}'. Use one hex digit 0-F or ':' for data type.", nameof(address));
         }
 
         return (address.Trim(), "U", null);
