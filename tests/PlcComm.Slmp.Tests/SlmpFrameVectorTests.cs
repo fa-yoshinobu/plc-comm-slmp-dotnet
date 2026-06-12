@@ -120,6 +120,12 @@ public sealed class SlmpFrameVectorTests
             case "remote_password_unlock":
                 await client.RemotePasswordUnlockAsync(args.GetProperty("password").GetString()!);
                 return;
+            case "remote_reset":
+                {
+                    var expectResponse = args.TryGetProperty("expect_response", out var value) && value.GetBoolean();
+                    await client.RemoteResetAsync(expectResponse: expectResponse);
+                    return;
+                }
             default:
                 throw new InvalidOperationException($"Unsupported shared frame operation: {operation}");
         }

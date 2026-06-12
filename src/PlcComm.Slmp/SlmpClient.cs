@@ -26,6 +26,10 @@ namespace PlcComm.Slmp;
 public sealed class SlmpClient : IDisposable, IAsyncDisposable
 {
     private const uint MaxRuntimeRangeProbeCount = 1_048_576;
+    private const int DirectWordPointLimit = 960;
+    private const int DirectBitPointLimit = 7168;
+    private const int MemoryWordLimit = 480;
+    private const int ExtendUnitByteLimit = 1920;
     private readonly string _host;
     private readonly int _port;
     private readonly SlmpTransportMode _transportMode;
@@ -325,6 +329,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <returns>An array of word values (ushort).</returns>
     public async Task<ushort[]> ReadWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
     {
+        ValidateDirectAccessPoints(points, bitUnit: false, "read_words");
         ValidateDirectWordReadDevice(device, points);
         var payload = BuildReadWritePayload(device, points, null, bitUnit: false);
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0000 : (ushort)0x0002;
@@ -343,6 +348,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private async Task WriteWordsUncheckedAsync(SlmpDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
     {
+        ValidateDirectAccessPoints(values.Count, bitUnit: false, "write_words");
         var payload = BuildReadWritePayload(device, checked((ushort)values.Count), values, bitUnit: false);
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0000 : (ushort)0x0002;
         _ = await RequestAsync(SlmpCommand.DeviceWrite, sub, payload, true, cancellationToken).ConfigureAwait(false);
@@ -350,6 +356,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task<bool[]> ReadBitsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
     {
+        ValidateDirectAccessPoints(points, bitUnit: true, "read_bits");
         ValidateDirectBitReadDevice(device);
         var payload = BuildReadWritePayload(device, points, null, bitUnit: true);
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0001 : (ushort)0x0003;
@@ -386,6 +393,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ValidateDirectAccessPoints(points, bitUnit: false, "read_words_ext");
         ValidateDirectWordReadDevice(device.Device, points);
         var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, extension);
         var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: false, CompatibilityMode);
@@ -405,6 +413,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ValidateDirectAccessPoints(values.Count, bitUnit: false, "write_words_ext");
         ValidateDirectWordWriteDevice(device.Device);
         var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, extension);
         var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, checked((ushort)values.Count), values, effectiveExtension, bitUnit: false, CompatibilityMode);
@@ -420,6 +429,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ValidateDirectAccessPoints(points, bitUnit: true, "read_bits_ext");
         ValidateDirectBitReadDevice(device.Device);
         var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, extension);
         var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: true, CompatibilityMode);
@@ -436,6 +446,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ValidateDirectAccessPoints(values.Count, bitUnit: true, "write_bits_ext");
         ValidateDirectBitWriteDevice(device.Device);
         var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, extension);
         var wordValues = new ushort[values.Count];
@@ -448,6 +459,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task WriteBitsAsync(SlmpDeviceAddress device, IReadOnlyList<bool> values, CancellationToken cancellationToken = default)
     {
+        ValidateDirectAccessPoints(values.Count, bitUnit: true, "write_bits");
         ValidateDirectBitWriteDevice(device);
         var wordValues = new ushort[values.Count];
         for (var i = 0; i < values.Count; i++) wordValues[i] = values[i] ? (ushort)1 : (ushort)0;
@@ -471,6 +483,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     public async Task WriteDWordsAsync(SlmpDeviceAddress device, IReadOnlyList<uint> values, CancellationToken cancellationToken = default)
     {
         ValidateDirectDWordWriteDevice(device);
+        ValidateDirectAccessPoints(checked(values.Count * 2), bitUnit: false, "write_dwords");
         var words = new ushort[values.Count * 2];
         for (var i = 0; i < values.Count; i++)
         {
@@ -511,6 +524,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(wordDevices), "random counts must be <= 255");
         }
+        ValidateRandomReadLikeCounts(wordDevices.Count, dwordDevices.Count, "read_random");
         ValidateRandomReadDevices(wordDevices, dwordDevices);
 
         var payload = new byte[2 + ((wordDevices.Count + dwordDevices.Count) * DeviceSpecSize())];
@@ -560,6 +574,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(wordEntries), "random counts must be <= 255");
         }
+        ValidateRandomWriteWordCounts(wordEntries.Count, dwordEntries.Count, "write_random_words");
         ValidateRandomWriteDevices(wordEntries);
 
         var payload = new byte[2 + (wordEntries.Count * (DeviceSpecSize() + 2)) + (dwordEntries.Count * (DeviceSpecSize() + 4))];
@@ -592,6 +607,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(bitEntries), "random bit count must be <= 255");
         }
+        ValidateRandomBitWriteCount(bitEntries.Count, "write_random_bits");
 
         var bitValueSize = CompatibilityMode == SlmpCompatibilityMode.Legacy ? 1 : 2;
         var payload = new byte[1 + (bitEntries.Count * (DeviceSpecSize() + bitValueSize))];
@@ -625,6 +641,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(wordDevices), "random counts must be <= 255");
         }
+        ValidateRandomReadLikeCounts(wordDevices.Count, dwordDevices.Count, "read_random_ext");
         ValidateRandomReadDevices(
             wordDevices.Select(entry => entry.Device.Device).ToArray(),
             dwordDevices.Select(entry => entry.Device.Device).ToArray());
@@ -664,6 +681,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(wordEntries), "random counts must be <= 255");
         }
+        ValidateRandomWriteWordCounts(wordEntries.Count, dwordEntries.Count, "write_random_words_ext");
         ValidateRandomWriteDevices(wordEntries.Select(entry => (entry.Device.Device, entry.Value)).ToArray());
 
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
@@ -680,6 +698,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(bitEntries), "random bit count must be <= 255");
         }
+        ValidateRandomBitWriteCount(bitEntries.Count, "write_random_bits_ext");
 
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0081 : (ushort)0x0083;
         var payload = SlmpPayloads.BuildExtendedRandomBitWritePayload(bitEntries, CompatibilityMode);
@@ -719,6 +738,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(wordBlocks), "block counts must be <= 255");
         }
+        ValidateBlockReadLimits(wordBlocks, bitBlocks);
         ValidateBlockReadDevices(wordBlocks, bitBlocks);
 
         var specSize = DeviceSpecSize();
@@ -784,6 +804,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(wordBlocks), "block counts must be <= 255");
         }
+        ValidateBlockWriteLimits(wordBlocks, bitBlocks);
         ValidateBlockWriteDevices(wordBlocks, bitBlocks);
 
         var specSize = DeviceSpecSize();
@@ -833,6 +854,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             throw new ArgumentException("wordDevices and dwordDevices must not both be empty.");
         if (wordDevices.Count > 0xFF || dwordDevices.Count > 0xFF)
             throw new ArgumentOutOfRangeException(nameof(wordDevices), "device counts must be <= 255.");
+        ValidateRandomReadLikeCounts(wordDevices.Count, dwordDevices.Count, "register_monitor_devices");
         ValidateMonitorRegisterDevices(wordDevices, dwordDevices);
 
         var payload = new byte[2 + (wordDevices.Count + dwordDevices.Count) * DeviceSpecSize()];
@@ -857,6 +879,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             throw new ArgumentException("wordDevices and dwordDevices must not both be empty.");
         if (wordDevices.Count > 0xFF || dwordDevices.Count > 0xFF)
             throw new ArgumentOutOfRangeException(nameof(wordDevices), "device counts must be <= 255.");
+        ValidateRandomReadLikeCounts(wordDevices.Count, dwordDevices.Count, "register_monitor_devices_ext");
         ValidateMonitorRegisterDevices(
             wordDevices.Select(entry => entry.Device.Device).ToArray(),
             dwordDevices.Select(entry => entry.Device.Device).ToArray());
@@ -903,8 +926,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task RemoteStopAsync(bool force, CancellationToken cancellationToken = default)
     {
-        var mode = force ? (ushort)0x0003 : (ushort)0x0001;
-        _ = await RequestAsync(SlmpCommand.RemoteStop, 0x0000, new byte[] { (byte)mode, 0x00 }, true, cancellationToken).ConfigureAwait(false);
+        _ = await RequestAsync(SlmpCommand.RemoteStop, 0x0000, new byte[] { 0x01, 0x00 }, true, cancellationToken).ConfigureAwait(false);
     }
 
     public Task RemoteForceStopAsync(CancellationToken cancellationToken = default) => RemoteStopAsync(true, cancellationToken);
@@ -917,7 +939,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task RemoteLatchClearAsync(CancellationToken cancellationToken = default) => _ = await RequestAsync(SlmpCommand.RemoteLatchClear, 0x0000, new byte[] { 0x01, 0x00 }, true, cancellationToken).ConfigureAwait(false);
 
-    public async Task RemoteResetAsync(ushort subcommand = 0x0000, bool expectResponse = true, CancellationToken cancellationToken = default) => _ = await RequestAsync(SlmpCommand.RemoteReset, subcommand, ReadOnlyMemory<byte>.Empty, expectResponse, cancellationToken).ConfigureAwait(false);
+    public async Task RemoteResetAsync(ushort subcommand = 0x0000, bool expectResponse = false, CancellationToken cancellationToken = default)
+    {
+        if (subcommand != 0x0000)
+        {
+            throw new ArgumentOutOfRangeException(nameof(subcommand), "remote reset subcommand must be 0x0000");
+        }
+
+        _ = await RequestAsync(SlmpCommand.RemoteReset, subcommand, new byte[] { 0x01, 0x00 }, expectResponse, cancellationToken).ConfigureAwait(false);
+    }
 
     public async Task RemotePasswordUnlockAsync(string password, CancellationToken cancellationToken = default)
     {
@@ -931,9 +961,17 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task<byte[]> SelfTestLoopbackAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
     {
-        if (data.Length > ushort.MaxValue)
+        if (data.Length < 1 || data.Length > 960)
         {
-            throw new ArgumentOutOfRangeException(nameof(data), "loopback payload must be <= 65535 bytes");
+            throw new ArgumentOutOfRangeException(nameof(data), "loopback payload size out of range (1..960 bytes)");
+        }
+
+        foreach (var value in data.Span)
+        {
+            if (!IsSelfTestHexByte(value))
+            {
+                throw new ArgumentException("loopback payload must contain only ASCII 0-9/A-F bytes", nameof(data));
+            }
         }
 
         var payload = new byte[2 + data.Length];
@@ -953,6 +991,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
         return response.AsSpan(2, responseLength).ToArray();
     }
+
+    private static bool IsSelfTestHexByte(byte value)
+        => value is >= (byte)'0' and <= (byte)'9' or >= (byte)'A' and <= (byte)'F';
 
     public async Task ClearErrorAsync(CancellationToken cancellationToken = default) => _ = await RequestAsync(SlmpCommand.ClearError, 0x0000, ReadOnlyMemory<byte>.Empty, true, cancellationToken).ConfigureAwait(false);
 
@@ -1044,10 +1085,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ushort wordLength,
         CancellationToken cancellationToken = default)
     {
+        ValidateMemoryWordLength(wordLength, "memory_read");
         var payload = new byte[6];
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0, 4), headAddress);
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(4, 2), wordLength);
         var data = await RequestAsync(SlmpCommand.MemoryRead, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
+        if (data.Length != wordLength * 2)
+            throw new SlmpError($"memory read size mismatch: expected={wordLength} actual={data.Length / 2}");
         var result = new ushort[wordLength];
         for (var i = 0; i < wordLength; i++)
             result[i] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(i * 2, 2));
@@ -1065,6 +1109,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<ushort> values,
         CancellationToken cancellationToken = default)
     {
+        ValidateMemoryWordLength(values.Count, "memory_write");
         var payload = new byte[6 + values.Count * 2];
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0, 4), headAddress);
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(4, 2), (ushort)values.Count);
@@ -1090,11 +1135,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ushort moduleNo,
         CancellationToken cancellationToken = default)
     {
+        ValidateExtendUnitByteLength(byteLength, "extend_unit_read");
         var payload = new byte[8];
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0, 4), headAddress);
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(4, 2), byteLength);
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(6, 2), moduleNo);
-        return await RequestAsync(SlmpCommand.ExtendUnitRead, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
+        var data = await RequestAsync(SlmpCommand.ExtendUnitRead, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
+        if (data.Length != byteLength)
+            throw new SlmpError($"extend unit read size mismatch: expected={byteLength} actual={data.Length}");
+        return data;
     }
 
     /// <summary>
@@ -1110,6 +1159,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ushort moduleNo,
         CancellationToken cancellationToken = default)
     {
+        ValidateExtendUnitWordLength(wordLength, "extend_unit_read_words");
         var data = await ExtendUnitReadBytesAsync(headAddress, (ushort)(wordLength * 2), moduleNo, cancellationToken).ConfigureAwait(false);
         var result = new ushort[wordLength];
         for (var i = 0; i < wordLength; i++)
@@ -1145,6 +1195,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ReadOnlyMemory<byte> data,
         CancellationToken cancellationToken = default)
     {
+        ValidateExtendUnitByteLength(data.Length, "extend_unit_write");
         var payload = new byte[8 + data.Length];
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0, 4), headAddress);
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(4, 2), (ushort)data.Length);
@@ -1166,6 +1217,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<ushort> values,
         CancellationToken cancellationToken = default)
     {
+        ValidateExtendUnitWordLength(values.Count, "extend_unit_write_words");
         var wordBytes = new byte[values.Count * 2];
         for (var i = 0; i < values.Count; i++)
             BinaryPrimitives.WriteUInt16LittleEndian(wordBytes.AsSpan(i * 2, 2), values[i]);
@@ -1455,6 +1507,99 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     internal int EncodeDeviceSpec(SlmpDeviceAddress device, Span<byte> output)
         => SlmpPayloads.EncodeDeviceSpec(device, output, CompatibilityMode);
+
+    private static void ValidateDirectAccessPoints(int points, bool bitUnit, string name)
+    {
+        var limit = bitUnit ? DirectBitPointLimit : DirectWordPointLimit;
+        var unit = bitUnit ? "bit" : "word";
+        if (points < 1 || points > limit)
+            throw new ArgumentOutOfRangeException(name, $"{name} {unit} access points out of range (1..{limit}): {points}");
+    }
+
+    private void ValidateRandomReadLikeCounts(int wordPoints, int dwordPoints, string name)
+    {
+        var total = wordPoints + dwordPoints;
+        var limit = CompatibilityMode == SlmpCompatibilityMode.Legacy ? 192 : 96;
+        if (total < 1 || total > limit)
+            throw new ArgumentOutOfRangeException(name, $"{name} total access points out of range (1..{limit}): word={wordPoints}, dword={dwordPoints}");
+    }
+
+    private void ValidateRandomWriteWordCounts(int wordPoints, int dwordPoints, string name)
+    {
+        var total = wordPoints + dwordPoints;
+        if (total < 1)
+            throw new ArgumentOutOfRangeException(name, $"{name} word/dword access points out of range: word={wordPoints}, dword={dwordPoints}");
+
+        var weighted = (wordPoints * 12) + (dwordPoints * 14);
+        var limit = CompatibilityMode == SlmpCompatibilityMode.Legacy ? 1920 : 960;
+        if (weighted > limit)
+            throw new ArgumentOutOfRangeException(
+                name,
+                $"{name} word/dword access points out of range: word={wordPoints}, dword={dwordPoints}, weighted={weighted}, limit={limit}");
+    }
+
+    private void ValidateRandomBitWriteCount(int points, string name)
+    {
+        var limit = CompatibilityMode == SlmpCompatibilityMode.Legacy ? 188 : 94;
+        if (points < 1 || points > limit)
+            throw new ArgumentOutOfRangeException(name, $"{name} bit access points out of range (1..{limit}): {points}");
+    }
+
+    private void ValidateBlockReadLimits(IReadOnlyList<SlmpBlockRead> wordBlocks, IReadOnlyList<SlmpBlockRead> bitBlocks)
+    {
+        var totalBlocks = wordBlocks.Count + bitBlocks.Count;
+        ValidateBlockCount(totalBlocks, "read_block");
+        var totalPoints = wordBlocks.Sum(static block => ValidateBlockPointCount(block.Points, "read_block word")) +
+                          bitBlocks.Sum(static block => ValidateBlockPointCount(block.Points, "read_block bit"));
+        if (totalPoints > DirectWordPointLimit)
+            throw new ArgumentOutOfRangeException(nameof(wordBlocks), $"read_block total device points out of range (<=960): total_points={totalPoints}");
+    }
+
+    private void ValidateBlockWriteLimits(IReadOnlyList<SlmpBlockWrite> wordBlocks, IReadOnlyList<SlmpBlockWrite> bitBlocks)
+    {
+        var totalBlocks = wordBlocks.Count + bitBlocks.Count;
+        ValidateBlockCount(totalBlocks, "write_block");
+        var totalPoints = wordBlocks.Sum(static block => ValidateBlockPointCount(block.Values.Count, "write_block word")) +
+                          bitBlocks.Sum(static block => ValidateBlockPointCount(block.Values.Count, "write_block bit"));
+        var perBlockOverhead = CompatibilityMode == SlmpCompatibilityMode.Legacy ? 4 : 9;
+        var weighted = totalPoints + (totalBlocks * perBlockOverhead);
+        if (weighted > DirectWordPointLimit)
+            throw new ArgumentOutOfRangeException(
+                nameof(wordBlocks),
+                $"write_block total device points out of range (<=960): weighted={weighted}, total_points={totalPoints}");
+    }
+
+    private void ValidateBlockCount(int totalBlocks, string name)
+    {
+        var limit = CompatibilityMode == SlmpCompatibilityMode.Legacy ? 120 : 60;
+        if (totalBlocks < 1 || totalBlocks > limit)
+            throw new ArgumentOutOfRangeException(name, $"{name} total block count out of range (1..{limit}): {totalBlocks}");
+    }
+
+    private static int ValidateBlockPointCount(int points, string name)
+    {
+        if (points < 1 || points > ushort.MaxValue)
+            throw new ArgumentOutOfRangeException(name, $"{name} block points out of range (1..65535): {points}");
+        return points;
+    }
+
+    private static void ValidateMemoryWordLength(int wordLength, string name)
+    {
+        if (wordLength < 1 || wordLength > MemoryWordLimit)
+            throw new ArgumentOutOfRangeException(name, $"{name} word length out of range (1..480): {wordLength}");
+    }
+
+    private static void ValidateExtendUnitByteLength(int byteLength, string name)
+    {
+        if (byteLength < 2 || byteLength > ExtendUnitByteLimit)
+            throw new ArgumentOutOfRangeException(name, $"{name} byte length out of range (2..1920): {byteLength}");
+    }
+
+    private static void ValidateExtendUnitWordLength(int wordLength, string name)
+    {
+        if (wordLength < 1 || wordLength > DirectWordPointLimit)
+            throw new ArgumentOutOfRangeException(name, $"{name} word length out of range (1..960): {wordLength}");
+    }
 
     private static void ValidateDirectBitReadDevice(SlmpDeviceAddress device)
     {
