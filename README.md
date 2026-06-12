@@ -43,7 +43,7 @@ dotnet add package PlcComm.Slmp
 Or add a package reference directly:
 
 ```xml
-<PackageReference Include="PlcComm.Slmp" Version="0.1.13" />
+<PackageReference Include="PlcComm.Slmp" Version="0.1.14" />
 ```
 
 ### Recommended High-Level Usage

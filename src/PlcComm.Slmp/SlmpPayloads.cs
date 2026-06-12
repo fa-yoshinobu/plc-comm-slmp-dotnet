@@ -34,8 +34,39 @@ internal static class SlmpPayloads
             result = result with { ExtensionSpecification = device.ExtensionSpecification.Value };
         if (device.DirectMemorySpecification is not null && device.DirectMemorySpecification.Value != result.DirectMemorySpecification)
             result = result with { DirectMemorySpecification = device.DirectMemorySpecification.Value };
+
+        switch (device.Device.Code)
+        {
+            case SlmpDeviceCode.G:
+                if (device.ExtensionSpecification is null)
+                    throw new ArgumentException(@"G Extended Device access requires U-qualified module access such as U1\G0.", nameof(device));
+                result = RequireDirectMemory(result, 0xF8, "G");
+                break;
+            case SlmpDeviceCode.HG:
+                if (device.ExtensionSpecification is null)
+                    throw new ArgumentException(@"HG Extended Device access requires U-qualified CPU-buffer access U3E0\HG through U3E3\HG.", nameof(device));
+                if (!IsValidHgExtensionSpecification(device.ExtensionSpecification.Value))
+                    throw new ArgumentException(@"HG Extended Device access is valid only for U3E0\HG through U3E3\HG.", nameof(device));
+                result = RequireDirectMemory(result, 0xFA, "HG");
+                break;
+        }
+
         return result;
     }
+
+    private static SlmpExtensionSpec RequireDirectMemory(SlmpExtensionSpec extension, byte requiredDirectMemory, string deviceCode)
+    {
+        if (extension.DirectMemorySpecification == 0x00)
+            return extension with { DirectMemorySpecification = requiredDirectMemory };
+        if (extension.DirectMemorySpecification != requiredDirectMemory)
+            throw new ArgumentException(
+                $"{deviceCode} Extended Device access requires DirectMemorySpecification=0x{requiredDirectMemory:X2}; got 0x{extension.DirectMemorySpecification:X2}.",
+                nameof(extension));
+        return extension;
+    }
+
+    private static bool IsValidHgExtensionSpecification(ushort extensionSpecification)
+        => extensionSpecification is >= 0x03E0 and <= 0x03E3;
 
     internal static byte[] BuildReadWritePayloadExtended(
         SlmpDeviceAddress device,

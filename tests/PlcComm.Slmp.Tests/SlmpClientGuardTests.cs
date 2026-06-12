@@ -136,6 +136,26 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task ReadWordsExtendedAsync_RejectsUnqualifiedGAndHg()
+    {
+        using var client = new SlmpClient("127.0.0.1");
+
+        var g = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadWordsExtendedAsync(
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.G, 0), null),
+                1,
+                new SlmpExtensionSpec()));
+        Assert.Contains("G Extended Device access requires U-qualified", g.Message);
+
+        var hg = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadWordsExtendedAsync(
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.HG, 0), null),
+                1,
+                new SlmpExtensionSpec()));
+        Assert.Contains("HG Extended Device access requires U-qualified", hg.Message);
+    }
+
+    [Fact]
     public async Task ReadRandomAsync_RejectsLongCounterContacts()
     {
         using var client = new SlmpClient("127.0.0.1");

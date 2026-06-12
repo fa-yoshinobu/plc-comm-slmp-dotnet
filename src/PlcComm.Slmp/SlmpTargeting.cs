@@ -67,12 +67,19 @@ public static class SlmpQualifiedDeviceParser
         // G/HG buffer memory devices have a fixed DM by device code (matches GOT pcap-verified format)
         byte? dm = dev.Code switch
         {
-            SlmpDeviceCode.G => 0xF8,
-            SlmpDeviceCode.HG => 0xFA,
-            _ => null,
+            SlmpDeviceCode.G => (byte)0xF8,
+            SlmpDeviceCode.HG => IsValidHgExtensionSpecification(extensionSpecification)
+                ? (byte)0xFA
+                : throw new ArgumentException(
+                    @"HG Extended Device access is valid only for U3E0\HG through U3E3\HG.",
+                    nameof(text)),
+            _ => (byte?)null,
         };
         return new SlmpQualifiedDeviceAddress(dev, extensionSpecification, dm);
     }
+
+    private static bool IsValidHgExtensionSpecification(ushort extensionSpecification)
+        => extensionSpecification is >= 0x03E0 and <= 0x03E3;
 }
 
 /// <summary>

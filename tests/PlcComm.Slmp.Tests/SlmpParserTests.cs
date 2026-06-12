@@ -101,6 +101,19 @@ public sealed class SlmpParserTests
         Assert.Equal((ushort)0x03E0, qualified.ExtensionSpecification);
         Assert.Equal(SlmpDeviceCode.G, qualified.Device.Code);
         Assert.Equal((uint)10, qualified.Device.Number);
+        Assert.Equal((byte)0xF8, qualified.DirectMemorySpecification);
+    }
+
+    [Fact]
+    public void ParseQualifiedDevice_RejectsHgOutsideIqrCpuBufferRange()
+    {
+        var qualified = SlmpQualifiedDeviceParser.Parse(@"U3E0\HG0");
+        Assert.Equal((ushort)0x03E0, qualified.ExtensionSpecification);
+        Assert.Equal(SlmpDeviceCode.HG, qualified.Device.Code);
+        Assert.Equal((byte)0xFA, qualified.DirectMemorySpecification);
+
+        var ex = Assert.Throws<ArgumentException>(() => SlmpQualifiedDeviceParser.Parse(@"U1\HG0"));
+        Assert.Contains(@"HG Extended Device access is valid only for U3E0\HG through U3E3\HG", ex.Message);
     }
 
     [Fact]

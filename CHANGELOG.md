@@ -5,13 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.14] - 2026-06-12
 
 ### Added
 - Added SLMP end-code name/message helpers for the full communication error-code table, and exposed them from `SlmpError`.
 
 ### Changed
 - Removed `RetryMixedOnError` from `SlmpBlockWriteOptions`; mixed block-write failures now return the PLC end code unchanged, and only explicit `SplitMixedBlocks` sends separate block writes.
+- Guarded Extended Specification `G`/`HG` access before transport: `G` now requires a `U...` qualified module path, and `HG` is accepted only for `U3E0\HG` through `U3E3\HG` with the matching direct-memory code.
 
 ## [0.1.13] - 2026-05-02
 
