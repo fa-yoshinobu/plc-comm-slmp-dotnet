@@ -2,211 +2,75 @@
 [![NuGet](https://img.shields.io/nuget/v/PlcComm.Slmp.svg)](https://www.nuget.org/packages/PlcComm.Slmp/)
 [![Documentation](https://img.shields.io/badge/docs-GitHub_Pages-blue.svg)](https://fa-yoshinobu.github.io/plc-comm-slmp-dotnet/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/LICENSE)
-
-# SLMP Protocol for .NET
-
-![Illustration](https://raw.githubusercontent.com/fa-yoshinobu/plc-comm-slmp-dotnet/main/docsrc/assets/melsec.png)
-
 [![Release](https://img.shields.io/github/v/release/fa-yoshinobu/plc-comm-slmp-dotnet?label=release)](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/releases/latest)
-
 [![.NET 9](https://img.shields.io/badge/.NET-9-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![C#](https://img.shields.io/badge/C%23-239120?logo=csharp&logoColor=white)](https://learn.microsoft.com/dotnet/csharp/)
 
-High-level SLMP helpers for Mitsubishi PLC communication over Binary 3E and 4E frames.
+# SLMP Protocol for .NET
 
-Maintainer release steps are documented in [Release Process](RELEASING.md).
+.NET library for Mitsubishi SLMP (Binary 3E/4E) PLC communication.
 
-The recommended user surface is the extension-method layer:
+## Supported PLC profiles
 
-- `SlmpClientFactory.OpenAndConnectAsync`
-- `SlmpConnectionOptions`
-- `ReadTypedAsync` / `WriteTypedAsync`
-- `ReadWordsSingleRequestAsync` / `ReadDWordsSingleRequestAsync`
-- `ReadWordsChunkedAsync` / `ReadDWordsChunkedAsync`
-- `WriteBitInWordAsync`
-- `ReadNamedAsync`
-- `WriteNamedAsync`
-- `PollAsync`
-- `SlmpAddress.Normalize`
-- `ReadDeviceRangeCatalogAsync`
+| Profile string | Hardware | Frame | Notes |
+| --- | --- | --- | --- |
+| `melsec:iq-f` | MELSEC iQ-F / FX5 | 3E | `SlmpPlcProfile.IqF`; legacy mode; `X` and `Y` use iQ-F octal address notation. |
+| `melsec:iq-r` | MELSEC iQ-R | 4E | `SlmpPlcProfile.IqR`; iQ-R mode. |
+| `melsec:iq-l` | MELSEC iQ-L | 4E | `SlmpPlcProfile.IqL`; iQ-R mode with iQ-L range rules. |
+| `melsec:mx-f` | MELSEC MX-F | 4E | `SlmpPlcProfile.MxF`; iQ-R mode. |
+| `melsec:mx-r` | MELSEC MX-R | 4E | `SlmpPlcProfile.MxR`; iQ-R mode. |
+| `melsec:qcpu` | MELSEC-Q CPU | 3E | `SlmpPlcProfile.QCpu`; legacy mode. |
+| `melsec:lcpu` | MELSEC-L CPU | 3E | `SlmpPlcProfile.LCpu`; legacy mode. |
+| `melsec:qnu` | MELSEC QnU CPU | 3E | `SlmpPlcProfile.QnU`; legacy mode. |
+| `melsec:qnudv` | MELSEC QnUDV CPU | 3E | `SlmpPlcProfile.QnUDV`; legacy mode. |
 
-## Quick Start
+## Supported device types
 
-### Installation
+| Device | Use |
+| --- | --- |
+| `D` | Data registers for the first word, dword, and float reads. |
+| `M` | Internal relay bits. |
+| `X` | Input bits; profile-aware notation is required for iQ-F. |
+| `Y` | Output bits; profile-aware notation is required for iQ-F. |
+| `W` | Link registers with hexadecimal numbering. |
+| `R` | File registers. |
+| `LTN` | Long timer current values; use 32-bit `:D` or `:L` access. |
+| `LCN` | Long counter current values; use 32-bit `:D` or `:L` access. |
 
-- Package page: <https://www.nuget.org/packages/PlcComm.Slmp/>
+See the full table in [Supported registers](docsrc/user/SUPPORTED_REGISTERS.md).
+
+## Installation
 
 ```powershell
 dotnet add package PlcComm.Slmp
 ```
 
-Or add a package reference directly:
-
-```xml
-<PackageReference Include="PlcComm.Slmp" Version="0.1.15" />
-```
-
-### Recommended High-Level Usage
+## Quick example
 
 ```csharp
+using System;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
-
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR) { Port = 1025 };
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
-
-var snapshot = await client.ReadNamedAsync(["D100", "D200:F", "D50.3"]);
-Console.WriteLine(snapshot["D100"]);
-Console.WriteLine(snapshot["D200:F"]);
-Console.WriteLine(snapshot["D50.3"]);
+var value = await client.ReadTypedAsync("D100", "U");
+Console.WriteLine($"D100 = {value}");
 ```
 
-## Supported PLC Registers
+## Documentation
 
-Start with these public high-level families first:
+| Page | Link |
+| --- | --- |
+| Getting started | [docsrc/user/GETTING_STARTED.md](docsrc/user/GETTING_STARTED.md) |
+| Usage guide | [docsrc/user/USAGE_GUIDE.md](docsrc/user/USAGE_GUIDE.md) |
+| Supported registers | [docsrc/user/SUPPORTED_REGISTERS.md](docsrc/user/SUPPORTED_REGISTERS.md) |
+| PLC profiles | [docsrc/user/PROFILES.md](docsrc/user/PROFILES.md) |
+| Examples | [samples/README.md](samples/README.md) |
 
-- word devices: `D`, `SD`, `R`, `ZR`, `TN`, `CN`
-- bit devices: `M`, `X`, `Y`, `SM`, `B`
-- typed forms: `D200:F`, `D300:L`, `D100:S`
-- mixed snapshot forms: `D50.3`, `D100`, `D200:F`
-- current-value long families: `LTN`, `LSTN`, `LCN`
-- 32-bit index register: `LZ`
+## Hardware verified
 
-High-level address syntax is shared across the PLC helper libraries:
+The retained public verification summary lists `iQ-R` and `iQ-L` as fully verified for the current helper surface. `MELSEC-Q`, `MELSEC-L`, `iQ-F`, and third-party MC-compatible endpoints are profile-limited or mixed in the retained summary. The recommended first public test is `D100`, `D200:F`, and `D50.3`.
 
-- use `:` for data types and special views: `D100:U`, `D100:S`, `D100:D`,
-  `D100:L`, `D100:F`, `D100:STR`
-- use `.` only for bit-in-word access: `D50.0` through `D50.F`
-- `D50.D` is bit `0xD` / bit 13, not a 32-bit data type request
-- low-level SLMP routes still encode word/dword/float access internally; the
-  `:D` / `:F` spelling is the public helper-layer form
+## License and registry
 
-See the full public table in [Supported PLC Registers](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/SUPPORTED_REGISTERS.md).
-
-For live PLC-dependent device limits resolved from a user-selected PLC profile
-plus family `SD` registers, see [Device Range Catalog](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/DEVICE_RANGES.md).
-
-### Long Current / 32-bit Values
-
-`LTN`, `LSTN`, and `LCN` are not normal 16-bit word devices in the high-level
-API. They represent 32-bit current values. `LZ` is also a 32-bit device. Use
-the typed or named API with `:D` or `:L`:
-
-```csharp
-var timer = await client.ReadTypedAsync("LTN100", "L");
-await client.WriteTypedAsync("LTN100", "L", 1234);
-
-var lz = await client.ReadTypedAsync("LZ0", "D");
-var snapshot = await client.ReadNamedAsync(["LTN100:L", "LSTN10:D", "LCN0:L", "LZ0:D"]);
-await client.WriteNamedAsync(new Dictionary<string, object>
-{
-    ["LCN0:L"] = 10,
-    ["LZ0:D"] = 0,
-});
-```
-
-`LCN` current values use random dword access in the high-level helpers. The
-low-level word block APIs intentionally reject `LTN` / `LSTN` / `LCN` / `LZ`
-as word writes and random word entries. Direct DWord reads/writes are also
-rejected for these families so the 32-bit route is selected explicitly through
-`ReadTypedAsync` / `ReadNamedAsync` or `WriteTypedAsync` / `WriteNamedAsync`.
-
-Contact and coil devices in the long families, such as `LTS`, `LTC`, `LSTS`,
-`LSTC`, `LCS`, and `LCC`, are bit-style addresses. Do not treat them as
-current-value words. `ReadLtsStatesAsync`, `ReadLtcStatesAsync`,
-`ReadLstsStatesAsync`, and `ReadLstcStatesAsync` read the `LTN` / `LSTN`
-4-word status block and use the third word (`b1` for contact, `b0` for coil).
-`LCS` and `LCC` reads use direct bit read through the typed/named helpers.
-For `LTS`, `LTC`, `LSTS`, `LSTC`, `LCS`, and `LCC` writes, `WriteTypedAsync` /
-`WriteNamedAsync` select the random bit write route (`0x1402`) instead of the
-contiguous bit write route (`0x1401`).
-
-Route guard note: direct bit read/write (`0x0401` / `0x1401`) and Read Random
-(`0x0403`) are intentionally rejected for `LTS`, `LTC`, `LSTS`, and `LSTC`
-before a PLC request is sent. Direct bit write (`0x1401`) is also rejected for
-`LCS` and `LCC`; use `WriteTypedAsync` / `WriteNamedAsync` so `0x1402` is
-selected.
-
-### Device Range Catalog
-
-Use `ReadDeviceRangeCatalogAsync` after opening a connection with a selected
-`SlmpPlcProfile`. The catalog reports whether each device is supported, its
-point count, lower bound, upper bound, display range, notation, and source.
-
-```csharp
-var catalog = await client.ReadDeviceRangeCatalogAsync();
-var stn = catalog.Entries.First(entry => entry.Device == "STN");
-
-if (!stn.Supported || stn.PointCount == 0)
-{
-    Console.WriteLine("STN is unavailable in the current PLC settings.");
-}
-```
-
-Applications should use this catalog to clamp monitor scroll ranges and reject
-out-of-range reads or writes before issuing SLMP commands.
-
-## Public Documentation
-
-- [Getting Started](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/GETTING_STARTED.md)
-- [Supported PLC Registers](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/SUPPORTED_REGISTERS.md)
-- [Device Range Catalog](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/DEVICE_RANGES.md)
-- [Latest Communication Verification](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/LATEST_COMMUNICATION_VERIFICATION.md)
-- [User Guide](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/USER_GUIDE.md)
-- [Samples](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/samples/README.md)
-- [High-Level API Contract](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/HIGH_LEVEL_API_CONTRACT.md)
-
-Maintainer-only notes and retained evidence live under `internal_docs/`.
-
-## High-Level API Guide
-
-### Typed Values
-
-```csharp
-float temperature = (float)await client.ReadTypedAsync("D200", "F");
-int position = (int)await client.ReadTypedAsync("D300", "L");
-
-await client.WriteTypedAsync("D100", "U", (ushort)42);
-await client.WriteTypedAsync("D200", "F", 3.14f);
-await client.WriteTypedAsync("D300", "L", -100);
-await client.WriteTypedAsync("LTN100", "L", 1000);
-```
-
-### Mixed Reads
-
-```csharp
-var snapshot = await client.ReadNamedAsync(
-[
-    "D100",
-    "D200:F",
-    "D300:L",
-    "D50.3",
-]);
-```
-
-Use `.bit` notation only with word devices such as `D50.3`.
-Address bit devices directly as `M1000`, `M1001`, `X20`, or `Y20`.
-
-Use `:D` or `:L` with `LTN`, `LSTN`, and `LCN`.
-
-## Development
-
-```powershell
-run_ci.bat
-build_docs.bat
-release_check.bat
-```
-
-Pack the NuGet package locally:
-
-```powershell
-dotnet pack src\PlcComm.Slmp\PlcComm.Slmp.csproj -c Release
-```
-
-## License
-
-Distributed under the [MIT License](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/LICENSE).
-
+This package is distributed under the [MIT License](LICENSE). The NuGet package is published as [`PlcComm.Slmp`](https://www.nuget.org/packages/PlcComm.Slmp/).

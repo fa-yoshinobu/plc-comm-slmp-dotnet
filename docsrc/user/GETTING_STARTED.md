@@ -1,63 +1,101 @@
-# Getting Started
+# Getting started
 
-## Start Here
+## Start here
 
-Use this package when you want the shortest .NET path to Mitsubishi SLMP communication through the public high-level API.
+Use this page when you want your first successful SLMP read from a Mitsubishi PLC. The recommended path is one explicit `SlmpPlcProfile`, one connected `QueuedSlmpClient`, and one safe `D` register.
 
-Recommended first path:
+## Prerequisites
 
-1. Install `PlcComm.Slmp`.
-2. Choose one explicit `SlmpPlcProfile`.
-3. Open one client with `SlmpClientFactory.OpenAndConnectAsync`.
-4. Read one safe `D` word.
-5. Write only to a known-safe test word or bit after the first read is stable.
+| Requirement | Value |
+| --- | --- |
+| .NET SDK | .NET 9 SDK for the `net9.0` target |
+| Package | `PlcComm.Slmp` |
+| PLC endpoint | `192.168.250.100:1025` over TCP |
+| First profile to try | `SlmpPlcProfile.IqR` when your PLC is iQ-R hardware |
+| First read target | `D100` |
 
-## First PLC Registers To Try
+## Install
 
-Start with these first:
+```powershell
+dotnet add package PlcComm.Slmp
+```
 
-- `D100`
-- `D200:F`
-- `D300:L`
-- `D50.3`
-- `M1000`
+## Choose your PLC profile
 
-Do not start with these:
-
-- module/extension routing
-- large chunked reads
-- module-buffer families such as `G` and `HG`
-
-## Minimal Connection Pattern
+`SlmpPlcProfile` is the required selector for frame type, compatibility mode, string address rules, and device range rules. Pick the enum value that matches your PLC hardware.
 
 ```csharp
+using PlcComm.Slmp;
+
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
+{
+    Port = 1025,
+};
+```
+
+## First read
+
+```csharp
+using System;
+using PlcComm.Slmp;
+
 var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
 {
     Port = 1025,
 };
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
+var value = await client.ReadTypedAsync("D100", "U");
+Console.WriteLine($"D100 = {value}");
 ```
 
-## First Successful Run
+Expected output:
 
-Recommended order:
+```text
+D100 = 0
+```
 
-1. `ReadTypedAsync("D100", "U")`
-2. `WriteTypedAsync("D100", "U", value)` only on a safe test word
-3. `ReadNamedAsync(["D100", "D200:F", "D50.3"])`
+The number depends on your PLC data. A successful run prints a numeric value and does not throw an SLMP end-code exception.
 
-## Common Beginner Checks
+## First write
 
-If the first read fails, check these in order:
+Use only a test register that your PLC program allows you to change.
 
-- correct host and port
-- correct `SlmpPlcProfile`
-- start with `D` instead of a routed or module-buffer family
+```csharp
+using System;
+using PlcComm.Slmp;
 
-## Next Pages
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
+{
+    Port = 1025,
+};
 
-- [Supported PLC Registers](./SUPPORTED_REGISTERS.md)
-- [Latest Communication Verification](./LATEST_COMMUNICATION_VERIFICATION.md)
-- [User Guide](./USER_GUIDE.md)
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
+await client.WriteTypedAsync("D100", "U", (ushort)123);
+var value = await client.ReadTypedAsync("D100", "U");
+Console.WriteLine($"D100 = {value}");
+```
 
+## Confirm success
+
+1. Confirm the PLC is reachable at `192.168.250.100`.
+2. Confirm TCP port `1025` is enabled for SLMP.
+3. Confirm `SlmpPlcProfile.IqR` matches your actual PLC hardware, or change it to the correct profile.
+4. Confirm `D100` is a safe test register in your PLC program.
+5. Confirm the read prints a value before you run a write.
+
+## If it does not work
+
+| Symptom | Check |
+| --- | --- |
+| Connection opens but every read returns an end code | `SlmpPlcProfile` must match the actual PLC hardware. The profile selects frame type and access mode. |
+| First register read fails | Start with `D` word reads. Do not start with `G`, `HG`, `LTN`, or `LCN`. |
+| Several callers share one connection | Use `QueuedSlmpClient`, returned by `SlmpClientFactory.OpenAndConnectAsync`. Raw `SlmpClient` is not thread-safe for concurrent callers. |
+| Long timer or long counter values look wrong | See [Gotchas](GOTCHAS.md) before reading `LTN`, `LSTN`, `LCN`, or `LZ`. |
+
+## Next pages
+
+| Page | Link |
+| --- | --- |
+| Usage guide | [USAGE_GUIDE.md](USAGE_GUIDE.md) |
+| Supported registers | [SUPPORTED_REGISTERS.md](SUPPORTED_REGISTERS.md) |

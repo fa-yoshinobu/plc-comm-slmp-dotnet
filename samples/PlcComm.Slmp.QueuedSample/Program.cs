@@ -1,6 +1,9 @@
 using System.Globalization;
 using PlcComm.Slmp;
 
+// Demonstrates the recommended shared-connection pattern:
+// pass a canonical profile string such as "melsec:iq-r", open one
+// QueuedSlmpClient, and let concurrent workers use high-level helpers.
 if (args.Length > 0 && (string.Equals(args[0], "--help", StringComparison.OrdinalIgnoreCase) || string.Equals(args[0], "-h", StringComparison.OrdinalIgnoreCase)))
 {
     Console.WriteLine("Queued SLMP high-level sample");
@@ -50,4 +53,3 @@ var tasks = Enumerable.Range(0, workers).Select(async workerIndex =>
 }).ToArray();
 
 await Task.WhenAll(tasks).ConfigureAwait(false);
-

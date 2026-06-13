@@ -2,6 +2,9 @@ using System.Globalization;
 using System.Text;
 using PlcComm.Slmp;
 
+// Operational sample CLI for manual checks against a profile-selected PLC.
+// Every command requires --plc-profile with a canonical string such as
+// "melsec:iq-r" so frame type, compatibility mode, and address rules are explicit.
 string GetOption(IReadOnlyList<string> args, string name, string defaultValue)
 {
     var idx = -1;
@@ -787,5 +790,4 @@ internal sealed record CoverageRow(
     string Status,
     string Detail
 );
-
 
