@@ -200,6 +200,11 @@ public static class SlmpDeviceParser
             throw new ArgumentException("Device text is required.", nameof(text));
         }
 
+        if (PlcProfile is SlmpPlcProfile profile)
+        {
+            _ = SlmpPlcProfiles.Resolve(profile);
+        }
+
         var token = text.Trim().ToUpperInvariant();
         foreach (var (prefix, code, hexAddress) in Prefixes)
         {
@@ -281,4 +286,3 @@ public static class SlmpDeviceParser
         return true;
     }
 }
-

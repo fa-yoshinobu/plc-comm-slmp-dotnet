@@ -69,6 +69,7 @@ public static class SlmpAddress
     /// <summary>Formats one parsed device address using the explicit PLC profile.</summary>
     public static string Format(SlmpDeviceAddress address, SlmpPlcProfile PlcProfile)
     {
+        _ = SlmpPlcProfiles.Resolve(PlcProfile);
         ThrowIfDeviceCodeUnsupportedForFamily(address.Code, PlcProfile);
         return $"{address.Code}{FormatNumber(address, PlcProfile)}";
     }
@@ -114,4 +115,3 @@ public static class SlmpAddress
             or SlmpDeviceCode.DX
             or SlmpDeviceCode.DY;
 }
-

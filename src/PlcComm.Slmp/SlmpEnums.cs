@@ -30,15 +30,17 @@ public enum SlmpCompatibilityMode : byte
 /// <summary>Canonical PLC profile used by the high-level API.</summary>
 public enum SlmpPlcProfile : byte
 {
-    IqF,
-    IqR,
-    IqL,
-    MxF,
-    MxR,
-    QCpu,
-    LCpu,
-    QnU,
-    QnUDV,
+    /// <summary>No PLC profile has been selected.</summary>
+    Unspecified = 0,
+    IqF = 1,
+    IqR = 2,
+    IqL = 3,
+    MxF = 4,
+    MxR = 5,
+    QCpu = 6,
+    LCpu = 7,
+    QnU = 8,
+    QnUDV = 9,
 }
 
 /// <summary>Direction of a frame captured by <see cref="SlmpClient.TraceHook"/>.</summary>
@@ -174,4 +176,3 @@ public enum SlmpDeviceCode : ushort
     /// <summary>Long Buffer Memory</summary>
     HG = 0x002E,
 }
-

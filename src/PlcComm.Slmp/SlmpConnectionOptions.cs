@@ -14,6 +14,15 @@ namespace PlcComm.Slmp;
 /// <param name="PlcProfile">Canonical PLC profile for the high-level API.</param>
 public sealed record SlmpConnectionOptions(string Host, SlmpPlcProfile PlcProfile)
 {
+    private SlmpPlcProfile _plcProfile = ValidatePlcProfile(PlcProfile);
+
+    /// <summary>Gets or sets the canonical PLC profile for the high-level API.</summary>
+    public SlmpPlcProfile PlcProfile
+    {
+        get => _plcProfile;
+        init => _plcProfile = ValidatePlcProfile(value);
+    }
+
     /// <summary>Gets or sets the SLMP port number.</summary>
     /// <remarks>The default SLMP TCP/UDP port is <c>1025</c>.</remarks>
     public int Port { get; init; } = 1025;
@@ -53,5 +62,10 @@ public sealed record SlmpConnectionOptions(string Host, SlmpPlcProfile PlcProfil
 
     /// <summary>Gets the device-range family used by the high-level helper layer.</summary>
     public SlmpDeviceRangeFamily ResolvedRangeFamily => SlmpPlcProfiles.Resolve(PlcProfile).RangeFamily;
-}
 
+    private static SlmpPlcProfile ValidatePlcProfile(SlmpPlcProfile profile)
+    {
+        _ = SlmpPlcProfiles.Resolve(profile);
+        return profile;
+    }
+}

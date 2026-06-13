@@ -31,7 +31,7 @@ public static class SlmpPlcProfiles
             throw new ArgumentException($"PLC profile is required. Valid values: {ValidProfileText}.", nameof(text));
         }
 
-        var normalized = text.Trim().ToLowerInvariant();
+        var normalized = text.Trim();
         return normalized switch
         {
             "melsec:iq-f" => SlmpPlcProfile.IqF,
@@ -60,6 +60,10 @@ public static class SlmpPlcProfiles
             SlmpPlcProfile.LCpu => "melsec:lcpu",
             SlmpPlcProfile.QnU => "melsec:qnu",
             SlmpPlcProfile.QnUDV => "melsec:qnudv",
+            SlmpPlcProfile.Unspecified => throw new ArgumentOutOfRangeException(
+                nameof(profile),
+                profile,
+                $"PLC profile is required. Valid values: {ValidProfileText}."),
             _ => throw new ArgumentOutOfRangeException(nameof(profile), profile, "Unsupported PLC profile."),
         };
 
@@ -112,6 +116,10 @@ public static class SlmpPlcProfiles
                 SlmpCompatibilityMode.Legacy,
                 SlmpPlcProfile.QnUDV,
                 SlmpDeviceRangeFamily.QnUDV),
+            SlmpPlcProfile.Unspecified => throw new ArgumentOutOfRangeException(
+                nameof(profile),
+                profile,
+                $"PLC profile is required. Valid values: {ValidProfileText}."),
             _ => throw new ArgumentOutOfRangeException(nameof(profile), profile, "Unsupported PLC profile."),
         };
 
@@ -123,4 +131,3 @@ public static class SlmpPlcProfiles
     public static bool UsesIqFXyOctal(SlmpPlcProfile profile)
         => Resolve(profile).AddressFamily == SlmpPlcProfile.IqF;
 }
-
