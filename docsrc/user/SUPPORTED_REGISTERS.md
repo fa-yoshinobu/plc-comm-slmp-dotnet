@@ -1,83 +1,75 @@
-# Supported PLC Registers
+# Supported registers
 
-This page is the canonical public register table for the .NET high-level API.
+This page lists the high-level string device families accepted by the public helper layer.
 
-## Supported Bit Devices
+## Bit device families
 
-| Family | Kind | Example | Numbering |
+| Device | Meaning | Numbering | Notes |
 | --- | --- | --- | --- |
-| `SM` | bit | `SM400` | decimal |
-| `X` | bit | `X20` | hexadecimal |
-| `Y` | bit | `Y20` | hexadecimal |
-| `M` | bit | `M1000` | decimal |
-| `L` | bit | `L100` | decimal |
-| `F` | bit | `F10` | decimal |
-| `V` | bit | `V10` | decimal |
-| `B` | bit | `B20` | hexadecimal |
-| `TS` | bit | `TS10` | decimal |
-| `TC` | bit | `TC10` | decimal |
-| `LTS` | bit | `LTS10` | decimal |
-| `LTC` | bit | `LTC10` | decimal |
-| `STS` | bit | `STS10` | decimal |
-| `STC` | bit | `STC10` | decimal |
-| `LSTS` | bit | `LSTS10` | decimal |
-| `LSTC` | bit | `LSTC10` | decimal |
-| `CS` | bit | `CS10` | decimal |
-| `CC` | bit | `CC10` | decimal |
-| `LCS` | bit | `LCS10` | decimal |
-| `LCC` | bit | `LCC10` | decimal |
-| `SB` | bit | `SB20` | hexadecimal |
-| `DX` | bit | `DX20` | hexadecimal; not accepted for `SlmpPlcProfile.IqF` |
-| `DY` | bit | `DY20` | hexadecimal; not accepted for `SlmpPlcProfile.IqF` |
+| `SM` | Special relay | Decimal | System bit device. |
+| `X` | Input | Profile-aware | iQ-F uses octal notation; other profiles use hexadecimal notation. |
+| `Y` | Output | Profile-aware | iQ-F uses octal notation; other profiles use hexadecimal notation. |
+| `M` | Internal relay | Decimal | General internal bit device. |
+| `L` | Latch relay | Decimal | Latched bit device. |
+| `F` | Annunciator | Decimal | Alarm or annunciator bit device. |
+| `V` | Edge relay | Decimal | Not supported by every PLC profile. |
+| `B` | Link relay | Hexadecimal | Link bit device. |
+| `TS` | Timer contact | Decimal | Standard timer contact. |
+| `TC` | Timer coil | Decimal | Standard timer coil. |
+| `LTS` | Long timer contact | Decimal | State device; writes are routed through random bit write. |
+| `LTC` | Long timer coil | Decimal | State device; writes are routed through random bit write. |
+| `STS` | Retentive timer contact | Decimal | Retentive timer contact. |
+| `STC` | Retentive timer coil | Decimal | Retentive timer coil. |
+| `LSTS` | Long retentive timer contact | Decimal | State device; writes are routed through random bit write. |
+| `LSTC` | Long retentive timer coil | Decimal | State device; writes are routed through random bit write. |
+| `CS` | Counter contact | Decimal | Standard counter contact. |
+| `CC` | Counter coil | Decimal | Standard counter coil. |
+| `LCS` | Long counter contact | Decimal | Direct bit read; writes are routed through random bit write. |
+| `LCC` | Long counter coil | Decimal | Direct bit read; writes are routed through random bit write. |
+| `SB` | Link special relay | Hexadecimal | Link special bit device. |
+| `DX` | Direct input | Hexadecimal | Not valid for `SlmpPlcProfile.IqF`. |
+| `DY` | Direct output | Hexadecimal | Not valid for `SlmpPlcProfile.IqF`. |
 
-## Supported Word Devices
+## Word device families
 
-| Family | Kind | Example | Numbering |
+| Device | Meaning | Numbering | Notes |
 | --- | --- | --- | --- |
-| `SD` | word | `SD100` | decimal |
-| `D` | word | `D100` | decimal |
-| `W` | word | `W20` | hexadecimal |
-| `TN` | word | `TN10` | decimal |
-| `LTN` | word | `LTN10` | decimal |
-| `STN` | word | `STN10` | decimal |
-| `LSTN` | word | `LSTN10` | decimal |
-| `CN` | word | `CN10` | decimal |
-| `LCN` | word | `LCN10` | decimal |
-| `SW` | word | `SW20` | hexadecimal |
-| `Z` | word | `Z10` | decimal |
-| `LZ` | word | `LZ10` | decimal |
-| `R` | word | `R100` | decimal |
-| `ZR` | word | `ZR100` | decimal |
-| `RD` | word | `RD100` | decimal |
+| `SD` | Special register | Decimal | System word device. |
+| `D` | Data register | Decimal | Recommended first smoke-test word family. |
+| `W` | Link register | Hexadecimal | Link word device. |
+| `TN` | Timer current value | Decimal | Standard timer current value. |
+| `LTN` | Long timer current value | Decimal | 32-bit family; use `:D` or `:L`. |
+| `STN` | Retentive timer current value | Decimal | Retentive timer current value. |
+| `LSTN` | Long retentive timer current value | Decimal | 32-bit family; use `:D` or `:L`. |
+| `CN` | Counter current value | Decimal | Standard counter current value. |
+| `LCN` | Long counter current value | Decimal | 32-bit family; use `:D` or `:L`. |
+| `SW` | Link special register | Hexadecimal | Link special word device. |
+| `Z` | Index register | Decimal | 16-bit index register. |
+| `LZ` | Long index register | Decimal | 32-bit family; use `:D` or `:L`. |
+| `R` | File register | Decimal | File register. |
+| `ZR` | File register continuous | Decimal | Continuous file register. |
+| `RD` | Refresh data register | Decimal | Not supported by every PLC profile. |
 
-## High-Level Views
+## Type suffixes
 
-| Form | Example | Meaning |
-| --- | --- | --- |
-| plain word | `D100` | unsigned 16-bit word |
-| signed view | `D100:S` | signed 16-bit value |
-| dword view | `D200:D` | unsigned 32-bit value |
-| long view | `D300:L` | signed 32-bit value |
-| float view | `D200:F` | float32 value |
-| bit in word | `D50.3` | one bit inside a word |
+| Suffix | Meaning | .NET value | Size |
+| --- | --- | --- | --- |
+| Plain word | `D100` | `ushort` | 1 word |
+| `:U` | Unsigned 16-bit | `ushort` | 1 word |
+| `:S` | Signed 16-bit | `short` | 1 word |
+| `:D` | Unsigned 32-bit | `uint` | 2 words |
+| `:L` | Signed 32-bit | `int` | 2 words |
+| `:F` | Float32 | `float` | 2 words |
+| `.n` | Bit inside word | `bool` | 1 bit from one word |
 
-## Addressing Notes
+## Addressing notes
 
-- Start with `D` for the first smoke test.
-- `X`, `Y`, `B`, `W`, `SB`, `SW`, `DX`, and `DY` use hexadecimal device numbers.
-- `DX` and `DY` are rejected before transport when `SlmpPlcProfile.IqF` is selected.
-- Most other families use decimal numbers.
-- `.bit` is valid only on word devices such as `D50.3`.
-- `LTN`, `LSTN`, `LCN`, and `LZ` default to 32-bit current-value access in the public high-level helpers.
-- `LCN` current-value reads and writes use random dword access in the high-level helpers.
-- `LTS`, `LTC`, `LSTS`, and `LSTC` state reads use the long timer 4-word decode helpers.
-- `LCS` and `LCC` state reads use direct bit read.
-- High-level state writes for `LTS`/`LTC`/`LSTS`/`LSTC`/`LCS`/`LCC` use random bit write (`0x1402`).
+| Topic | Rule |
+| --- | --- |
+| Long 32-bit families | `LTN`, `LSTN`, `LCN`, and `LZ` require `:D` or `:L`; plain word access is rejected. |
+| iQ-F direct devices | `DX` and `DY` are not valid for `SlmpPlcProfile.IqF`. |
+| Module buffer devices | `G` and `HG` are not in the public high-level surface. Use low-level raw client methods for module buffer access. |
+| Bit-in-word syntax | `.n` is valid only on word devices, for example `D50.3`. Address bit devices directly, for example `M1000`. |
+| Profile-aware `X` and `Y` | Use a connected client or `SlmpAddress.Parse(text, profile)` so iQ-F octal rules are applied. |
 
-## Not Currently in the Public Surface
-
-- `G`
-- `HG`
-
-If a family is not listed above, do not treat it as publicly supported by the current high-level API.
-
+See [PLC profiles](PROFILES.md) for the profile strings and frame modes.
