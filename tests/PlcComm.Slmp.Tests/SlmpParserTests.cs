@@ -154,11 +154,20 @@ public sealed class SlmpParserTests
     }
 
     [Fact]
+    public void ConnectionOptions_RejectsUnspecifiedPlcProfile()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.Unspecified));
+    }
+
+    [Fact]
     public void SlmpPlcProfiles_Parse_AcceptsOnlyCanonicalProfileText()
     {
         Assert.Equal(SlmpPlcProfile.IqR, SlmpPlcProfiles.Parse("melsec:iq-r"));
-        Assert.Equal(SlmpPlcProfile.IqF, SlmpPlcProfiles.Parse("MELSEC:IQ-F"));
 
+        Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse(null));
+        Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse(""));
+        Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse("MELSEC:IQ-F"));
         Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse("iq-r"));
         Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse("iqr"));
         Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse("q"));
@@ -186,4 +195,3 @@ public sealed class SlmpParserTests
         Assert.Equal(new byte[] { 0x00, 0x00, 0x10, 0x00, 0x00, 0xB5, 0x00, 0x00, 0x02, 0x00, 0xF9 }, spec);
     }
 }
-
