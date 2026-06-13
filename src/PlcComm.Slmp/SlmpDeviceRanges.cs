@@ -1,30 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
-
 namespace PlcComm.Slmp;
-
-/// <summary>Resolved PLC profile used for device-range rules.</summary>
-public enum SlmpDeviceRangeFamily
-{
-    /// <summary>MELSEC iQ-R family.</summary>
-    IqR,
-    /// <summary>MELSEC iQ-L family.</summary>
-    IqL,
-    /// <summary>MELSEC MX-F family.</summary>
-    MxF,
-    /// <summary>MELSEC MX-R family.</summary>
-    MxR,
-    /// <summary>MELSEC iQ-F family.</summary>
-    IqF,
-    /// <summary>MELSEC QCPU family.</summary>
-    QCpu,
-    /// <summary>MELSEC LCPU family.</summary>
-    LCpu,
-    /// <summary>MELSEC QnU family.</summary>
-    QnU,
-    /// <summary>MELSEC QnUDV family.</summary>
-    QnUDV,
-}
 
 /// <summary>Logical device category used by the range catalog.</summary>
 public enum SlmpDeviceRangeCategory
@@ -48,14 +24,14 @@ public enum SlmpDeviceRangeNotation
 /// <param name="Device">Device code or address family string such as <c>D</c> or <c>TS</c>.</param>
 /// <param name="Category">Logical category for grouping in monitor tools.</param>
 /// <param name="IsBitDevice">True when the device is bit-addressable in normal use.</param>
-/// <param name="Supported">True when the family supports this device.</param>
+/// <param name="Supported">True when the PLC profile supports this device.</param>
 /// <param name="LowerBound">Lower bound value. Current rules always use 0.</param>
 /// <param name="UpperBound">Inclusive last address. For a 0-based range this is <c>PointCount - 1</c>. Null means no finite bound is defined by the rule.</param>
-/// <param name="PointCount">Usable point count read or resolved for the family. Null means no finite count is defined by the rule.</param>
+/// <param name="PointCount">Usable point count read or resolved for the PLC profile. Null means no finite count is defined by the rule.</param>
 /// <param name="AddressRange">Preformatted address range text such as <c>X000-X1FF</c> or <c>D0-D511</c>.</param>
 /// <param name="Notation">Recommended public address notation for this library.</param>
 /// <param name="Source">Rule source used to build <paramref name="UpperBound"/>.</param>
-/// <param name="Notes">Optional family-specific caveats.</param>
+/// <param name="Notes">Optional profile-specific caveats.</param>
 public sealed record SlmpDeviceRangeEntry(
     string Device,
     SlmpDeviceRangeCategory Category,
@@ -70,16 +46,16 @@ public sealed record SlmpDeviceRangeEntry(
     string? Notes);
 
 /// <summary>Result returned by <c>ReadDeviceRangeCatalogAsync</c>.</summary>
-/// <param name="Model">PLC model text when known, or a user-selected family label.</param>
-/// <param name="ModelCode">Model code when known. Zero when the caller selected the family explicitly.</param>
-/// <param name="HasModelCode">True when <paramref name="ModelCode"/> came from the PLC response.</param>
-/// <param name="Family">Resolved device-range family.</param>
-/// <param name="Entries">Device entries for the resolved family.</param>
+/// <param name="Model">Synthetic label for the explicitly selected PLC profile.</param>
+/// <param name="ModelCode">Always zero because device-range catalogs do not infer profiles from type-name responses.</param>
+/// <param name="HasModelCode">Always false because profile selection is explicit.</param>
+/// <param name="PlcProfile">Resolved canonical PLC profile.</param>
+/// <param name="Entries">Device entries for the resolved profile.</param>
 public sealed record SlmpDeviceRangeCatalog(
     string Model,
     ushort ModelCode,
     bool HasModelCode,
-    SlmpDeviceRangeFamily Family,
+    SlmpPlcProfile PlcProfile,
     IReadOnlyList<SlmpDeviceRangeEntry> Entries);
 
 internal enum SlmpRangeValueKind
@@ -108,7 +84,7 @@ internal sealed record SlmpDeviceRangeRow(
     SlmpDeviceRangeNotation Notation);
 
 internal sealed record SlmpDeviceRangeProfile(
-    SlmpDeviceRangeFamily Family,
+    SlmpPlcProfile PlcProfile,
     int RegisterStart,
     int RegisterCount,
     IReadOnlyDictionary<string, SlmpRangeValueSpec> Rules);
@@ -155,193 +131,12 @@ internal static class SlmpDeviceRangeResolver
                 ["SD"] = Single("SD", SlmpDeviceRangeCategory.Word, isBitDevice: false, SlmpDeviceRangeNotation.Base10),
             });
 
-    private static readonly ReadOnlyDictionary<ushort, SlmpDeviceRangeFamily> ModelCodeFamilies =
-        new ReadOnlyDictionary<ushort, SlmpDeviceRangeFamily>(
-            new Dictionary<ushort, SlmpDeviceRangeFamily>
+    private static readonly ReadOnlyDictionary<SlmpPlcProfile, SlmpDeviceRangeProfile> Profiles =
+        new ReadOnlyDictionary<SlmpPlcProfile, SlmpDeviceRangeProfile>(
+            new Dictionary<SlmpPlcProfile, SlmpDeviceRangeProfile>
             {
-                [0x0250] = SlmpDeviceRangeFamily.QCpu,
-                [0x0251] = SlmpDeviceRangeFamily.QCpu,
-                [0x0041] = SlmpDeviceRangeFamily.QCpu,
-                [0x0042] = SlmpDeviceRangeFamily.QCpu,
-                [0x0043] = SlmpDeviceRangeFamily.QCpu,
-                [0x0044] = SlmpDeviceRangeFamily.QCpu,
-                [0x004B] = SlmpDeviceRangeFamily.QCpu,
-                [0x004C] = SlmpDeviceRangeFamily.QCpu,
-                [0x0230] = SlmpDeviceRangeFamily.QCpu,
-                [0x0260] = SlmpDeviceRangeFamily.QnU,
-                [0x0261] = SlmpDeviceRangeFamily.QnU,
-                [0x0262] = SlmpDeviceRangeFamily.QnU,
-                [0x0263] = SlmpDeviceRangeFamily.QnU,
-                [0x0268] = SlmpDeviceRangeFamily.QnU,
-                [0x0269] = SlmpDeviceRangeFamily.QnU,
-                [0x026A] = SlmpDeviceRangeFamily.QnU,
-                [0x0266] = SlmpDeviceRangeFamily.QnU,
-                [0x026B] = SlmpDeviceRangeFamily.QnU,
-                [0x0267] = SlmpDeviceRangeFamily.QnU,
-                [0x026C] = SlmpDeviceRangeFamily.QnU,
-                [0x026D] = SlmpDeviceRangeFamily.QnU,
-                [0x026E] = SlmpDeviceRangeFamily.QnU,
-                [0x0366] = SlmpDeviceRangeFamily.QnUDV,
-                [0x0367] = SlmpDeviceRangeFamily.QnUDV,
-                [0x0368] = SlmpDeviceRangeFamily.QnUDV,
-                [0x036A] = SlmpDeviceRangeFamily.QnUDV,
-                [0x036C] = SlmpDeviceRangeFamily.QnUDV,
-                [0x0543] = SlmpDeviceRangeFamily.LCpu,
-                [0x0541] = SlmpDeviceRangeFamily.LCpu,
-                [0x0544] = SlmpDeviceRangeFamily.LCpu,
-                [0x0545] = SlmpDeviceRangeFamily.LCpu,
-                [0x0542] = SlmpDeviceRangeFamily.LCpu,
-                [0x48C0] = SlmpDeviceRangeFamily.IqL,
-                [0x48C1] = SlmpDeviceRangeFamily.IqL,
-                [0x48C2] = SlmpDeviceRangeFamily.IqL,
-                [0x48C3] = SlmpDeviceRangeFamily.IqL,
-                [0x0641] = SlmpDeviceRangeFamily.LCpu,
-                [0x48A0] = SlmpDeviceRangeFamily.IqR,
-                [0x48A1] = SlmpDeviceRangeFamily.IqR,
-                [0x48A2] = SlmpDeviceRangeFamily.IqR,
-                [0x4800] = SlmpDeviceRangeFamily.IqR,
-                [0x4801] = SlmpDeviceRangeFamily.IqR,
-                [0x4802] = SlmpDeviceRangeFamily.IqR,
-                [0x4803] = SlmpDeviceRangeFamily.IqR,
-                [0x4804] = SlmpDeviceRangeFamily.IqR,
-                [0x4805] = SlmpDeviceRangeFamily.IqR,
-                [0x4806] = SlmpDeviceRangeFamily.IqR,
-                [0x4807] = SlmpDeviceRangeFamily.IqR,
-                [0x4808] = SlmpDeviceRangeFamily.IqR,
-                [0x4809] = SlmpDeviceRangeFamily.IqR,
-                [0x4841] = SlmpDeviceRangeFamily.IqR,
-                [0x4842] = SlmpDeviceRangeFamily.IqR,
-                [0x4843] = SlmpDeviceRangeFamily.IqR,
-                [0x4844] = SlmpDeviceRangeFamily.IqR,
-                [0x4851] = SlmpDeviceRangeFamily.IqR,
-                [0x4852] = SlmpDeviceRangeFamily.IqR,
-                [0x4853] = SlmpDeviceRangeFamily.IqR,
-                [0x4854] = SlmpDeviceRangeFamily.IqR,
-                [0x4891] = SlmpDeviceRangeFamily.IqR,
-                [0x4892] = SlmpDeviceRangeFamily.IqR,
-                [0x4893] = SlmpDeviceRangeFamily.IqR,
-                [0x4894] = SlmpDeviceRangeFamily.IqR,
-                [0x4820] = SlmpDeviceRangeFamily.IqR,
-                [0x4E01] = SlmpDeviceRangeFamily.IqR,
-                [0x4860] = SlmpDeviceRangeFamily.IqR,
-                [0x4861] = SlmpDeviceRangeFamily.IqR,
-                [0x4862] = SlmpDeviceRangeFamily.IqR,
-                [0x0642] = SlmpDeviceRangeFamily.IqR,
-                [0x48E9] = SlmpDeviceRangeFamily.MxR,
-                [0x48EA] = SlmpDeviceRangeFamily.MxR,
-                [0x48EB] = SlmpDeviceRangeFamily.MxR,
-                [0x48EE] = SlmpDeviceRangeFamily.MxR,
-                [0x48EF] = SlmpDeviceRangeFamily.MxR,
-                [0x4A21] = SlmpDeviceRangeFamily.IqF,
-                [0x4A23] = SlmpDeviceRangeFamily.IqF,
-                [0x4A24] = SlmpDeviceRangeFamily.IqF,
-                [0x4A29] = SlmpDeviceRangeFamily.IqF,
-                [0x4A2B] = SlmpDeviceRangeFamily.IqF,
-                [0x4A2C] = SlmpDeviceRangeFamily.IqF,
-                [0x4A31] = SlmpDeviceRangeFamily.IqF,
-                [0x4A33] = SlmpDeviceRangeFamily.IqF,
-                [0x4A34] = SlmpDeviceRangeFamily.IqF,
-                [0x4A41] = SlmpDeviceRangeFamily.IqF,
-                [0x4A43] = SlmpDeviceRangeFamily.IqF,
-                [0x4A44] = SlmpDeviceRangeFamily.IqF,
-                [0x4A49] = SlmpDeviceRangeFamily.IqF,
-                [0x4A4B] = SlmpDeviceRangeFamily.IqF,
-                [0x4A4C] = SlmpDeviceRangeFamily.IqF,
-                [0x4A51] = SlmpDeviceRangeFamily.IqF,
-                [0x4A53] = SlmpDeviceRangeFamily.IqF,
-                [0x4A54] = SlmpDeviceRangeFamily.IqF,
-                [0x4A91] = SlmpDeviceRangeFamily.IqF,
-                [0x4A92] = SlmpDeviceRangeFamily.IqF,
-                [0x4A93] = SlmpDeviceRangeFamily.IqF,
-                [0x4A99] = SlmpDeviceRangeFamily.IqF,
-                [0x4A9A] = SlmpDeviceRangeFamily.IqF,
-                [0x4A9B] = SlmpDeviceRangeFamily.IqF,
-                [0x4AA9] = SlmpDeviceRangeFamily.IqF,
-                [0x4AB1] = SlmpDeviceRangeFamily.IqF,
-                [0x4AB9] = SlmpDeviceRangeFamily.IqF,
-                [0x4B0D] = SlmpDeviceRangeFamily.IqF,
-                [0x4B0E] = SlmpDeviceRangeFamily.IqF,
-                [0x4B0F] = SlmpDeviceRangeFamily.IqF,
-                [0x4B14] = SlmpDeviceRangeFamily.IqF,
-                [0x4B15] = SlmpDeviceRangeFamily.IqF,
-                [0x4B16] = SlmpDeviceRangeFamily.IqF,
-                [0x4B1B] = SlmpDeviceRangeFamily.IqF,
-                [0x4B1C] = SlmpDeviceRangeFamily.IqF,
-                [0x4B1D] = SlmpDeviceRangeFamily.IqF,
-                [0x4B4E] = SlmpDeviceRangeFamily.IqF,
-                [0x4B4F] = SlmpDeviceRangeFamily.IqF,
-                [0x4B50] = SlmpDeviceRangeFamily.IqF,
-                [0x4B51] = SlmpDeviceRangeFamily.IqF,
-                [0x4B55] = SlmpDeviceRangeFamily.IqF,
-                [0x4B56] = SlmpDeviceRangeFamily.IqF,
-                [0x4B57] = SlmpDeviceRangeFamily.IqF,
-                [0x4B58] = SlmpDeviceRangeFamily.IqF,
-                [0x4B5C] = SlmpDeviceRangeFamily.IqF,
-                [0x4B5D] = SlmpDeviceRangeFamily.IqF,
-                [0x4B5E] = SlmpDeviceRangeFamily.IqF,
-                [0x4B5F] = SlmpDeviceRangeFamily.IqF,
-            });
-
-    private static readonly (string Prefix, SlmpDeviceRangeFamily Family)[] ModelPrefixes =
-    [
-        ("Q04UDPV", SlmpDeviceRangeFamily.QnUDV),
-        ("Q06UDPV", SlmpDeviceRangeFamily.QnUDV),
-        ("Q13UDPV", SlmpDeviceRangeFamily.QnUDV),
-        ("Q26UDPV", SlmpDeviceRangeFamily.QnUDV),
-        ("Q03UDV", SlmpDeviceRangeFamily.QnUDV),
-        ("Q04UDV", SlmpDeviceRangeFamily.QnUDV),
-        ("Q06UDV", SlmpDeviceRangeFamily.QnUDV),
-        ("Q13UDV", SlmpDeviceRangeFamily.QnUDV),
-        ("Q26UDV", SlmpDeviceRangeFamily.QnUDV),
-        ("Q00UJ", SlmpDeviceRangeFamily.QnU),
-        ("Q00U", SlmpDeviceRangeFamily.QnU),
-        ("Q01U", SlmpDeviceRangeFamily.QnU),
-        ("Q02U", SlmpDeviceRangeFamily.QnU),
-        ("Q03UD", SlmpDeviceRangeFamily.QnU),
-        ("Q04UD", SlmpDeviceRangeFamily.QnU),
-        ("Q06UD", SlmpDeviceRangeFamily.QnU),
-        ("Q10UD", SlmpDeviceRangeFamily.QnU),
-        ("Q13UD", SlmpDeviceRangeFamily.QnU),
-        ("Q20UD", SlmpDeviceRangeFamily.QnU),
-        ("Q26UD", SlmpDeviceRangeFamily.QnU),
-        ("Q50UDEH", SlmpDeviceRangeFamily.QnU),
-        ("Q100UDEH", SlmpDeviceRangeFamily.QnU),
-        ("FX5UC", SlmpDeviceRangeFamily.IqF),
-        ("FX5UJ", SlmpDeviceRangeFamily.IqF),
-        ("FX5U", SlmpDeviceRangeFamily.IqF),
-        ("FX5S", SlmpDeviceRangeFamily.IqF),
-        ("MXF100-", SlmpDeviceRangeFamily.MxF),
-        ("MXF", SlmpDeviceRangeFamily.MxF),
-        ("MXR", SlmpDeviceRangeFamily.MxR),
-        ("LJ72GF15-T2", SlmpDeviceRangeFamily.LCpu),
-        ("L02SCPU", SlmpDeviceRangeFamily.LCpu),
-        ("L02CPU", SlmpDeviceRangeFamily.LCpu),
-        ("L06CPU", SlmpDeviceRangeFamily.LCpu),
-        ("L26CPU", SlmpDeviceRangeFamily.LCpu),
-        ("L04HCPU", SlmpDeviceRangeFamily.IqL),
-        ("L08HCPU", SlmpDeviceRangeFamily.IqL),
-        ("L16HCPU", SlmpDeviceRangeFamily.IqL),
-        ("L32HCPU", SlmpDeviceRangeFamily.IqL),
-        ("RJ72GF15-T2", SlmpDeviceRangeFamily.IqR),
-        ("NZ2GF-ETB", SlmpDeviceRangeFamily.IqR),
-        ("MI5122-VW", SlmpDeviceRangeFamily.IqR),
-        ("QS001CPU", SlmpDeviceRangeFamily.QCpu),
-        ("Q00JCPU", SlmpDeviceRangeFamily.QCpu),
-        ("Q00CPU", SlmpDeviceRangeFamily.QCpu),
-        ("Q01CPU", SlmpDeviceRangeFamily.QCpu),
-        ("Q02", SlmpDeviceRangeFamily.QCpu),
-        ("Q06", SlmpDeviceRangeFamily.QCpu),
-        ("Q12", SlmpDeviceRangeFamily.QCpu),
-        ("Q25", SlmpDeviceRangeFamily.QCpu),
-        ("R", SlmpDeviceRangeFamily.IqR),
-    ];
-
-    private static readonly ReadOnlyDictionary<SlmpDeviceRangeFamily, SlmpDeviceRangeProfile> Profiles =
-        new ReadOnlyDictionary<SlmpDeviceRangeFamily, SlmpDeviceRangeProfile>(
-            new Dictionary<SlmpDeviceRangeFamily, SlmpDeviceRangeProfile>
-            {
-                [SlmpDeviceRangeFamily.IqR] = CreateProfile(
-                    SlmpDeviceRangeFamily.IqR,
+                [SlmpPlcProfile.IqR] = CreateProfile(
+                    SlmpPlcProfile.IqR,
                     260,
                     50,
                     ("X", DWordRegister(260, "SD260-SD261 (32-bit)")),
@@ -369,8 +164,8 @@ internal static class SlmpDeviceRangeResolver
                     ("RD", DWordRegister(308, "SD308-SD309 (32-bit)")),
                     ("SM", Fixed(4096, "Fixed family limit")),
                     ("SD", Fixed(4096, "Fixed family limit"))),
-                [SlmpDeviceRangeFamily.IqL] = CreateProfile(
-                    SlmpDeviceRangeFamily.IqL,
+                [SlmpPlcProfile.IqL] = CreateProfile(
+                    SlmpPlcProfile.IqL,
                     260,
                     50,
                     ("X", DWordRegister(260, "SD260-SD261 (32-bit)")),
@@ -398,8 +193,8 @@ internal static class SlmpDeviceRangeResolver
                     ("RD", DWordRegister(308, "SD308-SD309 (32-bit)")),
                     ("SM", Fixed(4096, "Fixed family limit")),
                     ("SD", Fixed(4096, "Fixed family limit"))),
-                [SlmpDeviceRangeFamily.MxF] = CreateProfile(
-                    SlmpDeviceRangeFamily.MxF,
+                [SlmpPlcProfile.MxF] = CreateProfile(
+                    SlmpPlcProfile.MxF,
                     260,
                     50,
                     ("X", DWordRegister(260, "SD260-SD261 (32-bit)")),
@@ -427,8 +222,8 @@ internal static class SlmpDeviceRangeResolver
                     ("RD", DWordRegister(308, "SD308-SD309 (32-bit)")),
                     ("SM", Fixed(10000, "Fixed family limit")),
                     ("SD", Fixed(10000, "Fixed family limit"))),
-                [SlmpDeviceRangeFamily.MxR] = CreateProfile(
-                    SlmpDeviceRangeFamily.MxR,
+                [SlmpPlcProfile.MxR] = CreateProfile(
+                    SlmpPlcProfile.MxR,
                     260,
                     50,
                     ("X", DWordRegister(260, "SD260-SD261 (32-bit)")),
@@ -456,8 +251,8 @@ internal static class SlmpDeviceRangeResolver
                     ("RD", DWordRegister(308, "SD308-SD309 (32-bit)")),
                     ("SM", Fixed(4496, "Fixed family limit")),
                     ("SD", Fixed(4496, "Fixed family limit"))),
-                [SlmpDeviceRangeFamily.IqF] = CreateProfile(
-                    SlmpDeviceRangeFamily.IqF,
+                [SlmpPlcProfile.IqF] = CreateProfile(
+                    SlmpPlcProfile.IqF,
                     260,
                     46,
                     ("X", DWordRegister(260, "SD260-SD261 (32-bit)", "Manual addressing for iQ-F X devices is octal.")),
@@ -485,8 +280,8 @@ internal static class SlmpDeviceRangeResolver
                     ("RD", Unsupported("Not supported on iQ-F.")),
                     ("SM", Fixed(10000, "Fixed family limit")),
                     ("SD", Fixed(12000, "Fixed family limit"))),
-                [SlmpDeviceRangeFamily.QCpu] = CreateProfile(
-                    SlmpDeviceRangeFamily.QCpu,
+                [SlmpPlcProfile.QCpu] = CreateProfile(
+                    SlmpPlcProfile.QCpu,
                     290,
                     15,
                     ("X", WordRegister(290, "SD290")),
@@ -514,8 +309,8 @@ internal static class SlmpDeviceRangeResolver
                     ("RD", Unsupported("Not supported on QCPU.")),
                     ("SM", Fixed(1024, "Fixed family limit")),
                     ("SD", Fixed(1024, "Fixed family limit"))),
-                [SlmpDeviceRangeFamily.LCpu] = CreateProfile(
-                    SlmpDeviceRangeFamily.LCpu,
+                [SlmpPlcProfile.LCpu] = CreateProfile(
+                    SlmpPlcProfile.LCpu,
                     286,
                     26,
                     ("X", WordRegister(290, "SD290")),
@@ -543,8 +338,8 @@ internal static class SlmpDeviceRangeResolver
                     ("RD", Unsupported("Not supported on LCPU.")),
                     ("SM", Fixed(2048, "Fixed family limit")),
                     ("SD", Fixed(2048, "Fixed family limit"))),
-                [SlmpDeviceRangeFamily.QnU] = CreateProfile(
-                    SlmpDeviceRangeFamily.QnU,
+                [SlmpPlcProfile.QnU] = CreateProfile(
+                    SlmpPlcProfile.QnU,
                     286,
                     26,
                     ("X", WordRegister(290, "SD290")),
@@ -572,8 +367,8 @@ internal static class SlmpDeviceRangeResolver
                     ("RD", Unsupported("Not supported on QnU.")),
                     ("SM", Fixed(2048, "Fixed family limit")),
                     ("SD", Fixed(2048, "Fixed family limit"))),
-                [SlmpDeviceRangeFamily.QnUDV] = CreateProfile(
-                    SlmpDeviceRangeFamily.QnUDV,
+                [SlmpPlcProfile.QnUDV] = CreateProfile(
+                    SlmpPlcProfile.QnUDV,
                     286,
                     26,
                     ("X", WordRegister(290, "SD290")),
@@ -603,44 +398,9 @@ internal static class SlmpDeviceRangeResolver
                     ("SD", Fixed(2048, "Fixed family limit"))),
             });
 
-    public static string NormalizeModel(string? model)
+    public static SlmpDeviceRangeProfile ResolveProfile(SlmpPlcProfile plcProfile)
     {
-        if (string.IsNullOrWhiteSpace(model))
-        {
-            return string.Empty;
-        }
-
-        return model.Trim().TrimEnd('\0').Trim().ToUpperInvariant();
-    }
-
-    public static SlmpDeviceRangeFamily ResolveFamily(SlmpTypeNameInfo typeInfo)
-    {
-        if (typeInfo.HasModelCode && ModelCodeFamilies.TryGetValue(typeInfo.ModelCode, out var familyFromCode))
-        {
-            return familyFromCode;
-        }
-
-        var normalizedModel = NormalizeModel(typeInfo.Model);
-        foreach (var (prefix, family) in ModelPrefixes)
-        {
-            if (normalizedModel.StartsWith(prefix, StringComparison.Ordinal))
-            {
-                return family;
-            }
-        }
-
-        var codeText = typeInfo.HasModelCode ? $"0x{typeInfo.ModelCode:X4}" : "none";
-        throw new SlmpError($"Unsupported PLC model for device-range rules: model='{normalizedModel}', model_code={codeText}.");
-    }
-
-    public static SlmpDeviceRangeProfile ResolveProfile(SlmpTypeNameInfo typeInfo)
-    {
-        return Profiles[ResolveFamily(typeInfo)];
-    }
-
-    public static SlmpDeviceRangeProfile ResolveProfile(SlmpDeviceRangeFamily family)
-    {
-        return Profiles[family];
+        return Profiles[plcProfile];
     }
 
     public static async Task<IReadOnlyDictionary<int, ushort>> ReadRegistersAsync(
@@ -667,8 +427,7 @@ internal static class SlmpDeviceRangeResolver
         return map;
     }
 
-    public static SlmpDeviceRangeCatalog BuildCatalog(
-        SlmpTypeNameInfo typeInfo,
+    private static SlmpDeviceRangeCatalog BuildCatalog(
         SlmpDeviceRangeProfile profile,
         IReadOnlyDictionary<int, ushort> registers)
     {
@@ -683,7 +442,7 @@ internal static class SlmpDeviceRangeResolver
 
             foreach (var (device, isBitDevice) in row.Devices)
             {
-                var notation = ResolveNotation(profile.Family, device, row.Notation);
+                var notation = ResolveNotation(profile.PlcProfile, device, row.Notation);
                 entries.Add(new SlmpDeviceRangeEntry(
                     device,
                     row.Category,
@@ -700,21 +459,18 @@ internal static class SlmpDeviceRangeResolver
         }
 
         return new SlmpDeviceRangeCatalog(
-            NormalizeModel(typeInfo.Model),
-            typeInfo.ModelCode,
-            typeInfo.HasModelCode,
-            profile.Family,
+            GetProfileLabel(profile.PlcProfile),
+            0,
+            false,
+            profile.PlcProfile,
             entries);
     }
 
     public static SlmpDeviceRangeCatalog BuildCatalog(
-        SlmpDeviceRangeFamily family,
+        SlmpPlcProfile plcProfile,
         IReadOnlyDictionary<int, ushort> registers)
     {
-        return BuildCatalog(
-            new SlmpTypeNameInfo(GetFamilyLabel(family), 0, false),
-            ResolveProfile(family),
-            registers);
+        return BuildCatalog(ResolveProfile(plcProfile), registers);
     }
 
     internal static SlmpDeviceRangeCatalog ReplaceFixedPointCount(
@@ -747,20 +503,20 @@ internal static class SlmpDeviceRangeResolver
         return catalog with { Entries = entries };
     }
 
-    public static string GetFamilyLabel(SlmpDeviceRangeFamily family)
+    public static string GetProfileLabel(SlmpPlcProfile plcProfile)
     {
-        return family switch
+        return plcProfile switch
         {
-            SlmpDeviceRangeFamily.IqR => "IQ-R",
-            SlmpDeviceRangeFamily.IqL => "iQ-L",
-            SlmpDeviceRangeFamily.MxF => "MX-F",
-            SlmpDeviceRangeFamily.MxR => "MX-R",
-            SlmpDeviceRangeFamily.IqF => "IQ-F",
-            SlmpDeviceRangeFamily.QCpu => "QCPU",
-            SlmpDeviceRangeFamily.LCpu => "LCPU",
-            SlmpDeviceRangeFamily.QnU => "QnU",
-            SlmpDeviceRangeFamily.QnUDV => "QnUDV",
-            _ => family.ToString(),
+            SlmpPlcProfile.IqR => "IQ-R",
+            SlmpPlcProfile.IqL => "iQ-L",
+            SlmpPlcProfile.MxF => "MX-F",
+            SlmpPlcProfile.MxR => "MX-R",
+            SlmpPlcProfile.IqF => "IQ-F",
+            SlmpPlcProfile.QCpu => "QCPU",
+            SlmpPlcProfile.LCpu => "LCPU",
+            SlmpPlcProfile.QnU => "QnU",
+            SlmpPlcProfile.QnUDV => "QnUDV",
+            _ => plcProfile.ToString(),
         };
     }
 
@@ -788,11 +544,11 @@ internal static class SlmpDeviceRangeResolver
         };
 
     private static SlmpDeviceRangeNotation ResolveNotation(
-        SlmpDeviceRangeFamily family,
+        SlmpPlcProfile plcProfile,
         string device,
         SlmpDeviceRangeNotation defaultNotation)
     {
-        if (family == SlmpDeviceRangeFamily.IqF &&
+        if (plcProfile == SlmpPlcProfile.IqF &&
             (string.Equals(device, "X", StringComparison.Ordinal) || string.Equals(device, "Y", StringComparison.Ordinal)))
         {
             return SlmpDeviceRangeNotation.Base8;
@@ -876,7 +632,7 @@ internal static class SlmpDeviceRangeResolver
         => new(item, category, devices, notation);
 
     private static SlmpDeviceRangeProfile CreateProfile(
-        SlmpDeviceRangeFamily family,
+        SlmpPlcProfile plcProfile,
         int registerStart,
         int registerCount,
         params (string Item, SlmpRangeValueSpec Spec)[] rules)
@@ -887,7 +643,7 @@ internal static class SlmpDeviceRangeResolver
             map[item] = spec;
         }
 
-        return new SlmpDeviceRangeProfile(family, registerStart, registerCount, new ReadOnlyDictionary<string, SlmpRangeValueSpec>(map));
+        return new SlmpDeviceRangeProfile(plcProfile, registerStart, registerCount, new ReadOnlyDictionary<string, SlmpRangeValueSpec>(map));
     }
 
     private static SlmpRangeValueSpec Fixed(uint value, string source, string? notes = null)
@@ -911,4 +667,3 @@ internal static class SlmpDeviceRangeResolver
     private static SlmpRangeValueSpec Unsupported(string notes)
         => new(SlmpRangeValueKind.Unsupported, 0, 0, 0, "Not supported", notes);
 }
-

@@ -146,11 +146,11 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     public Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.ReadDeviceRangeCatalogAsync(cancellationToken), cancellationToken);
 
-    /// <inheritdoc cref="SlmpClient.ReadDeviceRangeCatalogAsync(SlmpDeviceRangeFamily, CancellationToken)"/>
+    /// <inheritdoc cref="SlmpClient.ReadDeviceRangeCatalogAsync(SlmpPlcProfile, CancellationToken)"/>
     public Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(
-        SlmpDeviceRangeFamily family,
+        SlmpPlcProfile plcProfile,
         CancellationToken cancellationToken = default)
-        => ExecuteAsync(client => client.ReadDeviceRangeCatalogAsync(family, cancellationToken), cancellationToken);
+        => ExecuteAsync(client => client.ReadDeviceRangeCatalogAsync(plcProfile, cancellationToken), cancellationToken);
 
     /// <inheritdoc cref="SlmpClient.ReadWordsRawAsync"/>
     public Task<ushort[]> ReadWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
@@ -441,4 +441,3 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
         return ValueTask.CompletedTask;
     }
 }
-

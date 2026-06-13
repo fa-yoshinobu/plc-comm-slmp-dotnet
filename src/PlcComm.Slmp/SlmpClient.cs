@@ -203,32 +203,32 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    /// Reads the configured family-specific device upper-bound catalog.
+    /// Reads the configured profile-specific device upper-bound catalog.
     /// </summary>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns>A catalog containing the configured family and device upper-bound entries.</returns>
+    /// <returns>A catalog containing the configured profile and device upper-bound entries.</returns>
     public async Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
     {
-        var family = SlmpPlcProfiles.Resolve(PlcProfile).RangeFamily;
-        var familyProfile = SlmpDeviceRangeResolver.ResolveProfile(family);
-        var familyRegisters = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, familyProfile, cancellationToken).ConfigureAwait(false);
-        var catalog = SlmpDeviceRangeResolver.BuildCatalog(family, familyRegisters);
+        var rangeProfile = SlmpPlcProfiles.Resolve(PlcProfile).RangeProfile;
+        var deviceRangeProfile = SlmpDeviceRangeResolver.ResolveProfile(rangeProfile);
+        var registers = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, deviceRangeProfile, cancellationToken).ConfigureAwait(false);
+        var catalog = SlmpDeviceRangeResolver.BuildCatalog(rangeProfile, registers);
         return await ResolveDeviceRangeCatalogRuntimeLimitsAsync(catalog, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Reads the family-specific device upper-bound catalog without querying the PLC model name.
+    /// Reads the profile-specific device upper-bound catalog without querying the PLC model name.
     /// </summary>
-    /// <param name="family">User-selected PLC profile.</param>
+    /// <param name="plcProfile">User-selected PLC profile.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns>A catalog containing the selected family and device upper-bound entries.</returns>
+    /// <returns>A catalog containing the selected profile and device upper-bound entries.</returns>
     public async Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(
-        SlmpDeviceRangeFamily family,
+        SlmpPlcProfile plcProfile,
         CancellationToken cancellationToken = default)
     {
-        var profile = SlmpDeviceRangeResolver.ResolveProfile(family);
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(plcProfile);
         var registers = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, profile, cancellationToken).ConfigureAwait(false);
-        var catalog = SlmpDeviceRangeResolver.BuildCatalog(family, registers);
+        var catalog = SlmpDeviceRangeResolver.BuildCatalog(plcProfile, registers);
         return await ResolveDeviceRangeCatalogRuntimeLimitsAsync(catalog, cancellationToken).ConfigureAwait(false);
     }
 
@@ -236,10 +236,10 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         SlmpDeviceRangeCatalog catalog,
         CancellationToken cancellationToken)
     {
-        if (catalog.Family is not (SlmpDeviceRangeFamily.QCpu or SlmpDeviceRangeFamily.LCpu or SlmpDeviceRangeFamily.QnU or SlmpDeviceRangeFamily.QnUDV))
+        if (catalog.PlcProfile is not (SlmpPlcProfile.QCpu or SlmpPlcProfile.LCpu or SlmpPlcProfile.QnU or SlmpPlcProfile.QnUDV))
             return catalog;
 
-        if (catalog.Family == SlmpDeviceRangeFamily.QCpu)
+        if (catalog.PlcProfile == SlmpPlcProfile.QCpu)
         {
             var zCount = await CanReadWordAddressAsync(SlmpDeviceCode.Z, 15, cancellationToken).ConfigureAwait(false)
                 ? 16u
@@ -1884,4 +1884,3 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         }
     }
 }
-

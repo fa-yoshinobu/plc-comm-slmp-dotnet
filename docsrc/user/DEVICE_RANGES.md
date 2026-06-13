@@ -4,21 +4,24 @@ This document replaces `plc_device_range_registers - base.csv`.
 
 This catalog is a connected-diagnostics catalog, not an editor-side address
 range validator. It is only accurate after a PLC profile has been selected and
-the client can read the family-specific registers or apply a fixed family rule.
+the client can read the profile-specific registers or apply a fixed profile rule.
 Node-RED uses the supported/unsupported device-code part of this table to avoid
-sending clearly unsupported device codes for a selected family, but it does not
+sending clearly unsupported device codes for a selected profile, but it does not
 pre-check PLC model-specific address upper bounds.
 
 The library now owns the device-range rules in source code and reads live upper
 bounds from the PLC itself after the caller chooses the PLC profile:
 
 1. caller selects `SlmpPlcProfile`
-2. read the family-specific `SD` register window
+2. read the profile-specific `SD` register window
 3. build a `SlmpDeviceRangeCatalog` with point counts and 0-based address ranges
 
-The standard high-level API does not auto-resolve the family through
-`ReadTypeNameAsync()`. `ReadDeviceRangeCatalogAsync()` reads the configured
-family only.
+The standard high-level API does not auto-resolve the profile through
+`ReadTypeNameAsync()`, model text, or model code. `ReadTypeNameAsync()` is
+diagnostic information only. Some PLCs or communication paths cannot return a
+reliable type name, and a wrong inference can select the wrong address grammar
+or range catalog. Keep PLC profile selection explicit in configuration or UI.
+`ReadDeviceRangeCatalogAsync()` reads the configured profile only.
 
 `PointCount` is the usable point count reported by the PLC or by a fixed family
 rule. `UpperBound` is the inclusive last address, so for 0-based devices it is
@@ -65,7 +68,7 @@ Returned types:
 
 - `SlmpDeviceRangeCatalog`
 - `SlmpDeviceRangeEntry`
-- `SlmpDeviceRangeFamily`
+- `SlmpPlcProfile`
 - `SlmpDeviceRangeCategory`
 - `SlmpDeviceRangeNotation`
 
@@ -76,42 +79,24 @@ If you need an explicit low-level override, both clients also expose:
 
 ```csharp
 Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(
-    SlmpDeviceRangeFamily family,
+    SlmpPlcProfile plcProfile,
     CancellationToken cancellationToken = default)
 ```
 
-That overload is for manual compatibility work. It is not the standard
-application route.
+That overload is for reading the catalog for a canonical profile other than the
+client's configured profile. It is not the standard application route.
 
-Embedded model-code tables cover the known codes shared during implementation
-for these families:
+Embedded profile rules cover:
 
 - `IqR`
+- `IqL`
+- `MxF`
 - `MxR`
 - `IqF`
 - `QCpu`
 - `LCpu`
 - `QnU`
 - `QnUDV`
-
-`MxF` currently resolves by normalized model text prefixes:
-
-- `MXF100-8-N32`
-- `MXF100-16-N32`
-- `MXF100-8-P32`
-- `MXF100-16-P32`
-- generic fallback prefix `MXF`
-
-Other notable model-name fallback groups:
-
-- `R...` -> `IqR`
-- `FX5U...`, `FX5UC...`, `FX5UJ...`, `FX5S...` -> `IqF`
-- `Q00U...`, `Q03UD...`, `Q50UDEH...` -> `QnU`
-- `Q03UDV...`, `Q04UDPV...` -> `QnUDV`
-- `L04HCPU`, `L08HCPU`, `L16HCPU`, `L32HCPU` -> `IqL`
-- `L02...`, `L06CPU`, `L26CPU`, `LJ72GF15-T2` -> `LCpu`
-
-Unknown models return `SlmpError`.
 
 ## Range Rules
 

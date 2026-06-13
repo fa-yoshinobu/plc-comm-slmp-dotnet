@@ -35,8 +35,8 @@ public sealed record SlmpConnectionOptions(
 public sealed record SlmpPlcProfileDefaults(
     SlmpFrameType FrameType,
     SlmpCompatibilityMode CompatibilityMode,
-    SlmpPlcProfile AddressFamily,
-    SlmpDeviceRangeFamily RangeFamily);
+    SlmpPlcProfile AddressProfile,
+    SlmpPlcProfile RangeProfile);
 
 public static class SlmpPlcProfileProfiles
 {
@@ -55,8 +55,9 @@ Notes:
 
 - the returned client must be safe to share across multiple async callers
 - `PlcProfile` is the single explicit high-level selection
-- frame type, compatibility mode, string-address rules, and device-range rules are derived from that family
-- automatic profile probing is out of scope
+- frame type, compatibility mode, string-address rules, and device-range rules are derived from that profile
+- automatic profile probing or model-name-to-profile inference is intentionally out of scope
+- `ReadTypeNameAsync()` is diagnostic information only; some PLC paths cannot return a useful type name, and a wrong inference can select the wrong address grammar or range catalog
 
 ## 3. Required High-Level Methods
 
@@ -206,7 +207,7 @@ High-level logical address helpers should remain available for:
 
 ## 8. Non-Goals
 
-- no automatic profile detection
+- no automatic profile detection or model-code-to-profile inference
 - no hidden retries that change request semantics
 - no requirement to preserve old extension-method naming if a cleaner public surface is chosen
 

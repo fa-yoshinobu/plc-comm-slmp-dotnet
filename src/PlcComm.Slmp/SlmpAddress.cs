@@ -70,7 +70,7 @@ public static class SlmpAddress
     public static string Format(SlmpDeviceAddress address, SlmpPlcProfile PlcProfile)
     {
         _ = SlmpPlcProfiles.Resolve(PlcProfile);
-        ThrowIfDeviceCodeUnsupportedForFamily(address.Code, PlcProfile);
+        ThrowIfDeviceCodeUnsupportedForProfile(address.Code, PlcProfile);
         return $"{address.Code}{FormatNumber(address, PlcProfile)}";
     }
 
@@ -84,7 +84,7 @@ public static class SlmpAddress
 
     private static string FormatNumber(SlmpDeviceAddress address, SlmpPlcProfile? PlcProfile)
     {
-        if (PlcProfile is SlmpPlcProfile family && SlmpPlcProfiles.UsesIqFXyOctal(family) &&
+        if (PlcProfile is SlmpPlcProfile profile && SlmpPlcProfiles.UsesIqFXyOctal(profile) &&
             address.Code is SlmpDeviceCode.X or SlmpDeviceCode.Y)
         {
             return Convert.ToString(address.Number, 8)!.ToUpperInvariant();
@@ -95,7 +95,7 @@ public static class SlmpAddress
             : address.Number.ToString(CultureInfo.InvariantCulture);
     }
 
-    private static void ThrowIfDeviceCodeUnsupportedForFamily(SlmpDeviceCode code, SlmpPlcProfile PlcProfile)
+    private static void ThrowIfDeviceCodeUnsupportedForProfile(SlmpDeviceCode code, SlmpPlcProfile PlcProfile)
     {
         if (PlcProfile is SlmpPlcProfile.IqF &&
             code is SlmpDeviceCode.DX or SlmpDeviceCode.DY)

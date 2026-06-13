@@ -57,11 +57,11 @@ public sealed record SlmpConnectionOptions(string Host, SlmpPlcProfile PlcProfil
     /// <summary>Gets the effective compatibility mode after applying <see cref="PlcProfile"/> defaults.</summary>
     public SlmpCompatibilityMode ResolvedCompatibilityMode => SlmpPlcProfiles.Resolve(PlcProfile).CompatibilityMode;
 
-    /// <summary>Gets the address family used for string device parsing.</summary>
-    public SlmpPlcProfile ResolvedAddressFamily => SlmpPlcProfiles.Resolve(PlcProfile).AddressFamily;
+    /// <summary>Gets the profile used for string device parsing.</summary>
+    public SlmpPlcProfile ResolvedAddressProfile => SlmpPlcProfiles.Resolve(PlcProfile).AddressProfile;
 
-    /// <summary>Gets the device-range family used by the high-level helper layer.</summary>
-    public SlmpDeviceRangeFamily ResolvedRangeFamily => SlmpPlcProfiles.Resolve(PlcProfile).RangeFamily;
+    /// <summary>Gets the profile used by the high-level device-range helper layer.</summary>
+    public SlmpPlcProfile ResolvedRangeProfile => SlmpPlcProfiles.Resolve(PlcProfile).RangeProfile;
 
     private static SlmpPlcProfile ValidatePlcProfile(SlmpPlcProfile profile)
     {

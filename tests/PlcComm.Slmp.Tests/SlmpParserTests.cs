@@ -149,8 +149,9 @@ public sealed class SlmpParserTests
 
         Assert.Equal(SlmpFrameType.Frame4E, options.ResolvedFrameType);
         Assert.Equal(SlmpCompatibilityMode.Iqr, options.ResolvedCompatibilityMode);
-        Assert.Equal(SlmpPlcProfile.IqR, options.ResolvedAddressFamily);
-        Assert.Equal(SlmpDeviceRangeFamily.IqL, options.ResolvedRangeFamily);
+        Assert.Equal(SlmpPlcProfile.IqL, options.ResolvedAddressProfile);
+        Assert.Equal(SlmpPlcProfile.IqL, options.ResolvedRangeProfile);
+        Assert.Equal("X1A", SlmpAddress.Normalize("x1a", options.ResolvedAddressProfile));
     }
 
     [Fact]

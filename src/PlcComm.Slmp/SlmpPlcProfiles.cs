@@ -4,8 +4,8 @@ namespace PlcComm.Slmp;
 public sealed record SlmpPlcProfileDefaults(
     SlmpFrameType FrameType,
     SlmpCompatibilityMode CompatibilityMode,
-    SlmpPlcProfile AddressFamily,
-    SlmpDeviceRangeFamily RangeFamily);
+    SlmpPlcProfile AddressProfile,
+    SlmpPlcProfile RangeProfile);
 
 /// <summary>Fixed high-level defaults driven by <see cref="SlmpPlcProfile"/>.</summary>
 public static class SlmpPlcProfiles
@@ -75,47 +75,47 @@ public static class SlmpPlcProfiles
                 SlmpFrameType.Frame3E,
                 SlmpCompatibilityMode.Legacy,
                 SlmpPlcProfile.IqF,
-                SlmpDeviceRangeFamily.IqF),
+                SlmpPlcProfile.IqF),
             SlmpPlcProfile.IqR => new(
                 SlmpFrameType.Frame4E,
                 SlmpCompatibilityMode.Iqr,
                 SlmpPlcProfile.IqR,
-                SlmpDeviceRangeFamily.IqR),
+                SlmpPlcProfile.IqR),
             SlmpPlcProfile.IqL => new(
                 SlmpFrameType.Frame4E,
                 SlmpCompatibilityMode.Iqr,
-                SlmpPlcProfile.IqR,
-                SlmpDeviceRangeFamily.IqL),
+                SlmpPlcProfile.IqL,
+                SlmpPlcProfile.IqL),
             SlmpPlcProfile.MxF => new(
                 SlmpFrameType.Frame4E,
                 SlmpCompatibilityMode.Iqr,
                 SlmpPlcProfile.MxF,
-                SlmpDeviceRangeFamily.MxF),
+                SlmpPlcProfile.MxF),
             SlmpPlcProfile.MxR => new(
                 SlmpFrameType.Frame4E,
                 SlmpCompatibilityMode.Iqr,
                 SlmpPlcProfile.MxR,
-                SlmpDeviceRangeFamily.MxR),
+                SlmpPlcProfile.MxR),
             SlmpPlcProfile.QCpu => new(
                 SlmpFrameType.Frame3E,
                 SlmpCompatibilityMode.Legacy,
                 SlmpPlcProfile.QCpu,
-                SlmpDeviceRangeFamily.QCpu),
+                SlmpPlcProfile.QCpu),
             SlmpPlcProfile.LCpu => new(
                 SlmpFrameType.Frame3E,
                 SlmpCompatibilityMode.Legacy,
                 SlmpPlcProfile.LCpu,
-                SlmpDeviceRangeFamily.LCpu),
+                SlmpPlcProfile.LCpu),
             SlmpPlcProfile.QnU => new(
                 SlmpFrameType.Frame3E,
                 SlmpCompatibilityMode.Legacy,
                 SlmpPlcProfile.QnU,
-                SlmpDeviceRangeFamily.QnU),
+                SlmpPlcProfile.QnU),
             SlmpPlcProfile.QnUDV => new(
                 SlmpFrameType.Frame3E,
                 SlmpCompatibilityMode.Legacy,
                 SlmpPlcProfile.QnUDV,
-                SlmpDeviceRangeFamily.QnUDV),
+                SlmpPlcProfile.QnUDV),
             SlmpPlcProfile.Unspecified => throw new ArgumentOutOfRangeException(
                 nameof(profile),
                 profile,
@@ -129,5 +129,5 @@ public static class SlmpPlcProfiles
 
     /// <summary>True when <c>X</c> and <c>Y</c> strings must be parsed as octal.</summary>
     public static bool UsesIqFXyOctal(SlmpPlcProfile profile)
-        => Resolve(profile).AddressFamily == SlmpPlcProfile.IqF;
+        => Resolve(profile).AddressProfile == SlmpPlcProfile.IqF;
 }
