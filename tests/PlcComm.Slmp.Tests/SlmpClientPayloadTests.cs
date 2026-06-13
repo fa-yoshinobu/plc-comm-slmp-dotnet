@@ -23,7 +23,7 @@ public sealed class SlmpClientPayloadTests
     [Fact]
     public void BuildExtendedRandomReadPayload_UsesExactAssembly()
     {
-        using var client = new SlmpClient("127.0.0.1");
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
         var word = (
             new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), null),
             new SlmpExtensionSpec(ExtensionSpecification: 0x0001));
@@ -103,7 +103,7 @@ public sealed class SlmpClientPayloadTests
     [Fact]
     public async Task SelfTestLoopbackAsync_RejectsManualInvalidPayloadsBeforeTransport()
     {
-        using var client = new SlmpClient("127.0.0.1");
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
 
         await Assert.ThrowsAsync<ArgumentException>(
             () => client.SelfTestLoopbackAsync(new byte[] { (byte)'H', (byte)'E', (byte)'L', (byte)'L', (byte)'O' }));
@@ -244,3 +244,4 @@ public sealed class SlmpClientPayloadTests
             });
     }
 }
+

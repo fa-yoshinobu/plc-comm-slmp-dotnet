@@ -6,12 +6,12 @@ For normal application code, prefer the extension methods on `SlmpClient` and `Q
 
 ## Recommended Connection Pattern
 
-Create a connected queued client with one explicit PLC family:
+Create a connected queued client with one explicit PLC profile:
 
 ```csharp
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcFamily.IqR)
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
 {
     Port = 1025,
 };
@@ -20,7 +20,7 @@ await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 ```
 
 `SlmpConnectionOptions` derives frame type, compatibility mode, string `X/Y`
-rules, and the device-range family from the explicit `SlmpPlcFamily`.
+rules, and the device-range family from the explicit `SlmpPlcProfile`.
 
 Use the queued client as the default application object. It is the safest choice when more than one task may touch the same connection.
 
@@ -209,3 +209,4 @@ Run them from the repository root:
 dotnet run --project samples/PlcComm.Slmp.HighLevelSample -- 192.168.250.100 1025 iqr 4e
 dotnet run --project samples/PlcComm.Slmp.QueuedSample -- 192.168.250.100 1025 4 10
 ```
+

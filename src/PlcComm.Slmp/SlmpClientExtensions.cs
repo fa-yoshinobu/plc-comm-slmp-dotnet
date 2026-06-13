@@ -55,13 +55,13 @@ internal sealed record SlmpNamedReadPlan(
 public static class SlmpClientExtensions
 {
     private static SlmpDeviceAddress ParseDeviceForClient(SlmpClient client, string address)
-        => SlmpDeviceParser.ParseForHighLevel(address, client.PlcFamily);
+        => SlmpDeviceParser.ParseForHighLevel(address, client.PlcProfile);
 
     private static SlmpDeviceAddress ParseDeviceForClient(QueuedSlmpClient client, string address)
-        => SlmpDeviceParser.ParseForHighLevel(address, client.PlcFamily);
+        => SlmpDeviceParser.ParseForHighLevel(address, client.PlcProfile);
 
-    private static string NormalizeDeviceForFamily(string address, SlmpPlcFamily? plcFamily)
-        => plcFamily is SlmpPlcFamily family ? SlmpAddress.Normalize(address, family) : SlmpAddress.Normalize(address);
+    private static string NormalizeDeviceForFamily(string address, SlmpPlcProfile? PlcProfile)
+        => PlcProfile is SlmpPlcProfile family ? SlmpAddress.Normalize(address, family) : SlmpAddress.Normalize(address);
 
     // -----------------------------------------------------------------------
     // Typed read / write
@@ -1130,7 +1130,7 @@ public static class SlmpClientExtensions
         IEnumerable<string> addresses,
         CancellationToken ct = default)
     {
-        var plan = CompileReadPlan(addresses, client.PlcFamily);
+        var plan = CompileReadPlan(addresses, client.PlcProfile);
         return await ReadNamedCompiledAsync(client, plan, ct).ConfigureAwait(false);
     }
 
@@ -1142,7 +1142,7 @@ public static class SlmpClientExtensions
         IEnumerable<string> addresses,
         CancellationToken ct = default)
     {
-        var plan = CompileReadPlan(addresses, client.PlcFamily);
+        var plan = CompileReadPlan(addresses, client.PlcProfile);
         return client.ExecuteAsync(inner => ReadNamedCompiledAsync(inner, plan, ct), ct);
     }
 
@@ -1212,7 +1212,7 @@ public static class SlmpClientExtensions
         TimeSpan interval,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var plan = CompileReadPlan(addresses, client.PlcFamily);
+        var plan = CompileReadPlan(addresses, client.PlcProfile);
         while (!ct.IsCancellationRequested)
         {
             yield return await ReadNamedCompiledAsync(client, plan, ct).ConfigureAwait(false);
@@ -1234,7 +1234,7 @@ public static class SlmpClientExtensions
         TimeSpan interval,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var plan = CompileReadPlan(addresses, client.PlcFamily);
+        var plan = CompileReadPlan(addresses, client.PlcProfile);
         while (!ct.IsCancellationRequested)
         {
             yield return await client.ExecuteAsync(inner => ReadNamedCompiledAsync(inner, plan, ct), ct).ConfigureAwait(false);
@@ -1299,11 +1299,11 @@ public static class SlmpClientExtensions
         return NormalizeNamedAddress(address, null);
     }
 
-    internal static string NormalizeNamedAddress(string address, SlmpPlcFamily? plcFamily)
+    internal static string NormalizeNamedAddress(string address, SlmpPlcProfile? PlcProfile)
     {
         var trimmed = address.Trim();
         var (baseAddress, dtype, bitIdx) = ParseAddress(trimmed);
-        var canonicalBase = NormalizeDeviceForFamily(baseAddress, plcFamily);
+        var canonicalBase = NormalizeDeviceForFamily(baseAddress, PlcProfile);
         if (bitIdx is int bit)
         {
             return $"{canonicalBase}.{bit.ToString("X", CultureInfo.InvariantCulture)}";
@@ -1314,7 +1314,7 @@ public static class SlmpClientExtensions
             : canonicalBase;
     }
 
-    internal static SlmpNamedReadPlan CompileReadPlan(IEnumerable<string> addresses, SlmpPlcFamily? plcFamily = null)
+    internal static SlmpNamedReadPlan CompileReadPlan(IEnumerable<string> addresses, SlmpPlcProfile? PlcProfile = null)
     {
         var entries = new List<SlmpNamedReadEntry>();
         var wordDevices = new List<SlmpDeviceAddress>();
@@ -1325,7 +1325,7 @@ public static class SlmpClientExtensions
         foreach (var address in addresses)
         {
             var (baseAddress, dtype, bitIdx) = ParseAddress(address);
-            var device = SlmpDeviceParser.ParseForHighLevel(baseAddress, plcFamily);
+            var device = SlmpDeviceParser.ParseForHighLevel(baseAddress, PlcProfile);
             dtype = ResolveDTypeForAddress(address, device, dtype, bitIdx);
             ValidateLongTimerEntry(address, device, dtype);
             ValidateDWordOnlyEntry(address, device, dtype);
@@ -1802,3 +1802,4 @@ public static class SlmpClientExtensions
 
     private static float DecodeFloatDWord(uint value) => BitConverter.Int32BitsToSingle(unchecked((int)value));
 }
+

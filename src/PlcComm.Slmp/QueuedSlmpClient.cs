@@ -33,25 +33,22 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     /// </remarks>
     public SlmpClient InnerClient => _client;
 
-    /// <summary>Gets or sets the SLMP frame format (3E or 4E).</summary>
+    /// <summary>Gets the SLMP frame format derived from <see cref="PlcProfile"/>.</summary>
     public SlmpFrameType FrameType
     {
         get => _client.FrameType;
-        set => _client.FrameType = value;
     }
 
-    /// <summary>Gets or sets the canonical PLC family used by the high-level string helpers.</summary>
-    public SlmpPlcFamily? PlcFamily
+    /// <summary>Gets the canonical PLC profile used by this session.</summary>
+    public SlmpPlcProfile PlcProfile
     {
-        get => _client.PlcFamily;
-        set => _client.PlcFamily = value;
+        get => _client.PlcProfile;
     }
 
-    /// <summary>Gets or sets the device access compatibility mode (Legacy or iQ-R).</summary>
+    /// <summary>Gets the device access compatibility mode derived from <see cref="PlcProfile"/>.</summary>
     public SlmpCompatibilityMode CompatibilityMode
     {
         get => _client.CompatibilityMode;
-        set => _client.CompatibilityMode = value;
     }
 
     /// <summary>Gets or sets the destination routing information.</summary>
@@ -444,3 +441,4 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
         return ValueTask.CompletedTask;
     }
 }
+

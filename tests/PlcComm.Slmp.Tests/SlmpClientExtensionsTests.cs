@@ -7,7 +7,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public async Task ReadWordsSingleRequestAsync_RejectsOversizedRangeBeforeTransport()
     {
-        using var client = new SlmpClient("127.0.0.1");
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.ReadWordsSingleRequestAsync("D0", 961));
     }
@@ -15,7 +15,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public async Task ReadDWordsSingleRequestAsync_RejectsOversizedRangeBeforeTransport()
     {
-        using var client = new SlmpClient("127.0.0.1");
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.ReadDWordsSingleRequestAsync("D0", 481));
     }
@@ -23,7 +23,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public async Task WriteWordsSingleRequestAsync_RejectsOversizedRangeBeforeTransport()
     {
-        using var client = new SlmpClient("127.0.0.1");
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
         ushort[] values = Enumerable.Repeat((ushort)1, 961).ToArray();
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.WriteWordsSingleRequestAsync("D0", values));
@@ -32,7 +32,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public async Task WriteDWordsSingleRequestAsync_RejectsOversizedRangeBeforeTransport()
     {
-        using var client = new SlmpClient("127.0.0.1");
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
         uint[] values = Enumerable.Repeat((uint)1, 481).ToArray();
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.WriteDWordsSingleRequestAsync("D0", values));
@@ -210,7 +210,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public async Task ReadTypedAsync_RejectsWordDTypeForLongCurrentValues()
     {
-        using var client = new SlmpClient("127.0.0.1");
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10), "U"));
         Assert.Contains("32-bit long current value", ex.Message);
@@ -219,7 +219,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public async Task ReadTypedAsync_RejectsWordDTypeForLz()
     {
-        using var client = new SlmpClient("127.0.0.1");
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 10), "U"));
         Assert.Contains("32-bit device", ex.Message);
@@ -235,7 +235,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public async Task ReadDWordsAsync_LzUsesRandomDwordLimit()
     {
-        using var client = new SlmpClient("127.0.0.1");
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadDWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0), 256, maxDwordsPerRequest: 255));
         Assert.Contains("count 256 exceeds maxDwordsPerRequest 255", ex.Message);
@@ -244,7 +244,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public async Task WriteTypedAsync_RejectsWordDTypeForLongCurrentValues()
     {
-        using var client = new SlmpClient("127.0.0.1");
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 10), "S", (short)1));
         Assert.Contains("32-bit long current value", ex.Message);
@@ -294,3 +294,4 @@ public sealed class SlmpClientExtensionsTests
         Assert.Contains("32-bit device", ex.Message);
     }
 }
+

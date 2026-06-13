@@ -41,9 +41,8 @@ public sealed class SlmpFrameVectorTests
         await using var server = new SingleShotSlmpServer(Convert.FromHexString(responseDataHex));
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
         {
-            CompatibilityMode = SlmpCompatibilityMode.Iqr,
             MonitoringTimer = 0x0010,
         };
 
@@ -225,3 +224,4 @@ public sealed class SlmpFrameVectorTests
         }
     }
 }
+

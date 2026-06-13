@@ -33,12 +33,9 @@ public static class SlmpClientFactory
         if (options.Port is < 1 or > 65535)
             throw new ArgumentOutOfRangeException(nameof(options), "Port must be in the range 1-65535.");
 
-        var inner = new SlmpClient(options.Host, options.Port, options.Transport)
+        var inner = new SlmpClient(options.Host, options.PlcProfile, options.Port, options.Transport)
         {
             Timeout = options.Timeout,
-            PlcFamily = options.PlcFamily,
-            FrameType = options.ResolvedFrameType,
-            CompatibilityMode = options.ResolvedCompatibilityMode,
             TargetAddress = options.Target,
             MonitoringTimer = options.MonitoringTimer,
         };
@@ -48,3 +45,4 @@ public static class SlmpClientFactory
         return queued;
     }
 }
+

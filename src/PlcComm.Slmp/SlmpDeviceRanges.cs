@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace PlcComm.Slmp;
 
-/// <summary>Resolved PLC family used for device-range rules.</summary>
+/// <summary>Resolved PLC profile used for device-range rules.</summary>
 public enum SlmpDeviceRangeFamily
 {
     /// <summary>MELSEC iQ-R family.</summary>
@@ -911,3 +911,4 @@ internal static class SlmpDeviceRangeResolver
     private static SlmpRangeValueSpec Unsupported(string notes)
         => new(SlmpRangeValueKind.Unsupported, 0, 0, 0, "Not supported", notes);
 }
+

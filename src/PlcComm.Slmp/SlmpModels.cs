@@ -176,24 +176,24 @@ public static class SlmpDeviceParser
         => Parse(text, null);
 
     /// <summary>
-    /// Parses a device string using one explicit PLC family.
+    /// Parses a device string using one explicit PLC profile.
     /// </summary>
-    public static SlmpDeviceAddress Parse(string text, SlmpPlcFamily plcFamily)
-        => Parse(text, (SlmpPlcFamily?)plcFamily);
+    public static SlmpDeviceAddress Parse(string text, SlmpPlcProfile PlcProfile)
+        => Parse(text, (SlmpPlcProfile?)PlcProfile);
 
-    internal static SlmpDeviceAddress ParseForHighLevel(string text, SlmpPlcFamily? plcFamily)
+    internal static SlmpDeviceAddress ParseForHighLevel(string text, SlmpPlcProfile? PlcProfile)
     {
-        var device = Parse(text, plcFamily);
-        if (plcFamily is null && device.Code is SlmpDeviceCode.X or SlmpDeviceCode.Y)
+        var device = Parse(text, PlcProfile);
+        if (PlcProfile is null && device.Code is SlmpDeviceCode.X or SlmpDeviceCode.Y)
         {
             throw new FormatException(
-                "X/Y string addresses require explicit PlcFamily. Use IqF for FX/iQ-F targets, choose an explicit non-iQ-F family, or pass a numeric SlmpDeviceAddress.");
+                "X/Y string addresses require explicit PlcProfile. Use IqF for FX/iQ-F targets, choose an explicit non-iQ-F family, or pass a numeric SlmpDeviceAddress.");
         }
 
         return device;
     }
 
-    private static SlmpDeviceAddress Parse(string text, SlmpPlcFamily? plcFamily)
+    private static SlmpDeviceAddress Parse(string text, SlmpPlcProfile? PlcProfile)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -209,8 +209,8 @@ public static class SlmpDeviceParser
             }
 
             var numberPart = token[prefix.Length..];
-            ThrowIfDeviceCodeUnsupportedForFamily(prefix, code, plcFamily);
-            if (TryParseDeviceNumber(numberPart, code, hexAddress, plcFamily, out var number))
+            ThrowIfDeviceCodeUnsupportedForFamily(prefix, code, PlcProfile);
+            if (TryParseDeviceNumber(numberPart, code, hexAddress, PlcProfile, out var number))
             {
                 return new SlmpDeviceAddress(code, number);
             }
@@ -228,13 +228,13 @@ public static class SlmpDeviceParser
     private static void ThrowIfDeviceCodeUnsupportedForFamily(
         string prefix,
         SlmpDeviceCode code,
-        SlmpPlcFamily? plcFamily)
+        SlmpPlcProfile? PlcProfile)
     {
-        if (plcFamily is SlmpPlcFamily.IqF &&
+        if (PlcProfile is SlmpPlcProfile.IqF &&
             code is SlmpDeviceCode.DX or SlmpDeviceCode.DY)
         {
             throw new NotSupportedException(
-                $"SLMP device code '{prefix}' is not supported for PlcFamily 'IqF'.");
+                $"SLMP device code '{prefix}' is not supported for PlcProfile 'IqF'.");
         }
     }
 
@@ -242,11 +242,11 @@ public static class SlmpDeviceParser
         string text,
         SlmpDeviceCode code,
         bool hexAddress,
-        SlmpPlcFamily? plcFamily,
+        SlmpPlcProfile? PlcProfile,
         out uint number)
     {
-        if (plcFamily is SlmpPlcFamily family &&
-            SlmpPlcFamilyProfiles.UsesIqFXyOctal(family) &&
+        if (PlcProfile is SlmpPlcProfile family &&
+            SlmpPlcProfiles.UsesIqFXyOctal(family) &&
             code is SlmpDeviceCode.X or SlmpDeviceCode.Y)
         {
             return TryConvertFromOctal(text, out number);
@@ -281,3 +281,4 @@ public static class SlmpDeviceParser
         return true;
     }
 }
+

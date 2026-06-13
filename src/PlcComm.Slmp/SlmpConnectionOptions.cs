@@ -4,15 +4,15 @@ namespace PlcComm.Slmp;
 /// Explicit connection options for a stable SLMP session profile.
 /// </summary>
 /// <remarks>
-/// Use <see cref="PlcFamily"/> for the recommended high-level API. The library derives
+/// Use <see cref="PlcProfile"/> for the recommended high-level API. The library derives
 /// frame type, compatibility mode, string-address handling, and device-range handling
-/// from that explicit family.
+/// from that explicit profile.
 /// This type is intended for the unified high-level entry point exposed by
 /// <see cref="SlmpClientFactory.OpenAndConnectAsync(SlmpConnectionOptions, CancellationToken)"/>.
 /// </remarks>
 /// <param name="Host">PLC IP address or hostname.</param>
-/// <param name="PlcFamily">Canonical PLC family for the high-level API.</param>
-public sealed record SlmpConnectionOptions(string Host, SlmpPlcFamily PlcFamily)
+/// <param name="PlcProfile">Canonical PLC profile for the high-level API.</param>
+public sealed record SlmpConnectionOptions(string Host, SlmpPlcProfile PlcProfile)
 {
     /// <summary>Gets or sets the SLMP port number.</summary>
     /// <remarks>The default SLMP TCP/UDP port is <c>1025</c>.</remarks>
@@ -42,15 +42,16 @@ public sealed record SlmpConnectionOptions(string Host, SlmpPlcFamily PlcFamily)
     /// </remarks>
     public ushort MonitoringTimer { get; init; } = 0x0010;
 
-    /// <summary>Gets the effective frame type after applying <see cref="PlcFamily"/> defaults.</summary>
-    public SlmpFrameType ResolvedFrameType => SlmpPlcFamilyProfiles.Resolve(PlcFamily).FrameType;
+    /// <summary>Gets the effective frame type after applying <see cref="PlcProfile"/> defaults.</summary>
+    public SlmpFrameType ResolvedFrameType => SlmpPlcProfiles.Resolve(PlcProfile).FrameType;
 
-    /// <summary>Gets the effective compatibility mode after applying <see cref="PlcFamily"/> defaults.</summary>
-    public SlmpCompatibilityMode ResolvedCompatibilityMode => SlmpPlcFamilyProfiles.Resolve(PlcFamily).CompatibilityMode;
+    /// <summary>Gets the effective compatibility mode after applying <see cref="PlcProfile"/> defaults.</summary>
+    public SlmpCompatibilityMode ResolvedCompatibilityMode => SlmpPlcProfiles.Resolve(PlcProfile).CompatibilityMode;
 
     /// <summary>Gets the address family used for string device parsing.</summary>
-    public SlmpPlcFamily ResolvedAddressFamily => SlmpPlcFamilyProfiles.Resolve(PlcFamily).AddressFamily;
+    public SlmpPlcProfile ResolvedAddressFamily => SlmpPlcProfiles.Resolve(PlcProfile).AddressFamily;
 
     /// <summary>Gets the device-range family used by the high-level helper layer.</summary>
-    public SlmpDeviceRangeFamily ResolvedRangeFamily => SlmpPlcFamilyProfiles.Resolve(PlcFamily).RangeFamily;
+    public SlmpDeviceRangeFamily ResolvedRangeFamily => SlmpPlcProfiles.Resolve(PlcProfile).RangeFamily;
 }
+

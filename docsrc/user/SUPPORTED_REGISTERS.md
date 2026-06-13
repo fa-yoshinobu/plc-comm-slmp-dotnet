@@ -27,8 +27,8 @@ This page is the canonical public register table for the .NET high-level API.
 | `LCS` | bit | `LCS10` | decimal |
 | `LCC` | bit | `LCC10` | decimal |
 | `SB` | bit | `SB20` | hexadecimal |
-| `DX` | bit | `DX20` | hexadecimal; not accepted for `SlmpPlcFamily.IqF` |
-| `DY` | bit | `DY20` | hexadecimal; not accepted for `SlmpPlcFamily.IqF` |
+| `DX` | bit | `DX20` | hexadecimal; not accepted for `SlmpPlcProfile.IqF` |
+| `DY` | bit | `DY20` | hexadecimal; not accepted for `SlmpPlcProfile.IqF` |
 
 ## Supported Word Devices
 
@@ -65,7 +65,7 @@ This page is the canonical public register table for the .NET high-level API.
 
 - Start with `D` for the first smoke test.
 - `X`, `Y`, `B`, `W`, `SB`, `SW`, `DX`, and `DY` use hexadecimal device numbers.
-- `DX` and `DY` are rejected before transport when `SlmpPlcFamily.IqF` is selected.
+- `DX` and `DY` are rejected before transport when `SlmpPlcProfile.IqF` is selected.
 - Most other families use decimal numbers.
 - `.bit` is valid only on word devices such as `D50.3`.
 - `LTN`, `LSTN`, `LCN`, and `LZ` default to 32-bit current-value access in the public high-level helpers.
@@ -80,3 +80,4 @@ This page is the canonical public register table for the .NET high-level API.
 - `HG`
 
 If a family is not listed above, do not treat it as publicly supported by the current high-level API.
+

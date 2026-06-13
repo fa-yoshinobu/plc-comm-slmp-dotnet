@@ -2091,3 +2091,4 @@ public static class SlmpEndCodes
     public static bool IsRemotePasswordEndCode(ushort endCode) =>
         endCode is 0xC200 or 0xC201 or 0xC202 or 0xC203 or 0xC204 or 0xC205 or 0xC810 or 0xC811 or 0xC812 or 0xC813 or 0xC814 or 0xC815 or 0xC816;
 }
+

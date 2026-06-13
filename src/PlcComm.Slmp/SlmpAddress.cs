@@ -17,8 +17,8 @@ public static class SlmpAddress
     /// <returns>The parsed device address.</returns>
     public static SlmpDeviceAddress Parse(string text) => SlmpDeviceParser.Parse(text);
 
-    /// <summary>Parses one SLMP device string using the explicit PLC family.</summary>
-    public static SlmpDeviceAddress Parse(string text, SlmpPlcFamily plcFamily) => SlmpDeviceParser.Parse(text, plcFamily);
+    /// <summary>Parses one SLMP device string using the explicit PLC profile.</summary>
+    public static SlmpDeviceAddress Parse(string text, SlmpPlcProfile PlcProfile) => SlmpDeviceParser.Parse(text, PlcProfile);
 
     /// <summary>Attempts to parse one SLMP device string.</summary>
     /// <param name="text">Device text to parse.</param>
@@ -38,12 +38,12 @@ public static class SlmpAddress
         }
     }
 
-    /// <summary>Attempts to parse one SLMP device string using the explicit PLC family.</summary>
-    public static bool TryParse(string text, SlmpPlcFamily plcFamily, out SlmpDeviceAddress address)
+    /// <summary>Attempts to parse one SLMP device string using the explicit PLC profile.</summary>
+    public static bool TryParse(string text, SlmpPlcProfile PlcProfile, out SlmpDeviceAddress address)
     {
         try
         {
-            address = Parse(text, plcFamily);
+            address = Parse(text, PlcProfile);
             return true;
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException or NotSupportedException)
@@ -66,11 +66,11 @@ public static class SlmpAddress
         return $"{address.Code}{number}";
     }
 
-    /// <summary>Formats one parsed device address using the explicit PLC family.</summary>
-    public static string Format(SlmpDeviceAddress address, SlmpPlcFamily plcFamily)
+    /// <summary>Formats one parsed device address using the explicit PLC profile.</summary>
+    public static string Format(SlmpDeviceAddress address, SlmpPlcProfile PlcProfile)
     {
-        ThrowIfDeviceCodeUnsupportedForFamily(address.Code, plcFamily);
-        return $"{address.Code}{FormatNumber(address, plcFamily)}";
+        ThrowIfDeviceCodeUnsupportedForFamily(address.Code, PlcProfile);
+        return $"{address.Code}{FormatNumber(address, PlcProfile)}";
     }
 
     /// <summary>Normalizes one SLMP device string to canonical text.</summary>
@@ -78,12 +78,12 @@ public static class SlmpAddress
     /// <returns>The canonical uppercase representation returned by <see cref="Format(SlmpDeviceAddress)"/>.</returns>
     public static string Normalize(string text) => Format(Parse(text));
 
-    /// <summary>Normalizes one SLMP device string using the explicit PLC family.</summary>
-    public static string Normalize(string text, SlmpPlcFamily plcFamily) => Format(Parse(text, plcFamily), plcFamily);
+    /// <summary>Normalizes one SLMP device string using the explicit PLC profile.</summary>
+    public static string Normalize(string text, SlmpPlcProfile PlcProfile) => Format(Parse(text, PlcProfile), PlcProfile);
 
-    private static string FormatNumber(SlmpDeviceAddress address, SlmpPlcFamily? plcFamily)
+    private static string FormatNumber(SlmpDeviceAddress address, SlmpPlcProfile? PlcProfile)
     {
-        if (plcFamily is SlmpPlcFamily family && SlmpPlcFamilyProfiles.UsesIqFXyOctal(family) &&
+        if (PlcProfile is SlmpPlcProfile family && SlmpPlcProfiles.UsesIqFXyOctal(family) &&
             address.Code is SlmpDeviceCode.X or SlmpDeviceCode.Y)
         {
             return Convert.ToString(address.Number, 8)!.ToUpperInvariant();
@@ -94,13 +94,13 @@ public static class SlmpAddress
             : address.Number.ToString(CultureInfo.InvariantCulture);
     }
 
-    private static void ThrowIfDeviceCodeUnsupportedForFamily(SlmpDeviceCode code, SlmpPlcFamily plcFamily)
+    private static void ThrowIfDeviceCodeUnsupportedForFamily(SlmpDeviceCode code, SlmpPlcProfile PlcProfile)
     {
-        if (plcFamily is SlmpPlcFamily.IqF &&
+        if (PlcProfile is SlmpPlcProfile.IqF &&
             code is SlmpDeviceCode.DX or SlmpDeviceCode.DY)
         {
             throw new NotSupportedException(
-                $"SLMP device code '{code}' is not supported for PlcFamily 'IqF'.");
+                $"SLMP device code '{code}' is not supported for PlcProfile 'IqF'.");
         }
     }
 
@@ -114,3 +114,4 @@ public static class SlmpAddress
             or SlmpDeviceCode.DX
             or SlmpDeviceCode.DY;
 }
+

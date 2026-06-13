@@ -11,3 +11,4 @@ internal static class SharedSpecLoader
     public static JsonDocument Load(string fileName)
         => JsonDocument.Parse(File.ReadAllText(Path.Combine(SharedSpecRoot, fileName)));
 }
+

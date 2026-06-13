@@ -3,16 +3,16 @@
 This document replaces `plc_device_range_registers - base.csv`.
 
 This catalog is a connected-diagnostics catalog, not an editor-side address
-range validator. It is only accurate after a PLC family has been selected and
+range validator. It is only accurate after a PLC profile has been selected and
 the client can read the family-specific registers or apply a fixed family rule.
 Node-RED uses the supported/unsupported device-code part of this table to avoid
 sending clearly unsupported device codes for a selected family, but it does not
 pre-check PLC model-specific address upper bounds.
 
 The library now owns the device-range rules in source code and reads live upper
-bounds from the PLC itself after the caller chooses the PLC family:
+bounds from the PLC itself after the caller chooses the PLC profile:
 
-1. caller selects `SlmpPlcFamily`
+1. caller selects `SlmpPlcProfile`
 2. read the family-specific `SD` register window
 3. build a `SlmpDeviceRangeCatalog` with point counts and 0-based address ranges
 
@@ -25,9 +25,9 @@ rule. `UpperBound` is the inclusive last address, so for 0-based devices it is
 `PointCount - 1`. `AddressRange` is preformatted text such as `X000-X1FF`.
 
 `Supported = false` means the family does not expose that device.
-`Supported = true` with `PointCount = null` means the PLC family supports the
+`Supported = true` with `PointCount = null` means the PLC profile supports the
 device but does not publish a finite bound register.
-Family-aware string parsing also rejects `DX` and `DY` for `SlmpPlcFamily.IqF`
+Family-aware string parsing also rejects `DX` and `DY` for `SlmpPlcProfile.IqF`
 before transport.
 
 ## API
@@ -44,7 +44,7 @@ Example:
 ```csharp
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcFamily.IqF)
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqF)
 {
     Port = 1025,
 };
@@ -189,3 +189,4 @@ so these maximum addresses are representable by the protocol format.
   `R32768` returning `0x4031`.
 - `iQ-F` `X` and `Y` are documented in Mitsubishi manuals with octal addressing.
   This library emits `Base8` and formats ranges such as `X0000-X1777`.
+

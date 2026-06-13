@@ -51,7 +51,7 @@ Or add a package reference directly:
 ```csharp
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcFamily.IqR)
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
 {
     Port = 1025,
 };
@@ -86,7 +86,7 @@ High-level address syntax is shared across the PLC helper libraries:
 
 See the full public table in [Supported PLC Registers](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/SUPPORTED_REGISTERS.md).
 
-For live PLC-dependent device limits resolved from a user-selected PLC family
+For live PLC-dependent device limits resolved from a user-selected PLC profile
 plus family `SD` registers, see [Device Range Catalog](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/docsrc/user/DEVICE_RANGES.md).
 
 ### Long Current / 32-bit Values
@@ -133,7 +133,7 @@ selected.
 ### Device Range Catalog
 
 Use `ReadDeviceRangeCatalogAsync` after opening a connection with a selected
-`SlmpPlcFamily`. The catalog reports whether each device is supported, its
+`SlmpPlcProfile`. The catalog reports whether each device is supported, its
 point count, lower bound, upper bound, display range, notation, and source.
 
 ```csharp
@@ -209,3 +209,4 @@ dotnet pack src\PlcComm.Slmp\PlcComm.Slmp.csproj -c Release
 ## License
 
 Distributed under the [MIT License](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/LICENSE).
+

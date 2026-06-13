@@ -7,7 +7,7 @@ Use this package when you want the shortest .NET path to Mitsubishi SLMP communi
 Recommended first path:
 
 1. Install `PlcComm.Slmp`.
-2. Choose one explicit `SlmpPlcFamily`.
+2. Choose one explicit `SlmpPlcProfile`.
 3. Open one client with `SlmpClientFactory.OpenAndConnectAsync`.
 4. Read one safe `D` word.
 5. Write only to a known-safe test word or bit after the first read is stable.
@@ -31,7 +31,7 @@ Do not start with these:
 ## Minimal Connection Pattern
 
 ```csharp
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcFamily.IqR)
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
 {
     Port = 1025,
 };
@@ -52,7 +52,7 @@ Recommended order:
 If the first read fails, check these in order:
 
 - correct host and port
-- correct `SlmpPlcFamily`
+- correct `SlmpPlcProfile`
 - start with `D` instead of a routed or module-buffer family
 
 ## Next Pages
@@ -60,3 +60,4 @@ If the first read fails, check these in order:
 - [Supported PLC Registers](./SUPPORTED_REGISTERS.md)
 - [Latest Communication Verification](./LATEST_COMMUNICATION_VERIFICATION.md)
 - [User Guide](./USER_GUIDE.md)
+
