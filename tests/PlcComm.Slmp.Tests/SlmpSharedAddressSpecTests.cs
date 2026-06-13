@@ -71,3 +71,4 @@ public sealed class SlmpSharedAddressSpecTests
         => entry.GetProperty("implementations").EnumerateArray()
             .Any(item => string.Equals(item.GetString(), implementation, StringComparison.Ordinal));
 }
+

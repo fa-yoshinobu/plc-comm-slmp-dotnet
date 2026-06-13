@@ -42,21 +42,30 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// Initializes a new instance of the <see cref="SlmpClient"/> class.
     /// </summary>
     /// <param name="host">The IP address or hostname of the PLC.</param>
+    /// <param name="plcProfile">The PLC profile. This selection derives frame type and compatibility mode.</param>
     /// <param name="port">The port number. Defaults to 1025.</param>
     /// <param name="transportMode">The transport protocol (TCP or UDP).</param>
-    public SlmpClient(string host, int port = 1025, SlmpTransportMode transportMode = SlmpTransportMode.Tcp)
+    public SlmpClient(
+        string host,
+        SlmpPlcProfile plcProfile,
+        int port = 1025,
+        SlmpTransportMode transportMode = SlmpTransportMode.Tcp)
     {
         _host = host;
         _port = port;
         _transportMode = transportMode;
+        PlcProfile = plcProfile;
+        var defaults = SlmpPlcProfiles.Resolve(plcProfile);
+        FrameType = defaults.FrameType;
+        CompatibilityMode = defaults.CompatibilityMode;
     }
 
-    /// <summary>Gets or sets the SLMP frame format (3E or 4E).</summary>
-    public SlmpFrameType FrameType { get; set; } = SlmpFrameType.Frame4E;
-    /// <summary>Gets or sets the device access compatibility mode (Legacy or iQ-R).</summary>
-    public SlmpCompatibilityMode CompatibilityMode { get; set; } = SlmpCompatibilityMode.Iqr;
-    /// <summary>Gets or sets the canonical PLC family used by the high-level string helpers.</summary>
-    public SlmpPlcFamily? PlcFamily { get; set; }
+    /// <summary>Gets the SLMP frame format derived from <see cref="PlcProfile"/>.</summary>
+    public SlmpFrameType FrameType { get; }
+    /// <summary>Gets the device access compatibility mode derived from <see cref="PlcProfile"/>.</summary>
+    public SlmpCompatibilityMode CompatibilityMode { get; }
+    /// <summary>Gets the PLC profile used to derive frame, compatibility, payload, and address behavior.</summary>
+    public SlmpPlcProfile PlcProfile { get; }
     /// <summary>Gets or sets the destination routing information.</summary>
     public SlmpTargetAddress TargetAddress { get; set; } = new(Station: 0xFF, ModuleIo: 0x03FF);
     /// <summary>Gets or sets the monitoring timer value (multiples of 250ms). Default is 0x0010 (4s).</summary>
@@ -90,6 +99,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             linked.CancelAfter(Timeout);
             await _tcp.ConnectAsync(_host, _port, linked.Token).ConfigureAwait(false);
+            _tcp.NoDelay = true;
             _tcp.ReceiveTimeout = (int)Timeout.TotalMilliseconds;
             _tcp.SendTimeout = (int)Timeout.TotalMilliseconds;
             _tcpStream = _tcp.GetStream();
@@ -141,7 +151,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// </summary>
     /// <param name="host">PLC IP address or hostname.</param>
     /// <param name="port">SLMP port number such as 1025 for iQ-R/iQ-F or 5007 for Q/L.</param>
-    /// <param name="plcFamily">Canonical PLC family used to derive the standard connection defaults.</param>
+    /// <param name="plcProfile">Canonical PLC profile used to derive the standard connection defaults.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>
     /// A connected queued client ready for high-level helpers such as
@@ -149,16 +159,16 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// </returns>
     /// <remarks>
     /// This is the recommended entry point for application code because it
-    /// combines one explicit PLC family with a queued wrapper that is safe
+    /// combines one explicit PLC profile with a queued wrapper that is safe
     /// to share across multiple tasks.
     /// </remarks>
     public static async Task<QueuedSlmpClient> OpenAndConnectAsync(
         string host,
         int port,
-        SlmpPlcFamily plcFamily,
+        SlmpPlcProfile plcProfile,
         CancellationToken cancellationToken = default)
         => await SlmpClientFactory.OpenAndConnectAsync(
-            new SlmpConnectionOptions(host, plcFamily)
+            new SlmpConnectionOptions(host, plcProfile)
             {
                 Port = port,
             },
@@ -199,13 +209,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <returns>A catalog containing the configured family and device upper-bound entries.</returns>
     public async Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
     {
-        if (PlcFamily is not SlmpPlcFamily plcFamily)
-        {
-            throw new InvalidOperationException(
-                "ReadDeviceRangeCatalogAsync() requires an explicit PlcFamily. Configure the client through SlmpConnectionOptions/SlmpClientFactory or call ReadDeviceRangeCatalogAsync(family).");
-        }
-
-        var family = SlmpPlcFamilyProfiles.Resolve(plcFamily).RangeFamily;
+        var family = SlmpPlcProfiles.Resolve(PlcProfile).RangeFamily;
         var familyProfile = SlmpDeviceRangeResolver.ResolveProfile(family);
         var familyRegisters = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, familyProfile, cancellationToken).ConfigureAwait(false);
         var catalog = SlmpDeviceRangeResolver.BuildCatalog(family, familyRegisters);
@@ -215,7 +219,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <summary>
     /// Reads the family-specific device upper-bound catalog without querying the PLC model name.
     /// </summary>
-    /// <param name="family">User-selected PLC family.</param>
+    /// <param name="family">User-selected PLC profile.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A catalog containing the selected family and device upper-bound entries.</returns>
     public async Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(
@@ -922,14 +926,10 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         _ = await RequestAsync(SlmpCommand.RemoteRun, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
     }
 
-    public Task RemoteStopAsync(CancellationToken cancellationToken = default) => RemoteStopAsync(false, cancellationToken);
-
-    public async Task RemoteStopAsync(bool force, CancellationToken cancellationToken = default)
+    public async Task RemoteStopAsync(CancellationToken cancellationToken = default)
     {
         _ = await RequestAsync(SlmpCommand.RemoteStop, 0x0000, new byte[] { 0x01, 0x00 }, true, cancellationToken).ConfigureAwait(false);
     }
-
-    public Task RemoteForceStopAsync(CancellationToken cancellationToken = default) => RemoteStopAsync(true, cancellationToken);
 
     public async Task RemotePauseAsync(bool force = false, CancellationToken cancellationToken = default)
     {
@@ -1856,7 +1856,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
         var raw = Encoding.ASCII.GetBytes(password);
 
-        if (CompatibilityMode == SlmpCompatibilityMode.Iqr)
+        if (SlmpPlcProfiles.UsesIqrProtocol(PlcProfile))
         {
             // iQ-R: 2-byte LE length prefix followed by raw bytes (max 32 bytes)
             if (raw.Length is < 6 or > 32)
@@ -1871,15 +1871,17 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         }
         else
         {
-            // Q/L Legacy: fixed 8 bytes, null-padded (max 8 bytes)
-            if (raw.Length is < 6 or > 8)
+            // Q/L Legacy: 2-byte LE length prefix followed by the 4-byte password.
+            if (raw.Length != 4)
             {
-                throw new ArgumentOutOfRangeException(nameof(password), "Q/L password length must be 6..8");
+                throw new ArgumentOutOfRangeException(nameof(password), "Q/L password length must be exactly 4");
             }
 
-            var result = new byte[8];
-            raw.CopyTo(result.AsSpan(0));
+            var result = new byte[2 + raw.Length];
+            BinaryPrimitives.WriteUInt16LittleEndian(result.AsSpan(0, 2), (ushort)raw.Length);
+            raw.CopyTo(result.AsSpan(2));
             return result;
         }
     }
 }
+

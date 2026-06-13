@@ -16,78 +16,9 @@ string GetOption(IReadOnlyList<string> args, string name, string defaultValue)
     return idx >= 0 && idx + 1 < args.Count ? args[idx + 1] : defaultValue;
 }
 
-string GetRequiredOption(IReadOnlyList<string> args, string name)
+SlmpPlcProfile GetPlcProfileOption(IReadOnlyList<string> args)
 {
-    var idx = -1;
-    for (var i = 0; i < args.Count; i++)
-    {
-        if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase))
-        {
-            idx = i;
-            break;
-        }
-    }
-
-    if (idx < 0 || idx + 1 >= args.Count || string.IsNullOrWhiteSpace(args[idx + 1]))
-    {
-        throw new ArgumentException($"{name} is required.");
-    }
-
-    return args[idx + 1];
-}
-
-string ParseSeriesOption(string series)
-{
-    if (series.Equals("ql", StringComparison.OrdinalIgnoreCase))
-    {
-        return "ql";
-    }
-
-    if (series.Equals("iqr", StringComparison.OrdinalIgnoreCase))
-    {
-        return "iqr";
-    }
-
-    throw new ArgumentException("--series must be ql or iqr.");
-}
-
-string ParseFrameTypeOption(string frame)
-{
-    if (frame.Equals("3e", StringComparison.OrdinalIgnoreCase))
-    {
-        return "3e";
-    }
-
-    if (frame.Equals("4e", StringComparison.OrdinalIgnoreCase))
-    {
-        return "4e";
-    }
-
-    throw new ArgumentException("--frame-type must be 3e or 4e.");
-}
-
-SlmpDeviceRangeFamily GetPlcTypeOption(IReadOnlyList<string> args)
-{
-    var raw = GetOption(args, "--plc-type", string.Empty);
-    if (string.IsNullOrWhiteSpace(raw))
-    {
-        throw new ArgumentException("--plc-type is required. Use iq-r, iq-l, mx-f, mx-r, iq-f, qcpu, lcpu, qnu, or qnudv.");
-    }
-
-    var normalized = raw.Trim().ToLowerInvariant().Replace("-", string.Empty).Replace("_", string.Empty);
-    return normalized switch
-    {
-        "iqr" => SlmpDeviceRangeFamily.IqR,
-        "iql" => SlmpDeviceRangeFamily.IqL,
-        "mxf" => SlmpDeviceRangeFamily.MxF,
-        "mxr" => SlmpDeviceRangeFamily.MxR,
-        "iqf" => SlmpDeviceRangeFamily.IqF,
-        "qcpu" or "q" => SlmpDeviceRangeFamily.QCpu,
-        "lcpu" or "l" => SlmpDeviceRangeFamily.LCpu,
-        "qnu" => SlmpDeviceRangeFamily.QnU,
-        "qnudv" or "qnudvcpu" => SlmpDeviceRangeFamily.QnUDV,
-        _ => throw new ArgumentException("--plc-type must be iq-r, iq-l, mx-f, mx-r, iq-f, qcpu, lcpu, qnu, or qnudv."),
-    };
+    return SlmpPlcProfiles.Parse(GetOption(args, "--plc-profile", string.Empty));
 }
 
 List<string> GetOptions(IReadOnlyList<string> args, string name)
@@ -141,14 +72,9 @@ async Task<SlmpClient> CreateClientAsync(IReadOnlyList<string> args, SlmpTargetA
     var host = GetOption(args, "--host", "192.168.250.100");
     var port = int.Parse(GetOption(args, "--port", "1025"), CultureInfo.InvariantCulture);
     var transport = GetOption(args, "--transport", "tcp").Equals("udp", StringComparison.OrdinalIgnoreCase) ? SlmpTransportMode.Udp : SlmpTransportMode.Tcp;
-    var frame = ParseFrameTypeOption(GetRequiredOption(args, "--frame-type"));
-    var series = ParseSeriesOption(GetRequiredOption(args, "--series"));
+    var profile = GetPlcProfileOption(args);
 
-    var client = new SlmpClient(host, port, transport) { TargetAddress = target };
-    client.FrameType = frame.Equals("3e", StringComparison.OrdinalIgnoreCase) ? SlmpFrameType.Frame3E : SlmpFrameType.Frame4E;
-    client.CompatibilityMode = series.Equals("ql", StringComparison.OrdinalIgnoreCase)
-        ? SlmpCompatibilityMode.Legacy
-        : SlmpCompatibilityMode.Iqr;
+    var client = new SlmpClient(host, profile, port, transport) { TargetAddress = target };
 
     await client.OpenAsync().ConfigureAwait(false);
     return client;
@@ -230,16 +156,10 @@ async Task<int> RunConnectionCheckAsync(IReadOnlyList<string> args)
 async Task<int> RunDeviceRangeCatalogAsync(IReadOnlyList<string> args)
 {
     var target = ParseTargets(args)[0];
-    var plcType = GetPlcTypeOption(args);
-    if (!HasFlag(args, "--series") || !HasFlag(args, "--frame-type"))
-    {
-        throw new ArgumentException("device-range-catalog requires explicit --series ql|iqr and --frame-type 3e|4e.");
-    }
-
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
-    var catalog = await client.ReadDeviceRangeCatalogAsync(plcType).ConfigureAwait(false);
+    var catalog = await client.ReadDeviceRangeCatalogAsync().ConfigureAwait(false);
 
-    Console.WriteLine($"[OK] selected_family={plcType} connection_frame={client.FrameType} connection_compatibility={client.CompatibilityMode} family={catalog.Family}");
+    Console.WriteLine($"[OK] plc_profile={client.PlcProfile} connection_frame={client.FrameType} connection_compatibility={client.CompatibilityMode} family={catalog.Family}");
     foreach (var entry in catalog.Entries)
     {
         Console.WriteLine(
@@ -401,7 +321,7 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
     var rows = new List<CoverageRow>();
 
     Console.WriteLine("=== Extended Device Coverage Sweep ===");
-    Console.WriteLine($"Host={GetOption(args, "--host", "192.168.250.100")}, Port={GetOption(args, "--port", "1025")}, Transports=[{string.Join(", ", transports)}], Series={ParseSeriesOption(GetRequiredOption(args, "--series"))}");
+    Console.WriteLine($"Host={GetOption(args, "--host", "192.168.250.100")}, Port={GetOption(args, "--port", "1025")}, Transports=[{string.Join(", ", transports)}], PlcProfile={GetPlcProfileOption(args)}");
     Console.WriteLine($"[INFO] Targets=[{string.Join(", ", targets.Select(x => x.Name))}]");
     Console.WriteLine($"[INFO] Devices=[{string.Join(", ", deviceTexts)}]");
     Console.WriteLine($"[INFO] Points=[{string.Join(", ", pointList)}]");
@@ -805,17 +725,18 @@ async Task<int> RunSingleConnectionLoadAsync(IReadOnlyList<string> args)
 if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
 {
     Console.WriteLine("SLMP .NET CLI");
-    Console.WriteLine("  connection-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF|SELF-CPU1|name,0x00,0xFF,0x03FF,0x00 --network ... --station ... --quiet]");
-    Console.WriteLine("  device-range-catalog --plc-type iq-r|iq-l|mx-f|mx-r|iq-f|qcpu|lcpu|qnu|qnudv --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --quiet]");
-    Console.WriteLine("  other-station-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --network ... --station ... (repeatable) --quiet]");
-    Console.WriteLine("  random-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... --network ... --station ... --write-check --quiet]");
-    Console.WriteLine("  block-check --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target ... --network ... --station ... --write-check --quiet]");
-    Console.WriteLine(@"  ExtendedDevice-device-recheck --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --device U3E0\G10 --points 1 --direct-memory 0xF8 --write-check --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine(@"  extendeddevice-coverage --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp (repeatable) --network ... --station ... (repeatable) --device U3E0\G10 (repeatable) --points 1 (repeatable) --direct-memory 0xF8 (repeatable) --write-check --remote-password ... --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine("  read-soak --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --device D1000 --points 1 --iterations 100 --interval-ms 0 --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine("  mixed-read-load --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --iterations 100 --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine("  tcp-concurrency --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp --target SELF --network ... --station ... --clients 4 --iterations 50 --stagger-ms 50 --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine("  single-connection-load --series ql|iqr --frame-type 3e|4e [--host ... --port ... --transport tcp --target SELF --network ... --station ... --workers 4 --iterations 200 --report-dir internal_docs/validation/reports --quiet]");
+    const string profiles = "melsec:iq-r|melsec:iq-l|melsec:mx-f|melsec:mx-r|melsec:iq-f|melsec:qcpu|melsec:lcpu|melsec:qnu|melsec:qnudv";
+    Console.WriteLine($"  connection-check --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target SELF|SELF-CPU1|name,0x00,0xFF,0x03FF,0x00 --network ... --station ... --quiet]");
+    Console.WriteLine($"  device-range-catalog --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --quiet]");
+    Console.WriteLine($"  other-station-check --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --network ... --station ... (repeatable) --quiet]");
+    Console.WriteLine($"  random-check --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target ... --network ... --station ... --write-check --quiet]");
+    Console.WriteLine($"  block-check --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target ... --network ... --station ... --write-check --quiet]");
+    Console.WriteLine($@"  ExtendedDevice-device-recheck --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --device U3E0\G10 --points 1 --direct-memory 0xF8 --write-check --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine($@"  extendeddevice-coverage --plc-profile {profiles} [--host ... --port ... --transport tcp|udp (repeatable) --network ... --station ... (repeatable) --device U3E0\G10 (repeatable) --points 1 (repeatable) --direct-memory 0xF8 (repeatable) --write-check --remote-password ... --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine($"  read-soak --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --device D1000 --points 1 --iterations 100 --interval-ms 0 --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine($"  mixed-read-load --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --iterations 100 --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine($"  tcp-concurrency --plc-profile {profiles} [--host ... --port ... --transport tcp --target SELF --network ... --station ... --clients 4 --iterations 50 --stagger-ms 50 --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine($"  single-connection-load --plc-profile {profiles} [--host ... --port ... --transport tcp --target SELF --network ... --station ... --workers 4 --iterations 200 --report-dir internal_docs/validation/reports --quiet]");
     return;
 }
 
@@ -866,3 +787,5 @@ internal sealed record CoverageRow(
     string Status,
     string Detail
 );
+
+

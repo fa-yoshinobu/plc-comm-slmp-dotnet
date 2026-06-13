@@ -45,3 +45,4 @@ public class SlmpError : Exception
     /// </summary>
     public bool IsRemotePasswordError => EndCode is { } endCode && SlmpEndCodes.IsRemotePasswordEndCode(endCode);
 }
+

@@ -27,8 +27,8 @@ public enum SlmpCompatibilityMode : byte
     Iqr = 1,
 }
 
-/// <summary>Canonical PLC family used by the high-level API.</summary>
-public enum SlmpPlcFamily : byte
+/// <summary>Canonical PLC profile used by the high-level API.</summary>
+public enum SlmpPlcProfile : byte
 {
     IqF,
     IqR,
@@ -174,3 +174,4 @@ public enum SlmpDeviceCode : ushort
     /// <summary>Long Buffer Memory</summary>
     HG = 0x002E,
 }
+

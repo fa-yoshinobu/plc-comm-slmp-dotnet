@@ -25,22 +25,22 @@ Target shape:
 ```csharp
 public sealed record SlmpConnectionOptions(
     string Host,
-    SlmpPlcFamily PlcFamily)
+    SlmpPlcProfile PlcProfile)
 {
     public int Port { get; init; } = 1025;
     public TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(3);
     public SlmpTargetAddress Target { get; init; } = default;
 }
 
-public sealed record SlmpPlcFamilyDefaults(
+public sealed record SlmpPlcProfileDefaults(
     SlmpFrameType FrameType,
     SlmpCompatibilityMode CompatibilityMode,
-    SlmpPlcFamily AddressFamily,
+    SlmpPlcProfile AddressFamily,
     SlmpDeviceRangeFamily RangeFamily);
 
-public static class SlmpPlcFamilyProfiles
+public static class SlmpPlcProfileProfiles
 {
-    public static SlmpPlcFamilyDefaults Resolve(SlmpPlcFamily family);
+    public static SlmpPlcProfileDefaults Resolve(SlmpPlcProfile family);
 }
 
 public static class SlmpClientFactory
@@ -54,7 +54,7 @@ public static class SlmpClientFactory
 Notes:
 
 - the returned client must be safe to share across multiple async callers
-- `PlcFamily` is the single explicit high-level selection
+- `PlcProfile` is the single explicit high-level selection
 - frame type, compatibility mode, string-address rules, and device-range rules are derived from that family
 - automatic profile probing is out of scope
 
@@ -209,3 +209,4 @@ High-level logical address helpers should remain available for:
 - no automatic profile detection
 - no hidden retries that change request semantics
 - no requirement to preserve old extension-method naming if a cleaner public surface is chosen
+

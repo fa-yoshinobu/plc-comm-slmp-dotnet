@@ -38,10 +38,10 @@ public sealed class SlmpParserTests
     [Fact]
     public void ParseDevice_IqFXY_UsesOctal()
     {
-        var device = SlmpDeviceParser.Parse("X100", SlmpPlcFamily.IqF);
+        var device = SlmpDeviceParser.Parse("X100", SlmpPlcProfile.IqF);
         Assert.Equal(SlmpDeviceCode.X, device.Code);
         Assert.Equal((uint)0x40, device.Number);
-        Assert.Equal("Y217", SlmpAddress.Format(new SlmpDeviceAddress(SlmpDeviceCode.Y, 0x8F), SlmpPlcFamily.IqF));
+        Assert.Equal("Y217", SlmpAddress.Format(new SlmpDeviceAddress(SlmpDeviceCode.Y, 0x8F), SlmpPlcProfile.IqF));
     }
 
     [Theory]
@@ -49,16 +49,16 @@ public sealed class SlmpParserTests
     [InlineData("DY10")]
     public void ParseDevice_IqFDirectIo_Fails(string text)
     {
-        var error = Assert.Throws<NotSupportedException>(() => SlmpDeviceParser.Parse(text, SlmpPlcFamily.IqF));
+        var error = Assert.Throws<NotSupportedException>(() => SlmpDeviceParser.Parse(text, SlmpPlcProfile.IqF));
         Assert.Contains("not supported", error.Message, StringComparison.Ordinal);
-        Assert.False(SlmpAddress.TryParse(text, SlmpPlcFamily.IqF, out _));
+        Assert.False(SlmpAddress.TryParse(text, SlmpPlcProfile.IqF, out _));
     }
 
     [Fact]
     public void ParseDevice_HighLevelXYWithoutFamily_Fails()
     {
         var error = Assert.Throws<FormatException>(() => SlmpDeviceParser.ParseForHighLevel("Y217", null));
-        Assert.Contains("explicit PlcFamily", error.Message, StringComparison.Ordinal);
+        Assert.Contains("explicit PlcProfile", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -119,7 +119,7 @@ public sealed class SlmpParserTests
     [Fact]
     public void QueuedClient_ConstructsWithInnerClient()
     {
-        using var inner = new SlmpClient("127.0.0.1");
+        using var inner = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
         using var queued = new QueuedSlmpClient(inner);
         Assert.Same(inner, queued.InnerClient);
     }
@@ -127,11 +127,9 @@ public sealed class SlmpParserTests
     [Fact]
     public void QueuedClient_ExposesConfigurationProperties()
     {
-        using var inner = new SlmpClient("127.0.0.1");
+        using var inner = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpu);
         using var queued = new QueuedSlmpClient(inner)
         {
-            FrameType = SlmpFrameType.Frame3E,
-            CompatibilityMode = SlmpCompatibilityMode.Legacy,
             TargetAddress = new SlmpTargetAddress(0x01, 0x02, 0x03E0, 0x00),
             MonitoringTimer = 0x0020,
             Timeout = TimeSpan.FromSeconds(5),
@@ -145,14 +143,26 @@ public sealed class SlmpParserTests
     }
 
     [Fact]
-    public void ConnectionOptions_ResolveDefaultsFromPlcFamily()
+    public void ConnectionOptions_ResolveDefaultsFromPlcProfile()
     {
-        var options = new SlmpConnectionOptions("127.0.0.1", SlmpPlcFamily.IqL);
+        var options = new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.IqL);
 
         Assert.Equal(SlmpFrameType.Frame4E, options.ResolvedFrameType);
         Assert.Equal(SlmpCompatibilityMode.Iqr, options.ResolvedCompatibilityMode);
-        Assert.Equal(SlmpPlcFamily.IqR, options.ResolvedAddressFamily);
+        Assert.Equal(SlmpPlcProfile.IqR, options.ResolvedAddressFamily);
         Assert.Equal(SlmpDeviceRangeFamily.IqL, options.ResolvedRangeFamily);
+    }
+
+    [Fact]
+    public void SlmpPlcProfiles_Parse_AcceptsOnlyCanonicalProfileText()
+    {
+        Assert.Equal(SlmpPlcProfile.IqR, SlmpPlcProfiles.Parse("melsec:iq-r"));
+        Assert.Equal(SlmpPlcProfile.IqF, SlmpPlcProfiles.Parse("MELSEC:IQ-F"));
+
+        Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse("iq-r"));
+        Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse("iqr"));
+        Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse("q"));
+        Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse("qnudvcpu"));
     }
 
     [Fact]
@@ -169,10 +179,11 @@ public sealed class SlmpParserTests
     public void EncodeExtendedDeviceSpec_LinkDirect_J2SW10_MatchesPcap()
     {
         // Verified by GOT pcap: J2\SW10 -> 00 00 10 00 00 b5 00 00 02 00 f9
-        var client = new SlmpClient("127.0.0.1") { CompatibilityMode = SlmpCompatibilityMode.Legacy };
+        var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpu);
         var device = new SlmpDeviceAddress(SlmpDeviceCode.SW, 0x10);
         var extension = new SlmpExtensionSpec(ExtensionSpecification: 2, DirectMemorySpecification: 0xF9);
         var spec = client.EncodeExtendedDeviceSpec(device, extension);
         Assert.Equal(new byte[] { 0x00, 0x00, 0x10, 0x00, 0x00, 0xB5, 0x00, 0x00, 0x02, 0x00, 0xF9 }, spec);
     }
 }
+

@@ -188,23 +188,6 @@ public sealed class SlmpDeviceRangeCatalogTests
     }
 
     [Fact]
-    public async Task ReadDeviceRangeCatalogAsync_WithoutConfiguredFamily_Throws()
-    {
-        await using var server = new MultiResponseSlmpServer(Array.Empty<byte[]>());
-        await server.StartAsync();
-
-        using var client = new SlmpClient("127.0.0.1", server.Port)
-        {
-            CompatibilityMode = SlmpCompatibilityMode.Iqr,
-            MonitoringTimer = 0x0010,
-        };
-
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => client.ReadDeviceRangeCatalogAsync());
-        Assert.Contains("requires an explicit PlcFamily", error.Message, StringComparison.Ordinal);
-        Assert.Empty(server.RequestFrames);
-    }
-
-    [Fact]
     public async Task ReadDeviceRangeCatalogAsync_WithSelectedFamily_UsesOnlyFamilySpecificSdWindow()
     {
         var sdValues = new ushort[46];
@@ -221,10 +204,8 @@ public sealed class SlmpDeviceRangeCatalogTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
         {
-            CompatibilityMode = SlmpCompatibilityMode.Iqr,
-            FrameType = SlmpFrameType.Frame4E,
             MonitoringTimer = 0x0010,
         };
 
@@ -262,10 +243,8 @@ public sealed class SlmpDeviceRangeCatalogTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
         {
-            CompatibilityMode = SlmpCompatibilityMode.Iqr,
-            FrameType = SlmpFrameType.Frame4E,
             MonitoringTimer = 0x0010,
         };
 
@@ -298,10 +277,8 @@ public sealed class SlmpDeviceRangeCatalogTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
         {
-            CompatibilityMode = SlmpCompatibilityMode.Iqr,
-            FrameType = SlmpFrameType.Frame4E,
             MonitoringTimer = 0x0010,
         };
 
@@ -329,10 +306,8 @@ public sealed class SlmpDeviceRangeCatalogTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
         {
-            CompatibilityMode = SlmpCompatibilityMode.Iqr,
-            FrameType = SlmpFrameType.Frame4E,
             MonitoringTimer = 0x0010,
         };
 
@@ -353,10 +328,8 @@ public sealed class SlmpDeviceRangeCatalogTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
         {
-            CompatibilityMode = SlmpCompatibilityMode.Iqr,
-            FrameType = SlmpFrameType.Frame4E,
             MonitoringTimer = 0x0010,
         };
 
@@ -506,3 +479,4 @@ public sealed class SlmpDeviceRangeCatalogTests
     }
 
 }
+
