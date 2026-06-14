@@ -47,8 +47,8 @@ This page lists the high-level string device families accepted by the public hel
 | `Z` | Index register | Decimal | 16-bit index register. |
 | `LZ` | Long index register | Decimal | 32-bit family; use `:D` or `:L`. |
 | `R` | File register | Decimal | File register. |
-| `ZR` | File register continuous | Decimal | Continuous file register. |
-| `RD` | Refresh data register | Decimal | Not supported by every PLC profile. |
+| `ZR` | File register continuous | Decimal | Continuous file register; the device-range catalog reports it unsupported for `SlmpPlcProfile.IqF`. |
+| `RD` | Refresh data register | Decimal | The device-range catalog reports it unsupported for `SlmpPlcProfile.IqF`, `SlmpPlcProfile.QCpu`, `SlmpPlcProfile.LCpu`, `SlmpPlcProfile.QnU`, and `SlmpPlcProfile.QnUDV`. |
 
 ## Type suffixes
 
