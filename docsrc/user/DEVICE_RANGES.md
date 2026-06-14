@@ -35,12 +35,11 @@ before transport.
 
 ## API
 
-Both `SlmpClient` and `QueuedSlmpClient` expose:
+Both `SlmpClient` and `QueuedSlmpClient` expose the standard connected-profile catalog method.
 
-```csharp
-Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(
-    CancellationToken cancellationToken = default)
-```
+| Method | Use |
+| --- | --- |
+| `ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)` | Read the catalog for the client profile selected in `SlmpConnectionOptions`. |
 
 Example:
 
@@ -55,7 +54,7 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqF)
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var catalog = await client.ReadDeviceRangeCatalogAsync();
 
-Console.WriteLine($"selected={catalog.Model} -> {catalog.Family}");
+Console.WriteLine($"selected={catalog.Model} -> {catalog.PlcProfile}");
 foreach (var entry in catalog.Entries)
 {
     if (!entry.Supported) continue;
@@ -75,13 +74,11 @@ Returned types:
 `SlmpDeviceRangeEntry.Notation` uses `Base10`, `Base8`, or `Base16` for the public
 address text this library expects.
 
-If you need an explicit low-level override, both clients also expose:
+If you need an explicit low-level override, both clients also expose another overload.
 
-```csharp
-Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(
-    SlmpPlcProfile plcProfile,
-    CancellationToken cancellationToken = default)
-```
+| Method | Use |
+| --- | --- |
+| `ReadDeviceRangeCatalogAsync(SlmpPlcProfile plcProfile, CancellationToken cancellationToken = default)` | Read a catalog for a canonical profile other than the client's configured profile. |
 
 That overload is for reading the catalog for a canonical profile other than the
 client's configured profile. It is not the standard application route.

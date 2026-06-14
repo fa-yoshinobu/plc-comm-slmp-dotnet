@@ -1,60 +1,221 @@
 # Gotchas
 
-## LTN/LSTN/LCN/LZ reads return wrong values
+## LTN/LSTN/LCN/LZ returns wrong values
 
-These are 32-bit families. Always use the `:D` or `:L` suffix in named addresses.
+| Item | Detail |
+| --- | --- |
+| Symptom | Long timer, long counter, or long index values look truncated or shifted. |
+| Root cause | `LTN`, `LSTN`, `LCN`, and `LZ` are 32-bit logical families. |
+| Fix | Use `:D` or `:L` in named addresses, or pass `D` or `L` to `ReadTypedAsync`. |
 
 ```csharp
 using System;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR) { Port = 1025 };
-await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
+{
+    Port = 1025,
+};
 
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var value = await client.ReadTypedAsync("LTN0", "D");
-Console.WriteLine(value);
+Console.WriteLine($"LTN0 = {value}");
 ```
 
-Plain word access is rejected.
+## LCS/LCC reads incorrect
 
-## LCS/LCC reads look incorrect
+| Item | Detail |
+| --- | --- |
+| Symptom | Long counter state reads do not match the expected contact or coil state. |
+| Root cause | `LCS` and `LCC` are state bits; they are not 16-bit word current values. |
+| Fix | Read them as bit values and let `WriteTypedAsync` / `WriteNamedAsync` route writes through random bit write. |
 
-`LCS` and `LCC` use direct bit read. Writes go through random bit write (`0x1402`), not the word write path.
+```csharp
+using System;
+using PlcComm.Slmp;
 
-Fix: use `WriteBitInWordAsync` for word flags or `WriteTypedAsync` / `WriteNamedAsync` for long-family state devices. The library routes the request correctly.
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
+{
+    Port = 1025,
+};
 
-## LTS/LTC/LSTS/LSTC write is rejected
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
+var state = await client.ReadTypedAsync("LCS0", "BIT");
+await client.WriteTypedAsync("LCC0", "BIT", true);
+Console.WriteLine($"LCS0 = {state}");
+```
 
-Direct bit write is rejected for these families.
+## LTS/LTC/LSTS/LSTC write rejected
 
-Fix: use `WriteBitInWordAsync` for word flags or `WriteTypedAsync` / `WriteNamedAsync` for long-family state devices. The library routes to the correct command.
+| Item | Detail |
+| --- | --- |
+| Symptom | Writing a long timer contact or coil through a normal direct bit route is rejected. |
+| Root cause | Long timer state writes use SLMP random bit write, not ordinary direct bit write. |
+| Fix | Use `WriteTypedAsync` or `WriteNamedAsync` so the library selects the correct route. |
 
-## G or HG address returns an error
+```csharp
+using System;
+using System.Collections.Generic;
+using PlcComm.Slmp;
 
-`G` and `HG` are not in the public high-level API.
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
+{
+    Port = 1025,
+};
 
-Fix: use the low-level raw client methods for module buffer access.
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
+await client.WriteTypedAsync("LTC0", "BIT", true);
+var state = await client.ReadTypedAsync("LTC0", "BIT");
+Console.WriteLine($"LTC0 = {state}");
+```
 
-## Mixed write (words and bits in one call) fails
+## G/HG fails
 
-The PLC rejects command `0x1406` for word and bit combinations.
+| Item | Detail |
+| --- | --- |
+| Symptom | `G` or `HG` fails in the high-level typed or named API. |
+| Root cause | Module buffer memory is outside the public high-level device surface. |
+| Fix | Use low-level module-buffer APIs on the raw `SlmpClient` when you need module buffer access. |
 
-Fix: separate word writes and bit writes into distinct `WriteNamedAsync` calls.
+```csharp
+using System;
+using System.Threading.Tasks;
+using PlcComm.Slmp;
 
-## DX or DY fails on iQ-F
+await using var raw = new SlmpClient("192.168.250.100", SlmpPlcProfile.IqR, port: 1025);
+await raw.OpenAsync();
 
-`DX` and `DY` are not valid for `SlmpPlcProfile.IqF`.
+var device = SlmpQualifiedDeviceParser.Parse(@"U3\G100");
+var extension = new SlmpExtensionSpec();
+ushort[] words = await raw.ReadWordsExtendedAsync(device, points: 4, extension);
+Console.WriteLine($"G100 words = {words.Length}");
+```
 
-Fix: use `X` and `Y` instead.
+## Mixed write fails
 
-## Connection succeeds but all reads return an end code error
+| Item | Detail |
+| --- | --- |
+| Symptom | One mixed write containing word values and bit values fails. |
+| Root cause | The PLC rejects SLMP command `0x1406` for a mixed word and bit request. |
+| Fix | Send word writes and bit writes as separate calls. |
 
-The `SlmpPlcProfile` does not match the actual PLC hardware.
+```csharp
+using System;
+using PlcComm.Slmp;
 
-Fix: verify the profile. It determines frame type and access mode.
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
+{
+    Port = 1025,
+};
+
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
+await client.WriteNamedAsync(new Dictionary<string, object>
+{
+    ["D9000"] = (ushort)1234,
+});
+await client.WriteNamedAsync(new Dictionary<string, object>
+{
+    ["M9000"] = true,
+});
+Console.WriteLine("Separated word and bit writes.");
+```
+
+## DX/DY fails on iQ-F
+
+| Item | Detail |
+| --- | --- |
+| Symptom | `DX` or `DY` is rejected when the selected profile is `SlmpPlcProfile.IqF`. |
+| Root cause | iQ-F profile rules do not support `DX` and `DY`. |
+| Fix | Use `X` and `Y` with the iQ-F profile. |
+
+```csharp
+using System;
+using PlcComm.Slmp;
+
+var parsed = SlmpAddress.Parse("X20", SlmpPlcProfile.IqF);
+Console.WriteLine(SlmpAddress.Format(parsed, SlmpPlcProfile.IqF));
+```
+
+## All reads return end code
+
+| Item | Detail |
+| --- | --- |
+| Symptom | The connection opens, but every read returns an SLMP end-code error. |
+| Root cause | The selected `SlmpPlcProfile` does not match the actual PLC hardware. |
+| Fix | Choose the profile that matches the PLC; the profile determines frame type and compatibility mode. |
+
+```csharp
+using System;
+using PlcComm.Slmp;
+
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
+{
+    Port = 1025,
+};
+
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
+Console.WriteLine($"{client.FrameType} {client.CompatibilityMode}");
+```
+
+## SlmpPlcProfile.Unspecified throws immediately
+
+| Item | Detail |
+| --- | --- |
+| Symptom | Creating connection options or resolving defaults with `SlmpPlcProfile.Unspecified` fails before any PLC request. |
+| Root cause | `Unspecified` is not a concrete PLC profile and cannot select frame type or compatibility mode. |
+| Fix | Use a concrete enum value such as `SlmpPlcProfile.IqR`. |
+
+```csharp
+using System;
+using PlcComm.Slmp;
+
+try
+{
+    _ = SlmpPlcProfiles.Resolve(SlmpPlcProfile.Unspecified);
+}
+catch (ArgumentOutOfRangeException)
+{
+    var defaults = SlmpPlcProfiles.Resolve(SlmpPlcProfile.IqR);
+    Console.WriteLine($"{defaults.FrameType} {defaults.CompatibilityMode}");
+}
+```
+
+## Concurrent callers crash
+
+| Item | Detail |
+| --- | --- |
+| Symptom | Multiple async callers using one raw `SlmpClient` cause overlapping requests or inconsistent responses. |
+| Root cause | Raw `SlmpClient` is not thread-safe for concurrent callers. |
+| Fix | Use the `QueuedSlmpClient` returned by `SlmpClientFactory.OpenAndConnectAsync`. |
+
+```csharp
+using System;
+using PlcComm.Slmp;
+
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
+{
+    Port = 1025,
+};
+
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
+var first = client.ReadTypedAsync("D100", "U");
+var second = client.ReadTypedAsync("D101", "U");
+var values = await Task.WhenAll(first, second);
+Console.WriteLine($"{values[0]}, {values[1]}");
+```
 
 ## X or Y addresses do not match an iQ-F manual
 
-iQ-F `X` and `Y` addresses use octal notation, while other profiles use hexadecimal notation.
+| Item | Detail |
+| --- | --- |
+| Symptom | `X` or `Y` addresses look shifted on iQ-F. |
+| Root cause | iQ-F uses octal notation for `X` and `Y`; other supported profiles use hexadecimal. |
+| Fix | Parse or normalize `X` and `Y` with the explicit iQ-F profile. |
 
-Fix: use a connected client with `SlmpPlcProfile.IqF`, or call `SlmpAddress.Parse(text, SlmpPlcProfile.IqF)` when normalizing address text outside a client.
+```csharp
+using System;
+using PlcComm.Slmp;
+
+var address = SlmpAddress.Parse("Y217", SlmpPlcProfile.IqF);
+Console.WriteLine(SlmpAddress.Format(address, SlmpPlcProfile.IqF));
+```
