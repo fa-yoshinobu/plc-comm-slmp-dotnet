@@ -1,4 +1,4 @@
-# Latest Communication Verification
+# Latest communication verification
 
 This page keeps the current public summary only. Older detailed notes are not kept in the public documentation set.
 
