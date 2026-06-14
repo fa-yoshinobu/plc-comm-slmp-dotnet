@@ -40,12 +40,12 @@ Console.WriteLine($"D100 = {value}");
 
 | Page | Use it for |
 | --- | --- |
-| Full documentation site | [plc-comm-docs-site](https://fa-yoshinobu.github.io/plc-comm-docs-site/) |
-| Getting started | [docsrc/user/GETTING_STARTED.md](docsrc/user/GETTING_STARTED.md) |
-| Usage guide | [docsrc/user/USAGE_GUIDE.md](docsrc/user/USAGE_GUIDE.md) |
-| Supported registers | [docsrc/user/SUPPORTED_REGISTERS.md](docsrc/user/SUPPORTED_REGISTERS.md) |
-| PLC profiles | [docsrc/user/PROFILES.md](docsrc/user/PROFILES.md) |
-| Examples | [samples/README.md](samples/README.md) |
+| [Full documentation site](https://fa-yoshinobu.github.io/plc-comm-docs-site/) | Unified docs for all PLC communication libraries. |
+| [Getting started](docsrc/user/GETTING_STARTED.md) | Install the package, connect to your PLC, and run your first SLMP read/write. |
+| [Usage guide](docsrc/user/USAGE_GUIDE.md) | Use the high-level API and common SLMP workflows. |
+| [Supported registers](docsrc/user/SUPPORTED_REGISTERS.md) | Check supported device families, address syntax, and numbering rules. |
+| [PLC profiles](docsrc/user/PROFILES.md) | Choose the canonical MELSEC profile and frame behavior. |
+| [Examples](samples/README.md) | Run maintained .NET samples. |
 
 ## Hardware verified
 
