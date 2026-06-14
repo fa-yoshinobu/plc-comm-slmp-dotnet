@@ -2,7 +2,7 @@
 
 ## Start here
 
-Use this page when you want your first successful SLMP read from a Mitsubishi PLC. The recommended path is one explicit `SlmpPlcProfile`, one connected `QueuedSlmpClient`, and one safe `D` register.
+Use this page when you want your first successful SLMP read from a MELSEC PLC. The recommended path is one explicit `SlmpPlcProfile`, one connected `QueuedSlmpClient`, and one safe `D` register.
 
 ## Prerequisites
 

@@ -98,7 +98,7 @@ Embedded profile rules cover:
 ## Range Rules
 
 `Addr` is the library-facing address notation, not necessarily the notation
-used in Mitsubishi manuals.
+used in MELSEC manuals.
 
 For iQ-R-series range rows, the `SD` register value is the PLC-configured
 current point count. The catalog must cap that value at the iQ-R-series maximum
@@ -169,6 +169,6 @@ so these maximum addresses are representable by the protocol format.
   readable `ZR` addresses. `QnUDV` was live-checked on 2026-05-01 with
   `ZR393215` accepted, `ZR393216` returning `0x4031`, `R32767` accepted, and
   `R32768` returning `0x4031`.
-- `iQ-F` `X` and `Y` are documented in Mitsubishi manuals with octal addressing.
+- `iQ-F` `X` and `Y` are documented in MELSEC manuals with octal addressing.
   This library emits `Base8` and formats ranges such as `X0000-X1777`.
 

@@ -1,6 +1,6 @@
 # SLMP .NET samples
 
-These projects show how to connect to a Mitsubishi PLC with one explicit `SlmpPlcProfile` and the current high-level SLMP API.
+These projects show how to connect to a MELSEC PLC with one explicit `SlmpPlcProfile` and the current high-level SLMP API.
 
 ## How to run
 

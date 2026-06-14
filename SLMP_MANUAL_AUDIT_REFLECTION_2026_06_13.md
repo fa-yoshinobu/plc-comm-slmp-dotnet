@@ -5,7 +5,7 @@ external memo repository is not required to understand the current state.
 
 Audit basis:
 
-- Manual: Mitsubishi SLMP reference manual SH-080931-R.
+- Manual: MELSEC SLMP reference manual SH-080931-R.
 - Live target used for the final decisions: R120PCPU at `192.168.250.101:1025`.
 - Q/L password check: `melsec-q` route with password `1234`.
 - Cross-stack confirmation date: 2026-06-13.
