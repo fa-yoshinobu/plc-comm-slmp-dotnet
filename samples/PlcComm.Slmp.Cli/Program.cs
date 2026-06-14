@@ -162,7 +162,7 @@ async Task<int> RunDeviceRangeCatalogAsync(IReadOnlyList<string> args)
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
     var catalog = await client.ReadDeviceRangeCatalogAsync().ConfigureAwait(false);
 
-    Console.WriteLine($"[OK] plc_profile={client.PlcProfile} connection_frame={client.FrameType} connection_compatibility={client.CompatibilityMode} family={catalog.Family}");
+    Console.WriteLine($"[OK] plc_profile={client.PlcProfile} connection_frame={client.FrameType} connection_compatibility={client.CompatibilityMode} range_profile={SlmpPlcProfiles.ToCanonicalString(catalog.PlcProfile)}");
     foreach (var entry in catalog.Entries)
     {
         Console.WriteLine(
@@ -790,4 +790,3 @@ internal sealed record CoverageRow(
     string Status,
     string Detail
 );
-
