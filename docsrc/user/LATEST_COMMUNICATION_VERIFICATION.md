@@ -22,5 +22,5 @@ This page keeps the current public summary only. Older detailed notes are not ke
 
 ## Where Older Evidence Went
 
-Public historical validation clutter was removed. Maintainer-only retained evidence now belongs under `internal_docs/`.
+This public page keeps only the current summary. Detailed historical evidence is retained as maintainer notes.
 
