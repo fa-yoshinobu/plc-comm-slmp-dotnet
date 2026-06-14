@@ -212,4 +212,4 @@ Console.WriteLine($"LCN0:D = {snapshot["LCN0:D"]}");
 | `:D` | `D200:D` | Unsigned 32-bit value. |
 | `:L` | `D200:L` | Signed 32-bit value. |
 | `:F` | `D200:F` | Float32 value. |
-| `.n` | `D50.3` | Bit `n` inside one word, where `n` is `0` to `15`. |
+| `.n` | `D50.3` | Bit `n` inside one word, where `n` is hexadecimal `0` to `F`. |
