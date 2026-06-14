@@ -6,8 +6,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   build-test:
@@ -49,30 +47,6 @@ jobs:
           path: internal_docs/validation/reports/**
           if-no-files-found: ignore
           retention-days: 7
-
-      - name: Install docfx
-        run: dotnet tool install -g docfx
-
-      - name: Build docs
-        run: docfx docfx.json
-
-      - name: Upload pages artifact
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: docs/
-
-  deploy:
-    if: github.ref == 'refs/heads/main'
-    needs: build-test
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
 
   trigger-docs-rebuild:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
