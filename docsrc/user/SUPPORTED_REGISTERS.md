@@ -72,4 +72,4 @@ This page lists the high-level string device families accepted by the public hel
 | Bit-in-word syntax | `.n` is valid only on word devices, for example `D50.3`. Address bit devices directly, for example `M1000`. |
 | Profile-aware `X` and `Y` | Use a connected client or `SlmpAddress.Parse(text, profile)` so iQ-F octal rules are applied. |
 
-See [PLC profiles](PROFILES.md) for the profile strings and frame modes.
+See [PLC profiles](PROFILES.md) for canonical profiles and frame modes.

@@ -1,20 +1,21 @@
 # PLC profiles
 
-The profile string selects frame type, access mode, and device ranges.
+The canonical profile is the stable configuration value for PLC selection.
+`SlmpPlcProfile` is the .NET API selector used by the client.
 
 ## Profiles
 
-| `SlmpPlcProfile` enum value | Hardware | Frame | Mode | Notes |
-| --- | --- | --- | --- | --- |
-| `IqF` | MELSEC iQ-F / FX5 | `Frame3E` | `Legacy` | Canonical string `melsec:iq-f`; `X` and `Y` use octal notation. |
-| `IqR` | MELSEC iQ-R | `Frame4E` | `Iqr` | Canonical string `melsec:iq-r`. |
-| `IqL` | MELSEC iQ-L | `Frame4E` | `Iqr` | Canonical string `melsec:iq-l`; address family resolves through iQ-R rules. |
-| `MxF` | MELSEC MX-F | `Frame4E` | `Iqr` | Canonical string `melsec:mx-f`. |
-| `MxR` | MELSEC MX-R | `Frame4E` | `Iqr` | Canonical string `melsec:mx-r`. |
-| `QCpu` | MELSEC-Q CPU | `Frame3E` | `Legacy` | Canonical string `melsec:qcpu`. |
-| `LCpu` | MELSEC-L CPU | `Frame3E` | `Legacy` | Canonical string `melsec:lcpu`. |
-| `QnU` | MELSEC QnU CPU | `Frame3E` | `Legacy` | Canonical string `melsec:qnu`. |
-| `QnUDV` | MELSEC QnUDV CPU | `Frame3E` | `Legacy` | Canonical string `melsec:qnudv`. |
+| Canonical profile | Human label | .NET selector | Frame | Mode | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `melsec:iq-f` | MELSEC iQ-F | `SlmpPlcProfile.IqF` | `Frame3E` | `Legacy` | `X` and `Y` use octal notation. |
+| `melsec:iq-r` | MELSEC iQ-R | `SlmpPlcProfile.IqR` | `Frame4E` | `Iqr` | Standard iQ-R profile. |
+| `melsec:iq-l` | MELSEC iQ-L | `SlmpPlcProfile.IqL` | `Frame4E` | `Iqr` | Address family resolves through iQ-R rules. |
+| `melsec:mx-f` | MELSEC MX-F | `SlmpPlcProfile.MxF` | `Frame4E` | `Iqr` | MX-F profile. |
+| `melsec:mx-r` | MELSEC MX-R | `SlmpPlcProfile.MxR` | `Frame4E` | `Iqr` | MX-R profile. |
+| `melsec:qcpu` | MELSEC QCPU | `SlmpPlcProfile.QCpu` | `Frame3E` | `Legacy` | Legacy 3E profile. |
+| `melsec:lcpu` | MELSEC LCPU | `SlmpPlcProfile.LCpu` | `Frame3E` | `Legacy` | Legacy 3E profile. |
+| `melsec:qnu` | MELSEC QnU | `SlmpPlcProfile.QnU` | `Frame3E` | `Legacy` | Legacy 3E profile. |
+| `melsec:qnudv` | MELSEC QnUDV | `SlmpPlcProfile.QnUDV` | `Frame3E` | `Legacy` | Legacy 3E profile. |
 
 ## How to select
 
@@ -26,9 +27,14 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR);
 
 ## Profile-specific cautions
 
-| Profile | Caution |
-| --- | --- |
-| `IqF` | Frame 3E, legacy mode. `DX` and `DY` are not valid. `X` and `Y` use octal notation. |
-| `IqR` / `IqL` | Frame 4E, iQ-R mode. `IqL` uses iQ-L device-range rules. |
-| `MxF` / `MxR` | Frame 4E, iQ-R mode. |
-| `QCpu` / `LCpu` / `QnU` / `QnUDV` | Frame 3E, legacy mode. |
+| Canonical profile | Human label | Caution |
+| --- | --- | --- |
+| `melsec:iq-f` | MELSEC iQ-F | Frame 3E, legacy mode. `DX` and `DY` are not valid. `X` and `Y` use octal notation. |
+| `melsec:iq-r` | MELSEC iQ-R | Frame 4E, iQ-R mode. |
+| `melsec:iq-l` | MELSEC iQ-L | Frame 4E, iQ-R mode with iQ-L device-range rules. |
+| `melsec:mx-f` | MELSEC MX-F | Frame 4E, iQ-R mode. |
+| `melsec:mx-r` | MELSEC MX-R | Frame 4E, iQ-R mode. |
+| `melsec:qcpu` | MELSEC QCPU | Frame 3E, legacy mode. |
+| `melsec:lcpu` | MELSEC LCPU | Frame 3E, legacy mode. |
+| `melsec:qnu` | MELSEC QnU | Frame 3E, legacy mode. |
+| `melsec:qnudv` | MELSEC QnUDV | Frame 3E, legacy mode. |

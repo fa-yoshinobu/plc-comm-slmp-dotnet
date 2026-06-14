@@ -22,7 +22,7 @@ dotnet add package PlcComm.Slmp
 
 ## Choose your PLC profile
 
-`SlmpPlcProfile` is the required selector for frame type, compatibility mode, string address rules, and device range rules. Pick the enum value that matches your PLC hardware.
+`SlmpPlcProfile` is the .NET selector for the canonical profile. It controls frame type, compatibility mode, string address rules, and device range rules. Pick the selector that matches your PLC hardware.
 
 ```csharp
 using PlcComm.Slmp;

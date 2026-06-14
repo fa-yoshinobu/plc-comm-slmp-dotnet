@@ -163,7 +163,7 @@ Console.WriteLine($"{client.FrameType} {client.CompatibilityMode}");
 | --- | --- |
 | Symptom | Creating connection options or resolving defaults with `SlmpPlcProfile.Unspecified` fails before any PLC request. |
 | Root cause | `Unspecified` is not a concrete PLC profile and cannot select frame type or compatibility mode. |
-| Fix | Use a concrete enum value such as `SlmpPlcProfile.IqR`. |
+| Fix | Use a concrete .NET selector such as `SlmpPlcProfile.IqR`. |
 
 ```csharp
 using System;
