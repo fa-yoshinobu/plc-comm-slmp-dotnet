@@ -258,7 +258,10 @@ public static class SlmpClientExtensions
                     .ConfigureAwait(false);
                 break;
             default:
-                await client.WriteWordsAsync(device, [Convert.ToUInt16(value, CultureInfo.InvariantCulture)], ct)
+                var word = normalizedDType == "S"
+                    ? unchecked((ushort)Convert.ToInt16(value, CultureInfo.InvariantCulture))
+                    : Convert.ToUInt16(value, CultureInfo.InvariantCulture);
+                await client.WriteWordsAsync(device, [word], ct)
                     .ConfigureAwait(false);
                 break;
         }
@@ -1802,4 +1805,3 @@ public static class SlmpClientExtensions
 
     private static float DecodeFloatDWord(uint value) => BitConverter.Int32BitsToSingle(unchecked((int)value));
 }
-

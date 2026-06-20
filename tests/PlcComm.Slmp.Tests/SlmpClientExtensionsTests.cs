@@ -250,6 +250,17 @@ public sealed class SlmpClientExtensionsTests
         Assert.Contains("32-bit long current value", ex.Message);
     }
 
+    [Fact]
+    public async Task WriteTypedAsync_SignedWordNegative_DoesNotOverflowBeforeTransport()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Record.ExceptionAsync(
+            () => client.WriteTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), "S", (short)-1));
+
+        Assert.NotNull(ex);
+        Assert.IsNotType<OverflowException>(ex);
+    }
+
     [Theory]
     [InlineData(SlmpDeviceCode.LTN, "D", (int)SlmpNamedWriteRoute.RandomDWords)]
     [InlineData(SlmpDeviceCode.LSTN, "L", (int)SlmpNamedWriteRoute.RandomDWords)]
@@ -294,4 +305,3 @@ public sealed class SlmpClientExtensionsTests
         Assert.Contains("32-bit device", ex.Message);
     }
 }
-
