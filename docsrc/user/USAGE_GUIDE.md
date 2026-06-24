@@ -6,7 +6,7 @@
 | --- | --- |
 | `SlmpConnectionOptions` | Holds host, profile, port, transport, timeout, target, and monitoring timer settings. |
 | `SlmpClientFactory.OpenAndConnectAsync` | Opens a connected `QueuedSlmpClient` from `SlmpConnectionOptions`. |
-| `ReadTypedAsync` | Reads one typed scalar such as `D100` as `U`, `S`, `D`, `L`, or `F`. |
+| `ReadTypedAsync` | Reads one typed scalar such as `D100` as `BIT`, `U`, `S`, `D`, `L`, or `F`. |
 | `WriteTypedAsync` | Writes one typed scalar. |
 | `ReadNamedAsync` | Reads a mixed snapshot of named addresses. |
 | `WriteNamedAsync` | Writes a named set of values. |
@@ -71,8 +71,16 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
 };
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
-await client.WriteTypedAsync("D100", "U", (ushort)123);
-Console.WriteLine("Wrote D100.");
+var original = await client.ReadTypedAsync("D100", "U");
+try
+{
+    await client.WriteTypedAsync("D100", "U", (ushort)123);
+    Console.WriteLine("Wrote D100.");
+}
+finally
+{
+    await client.WriteTypedAsync("D100", "U", original);
+}
 ```
 
 ## Named snapshot
@@ -131,9 +139,17 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
 };
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
-await client.WriteBitInWordAsync("D50", bitIndex: 3, value: true);
-var snapshot = await client.ReadNamedAsync(["D50.3"]);
-Console.WriteLine($"D50.3 = {snapshot["D50.3"]}");
+var original = await client.ReadNamedAsync(["D50.3"]);
+try
+{
+    await client.WriteBitInWordAsync("D50", bitIndex: 3, value: true);
+    var snapshot = await client.ReadNamedAsync(["D50.3"]);
+    Console.WriteLine($"D50.3 = {snapshot["D50.3"]}");
+}
+finally
+{
+    await client.WriteBitInWordAsync("D50", bitIndex: 3, value: (bool)original["D50.3"]);
+}
 ```
 
 ## Polling
@@ -207,6 +223,7 @@ Console.WriteLine($"LCN0:D = {snapshot["LCN0:D"]}");
 | --- | --- | --- |
 | Plain word | `D100` | Unsigned 16-bit word by default. |
 | Plain bit | `M1000` | Boolean bit value. |
+| `BIT` | `M1000` | Boolean bit device value for `ReadTypedAsync` / `WriteTypedAsync`. |
 | `:U` | `D100:U` | Unsigned 16-bit word. |
 | `:S` | `D100:S` | Signed 16-bit word. |
 | `:D` | `D200:D` | Unsigned 32-bit value. |

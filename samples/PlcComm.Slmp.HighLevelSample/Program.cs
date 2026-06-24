@@ -70,7 +70,7 @@ client.MonitoringTimer = 0x0040;  // 16 s
 //
 // Read or write a single device with automatic type conversion.
 // device - SlmpDeviceAddress parsed from a string, e.g. "D100"
-// dtype  - "U" unsigned-16, "S" signed-16,
+// dtype  - "BIT" boolean, "U" unsigned-16, "S" signed-16,
 //          "D" unsigned-32, "L" signed-32, "F" float32
 //
 // Use case: reading a float32 sensor value from D200-D201 or writing a
@@ -81,10 +81,20 @@ var valF = await client.ReadTypedAsync("D200", "F");
 var valL = await client.ReadTypedAsync("D300", "L");
 Console.WriteLine($"[ReadTypedAsync] D100(U)={valU}  D200(F)={valF}  D300(L)={valL}");
 
-await client.WriteTypedAsync("D100", "U", (ushort)42);
-await client.WriteTypedAsync("D200", "F", 3.14f);
-await client.WriteTypedAsync("D300", "L", -100);
-Console.WriteLine("[WriteTypedAsync] Wrote 42->D100, 3.14->D200, -100->D300");
+try
+{
+    await client.WriteTypedAsync("D100", "U", (ushort)42);
+    await client.WriteTypedAsync("D200", "F", 3.14f);
+    await client.WriteTypedAsync("D300", "L", -100);
+    Console.WriteLine("[WriteTypedAsync] Wrote 42->D100, 3.14->D200, -100->D300");
+}
+finally
+{
+    await client.WriteTypedAsync("D100", "U", valU);
+    await client.WriteTypedAsync("D200", "F", valF);
+    await client.WriteTypedAsync("D300", "L", valL);
+    Console.WriteLine("[WriteTypedAsync] Restored D100, D200, D300");
+}
 
 // -------------------------------------------------------------------------
 // 3. ReadWordsSingleRequestAsync
@@ -122,10 +132,20 @@ Console.WriteLine($"[ReadDWordsChunkedAsync] D200-D439: {largeDwords.Length} dwo
 // Use case: toggling a request flag in a PLC control word without
 //           disturbing the other 15 status bits.
 // -------------------------------------------------------------------------
-await client.WriteBitInWordAsync("D50", bitIndex: 3, value: true);
-Console.WriteLine("[WriteBitInWordAsync] Set   bit 3 of D50");
-await client.WriteBitInWordAsync("D50", bitIndex: 3, value: false);
-Console.WriteLine("[WriteBitInWordAsync] Clear bit 3 of D50");
+var bitSnapshot = await client.ReadNamedAsync(["D50.3"]);
+var originalD50Bit3 = (bool)bitSnapshot["D50.3"];
+try
+{
+    await client.WriteBitInWordAsync("D50", bitIndex: 3, value: true);
+    Console.WriteLine("[WriteBitInWordAsync] Set   bit 3 of D50");
+    await client.WriteBitInWordAsync("D50", bitIndex: 3, value: false);
+    Console.WriteLine("[WriteBitInWordAsync] Clear bit 3 of D50");
+}
+finally
+{
+    await client.WriteBitInWordAsync("D50", bitIndex: 3, value: originalD50Bit3);
+    Console.WriteLine("[WriteBitInWordAsync] Restored bit 3 of D50");
+}
 
 // -------------------------------------------------------------------------
 // 6. ReadNamedAsync
@@ -171,4 +191,3 @@ await foreach (var snap in client.PollAsync(
 }
 
 Console.WriteLine("Done.");
-

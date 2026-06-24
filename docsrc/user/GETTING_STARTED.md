@@ -71,9 +71,17 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
 };
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
-await client.WriteTypedAsync("D100", "U", (ushort)123);
-var value = await client.ReadTypedAsync("D100", "U");
-Console.WriteLine($"D100 = {value}");
+var original = await client.ReadTypedAsync("D100", "U");
+try
+{
+    await client.WriteTypedAsync("D100", "U", (ushort)123);
+    var value = await client.ReadTypedAsync("D100", "U");
+    Console.WriteLine($"D100 = {value}");
+}
+finally
+{
+    await client.WriteTypedAsync("D100", "U", original);
+}
 ```
 
 ## Confirm success
@@ -81,7 +89,7 @@ Console.WriteLine($"D100 = {value}");
 1. Confirm the PLC is reachable at `192.168.250.100`.
 2. Confirm TCP port `1025` is enabled for SLMP.
 3. Confirm `SlmpPlcProfile.IqR` matches your actual PLC hardware, or change it to the correct profile.
-4. Confirm `D100` is a safe test register in your PLC program.
+4. Confirm `D100` is a safe test register in your PLC program and restore the original value after a write.
 5. Confirm the read prints a value before you run a write.
 
 ## If it does not work
