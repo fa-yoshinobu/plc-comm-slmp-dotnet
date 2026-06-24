@@ -362,6 +362,17 @@ public sealed class SlmpClientGuardTests
         Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00 }, body[6..10].ToArray());
     }
 
+    [Theory]
+    [InlineData((ushort)3)]
+    [InlineData(ushort.MaxValue)]
+    public async Task RemoteRunAsync_RejectsInvalidClearMode(ushort clearMode)
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.RemoteRunAsync(clearMode: clearMode));
+    }
+
     [Fact]
     public async Task CpuOperations_KeepRemoteStopOnManualFixedMode()
     {
@@ -585,4 +596,3 @@ public sealed class SlmpClientGuardTests
         Assert.Contains("Entry Monitor Device (0x0801) does not support LCS/LCC", ex.Message);
     }
 }
-

@@ -922,6 +922,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task RemoteRunAsync(bool force = false, ushort clearMode = 0, CancellationToken cancellationToken = default)
     {
+        if (clearMode > 2)
+        {
+            throw new ArgumentOutOfRangeException(nameof(clearMode), "remote run clearMode must be 0, 1, or 2.");
+        }
+
         var payload = force ? new byte[] { 0x03, 0x00, (byte)clearMode, 0x00 } : new byte[] { 0x01, 0x00, (byte)clearMode, 0x00 };
         _ = await RequestAsync(SlmpCommand.RemoteRun, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
     }
