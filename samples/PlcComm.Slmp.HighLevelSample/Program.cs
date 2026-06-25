@@ -7,10 +7,10 @@
 //   ReadNamedAsync, PollAsync, and SlmpAddress.Normalize.
 //
 // Usage:
-//   dotnet run --project samples/PlcComm.Slmp.HighLevelSample -- [host] [port] [plc-profile]
+//   dotnet run --project samples/PlcComm.Slmp.HighLevelSample -- [host] [port] <plc-profile>
 //
 // Common SLMP port values:
-//   1025  iQ-R / iQ-F built-in Ethernet SLMP (default here)
+//   1025  iQ-R / iQ-F built-in Ethernet SLMP
 //   5000  GX Works3 / GX Works2 simulator
 //   5007  Q/L series built-in Ethernet SLMP
 
@@ -18,7 +18,13 @@ using PlcComm.Slmp;
 
 var host = args.Length > 0 ? args[0] : "192.168.250.100";
 var port = args.Length > 1 ? int.Parse(args[1]) : 1025;
-var plcProfileArg = args.Length > 2 ? args[2] : "melsec:iq-r";
+if (args.Length <= 2)
+{
+    Console.Error.WriteLine("PLC profile is required. Usage: dotnet run --project samples/PlcComm.Slmp.HighLevelSample -- [host] [port] <plc-profile>");
+    Environment.ExitCode = 2;
+    return;
+}
+var plcProfileArg = args[2];
 var plcProfile = SlmpPlcProfiles.Parse(plcProfileArg);
 
 // -------------------------------------------------------------------------

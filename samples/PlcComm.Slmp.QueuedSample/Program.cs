@@ -7,13 +7,19 @@ using PlcComm.Slmp;
 if (args.Length > 0 && (string.Equals(args[0], "--help", StringComparison.OrdinalIgnoreCase) || string.Equals(args[0], "-h", StringComparison.OrdinalIgnoreCase)))
 {
     Console.WriteLine("Queued SLMP high-level sample");
-    Console.WriteLine("  dotnet run --project samples/PlcComm.Slmp.QueuedSample -- [host] [port] [plc-profile] [workers] [iterations]");
+    Console.WriteLine("  dotnet run --project samples/PlcComm.Slmp.QueuedSample -- [host] [port] <plc-profile> [workers] [iterations]");
     return;
 }
 
 var host = args.Length > 0 ? args[0] : "192.168.250.100";
 var port = args.Length > 1 ? int.Parse(args[1], CultureInfo.InvariantCulture) : 1025;
-var plcProfileArg = args.Length > 2 ? args[2] : "melsec:iq-r";
+if (args.Length <= 2)
+{
+    Console.Error.WriteLine("PLC profile is required. Usage: dotnet run --project samples/PlcComm.Slmp.QueuedSample -- [host] [port] <plc-profile> [workers] [iterations]");
+    Environment.ExitCode = 2;
+    return;
+}
+var plcProfileArg = args[2];
 var workers = args.Length > 3 ? int.Parse(args[3], CultureInfo.InvariantCulture) : 4;
 var iterations = args.Length > 4 ? int.Parse(args[4], CultureInfo.InvariantCulture) : 10;
 var plcProfile = SlmpPlcProfiles.Parse(plcProfileArg);
