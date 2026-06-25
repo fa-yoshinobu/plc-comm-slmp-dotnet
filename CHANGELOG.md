@@ -5,147 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.1] - 2026-06-25
+**Entry labels**
+
+- `Release`: Package/version metadata and publishing preparation.
+- `Library`: Runtime behavior, public API, protocol handling, or validation in the distributed library.
+- `Docs`: README, user guides, generated API docs, or other documentation-only changes.
+- `Samples`: Examples, sample flows, sample scripts, or sample applications.
+- `Tests`: Test suites, test fixtures, golden vectors, or verification data.
+- `Tooling`: Developer/operator command-line tools and helper utilities.
+- `CI`: Release checks, workflow scripts, or automation-only changes.
+
+## [Unreleased] - 2026-06-25
 
 ### Changed
-- [Samples] Made the high-level and queued samples require an explicit PLC profile instead of relying on implicit defaults.
-- [Samples] Updated safe write examples to restore the original PLC values after demonstration writes.
-- [Docs] Corrected the SLMP .NET BIT helper documentation.
+- Docs: Corrected the SLMP .NET BIT helper documentation.
+- Samples: Made the high-level and queued samples require an explicit PLC profile instead of relying on implicit defaults.
+- Samples: Updated safe write examples to restore the original PLC values after demonstration writes.
 
 ## [1.0.0] - 2026-06-24
 
 ### Changed
-- Bumped NuGet and sample project metadata to `1.0.0` for the first stable release line.
+- Release: Bumped NuGet and sample project metadata to `1.0.0` for the first stable release line.
 
 ### Fixed
-- Reject `RemoteRunAsync` clear modes outside `0`, `1`, and `2` before building the SLMP request payload.
-
-## [0.8.0] - 2026-06-14
-
-### Changed
-- Bumped release metadata to 0.8.0 for the unified PLC communication library release.
-
-## [0.1.15] - 2026-06-12
-
-### Added
-- Added SLMP end-code name/message helpers for the full communication error-code table, and exposed them from `SlmpError`.
-
-### Changed
-- Removed the non-manual `RemoteStopAsync(force: true)` overload and `RemoteForceStopAsync()` helper; Remote STOP now exposes only the manual fixed request data `01 00`.
-- Restricted `SlmpPlcProfiles.Parse()` to canonical `melsec:...` profile names; short aliases such as `iq-r`, `iqr`, `q`, and `qnudvcpu` are now rejected.
-- Aligned Self Test loopback input validation with the manual: 1..960 bytes, ASCII `0`-`9`/`A`-`F` only.
-- Enabled TCP_NODELAY for TCP transport to avoid delayed-ACK latency spikes.
-- Added manual point-limit preflight checks for continuous, random, block, memory, and helper-layer requests so oversized requests fail before transport.
-- Removed `RetryMixedOnError` from `SlmpBlockWriteOptions`; mixed block-write failures now return the PLC end code unchanged, and only explicit `SplitMixedBlocks` sends separate block writes.
-- Guarded Extended Specification `G`/`HG` access before transport: `G` now requires a `U...` qualified module path, and `HG` is accepted only for `U3E0\HG` through `U3E3\HG` with the matching direct-memory code.
-
-## [0.1.13] - 2026-05-02
-
-### Changed
-- Bumped the library revision for README alignment and refreshed test package dependencies.
-- Vendored the SLMP shared test vectors into this repository so local release checks and CI no longer require a sibling `plc-comm-slmp-cross-verify` checkout.
-
-## [0.1.12] - 2026-04-27
-
-### Fixed
-- Tightened SLMP device-name parsing so a matched device code with an invalid number fails immediately instead of checking shorter code candidates.
-- Added regression coverage for hexadecimal device numbers whose number text is entirely `A-F`.
-
-## [0.1.11] - 2026-04-27
-
-### Changed
-- Bumped the library revision for the cross-library SLMP parity release. The .NET route guards from `0.1.10` are unchanged and remain aligned with the updated shared verification suite.
-
-## [0.1.10] - 2026-04-27
-
-### Changed
-- Tightened long-device route guards so `LTN/LSTN/LCN/LZ` avoid unsupported direct/raw word and dword paths, while supported random/named dword paths remain available.
-- Aligned `LCS/LCC` write validation with the random/named bit route policy.
-
-## [0.1.9] - 2026-04-14
-
-### Changed
-- The standard high-level route now requires one explicit `SlmpPlcFamily`. `SlmpConnectionOptions`, `OpenAndConnectAsync`, samples, and user docs all derive frame, compatibility, string-address handling, and device-range defaults from that family.
-- `ReadDeviceRangeCatalogAsync()` without an explicit family override now uses the configured PLC family only. Automatic model-name resolution is no longer part of the standard application path.
-
-## [0.1.8] - 2026-04-14
-
-### Added
-- `SlmpPlcFamily` and fixed PLC-family default resolution for high-level client options, helper parsing, and device-range lookups.
-
-### Changed
-- High-level string address parsing and device-range catalog helpers now follow explicit PLC-family rules, with `iQ-F` `X/Y` as octal and other supported families as hexadecimal.
-
-## [0.1.7] - 2026-04-14
-
-### Added
-- Public device-range catalog APIs and user docs for supported SLMP device families and ranges.
-- Regression tests for device-range catalog and CPU operation-state inspection flows.
-
-### Changed
-- `QueuedSlmpClient` and the sample CLI now expose the device-range helpers alongside the existing high-level API surface.
-
-## [0.1.6] - 2026-04-13
-
-### Added
-- Guard tests for unsupported long-timer direct reads and unsupported `LCS/LCC` random, block, and monitor-registration command paths.
-
-### Changed
-- `SlmpClient` now rejects unsupported long-timer and long-counter-state command combinations before any PLC I/O so the .NET client matches the cross-library consistency rules.
-
-## [0.1.5] - 2026-04-13
-
-### Changed
-- CI and release workflows now materialize `plc-comm-slmp-cross-verify/specs/shared` before build and test so the packaged library keeps using the canonical shared verification vectors.
-
-## [0.1.4] - 2026-04-01
-
-### Removed
-- `Step Relay S`: removed from the public device parser and device-code table. `TS/LTS/STS/LSTS/CS/LCS` remain supported.
-- Stale current-doc references to file commands and PLC-initiated ondemand (`2101`), which are not part of the implemented public API.
-- Unstable CLI auto profile flags: removed `--series auto` and `--frame-type auto` from the public `connection-check` and `other-station-check` commands.
-- `sync_from_python.bat`: removed the obsolete doc-sync helper now that current release docs are maintained directly in this repository.
-
-### Added
-- String-address overloads for high-level helpers (`ReadTypedAsync`, `WriteTypedAsync`, `WriteBitInWordAsync`, `ReadWordsAsync`, `ReadDWordsAsync`).
-- Queued high-level helper overloads so `QueuedSlmpClient` can call typed helpers directly.
-- `SlmpDeviceParser`: added `F` (Annunciator), `LCS`, `LCC`, `LCN` (Long Counter Contact/Coil/Current) to the prefix table, placed before shorter prefixes to ensure correct longest-match ordering.
-- `release_check.bat`: added a release-preflight batch entry point that runs CI and docs generation together.
-
-### Changed
-- User-facing docs now describe the high-level helper layer as the primary API surface.
-- `PlcComm.Slmp.HighLevelSample` and `PlcComm.Slmp.QueuedSample` now use only the high-level API path in their recommended flows.
-- Expanded XML comments for user-facing high-level helpers so DocFX output carries clearer parameter, return, and usage guidance.
-- Refreshed the published DocFX site after the high-level API unification and the explicit `SingleRequest` / `Chunked` helper split.
-
-### Fixed
-- `ReadNamedAsync` / `PollAsync` now compile the address plan once and batch direct word/DWord reads via `0403 random read` when possible.
-- Reduced TCP request overhead by removing redundant `NetworkStream.FlushAsync`, trimming TCP receive-path allocations, and replacing several `List<byte>.ToArray()` builders with exact-size payload builders in extended random / monitor-ext / label commands.
-- `SlmpQualifiedDeviceParser.Parse`: `U\G` now sets `DirectMemorySpecification = 0xF8` (`DIRECT_MEMORY_MODULE_ACCESS`) and `U\HG` sets `0xFA` (`DIRECT_MEMORY_CPU_BUFFER`); previously both defaulted to `0x00`, causing the wrong 10-byte generic format instead of the pcap-verified 11-byte format.
-- `WriteWordsSingleRequestAsync` and `WriteDWordsSingleRequestAsync` now stay covered by regression tests that fail before transport dispatch when the requested point count exceeds the single-request limits.
-
-## [0.1.2] - 2026-03-22
-
-### Changed
-- Unified `Directory.Build.props` with `TreatWarningsAsErrors`, `EnableNETAnalyzers`, and `AnalysisLevel=latest-recommended`.
-- Enriched NuGet package metadata: added `PackageTags`, `PackageProjectUrl`, `PackageReadmeFile`, symbol package settings (`snupkg`), and source-link support.
-- Fixed misleading `SlmpClient` doc comment: port default documented as 1025 (was "5000 or 1025").
-- Fixed solution name reference in `RELEASE_PROCESS.md` and `README.md` (`PlcCommSlmp.sln` -> `PlcComm.Slmp.sln`).
-
-## [0.1.0] - 2026-03-19
-
-### Added
-- Bootstrap `plc-comm-slmp-dotnet` solution with library, CLI sample, and tests.
-- Core `SlmpClient` transport and binary 3E/4E request handling.
-- Core read/write, type-name, remote control, and clear-error APIs.
-- `connection-check` and `other-station-check` CLI commands.
-- Mixed block write retry handling for `0xC056`/`0xC05B`/`0xC061`/`0x414A`.
-- `g-hg-ExtendedDevice-coverage` CLI command with optional write-check flow.
-- `ExtendedDevice-device-recheck`, `read-soak`, `mixed-read-load`, and `tcp-concurrency` CLI probes.
-- `QueuedSlmpClient` for single-TCP-connection serialized execution.
-- Extended Specification extended device read/write support.
-- GitHub Actions CI workflow (`.github/workflows/ci.yml`).
-- Initial user/maintainer/validation documents.
-
-### Fixed
-- iQ-R random bit write payload encoding for `1402` write-check path.
+- Library: Reject `RemoteRunAsync` clear modes outside `0`, `1`, and `2` before building the SLMP request payload.
