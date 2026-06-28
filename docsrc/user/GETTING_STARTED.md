@@ -8,7 +8,7 @@ Use this page when you want your first successful SLMP read from a MELSEC PLC. T
 
 | Requirement | Value |
 | --- | --- |
-| .NET SDK | .NET 9 SDK for the `net9.0` target |
+| .NET SDK | .NET 8, 9, or 10 SDK for consuming the package; .NET 10 SDK recommended when building this repository |
 | Package | `PlcComm.Slmp` |
 | PLC endpoint | `192.168.250.100:1025` over TCP |
 | First profile to try | `SlmpPlcProfile.IqR` when your PLC is iQ-R hardware |

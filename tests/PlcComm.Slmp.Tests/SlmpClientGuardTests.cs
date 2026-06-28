@@ -356,10 +356,9 @@ public sealed class SlmpClientGuardTests
         await client.RemoteRunAsync();
 
         var request = Assert.Single(server.RequestFrames);
-        var body = request.AsSpan(13);
-        Assert.Equal((ushort)0x1001, BinaryPrimitives.ReadUInt16LittleEndian(body[2..4]));
-        Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(body[4..6]));
-        Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00 }, body[6..10].ToArray());
+        Assert.Equal((ushort)0x1001, BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(15, 2)));
+        Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(17, 2)));
+        Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00 }, request.AsSpan(19, 4).ToArray());
     }
 
     [Theory]
