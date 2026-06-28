@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Tooling`: Developer/operator command-line tools and helper utilities.
 - `CI`: Release checks, workflow scripts, or automation-only changes.
 
-## [Unreleased] - 2026-06-25
+## [Unreleased] - 2026-06-28
 
 ### Changed
 - Library: Multi-targeted the package for `net8.0`, `net9.0`, and `net10.0`.
@@ -23,10 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docs: Updated the SDK prerequisite guidance for the multi-target package.
 - Samples: Made the high-level and queued samples require an explicit PLC profile instead of relying on implicit defaults.
 - Samples: Updated safe write examples to restore the original PLC values after demonstration writes.
+- Tests: Updated `Microsoft.NET.Test.Sdk` to `18.7.0`.
 - Tests: Multi-targeted the library test project for `net8.0`, `net9.0`, and `net10.0`.
 - CI: Installed .NET 8, .NET 9, and .NET 10 SDKs in CI, sample-build, and release workflows.
 
 ### Fixed
+- Library: Made `BIT_IN_WORD` helper addresses require an explicit bit index such as `D100.0` through `D100.F`; `D100:BIT_IN_WORD` now fails in `ParseAddress`, `ReadNamedAsync`, and `WriteNamedAsync` instead of silently reading or writing bit 0.
+- Tests: Added coverage for rejecting `BIT_IN_WORD` addresses without an explicit bit index.
 - Tests: Adjusted an async guard test assertion so it remains compatible with the C# language version used by the `net8.0` target.
 
 ## [1.0.0] - 2026-06-24

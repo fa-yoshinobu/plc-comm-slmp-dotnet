@@ -188,6 +188,13 @@ public sealed class SlmpClientExtensionsTests
     }
 
     [Fact]
+    public void ParseAddress_BitInWordDTypeWithoutIndexThrows()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => SlmpClientExtensions.ParseAddress("D100:BIT_IN_WORD"));
+        Assert.Contains("no bit index", ex.Message);
+    }
+
+    [Fact]
     public void ResolveDTypeForAddress_DefaultsLongCurrentsToDword()
     {
         Assert.Equal(

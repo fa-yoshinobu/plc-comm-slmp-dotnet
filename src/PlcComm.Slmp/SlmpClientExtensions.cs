@@ -1172,7 +1172,7 @@ public static class SlmpClientExtensions
             if (dtype == "BIT_IN_WORD")
             {
                 ValidateBitInWordTarget(pair.Key, device);
-                await client.WriteBitInWordAsync(device, bitIdx ?? 0, Convert.ToBoolean(pair.Value, CultureInfo.InvariantCulture), ct)
+                await client.WriteBitInWordAsync(device, RequireBitInWordIndex(pair.Key, bitIdx), Convert.ToBoolean(pair.Value, CultureInfo.InvariantCulture), ct)
                     .ConfigureAwait(false);
                 continue;
             }
@@ -1281,7 +1281,12 @@ public static class SlmpClientExtensions
         if (address.Contains(':'))
         {
             int index = address.IndexOf(':');
-            return (address[..index].Trim(), address[(index + 1)..].Trim().ToUpperInvariant(), null);
+            var dtype = address[(index + 1)..].Trim().ToUpperInvariant();
+            if (dtype == "BIT_IN_WORD")
+                throw new ArgumentException(
+                    $"Address '{address}' uses BIT_IN_WORD but no bit index was specified. Use '.0' through '.F' notation.",
+                    nameof(address));
+            return (address[..index].Trim(), dtype, null);
         }
 
         if (address.Contains('.'))
@@ -1342,6 +1347,7 @@ public static class SlmpClientExtensions
             else if (dtype == "BIT_IN_WORD")
             {
                 ValidateBitInWordTarget(address, device);
+                bitIdx = RequireBitInWordIndex(address, bitIdx);
                 if (IsWordBatchable(device.Code))
                 {
                     kind = SlmpNamedReadKind.BitInWord;
@@ -1387,7 +1393,7 @@ public static class SlmpClientExtensions
                         : wordValues[entry.Device];
                     break;
                 case SlmpNamedReadKind.BitInWord:
-                    result[entry.Address] = ((wordValues[entry.Device] >> (entry.BitIndex ?? 0)) & 1) != 0;
+                    result[entry.Address] = ((wordValues[entry.Device] >> RequireBitInWordIndex(entry.Address, entry.BitIndex)) & 1) != 0;
                     break;
                 case SlmpNamedReadKind.Dword:
                     result[entry.Address] = entry.DType.ToUpperInvariant() switch
@@ -1404,7 +1410,7 @@ public static class SlmpClientExtensions
                     if (entry.DType == "BIT_IN_WORD")
                     {
                         var words = await client.ReadWordsRawAsync(entry.Device, 1, ct).ConfigureAwait(false);
-                        result[entry.Address] = ((words[0] >> (entry.BitIndex ?? 0)) & 1) != 0;
+                        result[entry.Address] = ((words[0] >> RequireBitInWordIndex(entry.Address, entry.BitIndex)) & 1) != 0;
                     }
                     else
                     {
@@ -1593,6 +1599,16 @@ public static class SlmpClientExtensions
                 "Address bit devices directly, for example 'M1000' instead of 'M1000.0'.",
                 nameof(address));
         }
+    }
+
+    private static int RequireBitInWordIndex(string address, int? bitIndex)
+    {
+        if (bitIndex is >= 0 and <= 15)
+            return bitIndex.Value;
+
+        throw new ArgumentException(
+            $"Address '{address}' uses BIT_IN_WORD but no bit index was specified. Use '.0' through '.F' notation.",
+            nameof(address));
     }
 
     internal static bool HasExplicitDType(string address)
