@@ -88,7 +88,7 @@ public static class SlmpClientExtensions
         string dtype,
         CancellationToken ct = default)
     {
-        var normalizedDType = dtype.ToUpperInvariant();
+        var normalizedDType = RequireDType(dtype, nameof(dtype));
         var longRead = GetLongTimerReadSpec(device.Code);
         if (longRead is not null)
         {
@@ -125,7 +125,7 @@ public static class SlmpClientExtensions
                     var dword = IsRandomDWordAddressedDevice(device.Code)
                         ? await ReadRandomDWordValueAsync(client, device, ct).ConfigureAwait(false)
                         : (await client.ReadDWordsRawAsync(device, 1, ct).ConfigureAwait(false))[0];
-                    return dtype.ToUpperInvariant() switch
+                    return normalizedDType switch
                     {
                         "F" => DecodeFloatDWord(dword),
                         "L" => DecodeSignedDWord(dword),
@@ -212,7 +212,7 @@ public static class SlmpClientExtensions
         object value,
         CancellationToken ct = default)
     {
-        var normalizedDType = dtype.ToUpperInvariant();
+        var normalizedDType = RequireDType(dtype, nameof(dtype));
         switch (ResolveWriteRoute(device, normalizedDType))
         {
             case SlmpNamedWriteRoute.RandomBits:
@@ -1120,7 +1120,7 @@ public static class SlmpClientExtensions
     /// </summary>
     /// <param name="client">Connected SLMP client.</param>
     /// <param name="addresses">
-    /// Address list such as <c>D100</c>, <c>D200:F</c>, <c>D300:L</c>, or <c>D50.3</c>.
+    /// Address list such as <c>D100:U</c>, <c>D200:F</c>, <c>D300:L</c>, <c>M1000:BIT</c>, or <c>D50.3</c>.
     /// </param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A dictionary whose keys match the requested address strings.</returns>
@@ -1154,8 +1154,8 @@ public static class SlmpClientExtensions
     /// </summary>
     /// <param name="client">Connected SLMP client.</param>
     /// <param name="updates">
-    /// Mapping of address string to value, for example <c>"D100"</c>, <c>"D200:F"</c>,
-    /// <c>"D50.3"</c>, or direct bit-device addresses such as <c>"M1000"</c>.
+    /// Mapping of address string to value, for example <c>"D100:U"</c>, <c>"D200:F"</c>,
+    /// <c>"D50.3"</c>, or direct bit-device addresses such as <c>"M1000:BIT"</c>.
     /// </param>
     /// <param name="ct">Cancellation token.</param>
     public static async Task WriteNamedAsync(
@@ -1167,8 +1167,6 @@ public static class SlmpClientExtensions
         {
             var (baseAddress, dtype, bitIdx) = ParseAddress(pair.Key);
             var device = ParseDeviceForClient(client, baseAddress);
-            var resolvedDType = ResolveDTypeForAddress(pair.Key, device, dtype, bitIdx);
-            ValidateLongTimerEntry(pair.Key, device, resolvedDType);
             if (dtype == "BIT_IN_WORD")
             {
                 ValidateBitInWordTarget(pair.Key, device);
@@ -1177,6 +1175,9 @@ public static class SlmpClientExtensions
                 continue;
             }
 
+            var resolvedDType = ResolveDTypeForAddress(pair.Key, device, dtype, bitIdx);
+            ValidateNamedDeviceDType(pair.Key, device, resolvedDType);
+            ValidateLongTimerEntry(pair.Key, device, resolvedDType);
             await client.WriteTypedAsync(device, resolvedDType, pair.Value, ct).ConfigureAwait(false);
         }
     }
@@ -1286,6 +1287,7 @@ public static class SlmpClientExtensions
                 throw new ArgumentException(
                     $"Address '{address}' uses BIT_IN_WORD but no bit index was specified. Use '.0' through '.F' notation.",
                     nameof(address));
+            dtype = RequireDType(dtype, nameof(address));
             return (address[..index].Trim(), dtype, null);
         }
 
@@ -1299,7 +1301,9 @@ public static class SlmpClientExtensions
             throw new ArgumentException($"Invalid bit-in-word index in '{address}'. Use one hex digit 0-F or ':' for data type.", nameof(address));
         }
 
-        return (address.Trim(), "U", null);
+        throw new ArgumentException(
+            $"Address '{address}' requires an explicit dtype such as ':U', ':D', or ':BIT'.",
+            nameof(address));
     }
 
     internal static string NormalizeNamedAddress(string address)
@@ -1317,9 +1321,9 @@ public static class SlmpClientExtensions
             return $"{canonicalBase}.{bit.ToString("X", CultureInfo.InvariantCulture)}";
         }
 
-        return trimmed.Contains(':', StringComparison.Ordinal)
-            ? $"{canonicalBase}:{dtype}"
-            : canonicalBase;
+        var device = SlmpDeviceParser.ParseForHighLevel(baseAddress, PlcProfile);
+        ValidateNamedDeviceDType(trimmed, device, dtype);
+        return $"{canonicalBase}:{dtype}";
     }
 
     internal static SlmpNamedReadPlan CompileReadPlan(IEnumerable<string> addresses, SlmpPlcProfile? PlcProfile = null)
@@ -1334,17 +1338,10 @@ public static class SlmpClientExtensions
         {
             var (baseAddress, dtype, bitIdx) = ParseAddress(address);
             var device = SlmpDeviceParser.ParseForHighLevel(baseAddress, PlcProfile);
-            dtype = ResolveDTypeForAddress(address, device, dtype, bitIdx);
-            ValidateLongTimerEntry(address, device, dtype);
-            ValidateDWordOnlyEntry(address, device, dtype);
             var kind = SlmpNamedReadKind.Fallback;
             var longTimerRead = GetLongTimerReadSpec(device.Code);
 
-            if (longTimerRead is not null)
-            {
-                kind = SlmpNamedReadKind.LongTimer;
-            }
-            else if (dtype == "BIT_IN_WORD")
+            if (dtype == "BIT_IN_WORD")
             {
                 ValidateBitInWordTarget(address, device);
                 bitIdx = RequireBitInWordIndex(address, bitIdx);
@@ -1354,6 +1351,18 @@ public static class SlmpClientExtensions
                     if (seenWords.Add(device))
                         wordDevices.Add(device);
                 }
+            }
+            else
+            {
+                dtype = ResolveDTypeForAddress(address, device, dtype, bitIdx);
+                ValidateNamedDeviceDType(address, device, dtype);
+                ValidateLongTimerEntry(address, device, dtype);
+                ValidateDWordOnlyEntry(address, device, dtype);
+            }
+
+            if (longTimerRead is not null)
+            {
+                kind = SlmpNamedReadKind.LongTimer;
             }
             else if ((dtype == "U" || dtype == "S") && IsWordBatchable(device.Code))
             {
@@ -1611,23 +1620,61 @@ public static class SlmpClientExtensions
             nameof(address));
     }
 
-    internal static bool HasExplicitDType(string address)
-        => address.Contains(':', StringComparison.Ordinal);
+    private static string RequireDType(string dtype, string paramName)
+    {
+        var normalized = dtype.Trim().ToUpperInvariant();
+        if (string.IsNullOrEmpty(normalized))
+        {
+            throw new ArgumentException("dtype is required; specify BIT/U/S/D/L/F explicitly.", paramName);
+        }
+
+        if (normalized == "BIT_IN_WORD")
+        {
+            throw new ArgumentException("BIT_IN_WORD requires '.bit' notation such as 'D50.A'.", paramName);
+        }
+
+        if (normalized is not "BIT" and not "U" and not "S" and not "D" and not "L" and not "F")
+        {
+            throw new ArgumentException($"Unsupported dtype '{normalized}'; expected BIT/U/S/D/L/F.", paramName);
+        }
+
+        return normalized;
+    }
+
+    private static void ValidateNamedDeviceDType(string address, SlmpDeviceAddress device, string dtype)
+    {
+        if (dtype == "BIT_IN_WORD")
+            return;
+
+        var isBitDevice = IsBitDevice(device.Code);
+        if (isBitDevice && dtype != "BIT")
+        {
+            throw new ArgumentException(
+                $"Address '{address}' is a bit device and requires ':BIT'.",
+                nameof(address));
+        }
+
+        if (!isBitDevice && dtype == "BIT")
+        {
+            throw new ArgumentException(
+                $"Address '{address}' uses ':BIT', which is only valid for bit devices. Use '.bit' notation for a bit inside a word device.",
+                nameof(address));
+        }
+    }
 
     private static string NormalizeDTypeForDevice(SlmpDeviceAddress device, string dtype)
-        => dtype == "U" && IsBitDevice(device.Code) ? "BIT" : dtype;
+        => RequireDType(dtype, nameof(dtype));
 
     internal static string ResolveDTypeForAddress(string address, SlmpDeviceAddress device, string dtype, int? bitIdx)
     {
-        var normalized = NormalizeDTypeForDevice(device, dtype);
-        if (!HasExplicitDType(address) && bitIdx is null && device.Code is SlmpDeviceCode.LTN or SlmpDeviceCode.LSTN or SlmpDeviceCode.LCN or SlmpDeviceCode.LZ)
-            return "D";
-        return normalized;
+        if (bitIdx is not null)
+            return "BIT_IN_WORD";
+        return NormalizeDTypeForDevice(device, dtype);
     }
 
     internal static SlmpNamedWriteRoute ResolveWriteRoute(SlmpDeviceAddress device, string dtype)
     {
-        var normalized = NormalizeDTypeForDevice(device, dtype.ToUpperInvariant());
+        var normalized = NormalizeDTypeForDevice(device, dtype);
         ValidateLongFamilyDType(device, normalized, nameof(dtype));
         ValidateDWordOnlyDType(device, normalized, nameof(dtype));
         return normalized switch
@@ -1672,7 +1719,7 @@ public static class SlmpClientExtensions
             if (dtype is not "D" and not "L")
             {
                 throw new ArgumentException(
-                    $"Address '{address}' uses a 32-bit long current value. Use the plain form or ':D' / ':L'.",
+                    $"Address '{address}' uses a 32-bit long current value. Specify ':D' or ':L'.",
                     nameof(address));
             }
             return;
@@ -1681,7 +1728,7 @@ public static class SlmpClientExtensions
         if (!string.Equals(dtype, "BIT", StringComparison.Ordinal))
         {
             throw new ArgumentException(
-                $"Address '{address}' is a long timer state device. Use the plain device form without a dtype override.",
+                $"Address '{address}' is a long timer state device. Specify ':BIT'.",
                 nameof(address));
         }
     }
@@ -1694,7 +1741,7 @@ public static class SlmpClientExtensions
         if (dtype is not "D" and not "L")
         {
             throw new ArgumentException(
-                $"Address '{address}' uses a 32-bit device. Use the plain form or ':D' / ':L'.",
+                $"Address '{address}' uses a 32-bit device. Specify ':D' or ':L'.",
                 nameof(address));
         }
     }

@@ -41,7 +41,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public void CompileReadPlan_BatchesWordDwordAndBitInWord()
     {
-        var plan = SlmpClientExtensions.CompileReadPlan(["D100", "D100.3", "D101:F", "M10"]);
+        var plan = SlmpClientExtensions.CompileReadPlan(["D100:U", "D100.3", "D101:F", "M10:BIT"]);
 
         Assert.Single(plan.WordDevices);
         Assert.Single(plan.DwordDevices);
@@ -52,7 +52,7 @@ public sealed class SlmpClientExtensionsTests
             plan.Entries,
             entry =>
             {
-                Assert.Equal("D100", entry.Address);
+                Assert.Equal("D100:U", entry.Address);
                 Assert.Equal(SlmpNamedReadKind.Word, entry.Kind);
             },
             entry =>
@@ -68,7 +68,7 @@ public sealed class SlmpClientExtensionsTests
             },
             entry =>
             {
-                Assert.Equal("M10", entry.Address);
+                Assert.Equal("M10:BIT", entry.Address);
                 Assert.Equal(SlmpNamedReadKind.Fallback, entry.Kind);
                 Assert.Equal("BIT", entry.DType);
             });
@@ -77,7 +77,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public void CompileReadPlan_DeduplicatesRepeatedBatchableDevices()
     {
-        var plan = SlmpClientExtensions.CompileReadPlan(["D0", "D0:S", "D0.0", "D1:F", "D1:L"]);
+        var plan = SlmpClientExtensions.CompileReadPlan(["D0:U", "D0:S", "D0.0", "D1:F", "D1:L"]);
 
         Assert.Single(plan.WordDevices);
         Assert.Single(plan.DwordDevices);
@@ -88,7 +88,8 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public void CompileReadPlan_UsesHelperKindsForLongTimerFamilies()
     {
-        var plan = SlmpClientExtensions.CompileReadPlan(["LTN10", "LTS10", "LTC10", "LSTN20", "LSTS20", "LSTC20", "LCN30", "LCS30", "LCC30"]);
+        var plan = SlmpClientExtensions.CompileReadPlan(
+            ["LTN10:D", "LTS10:BIT", "LTC10:BIT", "LSTN20:D", "LSTS20:BIT", "LSTC20:BIT", "LCN30:D", "LCS30:BIT", "LCC30:BIT"]);
 
         Assert.Empty(plan.WordDevices);
         Assert.Empty(plan.DwordDevices);
@@ -97,63 +98,63 @@ public sealed class SlmpClientExtensionsTests
             plan.Entries,
             entry =>
             {
-                Assert.Equal("LTN10", entry.Address);
+                Assert.Equal("LTN10:D", entry.Address);
                 Assert.Equal("D", entry.DType);
                 Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
                 Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LTN, SlmpLongTimerReadKind.Current), entry.LongTimerRead);
             },
             entry =>
             {
-                Assert.Equal("LTS10", entry.Address);
+                Assert.Equal("LTS10:BIT", entry.Address);
                 Assert.Equal("BIT", entry.DType);
                 Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
                 Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LTN, SlmpLongTimerReadKind.Contact), entry.LongTimerRead);
             },
             entry =>
             {
-                Assert.Equal("LTC10", entry.Address);
+                Assert.Equal("LTC10:BIT", entry.Address);
                 Assert.Equal("BIT", entry.DType);
                 Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
                 Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LTN, SlmpLongTimerReadKind.Coil), entry.LongTimerRead);
             },
             entry =>
             {
-                Assert.Equal("LSTN20", entry.Address);
+                Assert.Equal("LSTN20:D", entry.Address);
                 Assert.Equal("D", entry.DType);
                 Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
                 Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LSTN, SlmpLongTimerReadKind.Current), entry.LongTimerRead);
             },
             entry =>
             {
-                Assert.Equal("LSTS20", entry.Address);
+                Assert.Equal("LSTS20:BIT", entry.Address);
                 Assert.Equal("BIT", entry.DType);
                 Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
                 Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LSTN, SlmpLongTimerReadKind.Contact), entry.LongTimerRead);
             },
             entry =>
             {
-                Assert.Equal("LSTC20", entry.Address);
+                Assert.Equal("LSTC20:BIT", entry.Address);
                 Assert.Equal("BIT", entry.DType);
                 Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
                 Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LSTN, SlmpLongTimerReadKind.Coil), entry.LongTimerRead);
             },
             entry =>
             {
-                Assert.Equal("LCN30", entry.Address);
+                Assert.Equal("LCN30:D", entry.Address);
                 Assert.Equal("D", entry.DType);
                 Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
                 Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LCN, SlmpLongTimerReadKind.Current), entry.LongTimerRead);
             },
             entry =>
             {
-                Assert.Equal("LCS30", entry.Address);
+                Assert.Equal("LCS30:BIT", entry.Address);
                 Assert.Equal("BIT", entry.DType);
                 Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
                 Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LCN, SlmpLongTimerReadKind.Contact), entry.LongTimerRead);
             },
             entry =>
             {
-                Assert.Equal("LCC30", entry.Address);
+                Assert.Equal("LCC30:BIT", entry.Address);
                 Assert.Equal("BIT", entry.DType);
                 Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
                 Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LCN, SlmpLongTimerReadKind.Coil), entry.LongTimerRead);
@@ -195,23 +196,21 @@ public sealed class SlmpClientExtensionsTests
     }
 
     [Fact]
-    public void ResolveDTypeForAddress_DefaultsLongCurrentsToDword()
+    public void ParseAddress_RejectsMissingDType()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => SlmpClientExtensions.ParseAddress("D100"));
+        Assert.Contains("requires an explicit dtype", ex.Message);
+    }
+
+    [Fact]
+    public void ResolveDTypeForAddress_RequiresExplicitDType()
     {
         Assert.Equal(
             "D",
-            SlmpClientExtensions.ResolveDTypeForAddress("LTN10", new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10), "U", null));
-        Assert.Equal(
-            "D",
-            SlmpClientExtensions.ResolveDTypeForAddress("LSTN20", new SlmpDeviceAddress(SlmpDeviceCode.LSTN, 20), "U", null));
-        Assert.Equal(
-            "D",
-            SlmpClientExtensions.ResolveDTypeForAddress("LCN30", new SlmpDeviceAddress(SlmpDeviceCode.LCN, 30), "U", null));
-        Assert.Equal(
-            "D",
-            SlmpClientExtensions.ResolveDTypeForAddress("LZ0", new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0), "U", null));
+            SlmpClientExtensions.ResolveDTypeForAddress("LTN10:D", new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10), "D", null));
         Assert.Equal(
             "BIT",
-            SlmpClientExtensions.ResolveDTypeForAddress("LTS10", new SlmpDeviceAddress(SlmpDeviceCode.LTS, 10), "U", null));
+            SlmpClientExtensions.ResolveDTypeForAddress("LTS10:BIT", new SlmpDeviceAddress(SlmpDeviceCode.LTS, 10), "BIT", null));
     }
 
     [Fact]
