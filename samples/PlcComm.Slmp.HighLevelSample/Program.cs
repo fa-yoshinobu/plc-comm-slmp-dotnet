@@ -156,11 +156,11 @@ finally
 // -------------------------------------------------------------------------
 // 6. ReadNamedAsync
 //
-// Reads multiple devices by address string with optional type suffix.
+// Reads multiple devices by address string with explicit type suffixes.
 // Returns IReadOnlyDictionary<string, object>.
 //
 // Address notation:
-//   "D100"    unsigned 16-bit (ushort)
+//   "D100:U"  unsigned 16-bit (ushort)
 //   "D100:F"  float32
 //   "D100:S"  signed 16-bit (short)
 //   "D100:D"  unsigned 32-bit (uint)
@@ -170,7 +170,7 @@ finally
 // Use case: reading a heterogeneous parameter set (speed float, error code
 //           short, alarm bit bool) in a single call.
 // -------------------------------------------------------------------------
-var snapshot = await client.ReadNamedAsync(["D100", "D200:F", "D300:L", "D50.3"]);
+var snapshot = await client.ReadNamedAsync(["D100:U", "D200:F", "D300:L", "D50.3"]);
 foreach (var (addr, value) in snapshot)
     Console.WriteLine($"[ReadNamedAsync] {addr} = {value}");
 
@@ -187,11 +187,11 @@ Console.WriteLine("\nPolling 3 snapshots (1 s interval):");
 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 var pollCount = 0;
 await foreach (var snap in client.PollAsync(
-    ["D100", "D200:F", "D50.3"],
+    ["D100:U", "D200:F", "D50.3"],
     TimeSpan.FromSeconds(1),
     cts.Token))
 {
-    Console.WriteLine($"  [{++pollCount}] D100={snap["D100"]}  D200:F={snap["D200:F"]}  D50.3={snap["D50.3"]}");
+    Console.WriteLine($"  [{++pollCount}] D100:U={snap["D100:U"]}  D200:F={snap["D200:F"]}  D50.3={snap["D50.3"]}");
     if (pollCount >= 3)
         break;
 }

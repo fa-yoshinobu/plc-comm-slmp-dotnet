@@ -54,22 +54,23 @@ This page lists the high-level string device families accepted by the public hel
 
 | Suffix | Meaning | .NET value | Size |
 | --- | --- | --- | --- |
-| Plain word | `D100` | `ushort` | 1 word |
 | `:U` | Unsigned 16-bit | `ushort` | 1 word |
 | `:S` | Signed 16-bit | `short` | 1 word |
 | `:D` | Unsigned 32-bit | `uint` | 2 words |
 | `:L` | Signed 32-bit | `int` | 2 words |
 | `:F` | Float32 | `float` | 2 words |
+| `:BIT` | Direct bit device | `bool` | 1 bit |
 | `.n` | Bit inside word | `bool` | 1 bit from one word |
 
 ## Addressing notes
 
 | Topic | Rule |
 | --- | --- |
+| Explicit named types | `ReadNamedAsync`, `WriteNamedAsync`, and `PollAsync` require a type suffix such as `D100:U` or `M1000:BIT`; plain named access is rejected. |
 | Long 32-bit families | `LTN`, `LSTN`, `LCN`, and `LZ` require `:D` or `:L`; plain word access is rejected. |
 | iQ-F direct devices | `DX` and `DY` are not valid for `SlmpPlcProfile.IqF`. |
 | Module buffer devices | `G` and `HG` are not in the public high-level surface. Use low-level raw client methods for module buffer access. |
-| Bit-in-word syntax | `.n` is valid only on word devices, for example `D50.3`. Address bit devices directly, for example `M1000`. |
+| Bit-in-word syntax | `.n` is valid only on word devices, for example `D50.3`. Address bit devices directly with `:BIT`, for example `M1000:BIT`. |
 | Profile-aware `X` and `Y` | Use a connected client or `SlmpAddress.Parse(text, profile)` so iQ-F octal rules are applied. |
 
 See [PLC profiles](PROFILES.md) for canonical profiles and frame modes.

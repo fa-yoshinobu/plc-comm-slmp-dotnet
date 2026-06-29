@@ -46,14 +46,14 @@ var tasks = Enumerable.Range(0, workers).Select(async workerIndex =>
         var counter = await client.ReadTypedAsync("D100", "U").ConfigureAwait(false);
 
         // Example 2: mixed snapshot read
-        var snapshot = await client.ReadNamedAsync(["D100", "D200:F", "D50.3"]).ConfigureAwait(false);
+        var snapshot = await client.ReadNamedAsync(["D100:U", "D200:F", "D50.3"]).ConfigureAwait(false);
 
         // Example 3: chunked helper call
         var words = await client.ReadWordsSingleRequestAsync("D0", 4).ConfigureAwait(false);
 
         Console.WriteLine(
             $"[OK] worker={workerIndex + 1} iter={i + 1} " +
-            $"D100={counter} D200:F={snapshot["D200:F"]} D50.3={snapshot["D50.3"]} " +
+            $"D100={counter} D100:U={snapshot["D100:U"]} D200:F={snapshot["D200:F"]} D50.3={snapshot["D50.3"]} " +
             $"D0..D3=[{string.Join(", ", words)}]");
     }
 }).ToArray();

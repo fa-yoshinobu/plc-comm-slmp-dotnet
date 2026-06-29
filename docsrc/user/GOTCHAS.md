@@ -111,11 +111,11 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 await client.WriteNamedAsync(new Dictionary<string, object>
 {
-    ["D9000"] = (ushort)1234,
+    ["D9000:U"] = (ushort)1234,
 });
 await client.WriteNamedAsync(new Dictionary<string, object>
 {
-    ["M9000"] = true,
+    ["M9000:BIT"] = true,
 });
 Console.WriteLine("Separated word and bit writes.");
 ```
@@ -202,6 +202,25 @@ var first = client.ReadTypedAsync("D100", "U");
 var second = client.ReadTypedAsync("D101", "U");
 var values = await Task.WhenAll(first, second);
 Console.WriteLine($"{values[0]}, {values[1]}");
+```
+
+## SlmpEndCodes.GetMessage returns null
+
+| Item | Detail |
+| --- | --- |
+| Symptom | Code that calls `SlmpEndCodes.GetMessage(endCode)` to display a human-readable error receives `null`. |
+| Root cause | The library no longer embeds localized SLMP end-code descriptions. |
+| Fix | Call `SlmpEndCodes.GetName(endCode)` to get a stable key such as `slmp_end_code_c201`, then look it up in an application-owned message catalog. |
+
+```csharp
+using System;
+using PlcComm.Slmp;
+
+ushort endCode = 0xC201;
+string key = SlmpEndCodes.GetName(endCode);
+// key == "slmp_end_code_c201"
+// Resolve the display text from your own resource file or dictionary.
+Console.WriteLine(key);
 ```
 
 ## X or Y addresses do not match an iQ-F manual
