@@ -131,6 +131,24 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task WriteBitsAsync_RejectsStepRelayWrites()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), SingleTrue));
+        Assert.Contains("S is read-only in SLMP", ex.Message);
+    }
+
+    [Fact]
+    public async Task WriteWordsAsync_RejectsStepRelayWrites()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), new ushort[] { 1 }));
+        Assert.Contains("S is read-only in SLMP", ex.Message);
+    }
+
+    [Fact]
     public async Task DirectAccess_RejectsManualPointLimitOverruns()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
@@ -157,6 +175,18 @@ public sealed class SlmpClientGuardTests
                 SingleTrue,
                 new SlmpExtensionSpec()));
         Assert.Contains($"Direct bit write is not supported for {code}", ex.Message);
+    }
+
+    [Fact]
+    public async Task WriteBitsExtendedAsync_RejectsStepRelayWrites()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteBitsExtendedAsync(
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), null),
+                SingleTrue,
+                new SlmpExtensionSpec()));
+        Assert.Contains("S is read-only in SLMP", ex.Message);
     }
 
     [Fact]
@@ -431,6 +461,48 @@ public sealed class SlmpClientGuardTests
                 new[] { (new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10), (ushort)1) },
                 Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
         Assert.Contains("does not support LTN/LSTN/LCN/LZ as word entries", ex.Message);
+    }
+
+    [Fact]
+    public async Task WriteRandomWordsAsync_RejectsStepRelayWrites()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteRandomWordsAsync(
+                new[] { (new SlmpDeviceAddress(SlmpDeviceCode.S, 10), (ushort)1) },
+                Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
+        Assert.Contains("S is read-only in SLMP", ex.Message);
+    }
+
+    [Fact]
+    public async Task WriteRandomBitsAsync_RejectsStepRelayWrites()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteRandomBitsAsync(
+                new[] { (new SlmpDeviceAddress(SlmpDeviceCode.S, 10), true) }));
+        Assert.Contains("S is read-only in SLMP", ex.Message);
+    }
+
+    [Fact]
+    public async Task WriteRandomBitsExtAsync_RejectsStepRelayWrites()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteRandomBitsExtAsync(
+                new[] { (new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), null), true, new SlmpExtensionSpec()) }));
+        Assert.Contains("S is read-only in SLMP", ex.Message);
+    }
+
+    [Fact]
+    public async Task WriteBlockAsync_RejectsStepRelayWrites()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteBlockAsync(
+                Array.Empty<SlmpBlockWrite>(),
+                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), new ushort[] { 1 }) }));
+        Assert.Contains("S is read-only in SLMP", ex.Message);
     }
 
     [Fact]

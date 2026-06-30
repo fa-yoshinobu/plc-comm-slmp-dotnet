@@ -1677,6 +1677,7 @@ public static class SlmpClientExtensions
         var normalized = NormalizeDTypeForDevice(device, dtype);
         ValidateLongFamilyDType(device, normalized, nameof(dtype));
         ValidateDWordOnlyDType(device, normalized, nameof(dtype));
+        ValidateWritableDevice(device);
         return normalized switch
         {
             // Long-family state writes must use Device Write Random
@@ -1711,6 +1712,19 @@ public static class SlmpClientExtensions
     private static bool IsLongCounterStateDirectBitRead(SlmpLongTimerReadSpec spec)
         => spec.BaseCode is SlmpDeviceCode.LCS or SlmpDeviceCode.LCC
            && spec.Kind is SlmpLongTimerReadKind.Contact or SlmpLongTimerReadKind.Coil;
+
+    private static bool IsSlmpReadOnlyDevice(SlmpDeviceCode code)
+        => code is SlmpDeviceCode.S;
+
+    private static void ValidateWritableDevice(SlmpDeviceAddress device)
+    {
+        if (IsSlmpReadOnlyDevice(device.Code))
+        {
+            throw new ArgumentException(
+                $"{device.Code} is read-only in SLMP and cannot be written.",
+                nameof(device));
+        }
+    }
 
     internal static void ValidateLongTimerEntry(string address, SlmpDeviceAddress device, string dtype)
     {

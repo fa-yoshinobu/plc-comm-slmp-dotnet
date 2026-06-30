@@ -310,4 +310,12 @@ public sealed class SlmpClientExtensionsTests
             () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 10), dtype));
         Assert.Contains("32-bit device", ex.Message);
     }
+
+    [Fact]
+    public void ResolveWriteRoute_RejectsStepRelayWrites()
+    {
+        var ex = Assert.Throws<ArgumentException>(
+            () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), "BIT"));
+        Assert.Contains("S is read-only in SLMP", ex.Message);
+    }
 }
