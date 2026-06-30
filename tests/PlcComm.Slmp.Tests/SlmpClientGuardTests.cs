@@ -57,6 +57,28 @@ public sealed class SlmpClientGuardTests
         Assert.Contains("Direct word read is not supported for LZ", ex.Message);
     }
 
+    [Theory]
+    [InlineData(SlmpDeviceCode.G)]
+    [InlineData(SlmpDeviceCode.HG)]
+    public async Task ReadWordsRawAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(code, 10), 1));
+        Assert.Contains($"{code} cannot be accessed as a standalone device", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(SlmpDeviceCode.G)]
+    [InlineData(SlmpDeviceCode.HG)]
+    public async Task ReadDWordsRawAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadDWordsRawAsync(new SlmpDeviceAddress(code, 10), 1));
+        Assert.Contains($"{code} cannot be accessed as a standalone device", ex.Message);
+    }
+
     [Fact]
     public async Task WriteWordsAsync_RejectsLongCurrentValueDevices()
     {
@@ -82,6 +104,22 @@ public sealed class SlmpClientGuardTests
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0), new ushort[] { 1 }));
         Assert.Contains("Direct word write is not supported for LZ", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(SlmpDeviceCode.G)]
+    [InlineData(SlmpDeviceCode.HG)]
+    public async Task DirectWrites_RejectStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+
+        var wordEx = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteWordsAsync(new SlmpDeviceAddress(code, 10), new ushort[] { 1 }));
+        Assert.Contains($"{code} cannot be accessed as a standalone device", wordEx.Message);
+
+        var dwordEx = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteDWordsAsync(new SlmpDeviceAddress(code, 10), new uint[] { 1 }));
+        Assert.Contains($"{code} cannot be accessed as a standalone device", dwordEx.Message);
     }
 
     [Theory]
@@ -236,6 +274,31 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task ReadWordsExtendedAsync_AllowsQualifiedGAndHg()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0, BuildWordPayload(0x1A0A)),
+            (0, BuildWordPayload(0x1234)),
+        ]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port);
+
+        var g = await client.ReadWordsExtendedAsync(
+            SlmpQualifiedDeviceParser.Parse(@"U4\G10"),
+            1,
+            new SlmpExtensionSpec());
+        var hg = await client.ReadWordsExtendedAsync(
+            SlmpQualifiedDeviceParser.Parse(@"U3E0\HG0"),
+            1,
+            new SlmpExtensionSpec());
+
+        Assert.Equal(new ushort[] { 0x1A0A }, g);
+        Assert.Equal(new ushort[] { 0x1234 }, hg);
+        Assert.Equal(2, server.RequestFrames.Count);
+    }
+
+    [Fact]
     public async Task ReadRandomAsync_RejectsLongCounterContacts()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
@@ -268,6 +331,19 @@ public sealed class SlmpClientGuardTests
                 new[] { new SlmpDeviceAddress(code, 10) },
                 Array.Empty<SlmpDeviceAddress>()));
         Assert.Contains("does not support LTN/LSTN/LCN/LZ as word entries", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(SlmpDeviceCode.G)]
+    [InlineData(SlmpDeviceCode.HG)]
+    public async Task ReadRandomAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadRandomAsync(
+                new[] { new SlmpDeviceAddress(code, 10) },
+                Array.Empty<SlmpDeviceAddress>()));
+        Assert.Contains("does not support standalone G/HG", ex.Message);
     }
 
     [Fact]
@@ -320,6 +396,19 @@ public sealed class SlmpClientGuardTests
         Assert.Contains("does not support LCN/LZ", ex.Message);
     }
 
+    [Theory]
+    [InlineData(SlmpDeviceCode.G)]
+    [InlineData(SlmpDeviceCode.HG)]
+    public async Task ReadBlockAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadBlockAsync(
+                new[] { new SlmpBlockRead(new SlmpDeviceAddress(code, 10), 1) },
+                Array.Empty<SlmpBlockRead>()));
+        Assert.Contains("does not support standalone G/HG", ex.Message);
+    }
+
     [Fact]
     public async Task WriteBlockAsync_RejectsLongCounterContacts()
     {
@@ -342,6 +431,19 @@ public sealed class SlmpClientGuardTests
                 new[] { new SlmpBlockWrite(new SlmpDeviceAddress(code, 10), new ushort[] { 1 }) },
                 Array.Empty<SlmpBlockWrite>()));
         Assert.Contains("does not support LTN/LSTN/LCN/LZ", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(SlmpDeviceCode.G)]
+    [InlineData(SlmpDeviceCode.HG)]
+    public async Task WriteBlockAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteBlockAsync(
+                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(code, 10), new ushort[] { 1 }) },
+                Array.Empty<SlmpBlockWrite>()));
+        Assert.Contains("does not support standalone G/HG", ex.Message);
     }
 
     [Fact]
@@ -472,6 +574,19 @@ public sealed class SlmpClientGuardTests
                 new[] { (new SlmpDeviceAddress(SlmpDeviceCode.S, 10), (ushort)1) },
                 Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
         Assert.Contains("S is read-only in SLMP", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(SlmpDeviceCode.G)]
+    [InlineData(SlmpDeviceCode.HG)]
+    public async Task WriteRandomWordsAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteRandomWordsAsync(
+                new[] { (new SlmpDeviceAddress(code, 10), (ushort)1) },
+                Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
+        Assert.Contains("does not support standalone G/HG", ex.Message);
     }
 
     [Fact]
@@ -713,6 +828,19 @@ public sealed class SlmpClientGuardTests
                 new[] { new SlmpDeviceAddress(SlmpDeviceCode.LCS, 10) },
                 Array.Empty<SlmpDeviceAddress>()));
         Assert.Contains("Entry Monitor Device (0x0801) does not support LCS/LCC", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(SlmpDeviceCode.G)]
+    [InlineData(SlmpDeviceCode.HG)]
+    public async Task RegisterMonitorDevicesAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.RegisterMonitorDevicesAsync(
+                new[] { new SlmpDeviceAddress(code, 10) },
+                Array.Empty<SlmpDeviceAddress>()));
+        Assert.Contains("does not support standalone G/HG", ex.Message);
     }
 
     [Fact]

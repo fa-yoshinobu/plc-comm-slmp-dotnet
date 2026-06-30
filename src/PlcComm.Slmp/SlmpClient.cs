@@ -412,7 +412,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     )
     {
         ValidateDirectAccessPoints(points, bitUnit: false, "read_words_ext");
-        ValidateDirectWordReadDevice(device.Device, points);
+        ValidateDirectWordReadDevice(device.Device, points, allowQualifiedOnlyDevice: true);
         var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, extension);
         var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: false, CompatibilityMode);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0080
@@ -432,7 +432,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     )
     {
         ValidateDirectAccessPoints(values.Count, bitUnit: false, "write_words_ext");
-        ValidateDirectWordWriteDevice(device.Device);
+        ValidateDirectWordWriteDevice(device.Device, allowQualifiedOnlyDevice: true);
         var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, extension);
         var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, checked((ushort)values.Count), values, effectiveExtension, bitUnit: false, CompatibilityMode);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0080
@@ -663,7 +663,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ValidateRandomReadLikeCounts(wordDevices.Count, dwordDevices.Count, "read_random_ext");
         ValidateRandomReadDevices(
             wordDevices.Select(entry => entry.Device.Device).ToArray(),
-            dwordDevices.Select(entry => entry.Device.Device).ToArray());
+            dwordDevices.Select(entry => entry.Device.Device).ToArray(),
+            allowQualifiedOnlyDevices: true);
 
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
         var payload = SlmpPayloads.BuildExtendedRandomReadPayload(wordDevices, dwordDevices, CompatibilityMode);
@@ -701,7 +702,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             throw new ArgumentOutOfRangeException(nameof(wordEntries), "random counts must be <= 255");
         }
         ValidateRandomWriteWordCounts(wordEntries.Count, dwordEntries.Count, "write_random_words_ext");
-        ValidateRandomWriteDevices(wordEntries.Select(entry => (entry.Device.Device, entry.Value)).ToArray());
+        ValidateRandomWriteDevices(
+            wordEntries.Select(entry => (entry.Device.Device, entry.Value)).ToArray(),
+            allowQualifiedOnlyDevices: true);
 
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
         var payload = SlmpPayloads.BuildExtendedRandomWordWritePayload(wordEntries, dwordEntries, CompatibilityMode);
@@ -902,7 +905,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ValidateRandomReadLikeCounts(wordDevices.Count, dwordDevices.Count, "register_monitor_devices_ext");
         ValidateMonitorRegisterDevices(
             wordDevices.Select(entry => entry.Device.Device).ToArray(),
-            dwordDevices.Select(entry => entry.Device.Device).ToArray());
+            dwordDevices.Select(entry => entry.Device.Device).ToArray(),
+            allowQualifiedOnlyDevices: true);
 
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
         var payload = SlmpPayloads.BuildExtendedMonitorRegisterPayload(wordDevices, dwordDevices, CompatibilityMode);
@@ -1648,8 +1652,18 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         }
     }
 
-    private static void ValidateDirectWordReadDevice(SlmpDeviceAddress device, ushort points)
+    private static void ValidateDirectWordReadDevice(
+        SlmpDeviceAddress device,
+        ushort points,
+        bool allowQualifiedOnlyDevice = false)
     {
+        if (!allowQualifiedOnlyDevice && IsQualifiedOnlyDevice(device.Code))
+        {
+            throw new ArgumentException(
+                $"{device.Code} cannot be accessed as a standalone device. Use U-qualified access such as U4\\G10 or U3E0\\HG0.",
+                nameof(device));
+        }
+
         if (IsRandomDWordOnlyReadDevice(device.Code))
         {
             throw new ArgumentException(
@@ -1668,9 +1682,18 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         }
     }
 
-    private static void ValidateDirectWordWriteDevice(SlmpDeviceAddress device)
+    private static void ValidateDirectWordWriteDevice(
+        SlmpDeviceAddress device,
+        bool allowQualifiedOnlyDevice = false)
     {
         ValidateWritableDevice(device);
+
+        if (!allowQualifiedOnlyDevice && IsQualifiedOnlyDevice(device.Code))
+        {
+            throw new ArgumentException(
+                $"{device.Code} cannot be accessed as a standalone device. Use U-qualified access such as U4\\G10 or U3E0\\HG0.",
+                nameof(device));
+        }
 
         if (IsLongCurrentValueDevice(device.Code) || IsDWordOnlyScalarDevice(device.Code))
         {
@@ -1684,6 +1707,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         ValidateWritableDevice(device);
 
+        if (IsQualifiedOnlyDevice(device.Code))
+        {
+            throw new ArgumentException(
+                $"{device.Code} cannot be accessed as a standalone device. Use U-qualified access such as U4\\G10 or U3E0\\HG0.",
+                nameof(device));
+        }
+
         if (IsLongCurrentValueDevice(device.Code) || IsDWordOnlyScalarDevice(device.Code))
         {
             throw new ArgumentException(
@@ -1694,6 +1724,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private static void ValidateDirectDWordReadDevice(SlmpDeviceAddress device)
     {
+        if (IsQualifiedOnlyDevice(device.Code))
+        {
+            throw new ArgumentException(
+                $"{device.Code} cannot be accessed as a standalone device. Use U-qualified access such as U4\\G10 or U3E0\\HG0.",
+                nameof(device));
+        }
+
         if (IsLongCurrentValueDevice(device.Code) || IsDWordOnlyScalarDevice(device.Code))
         {
             throw new ArgumentException(
@@ -1704,7 +1741,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private static void ValidateRandomReadDevices(
         IReadOnlyList<SlmpDeviceAddress> wordDevices,
-        IReadOnlyList<SlmpDeviceAddress> dwordDevices)
+        IReadOnlyList<SlmpDeviceAddress> dwordDevices,
+        bool allowQualifiedOnlyDevices = false)
     {
         // LTS/LTC/LSTS/LSTC can be written by random bit write, but they are not
         // readable by Read Random (0x0403); use the status-block helpers instead.
@@ -1728,6 +1766,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 "Read Random (0x0403) does not support LTN/LSTN/LCN/LZ as word entries. Use dword entries or ReadTypedAsync/ReadNamedAsync with ':D' or ':L' instead.",
                 nameof(wordDevices));
         }
+
+        if (!allowQualifiedOnlyDevices &&
+            (wordDevices.Any(device => IsQualifiedOnlyDevice(device.Code)) ||
+             dwordDevices.Any(device => IsQualifiedOnlyDevice(device.Code))))
+        {
+            throw new ArgumentException(
+                "Read Random (0x0403) does not support standalone G/HG. Use U-qualified extended access instead.",
+                nameof(wordDevices));
+        }
     }
 
     private static void ValidateBlockReadDevices(
@@ -1739,6 +1786,14 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentException(
                 "Read Block (0x0406) does not support LCN/LZ as word or bit blocks. Use ReadTypedAsync/ReadNamedAsync so random dword read is selected.",
+                nameof(wordBlocks));
+        }
+
+        if (wordBlocks.Any(block => IsQualifiedOnlyDevice(block.Device.Code)) ||
+            bitBlocks.Any(block => IsQualifiedOnlyDevice(block.Device.Code)))
+        {
+            throw new ArgumentException(
+                "Read Block (0x0406) does not support standalone G/HG. Use U-qualified extended access instead.",
                 nameof(wordBlocks));
         }
 
@@ -1780,6 +1835,14 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 nameof(wordBlocks));
         }
 
+        if (wordBlocks.Any(block => IsQualifiedOnlyDevice(block.Device.Code)) ||
+            bitBlocks.Any(block => IsQualifiedOnlyDevice(block.Device.Code)))
+        {
+            throw new ArgumentException(
+                "Write Block (0x1406) does not support standalone G/HG. Use U-qualified extended access instead.",
+                nameof(wordBlocks));
+        }
+
         if (wordBlocks.Any(block => IsLongCounterContactDevice(block.Device)) ||
             bitBlocks.Any(block => IsLongCounterContactDevice(block.Device)))
         {
@@ -1791,12 +1854,22 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private static void ValidateMonitorRegisterDevices(
         IReadOnlyList<SlmpDeviceAddress> wordDevices,
-        IReadOnlyList<SlmpDeviceAddress> dwordDevices)
+        IReadOnlyList<SlmpDeviceAddress> dwordDevices,
+        bool allowQualifiedOnlyDevices = false)
     {
         if (wordDevices.Any(IsLongCounterContactDevice) || dwordDevices.Any(IsLongCounterContactDevice))
         {
             throw new ArgumentException(
                 "Entry Monitor Device (0x0801) does not support LCS/LCC.",
+                nameof(wordDevices));
+        }
+
+        if (!allowQualifiedOnlyDevices &&
+            (wordDevices.Any(device => IsQualifiedOnlyDevice(device.Code)) ||
+             dwordDevices.Any(device => IsQualifiedOnlyDevice(device.Code))))
+        {
+            throw new ArgumentException(
+                "Entry Monitor Device (0x0801) does not support standalone G/HG. Use U-qualified extended access instead.",
                 nameof(wordDevices));
         }
     }
@@ -1829,7 +1902,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     private static bool IsRandomDWordOnlyReadDevice(SlmpDeviceCode code)
         => code is SlmpDeviceCode.LCN or SlmpDeviceCode.LZ;
 
-    private static void ValidateRandomWriteDevices(IReadOnlyList<(SlmpDeviceAddress Device, ushort Value)> wordEntries)
+    private static bool IsQualifiedOnlyDevice(SlmpDeviceCode code)
+        => code is SlmpDeviceCode.G or SlmpDeviceCode.HG;
+
+    private static void ValidateRandomWriteDevices(
+        IReadOnlyList<(SlmpDeviceAddress Device, ushort Value)> wordEntries,
+        bool allowQualifiedOnlyDevices = false)
     {
         var readOnlyEntry = wordEntries.FirstOrDefault(entry => IsSlmpReadOnlyDevice(entry.Device.Code));
         if (readOnlyEntry.Device.Code != default)
@@ -1843,6 +1921,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentException(
                 "Write Random (0x1402) does not support LTN/LSTN/LCN/LZ as word entries. Use dword entries or WriteTypedAsync/WriteNamedAsync with ':D' or ':L' instead.",
+                nameof(wordEntries));
+        }
+
+        if (!allowQualifiedOnlyDevices && wordEntries.Any(entry => IsQualifiedOnlyDevice(entry.Device.Code)))
+        {
+            throw new ArgumentException(
+                "Write Random (0x1402) does not support standalone G/HG. Use U-qualified extended access instead.",
                 nameof(wordEntries));
         }
     }
