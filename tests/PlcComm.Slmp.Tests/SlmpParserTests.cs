@@ -62,9 +62,12 @@ public sealed class SlmpParserTests
     }
 
     [Fact]
-    public void ParseDevice_StepRelay_Fails()
+    public void ParseDevice_StepRelay_Succeeds()
     {
-        Assert.Throws<FormatException>(() => SlmpDeviceParser.Parse("S0"));
+        var device = SlmpDeviceParser.Parse("S0");
+        Assert.Equal(SlmpDeviceCode.S, device.Code);
+        Assert.Equal((uint)0, device.Number);
+        Assert.Equal("S0", SlmpAddress.Normalize("s0"));
     }
 
     [Theory]

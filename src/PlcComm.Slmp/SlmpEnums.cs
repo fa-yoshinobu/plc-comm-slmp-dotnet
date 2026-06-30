@@ -113,6 +113,8 @@ public enum SlmpDeviceCode : ushort
     V = 0x0094,
     /// <summary>Link Relay</summary>
     B = 0x00A0,
+    /// <summary>Step Relay</summary>
+    S = 0x0098,
     /// <summary>Data Register</summary>
     D = 0x00A8,
     /// <summary>Link Register</summary>

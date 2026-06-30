@@ -93,16 +93,16 @@ public static class SlmpClientExtensions
         if (longRead is not null)
         {
             ValidateLongFamilyDType(device, normalizedDType, nameof(dtype));
+            if (IsLongCounterStateDirectBitRead(longRead.Value))
+            {
+                var bits = await client.ReadBitsUncheckedAsync(device, 1, ct).ConfigureAwait(false);
+                return bits[0];
+            }
+
             if (longRead.Value.Kind == SlmpLongTimerReadKind.Current && device.Code == SlmpDeviceCode.LCN)
             {
                 var value = await ReadRandomDWordValueAsync(client, device, ct).ConfigureAwait(false);
                 return normalizedDType == "L" ? DecodeSignedDWord(value) : value;
-            }
-
-            if (IsLongCounterStateDevice(device.Code))
-            {
-                var bits = await client.ReadBitsAsync(device, 1, ct).ConfigureAwait(false);
-                return bits[0];
             }
 
             var timer = await ReadLongLikePointAsync(client, longRead.Value.BaseCode, device.Number, ct).ConfigureAwait(false);
@@ -1439,16 +1439,16 @@ public static class SlmpClientExtensions
         CancellationToken ct)
     {
         var spec = entry.LongTimerRead ?? throw new InvalidOperationException("Long timer read metadata is missing.");
+        if (IsLongCounterStateDirectBitRead(spec))
+        {
+            var bits = await client.ReadBitsUncheckedAsync(entry.Device, 1, ct).ConfigureAwait(false);
+            return bits[0];
+        }
+
         if (spec.BaseCode == SlmpDeviceCode.LCN && spec.Kind == SlmpLongTimerReadKind.Current)
         {
             var value = await ReadRandomDWordValueAsync(client, entry.Device, ct).ConfigureAwait(false);
             return string.Equals(entry.DType, "L", StringComparison.OrdinalIgnoreCase) ? DecodeSignedDWord(value) : value;
-        }
-
-        if (IsLongCounterStateDevice(entry.Device.Code))
-        {
-            var bits = await client.ReadBitsAsync(entry.Device, 1, ct).ConfigureAwait(false);
-            return bits[0];
         }
 
         var key = (spec.BaseCode, entry.Device.Number);
@@ -1474,7 +1474,7 @@ public static class SlmpClientExtensions
             SlmpDeviceCode.LCN => DecodeLongLikeWords(
                 baseCode,
                 number,
-                await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.LCN, number), 4, ct).ConfigureAwait(false)),
+                await client.ReadLongStatusBlockWordsAsync(SlmpDeviceCode.LCN, number, ct).ConfigureAwait(false)),
             _ => throw new InvalidOperationException($"Unsupported long-family base code: {baseCode}"),
         };
     }
@@ -1677,6 +1677,7 @@ public static class SlmpClientExtensions
         var normalized = NormalizeDTypeForDevice(device, dtype);
         ValidateLongFamilyDType(device, normalized, nameof(dtype));
         ValidateDWordOnlyDType(device, normalized, nameof(dtype));
+        ValidateWritableDevice(device);
         return normalized switch
         {
             // Long-family state writes must use Device Write Random
@@ -1703,10 +1704,27 @@ public static class SlmpClientExtensions
             SlmpDeviceCode.LSTS => new SlmpLongTimerReadSpec(SlmpDeviceCode.LSTN, SlmpLongTimerReadKind.Contact),
             SlmpDeviceCode.LSTC => new SlmpLongTimerReadSpec(SlmpDeviceCode.LSTN, SlmpLongTimerReadKind.Coil),
             SlmpDeviceCode.LCN => new SlmpLongTimerReadSpec(SlmpDeviceCode.LCN, SlmpLongTimerReadKind.Current),
-            SlmpDeviceCode.LCS => new SlmpLongTimerReadSpec(SlmpDeviceCode.LCN, SlmpLongTimerReadKind.Contact),
-            SlmpDeviceCode.LCC => new SlmpLongTimerReadSpec(SlmpDeviceCode.LCN, SlmpLongTimerReadKind.Coil),
+            SlmpDeviceCode.LCS => new SlmpLongTimerReadSpec(SlmpDeviceCode.LCS, SlmpLongTimerReadKind.Contact),
+            SlmpDeviceCode.LCC => new SlmpLongTimerReadSpec(SlmpDeviceCode.LCC, SlmpLongTimerReadKind.Coil),
             _ => null,
         };
+
+    private static bool IsLongCounterStateDirectBitRead(SlmpLongTimerReadSpec spec)
+        => spec.BaseCode is SlmpDeviceCode.LCS or SlmpDeviceCode.LCC
+           && spec.Kind is SlmpLongTimerReadKind.Contact or SlmpLongTimerReadKind.Coil;
+
+    private static bool IsSlmpReadOnlyDevice(SlmpDeviceCode code)
+        => code is SlmpDeviceCode.S;
+
+    private static void ValidateWritableDevice(SlmpDeviceAddress device)
+    {
+        if (IsSlmpReadOnlyDevice(device.Code))
+        {
+            throw new ArgumentException(
+                $"{device.Code} is read-only in SLMP and cannot be written.",
+                nameof(device));
+        }
+    }
 
     internal static void ValidateLongTimerEntry(string address, SlmpDeviceAddress device, string dtype)
     {
@@ -1798,9 +1816,6 @@ public static class SlmpClientExtensions
             or SlmpDeviceCode.LCS
             or SlmpDeviceCode.LCC;
 
-    private static bool IsLongCounterStateDevice(SlmpDeviceCode code)
-        => code is SlmpDeviceCode.LCS or SlmpDeviceCode.LCC;
-
     private static bool IsWordDevice(SlmpDeviceCode code)
         => code is SlmpDeviceCode.SD
             or SlmpDeviceCode.D
@@ -1829,6 +1844,7 @@ public static class SlmpClientExtensions
             or SlmpDeviceCode.F
             or SlmpDeviceCode.V
             or SlmpDeviceCode.B
+            or SlmpDeviceCode.S
             or SlmpDeviceCode.TS
             or SlmpDeviceCode.TC
             or SlmpDeviceCode.LTS

@@ -158,6 +158,7 @@ public static class SlmpDeviceParser
         ("F", SlmpDeviceCode.F, false),
         ("V", SlmpDeviceCode.V, false),
         ("B", SlmpDeviceCode.B, true),
+        ("S", SlmpDeviceCode.S, false),
         ("D", SlmpDeviceCode.D, false),
         ("W", SlmpDeviceCode.W, true),
         ("Z", SlmpDeviceCode.Z, false),

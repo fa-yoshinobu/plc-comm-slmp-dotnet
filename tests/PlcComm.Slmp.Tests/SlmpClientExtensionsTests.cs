@@ -150,14 +150,14 @@ public sealed class SlmpClientExtensionsTests
                 Assert.Equal("LCS30:BIT", entry.Address);
                 Assert.Equal("BIT", entry.DType);
                 Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
-                Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LCN, SlmpLongTimerReadKind.Contact), entry.LongTimerRead);
+                Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LCS, SlmpLongTimerReadKind.Contact), entry.LongTimerRead);
             },
             entry =>
             {
                 Assert.Equal("LCC30:BIT", entry.Address);
                 Assert.Equal("BIT", entry.DType);
                 Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
-                Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LCN, SlmpLongTimerReadKind.Coil), entry.LongTimerRead);
+                Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LCC, SlmpLongTimerReadKind.Coil), entry.LongTimerRead);
             });
     }
 
@@ -309,5 +309,13 @@ public sealed class SlmpClientExtensionsTests
         var ex = Assert.Throws<ArgumentException>(
             () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 10), dtype));
         Assert.Contains("32-bit device", ex.Message);
+    }
+
+    [Fact]
+    public void ResolveWriteRoute_RejectsStepRelayWrites()
+    {
+        var ex = Assert.Throws<ArgumentException>(
+            () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), "BIT"));
+        Assert.Contains("S is read-only in SLMP", ex.Message);
     }
 }
