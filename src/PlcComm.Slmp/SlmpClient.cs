@@ -379,19 +379,16 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         ValidateDirectAccessPoints(points, bitUnit: true, "read_bits");
         ValidateDirectBitReadDevice(device);
+        return await ReadBitsUncheckedAsync(device, points, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal async Task<bool[]> ReadBitsUncheckedAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+    {
+        ValidateDirectAccessPoints(points, bitUnit: true, "read_bits");
         var payload = BuildReadWritePayload(device, points, null, bitUnit: true);
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0001 : (ushort)0x0003;
         var data = await RequestAsync(SlmpCommand.DeviceRead, sub, payload, true, cancellationToken).ConfigureAwait(false);
-        var result = new bool[points];
-        var need = (points + 1) / 2;
-        if (data.Length < need) throw new SlmpError("read_bits payload size mismatch");
-        var idx = 0;
-        for (var i = 0; i < need && idx < points; i++)
-        {
-            result[idx++] = ((data[i] >> 4) & 0x1) != 0;
-            if (idx < points) result[idx++] = (data[i] & 0x1) != 0;
-        }
-        return result;
+        return UnpackBitValues(data, points);
     }
 
     private static SlmpCpuOperationState DecodeCpuOperationState(ushort statusWord)
@@ -1625,12 +1622,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private static void ValidateDirectBitReadDevice(SlmpDeviceAddress device)
     {
-        // Long-family state bits are decoded from the LTN/LSTN/LCN 4-word status block.
-        // Do not send direct bit read (0x0401) for these devices.
+        // Long-family state bits must enter through the typed/named helpers. Some devices
+        // use status blocks internally, and LCS/LCC use direct bit read only inside the helper.
         if (IsLongTimerStateDevice(device.Code) || IsLongCounterContactDevice(device))
         {
             throw new ArgumentException(
-                $"Direct bit read is not supported for {device.Code}. Use ReadTypedAsync/ReadNamedAsync or the long-family status helpers so the LTN/LSTN/LCN 4-word status block is decoded.",
+                $"Direct bit read is not supported for {device.Code}. Use ReadTypedAsync/ReadNamedAsync or the long-family helpers.",
                 nameof(device));
         }
     }
@@ -1713,7 +1710,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (wordDevices.Any(IsLongCounterContactDevice) || dwordDevices.Any(IsLongCounterContactDevice))
         {
             throw new ArgumentException(
-                "Read Random (0x0403) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync so the LCN 4-word status block is decoded.",
+                "Read Random (0x0403) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync so the long counter bit helper is selected.",
                 nameof(wordDevices));
         }
 
@@ -1750,7 +1747,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             bitBlocks.Any(block => IsLongCounterContactDevice(block.Device)))
         {
             throw new ArgumentException(
-                "Read Block (0x0406) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync so the LCN 4-word status block is decoded.",
+                "Read Block (0x0406) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync so the long counter bit helper is selected.",
                 nameof(wordBlocks));
         }
     }

@@ -93,6 +93,12 @@ public static class SlmpClientExtensions
         if (longRead is not null)
         {
             ValidateLongFamilyDType(device, normalizedDType, nameof(dtype));
+            if (IsLongCounterStateDirectBitRead(longRead.Value))
+            {
+                var bits = await client.ReadBitsUncheckedAsync(device, 1, ct).ConfigureAwait(false);
+                return bits[0];
+            }
+
             if (longRead.Value.Kind == SlmpLongTimerReadKind.Current && device.Code == SlmpDeviceCode.LCN)
             {
                 var value = await ReadRandomDWordValueAsync(client, device, ct).ConfigureAwait(false);
@@ -1433,6 +1439,12 @@ public static class SlmpClientExtensions
         CancellationToken ct)
     {
         var spec = entry.LongTimerRead ?? throw new InvalidOperationException("Long timer read metadata is missing.");
+        if (IsLongCounterStateDirectBitRead(spec))
+        {
+            var bits = await client.ReadBitsUncheckedAsync(entry.Device, 1, ct).ConfigureAwait(false);
+            return bits[0];
+        }
+
         if (spec.BaseCode == SlmpDeviceCode.LCN && spec.Kind == SlmpLongTimerReadKind.Current)
         {
             var value = await ReadRandomDWordValueAsync(client, entry.Device, ct).ConfigureAwait(false);
@@ -1691,10 +1703,14 @@ public static class SlmpClientExtensions
             SlmpDeviceCode.LSTS => new SlmpLongTimerReadSpec(SlmpDeviceCode.LSTN, SlmpLongTimerReadKind.Contact),
             SlmpDeviceCode.LSTC => new SlmpLongTimerReadSpec(SlmpDeviceCode.LSTN, SlmpLongTimerReadKind.Coil),
             SlmpDeviceCode.LCN => new SlmpLongTimerReadSpec(SlmpDeviceCode.LCN, SlmpLongTimerReadKind.Current),
-            SlmpDeviceCode.LCS => new SlmpLongTimerReadSpec(SlmpDeviceCode.LCN, SlmpLongTimerReadKind.Contact),
-            SlmpDeviceCode.LCC => new SlmpLongTimerReadSpec(SlmpDeviceCode.LCN, SlmpLongTimerReadKind.Coil),
+            SlmpDeviceCode.LCS => new SlmpLongTimerReadSpec(SlmpDeviceCode.LCS, SlmpLongTimerReadKind.Contact),
+            SlmpDeviceCode.LCC => new SlmpLongTimerReadSpec(SlmpDeviceCode.LCC, SlmpLongTimerReadKind.Coil),
             _ => null,
         };
+
+    private static bool IsLongCounterStateDirectBitRead(SlmpLongTimerReadSpec spec)
+        => spec.BaseCode is SlmpDeviceCode.LCS or SlmpDeviceCode.LCC
+           && spec.Kind is SlmpLongTimerReadKind.Contact or SlmpLongTimerReadKind.Coil;
 
     internal static void ValidateLongTimerEntry(string address, SlmpDeviceAddress device, string dtype)
     {

@@ -100,11 +100,11 @@ public sealed class SlmpClientGuardTests
     }
 
     [Theory]
-    [InlineData(SlmpDeviceCode.LCS, 0x0002)]
-    [InlineData(SlmpDeviceCode.LCC, 0x0001)]
-    public async Task ReadTypedAsync_LongCounterStatesUseLcnStatusBlock(SlmpDeviceCode code, ushort statusWord)
+    [InlineData(SlmpDeviceCode.LCS)]
+    [InlineData(SlmpDeviceCode.LCC)]
+    public async Task ReadTypedAsync_LongCounterStatesUseDirectBitReadInsideHelper(SlmpDeviceCode code)
     {
-        await using var server = new MultiShotSlmpServer([(0, BuildWordPayload(0, 0, statusWord, 0))]);
+        await using var server = new MultiShotSlmpServer([(0, new byte[] { 0x10 })]);
         await server.StartAsync();
 
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
@@ -116,7 +116,7 @@ public sealed class SlmpClientGuardTests
 
         Assert.True(Assert.IsType<bool>(value));
         var request = Assert.Single(server.RequestFrames);
-        AssertDeviceReadWordShape(request, SlmpDeviceCode.LCN, 10, 4);
+        AssertDeviceReadBitShape(request, code, 10, 1);
     }
 
     [Theory]
@@ -487,6 +487,17 @@ public sealed class SlmpClientGuardTests
         var body = request.AsSpan(13);
         Assert.Equal((ushort)0x0401, BinaryPrimitives.ReadUInt16LittleEndian(body[2..4]));
         Assert.Equal((ushort)0x0002, BinaryPrimitives.ReadUInt16LittleEndian(body[4..6]));
+        var payload = body[6..];
+        Assert.Equal(number, BinaryPrimitives.ReadUInt32LittleEndian(payload[..4]));
+        Assert.Equal((ushort)code, BinaryPrimitives.ReadUInt16LittleEndian(payload[4..6]));
+        Assert.Equal(points, BinaryPrimitives.ReadUInt16LittleEndian(payload[6..8]));
+    }
+
+    private static void AssertDeviceReadBitShape(byte[] request, SlmpDeviceCode code, uint number, ushort points)
+    {
+        var body = request.AsSpan(13);
+        Assert.Equal((ushort)0x0401, BinaryPrimitives.ReadUInt16LittleEndian(body[2..4]));
+        Assert.Equal((ushort)0x0003, BinaryPrimitives.ReadUInt16LittleEndian(body[4..6]));
         var payload = body[6..];
         Assert.Equal(number, BinaryPrimitives.ReadUInt32LittleEndian(payload[..4]));
         Assert.Equal((ushort)code, BinaryPrimitives.ReadUInt16LittleEndian(payload[4..6]));
