@@ -1941,6 +1941,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 $"{readOnlyEntry.Device.Code} is read-only in SLMP and cannot be written.",
                 nameof(bitEntries));
         }
+
+        if (bitEntries.Any(entry => IsQualifiedOnlyDevice(entry.Device.Code)))
+        {
+            throw new ArgumentException(
+                "Write Random bits (0x1402) does not support G/HG devices. Use U-qualified word access instead.",
+                nameof(bitEntries));
+        }
     }
 
     private static void ValidateWritableDevice(SlmpDeviceAddress device)
