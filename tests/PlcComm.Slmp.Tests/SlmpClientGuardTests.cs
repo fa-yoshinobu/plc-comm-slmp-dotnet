@@ -84,13 +84,39 @@ public sealed class SlmpClientGuardTests
         Assert.Contains("Direct word write is not supported for LZ", ex.Message);
     }
 
-    [Fact]
-    public async Task ReadBitsAsync_RejectsDirectLongTimerStateReads()
+    [Theory]
+    [InlineData(SlmpDeviceCode.LTS)]
+    [InlineData(SlmpDeviceCode.LTC)]
+    [InlineData(SlmpDeviceCode.LSTS)]
+    [InlineData(SlmpDeviceCode.LSTC)]
+    [InlineData(SlmpDeviceCode.LCS)]
+    [InlineData(SlmpDeviceCode.LCC)]
+    public async Task ReadBitsAsync_RejectsDirectLongFamilyStateReads(SlmpDeviceCode code)
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LTS, 10), 1));
-        Assert.Contains("Direct bit read is not supported for LTS", ex.Message);
+            () => client.ReadBitsAsync(new SlmpDeviceAddress(code, 10), 1));
+        Assert.Contains($"Direct bit read is not supported for {code}", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(SlmpDeviceCode.LCS, 0x0002)]
+    [InlineData(SlmpDeviceCode.LCC, 0x0001)]
+    public async Task ReadTypedAsync_LongCounterStatesUseLcnStatusBlock(SlmpDeviceCode code, ushort statusWord)
+    {
+        await using var server = new MultiShotSlmpServer([(0, BuildWordPayload(0, 0, statusWord, 0))]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        {
+            MonitoringTimer = 0x0010,
+        };
+
+        var value = await client.ReadTypedAsync(new SlmpDeviceAddress(code, 10), "BIT");
+
+        Assert.True(Assert.IsType<bool>(value));
+        var request = Assert.Single(server.RequestFrames);
+        AssertDeviceReadWordShape(request, SlmpDeviceCode.LCN, 10, 4);
     }
 
     [Theory]
@@ -454,6 +480,28 @@ public sealed class SlmpClientGuardTests
         Assert.Equal(command, BinaryPrimitives.ReadUInt16LittleEndian(body[2..4]));
         Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(body[4..6]));
         Assert.Equal(payload, body[6..(6 + payload.Length)].ToArray());
+    }
+
+    private static void AssertDeviceReadWordShape(byte[] request, SlmpDeviceCode code, uint number, ushort points)
+    {
+        var body = request.AsSpan(13);
+        Assert.Equal((ushort)0x0401, BinaryPrimitives.ReadUInt16LittleEndian(body[2..4]));
+        Assert.Equal((ushort)0x0002, BinaryPrimitives.ReadUInt16LittleEndian(body[4..6]));
+        var payload = body[6..];
+        Assert.Equal(number, BinaryPrimitives.ReadUInt32LittleEndian(payload[..4]));
+        Assert.Equal((ushort)code, BinaryPrimitives.ReadUInt16LittleEndian(payload[4..6]));
+        Assert.Equal(points, BinaryPrimitives.ReadUInt16LittleEndian(payload[6..8]));
+    }
+
+    private static byte[] BuildWordPayload(params ushort[] values)
+    {
+        var payload = new byte[values.Length * 2];
+        for (var index = 0; index < values.Length; index++)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(index * 2, 2), values[index]);
+        }
+
+        return payload;
     }
 
     private static SlmpDeviceAddress[] RandomWordDevices(int count)

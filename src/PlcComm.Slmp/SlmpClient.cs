@@ -335,6 +335,23 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         ValidateDirectAccessPoints(points, bitUnit: false, "read_words");
         ValidateDirectWordReadDevice(device, points);
+        return await ReadWordsRawUncheckedAsync(device, points, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal Task<ushort[]> ReadLongStatusBlockWordsAsync(SlmpDeviceCode currentValueDevice, uint number, CancellationToken cancellationToken = default)
+    {
+        if (!IsLongCurrentValueDevice(currentValueDevice))
+        {
+            throw new ArgumentException(
+                $"{currentValueDevice} is not a long-family current value device.",
+                nameof(currentValueDevice));
+        }
+
+        return ReadWordsRawUncheckedAsync(new SlmpDeviceAddress(currentValueDevice, number), 4, cancellationToken);
+    }
+
+    private async Task<ushort[]> ReadWordsRawUncheckedAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+    {
         var payload = BuildReadWritePayload(device, points, null, bitUnit: false);
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0000 : (ushort)0x0002;
         var data = await RequestAsync(SlmpCommand.DeviceRead, sub, payload, true, cancellationToken).ConfigureAwait(false);
@@ -1356,7 +1373,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         for (var index = 0; index < points; index++)
         {
             var device = new SlmpDeviceAddress(currentValueDevice, checked((uint)(headNo + index)));
-            var block = await ReadWordsRawAsync(device, 4, cancellationToken).ConfigureAwait(false);
+            var block = await ReadLongStatusBlockWordsAsync(currentValueDevice, device.Number, cancellationToken).ConfigureAwait(false);
             Array.Copy(block, 0, words, index * 4, block.Length);
         }
 
@@ -1608,12 +1625,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private static void ValidateDirectBitReadDevice(SlmpDeviceAddress device)
     {
-        // Long timer state bits are decoded from the LTN/LSTN 4-word status block.
+        // Long-family state bits are decoded from the LTN/LSTN/LCN 4-word status block.
         // Do not send direct bit read (0x0401) for these devices.
-        if (IsLongTimerStateDevice(device.Code))
+        if (IsLongTimerStateDevice(device.Code) || IsLongCounterContactDevice(device))
         {
             throw new ArgumentException(
-                $"Direct bit read is not supported for {device.Code}. Use ReadTypedAsync/ReadNamedAsync or the long timer status helpers so the LTN/LSTN 4-word status block is decoded.",
+                $"Direct bit read is not supported for {device.Code}. Use ReadTypedAsync/ReadNamedAsync or the long-family status helpers so the LTN/LSTN/LCN 4-word status block is decoded.",
                 nameof(device));
         }
     }
@@ -1696,7 +1713,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (wordDevices.Any(IsLongCounterContactDevice) || dwordDevices.Any(IsLongCounterContactDevice))
         {
             throw new ArgumentException(
-                "Read Random (0x0403) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync so direct bit read is selected.",
+                "Read Random (0x0403) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync so the LCN 4-word status block is decoded.",
                 nameof(wordDevices));
         }
 
@@ -1733,7 +1750,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             bitBlocks.Any(block => IsLongCounterContactDevice(block.Device)))
         {
             throw new ArgumentException(
-                "Read Block (0x0406) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync so direct bit read is selected.",
+                "Read Block (0x0406) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync so the LCN 4-word status block is decoded.",
                 nameof(wordBlocks));
         }
     }
@@ -1766,7 +1783,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (wordDevices.Any(IsLongCounterContactDevice) || dwordDevices.Any(IsLongCounterContactDevice))
         {
             throw new ArgumentException(
-                "Entry Monitor Device (0x0801) does not support LCS/LCC. Poll them through ReadTypedAsync/ReadNamedAsync instead.",
+                "Entry Monitor Device (0x0801) does not support LCS/LCC.",
                 nameof(wordDevices));
         }
     }

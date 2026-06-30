@@ -99,12 +99,6 @@ public static class SlmpClientExtensions
                 return normalizedDType == "L" ? DecodeSignedDWord(value) : value;
             }
 
-            if (IsLongCounterStateDevice(device.Code))
-            {
-                var bits = await client.ReadBitsAsync(device, 1, ct).ConfigureAwait(false);
-                return bits[0];
-            }
-
             var timer = await ReadLongLikePointAsync(client, longRead.Value.BaseCode, device.Number, ct).ConfigureAwait(false);
             return DecodeLongLikeValue(normalizedDType, longRead.Value, timer);
         }
@@ -1445,12 +1439,6 @@ public static class SlmpClientExtensions
             return string.Equals(entry.DType, "L", StringComparison.OrdinalIgnoreCase) ? DecodeSignedDWord(value) : value;
         }
 
-        if (IsLongCounterStateDevice(entry.Device.Code))
-        {
-            var bits = await client.ReadBitsAsync(entry.Device, 1, ct).ConfigureAwait(false);
-            return bits[0];
-        }
-
         var key = (spec.BaseCode, entry.Device.Number);
         if (!cache.TryGetValue(key, out var timer))
         {
@@ -1474,7 +1462,7 @@ public static class SlmpClientExtensions
             SlmpDeviceCode.LCN => DecodeLongLikeWords(
                 baseCode,
                 number,
-                await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.LCN, number), 4, ct).ConfigureAwait(false)),
+                await client.ReadLongStatusBlockWordsAsync(SlmpDeviceCode.LCN, number, ct).ConfigureAwait(false)),
             _ => throw new InvalidOperationException($"Unsupported long-family base code: {baseCode}"),
         };
     }
@@ -1798,9 +1786,6 @@ public static class SlmpClientExtensions
             or SlmpDeviceCode.LCS
             or SlmpDeviceCode.LCC;
 
-    private static bool IsLongCounterStateDevice(SlmpDeviceCode code)
-        => code is SlmpDeviceCode.LCS or SlmpDeviceCode.LCC;
-
     private static bool IsWordDevice(SlmpDeviceCode code)
         => code is SlmpDeviceCode.SD
             or SlmpDeviceCode.D
@@ -1829,6 +1814,7 @@ public static class SlmpClientExtensions
             or SlmpDeviceCode.F
             or SlmpDeviceCode.V
             or SlmpDeviceCode.B
+            or SlmpDeviceCode.S
             or SlmpDeviceCode.TS
             or SlmpDeviceCode.TC
             or SlmpDeviceCode.LTS
