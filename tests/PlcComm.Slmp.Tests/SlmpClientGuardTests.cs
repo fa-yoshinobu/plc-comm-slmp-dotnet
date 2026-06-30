@@ -599,6 +599,18 @@ public sealed class SlmpClientGuardTests
         Assert.Contains("S is read-only in SLMP", ex.Message);
     }
 
+    [Theory]
+    [InlineData(SlmpDeviceCode.G)]
+    [InlineData(SlmpDeviceCode.HG)]
+    public async Task WriteRandomBitsAsync_RejectsQualifiedOnlyDevices(SlmpDeviceCode code)
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteRandomBitsAsync(
+                new[] { (new SlmpDeviceAddress(code, 10), true) }));
+        Assert.Contains("does not support G/HG devices", ex.Message);
+    }
+
     [Fact]
     public async Task WriteRandomBitsExtAsync_RejectsStepRelayWrites()
     {
@@ -607,6 +619,18 @@ public sealed class SlmpClientGuardTests
             () => client.WriteRandomBitsExtAsync(
                 new[] { (new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), null), true, new SlmpExtensionSpec()) }));
         Assert.Contains("S is read-only in SLMP", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(SlmpDeviceCode.G)]
+    [InlineData(SlmpDeviceCode.HG)]
+    public async Task WriteRandomBitsExtAsync_RejectsQualifiedOnlyDevices(SlmpDeviceCode code)
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteRandomBitsExtAsync(
+                new[] { (new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(code, 10), null), true, new SlmpExtensionSpec()) }));
+        Assert.Contains("does not support G/HG devices", ex.Message);
     }
 
     [Fact]
