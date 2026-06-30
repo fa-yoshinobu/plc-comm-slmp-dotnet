@@ -15,6 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Tooling`: Developer/operator command-line tools and helper utilities.
 - `CI`: Release checks, workflow scripts, or automation-only changes.
 
+## [Unreleased]
+
+### Changed
+- Library: Routed long timer, long retentive timer, and long counter status reads through the dedicated long-state helper path instead of the normal bit-read path.
+- Library: Kept long counter contact and coil reads on the direct bit helper used by the long-state helper path.
+
+### Fixed
+- Library: Reject SLMP step relay `S` writes so `S` remains read-only.
+- Library: Reject standalone `G` and `HG` device access; callers must use qualified `Un\Gn` / `Un\HGn` routes.
+- Tests: Added coverage for long-state helper routing, `S` write rejection, and standalone `G` / `HG` rejection.
+
 ## [1.1.1] - 2026-06-29
 
 ### Changed
