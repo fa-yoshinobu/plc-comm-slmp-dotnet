@@ -379,6 +379,21 @@ public sealed class SlmpClientGuardTests
         Assert.Contains("Read Block (0x0406) does not support LCS/LCC", ex.Message);
     }
 
+    [Theory]
+    [InlineData(SlmpPlcProfile.QCpu, "melsec:qcpu")]
+    [InlineData(SlmpPlcProfile.QnU, "melsec:qnu")]
+    [InlineData(SlmpPlcProfile.QnUDV, "melsec:qnudv")]
+    public async Task ReadBlockAsync_RejectsQSeriesProfiles(SlmpPlcProfile profile, string profileText)
+    {
+        using var client = new SlmpClient("127.0.0.1", profile);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.ReadBlockAsync(
+                new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 1) },
+                new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.M, 100), 1) }));
+        Assert.Contains("Read Block (0x0406)", ex.Message);
+        Assert.Contains(profileText, ex.Message);
+    }
+
     [Fact]
     public async Task ReadBlockAsync_RejectsLongCounterCurrentAndLzBlocks()
     {
@@ -418,6 +433,21 @@ public sealed class SlmpClientGuardTests
                 Array.Empty<SlmpBlockWrite>(),
                 new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.LCC, 10), new ushort[] { 1 }) }));
         Assert.Contains("Write Block (0x1406) does not support LCS/LCC", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(SlmpPlcProfile.QCpu, "melsec:qcpu")]
+    [InlineData(SlmpPlcProfile.QnU, "melsec:qnu")]
+    [InlineData(SlmpPlcProfile.QnUDV, "melsec:qnudv")]
+    public async Task WriteBlockAsync_RejectsQSeriesProfiles(SlmpPlcProfile profile, string profileText)
+    {
+        using var client = new SlmpClient("127.0.0.1", profile);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteBlockAsync(
+                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), new ushort[] { 1 }) },
+                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.M, 100), new ushort[] { 1 }) }));
+        Assert.Contains("Write Block (0x1406)", ex.Message);
+        Assert.Contains(profileText, ex.Message);
     }
 
     [Theory]
