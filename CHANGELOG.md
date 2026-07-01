@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Library: Reject SLMP step relay `S` writes so `S` remains read-only.
 - Library: Reject standalone `G` and `HG` device access, including random bit writes; callers must use qualified `Un\Gn` / `Un\HGn` routes.
+- Docs: Documented `S` as a read-only bit device in supported-register and gotcha guidance.
 - Tests: Added coverage for long-state helper routing, `S` write rejection, and standalone `G` / `HG` random bit write rejection.
 
 ## [1.1.1] - 2026-06-29
