@@ -69,6 +69,14 @@ var state = await client.ReadTypedAsync("LTC0", "BIT");
 Console.WriteLine($"LTC0 = {state}");
 ```
 
+## S write rejected
+
+| Item | Detail |
+| --- | --- |
+| Symptom | `S10:BIT` can be read, but write routes reject it. |
+| Root cause | Step relay `S` is treated as a read-only SLMP bit family. |
+| Fix | Keep `S` out of write lists and use it only for reads. |
+
 ## G/HG fails
 
 | Item | Detail |
