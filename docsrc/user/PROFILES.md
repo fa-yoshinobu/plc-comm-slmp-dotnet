@@ -12,10 +12,10 @@ The canonical profile is the stable configuration value for PLC selection.
 | `melsec:iq-l` | MELSEC iQ-L | `SlmpPlcProfile.IqL` | `Frame4E` | `Iqr` | Use for MELSEC iQ-L targets. |
 | `melsec:mx-f` | MELSEC MX-F | `SlmpPlcProfile.MxF` | `Frame4E` | `Iqr` | MX-F profile. |
 | `melsec:mx-r` | MELSEC MX-R | `SlmpPlcProfile.MxR` | `Frame4E` | `Iqr` | MX-R profile. |
-| `melsec:qcpu` | MELSEC QCPU | `SlmpPlcProfile.QCpu` | `Frame3E` | `Legacy` | Legacy 3E profile. |
+| `melsec:qcpu` | MELSEC QCPU | `SlmpPlcProfile.QCpu` | `Frame3E` | `Legacy` | Legacy 3E profile. Read Block (`0x0406`) and Write Block (`0x1406`) are rejected; use direct or random device commands. |
 | `melsec:lcpu` | MELSEC LCPU | `SlmpPlcProfile.LCpu` | `Frame3E` | `Legacy` | Legacy 3E profile. |
-| `melsec:qnu` | MELSEC QnU | `SlmpPlcProfile.QnU` | `Frame3E` | `Legacy` | Legacy 3E profile. |
-| `melsec:qnudv` | MELSEC QnUDV | `SlmpPlcProfile.QnUDV` | `Frame3E` | `Legacy` | Legacy 3E profile. |
+| `melsec:qnu` | MELSEC QnU | `SlmpPlcProfile.QnU` | `Frame3E` | `Legacy` | Legacy 3E profile. Read Block (`0x0406`) and Write Block (`0x1406`) are rejected; use direct or random device commands. |
+| `melsec:qnudv` | MELSEC QnUDV | `SlmpPlcProfile.QnUDV` | `Frame3E` | `Legacy` | Legacy 3E profile. Read Block (`0x0406`) and Write Block (`0x1406`) are rejected; use direct or random device commands. |
 
 ## How to select
 
@@ -34,7 +34,7 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR);
 | `melsec:iq-l` | MELSEC iQ-L | Frame 4E, iQ-R mode. |
 | `melsec:mx-f` | MELSEC MX-F | Frame 4E, iQ-R mode. |
 | `melsec:mx-r` | MELSEC MX-R | Frame 4E, iQ-R mode. |
-| `melsec:qcpu` | MELSEC QCPU | Frame 3E, legacy mode. |
+| `melsec:qcpu` | MELSEC QCPU | Frame 3E, legacy mode. Block commands `0x0406` / `0x1406` are rejected. |
 | `melsec:lcpu` | MELSEC LCPU | Frame 3E, legacy mode. |
-| `melsec:qnu` | MELSEC QnU | Frame 3E, legacy mode. |
-| `melsec:qnudv` | MELSEC QnUDV | Frame 3E, legacy mode. |
+| `melsec:qnu` | MELSEC QnU | Frame 3E, legacy mode. Block commands `0x0406` / `0x1406` are rejected. |
+| `melsec:qnudv` | MELSEC QnUDV | Frame 3E, legacy mode. Block commands `0x0406` / `0x1406` are rejected. |

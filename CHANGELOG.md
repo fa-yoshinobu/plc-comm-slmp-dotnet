@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library: Kept long counter contact and coil reads on the direct bit helper used by the long-state helper path.
 - Library: Added SLMP step relay `S` device parsing and read support.
 - Library: Rejected Read Block (`0x0406`) and Write Block (`0x1406`) for `melsec:qcpu`, `melsec:qnu`, and `melsec:qnudv` before transport; callers should use direct or random device commands for those profiles.
+- Library: Batched named plain-bit reads through random word-read only for `SM/X/Y/M/L/F/V/B/SB`; `TS/TC/STS/STC/CS/CC/DX/DY` stay on direct bit reads.
+- Docs: Documented the Q-series Read Block (`0x0406`) and Write Block (`0x1406`) profile guard in user profiles and gotchas.
+- Release: Excluded maintainer-only files, scripts, and tests from generated source archives via `.gitattributes`.
 
 ### Fixed
 - Library: Reject SLMP step relay `S` writes so `S` remains read-only.
@@ -29,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docs: Documented `S` as a read-only bit device in supported-register and gotcha guidance.
 - Tests: Added coverage for long-state helper routing, `S` write rejection, and standalone `G` / `HG` random bit write rejection.
 - Tests: Added guard coverage that Q-series profiles reject block read/write before transport.
+- Tests: Added named-read planning coverage for random-word-safe plain bit families versus direct-bit-only families.
 
 ## [1.1.1] - 2026-06-29
 

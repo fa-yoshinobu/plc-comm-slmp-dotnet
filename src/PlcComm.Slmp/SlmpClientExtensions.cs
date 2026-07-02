@@ -1364,6 +1364,15 @@ public static class SlmpClientExtensions
             {
                 kind = SlmpNamedReadKind.LongTimer;
             }
+            else if (dtype == "BIT" && TryPlainBitWordRead(device, out var wordDevice, out var plainBitIndex))
+            {
+                device = wordDevice;
+                bitIdx = plainBitIndex;
+                dtype = "BIT_IN_WORD";
+                kind = SlmpNamedReadKind.BitInWord;
+                if (seenWords.Add(device))
+                    wordDevices.Add(device);
+            }
             else if ((dtype == "U" || dtype == "S") && IsWordBatchable(device.Code))
             {
                 kind = SlmpNamedReadKind.Word;
@@ -1860,6 +1869,31 @@ public static class SlmpClientExtensions
             or SlmpDeviceCode.SB
             or SlmpDeviceCode.DX
             or SlmpDeviceCode.DY;
+
+    private static bool IsPlainBitWordBatchable(SlmpDeviceCode code)
+        => code is SlmpDeviceCode.SM
+            or SlmpDeviceCode.X
+            or SlmpDeviceCode.Y
+            or SlmpDeviceCode.M
+            or SlmpDeviceCode.L
+            or SlmpDeviceCode.F
+            or SlmpDeviceCode.V
+            or SlmpDeviceCode.B
+            or SlmpDeviceCode.SB;
+
+    private static bool TryPlainBitWordRead(SlmpDeviceAddress device, out SlmpDeviceAddress wordDevice, out int bitIndex)
+    {
+        if (!IsPlainBitWordBatchable(device.Code))
+        {
+            wordDevice = default;
+            bitIndex = 0;
+            return false;
+        }
+
+        bitIndex = (int)(device.Number % 16U);
+        wordDevice = new SlmpDeviceAddress(device.Code, device.Number - (uint)bitIndex);
+        return true;
+    }
 
     private static bool IsWordBatchable(SlmpDeviceCode code)
         => code is SlmpDeviceCode.SD

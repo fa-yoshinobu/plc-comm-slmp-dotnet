@@ -43,9 +43,10 @@ public sealed class SlmpClientExtensionsTests
     {
         var plan = SlmpClientExtensions.CompileReadPlan(["D100:U", "D100.3", "D101:F", "M10:BIT"]);
 
-        Assert.Single(plan.WordDevices);
+        Assert.Equal(2, plan.WordDevices.Count);
         Assert.Single(plan.DwordDevices);
         Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), plan.WordDevices[0]);
+        Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), plan.WordDevices[1]);
         Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.D, 101), plan.DwordDevices[0]);
 
         Assert.Collection(
@@ -69,9 +70,25 @@ public sealed class SlmpClientExtensionsTests
             entry =>
             {
                 Assert.Equal("M10:BIT", entry.Address);
-                Assert.Equal(SlmpNamedReadKind.Fallback, entry.Kind);
-                Assert.Equal("BIT", entry.DType);
+                Assert.Equal(SlmpNamedReadKind.BitInWord, entry.Kind);
+                Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), entry.Device);
+                Assert.Equal("BIT_IN_WORD", entry.DType);
+                Assert.Equal(10, entry.BitIndex);
             });
+    }
+
+    [Fact]
+    public void CompileReadPlan_KeepsRiskyBitFamiliesOnDirectRead()
+    {
+        var plan = SlmpClientExtensions.CompileReadPlan(["TS10:BIT", "TC10:BIT", "STS10:BIT", "STC10:BIT", "CS10:BIT", "CC10:BIT", "DX10:BIT", "DY10:BIT"]);
+
+        Assert.Empty(plan.WordDevices);
+        Assert.Empty(plan.DwordDevices);
+        Assert.All(plan.Entries, entry =>
+        {
+            Assert.Equal(SlmpNamedReadKind.Fallback, entry.Kind);
+            Assert.Equal("BIT", entry.DType);
+        });
     }
 
     [Fact]

@@ -1,1 +1,19 @@
 *.cs text eol=lf
+.gitattributes export-ignore
+.github export-ignore
+.github/** export-ignore
+.gitignore export-ignore
+docsrc/maintainer export-ignore
+docsrc/maintainer/** export-ignore
+internal_docs export-ignore
+internal_docs/** export-ignore
+release-artifacts export-ignore
+release-artifacts/** export-ignore
+scripts export-ignore
+scripts/** export-ignore
+tests export-ignore
+tests/** export-ignore
+release_check.bat export-ignore
+run_ci.bat export-ignore
+TODO.md export-ignore
+SLMP_MANUAL_AUDIT_REFLECTION_2026_06_13.md export-ignore

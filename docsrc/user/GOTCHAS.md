@@ -107,6 +107,14 @@ Console.WriteLine($"G100 words = {words.Length}");
 | Root cause | The PLC rejects SLMP command `0x1406` for a mixed word and bit request. |
 | Fix | Send word writes and bit writes as separate calls. |
 
+## Q-series profiles reject block commands
+
+| Item | Detail |
+| --- | --- |
+| Symptom | `ReadBlockAsync` or `WriteBlockAsync` throws when the client is configured for `melsec:qcpu`, `melsec:qnu`, or `melsec:qnudv`. |
+| Root cause | These Q-series profiles reject SLMP Read Block (`0x0406`) and Write Block (`0x1406`) before transport. |
+| Fix | Use direct or random device commands for those profiles. |
+
 ```csharp
 using System;
 using PlcComm.Slmp;
