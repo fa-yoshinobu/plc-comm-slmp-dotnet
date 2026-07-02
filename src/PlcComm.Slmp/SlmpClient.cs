@@ -761,6 +761,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(wordBlocks), "block counts must be <= 255");
         }
+        ValidateBlockRouteForProfile("Read Block (0x0406)");
         ValidateBlockReadLimits(wordBlocks, bitBlocks);
         ValidateBlockReadDevices(wordBlocks, bitBlocks);
 
@@ -816,6 +817,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     )
     {
         var writeOptions = options ?? new SlmpBlockWriteOptions();
+        if (wordBlocks.Count > 0xFF || bitBlocks.Count > 0xFF)
+        {
+            throw new ArgumentOutOfRangeException(nameof(wordBlocks), "block counts must be <= 255");
+        }
+        ValidateBlockRouteForProfile("Write Block (0x1406)");
         if (writeOptions.SplitMixedBlocks && wordBlocks.Count > 0 && bitBlocks.Count > 0)
         {
             await WriteBlockAsync(wordBlocks, [], new SlmpBlockWriteOptions(false), cancellationToken).ConfigureAwait(false);
@@ -823,10 +829,6 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             return;
         }
 
-        if (wordBlocks.Count > 0xFF || bitBlocks.Count > 0xFF)
-        {
-            throw new ArgumentOutOfRangeException(nameof(wordBlocks), "block counts must be <= 255");
-        }
         ValidateBlockWriteLimits(wordBlocks, bitBlocks);
         ValidateBlockWriteDevices(wordBlocks, bitBlocks);
 
@@ -1606,6 +1608,14 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (points < 1 || points > ushort.MaxValue)
             throw new ArgumentOutOfRangeException(name, $"{name} block points out of range (1..65535): {points}");
         return points;
+    }
+
+    private void ValidateBlockRouteForProfile(string commandLabel)
+    {
+        if (PlcProfile is SlmpPlcProfile.QCpu or SlmpPlcProfile.QnU or SlmpPlcProfile.QnUDV)
+        {
+            throw new ArgumentException($"{commandLabel} is not supported for PlcProfile '{SlmpPlcProfiles.ToCanonicalString(PlcProfile)}'. Use direct or random device commands.");
+        }
     }
 
     private static void ValidateMemoryWordLength(int wordLength, string name)

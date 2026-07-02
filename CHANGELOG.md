@@ -21,12 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library: Routed long timer, long retentive timer, and long counter status reads through the dedicated long-state helper path instead of the normal bit-read path.
 - Library: Kept long counter contact and coil reads on the direct bit helper used by the long-state helper path.
 - Library: Added SLMP step relay `S` device parsing and read support.
+- Library: Rejected Read Block (`0x0406`) and Write Block (`0x1406`) for `melsec:qcpu`, `melsec:qnu`, and `melsec:qnudv` before transport; callers should use direct or random device commands for those profiles.
 
 ### Fixed
 - Library: Reject SLMP step relay `S` writes so `S` remains read-only.
 - Library: Reject standalone `G` and `HG` device access, including random bit writes; callers must use qualified `Un\Gn` / `Un\HGn` routes.
 - Docs: Documented `S` as a read-only bit device in supported-register and gotcha guidance.
 - Tests: Added coverage for long-state helper routing, `S` write rejection, and standalone `G` / `HG` random bit write rejection.
+- Tests: Added guard coverage that Q-series profiles reject block read/write before transport.
 
 ## [1.1.1] - 2026-06-29
 
