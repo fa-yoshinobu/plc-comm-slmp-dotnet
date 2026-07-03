@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Library: Added non-breaking SLMP specification-audit updates for manual-conformant request framing, point-limit guards, response correlation, and PLC error diagnostics.
+- Library: Exposed structured PLC error information on `SlmpError.ErrorInfo` when a non-zero end-code response carries the 9-byte error information block.
+- Library: Enforced documented point limits before transport: iQ-F direct bit access is limited to 3584 points, and 008x extended random/monitor routes use the 96-point / weighted-960 / 94-bit limits.
 - Library: Routed long timer, long retentive timer, and long counter status reads through the dedicated long-state helper path instead of the normal bit-read path.
 - Library: Kept long counter contact and coil reads on the direct bit helper used by the long-state helper path.
 - Library: Added SLMP step relay `S` device parsing and read support.
@@ -28,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release: Excluded maintainer-only files, scripts, and tests from generated source archives via `.gitattributes`.
 
 ### Fixed
+- Library: Aligned standard 008x extended device specifications with the manual 11-byte Q/L and 13-byte iQ-R layouts.
+- Library: Matched 4E responses by request serial and discarded mismatched D4 responses before parsing the response payload.
 - Library: Reject SLMP step relay `S` writes so `S` remains read-only.
 - Library: Reject standalone `G` and `HG` device access, including random bit writes; callers must use qualified `Un\Gn` / `Un\HGn` routes.
 - Docs: Documented `S` as a read-only bit device in supported-register and gotcha guidance.
