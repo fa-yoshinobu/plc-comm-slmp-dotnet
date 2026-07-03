@@ -47,11 +47,27 @@ public sealed class SlmpParserTests
     [Theory]
     [InlineData("DX10")]
     [InlineData("DY10")]
-    public void ParseDevice_IqFDirectIo_Fails(string text)
+    [InlineData("V10")]
+    [InlineData("LTS10")]
+    [InlineData("ZR10")]
+    [InlineData("RD10")]
+    public void ParseDevice_IqFUnsupportedFamilies_Fail(string text)
     {
         var error = Assert.Throws<NotSupportedException>(() => SlmpDeviceParser.Parse(text, SlmpPlcProfile.IqF));
         Assert.Contains("not supported", error.Message, StringComparison.Ordinal);
         Assert.False(SlmpAddress.TryParse(text, SlmpPlcProfile.IqF, out _));
+    }
+
+    [Theory]
+    [InlineData("LCS10", SlmpPlcProfile.QnUDV)]
+    [InlineData("LZ0", SlmpPlcProfile.QnU)]
+    [InlineData("RD0", SlmpPlcProfile.LCpu)]
+    [InlineData("LTN0", SlmpPlcProfile.QCpu)]
+    public void ParseDevice_MeasuredLegacyUnsupportedFamilies_Fail(string text, SlmpPlcProfile profile)
+    {
+        var error = Assert.Throws<NotSupportedException>(() => SlmpDeviceParser.Parse(text, profile));
+        Assert.Contains("not supported", error.Message, StringComparison.Ordinal);
+        Assert.False(SlmpAddress.TryParse(text, profile, out _));
     }
 
     [Fact]

@@ -97,11 +97,11 @@ public static class SlmpAddress
 
     private static void ThrowIfDeviceCodeUnsupportedForProfile(SlmpDeviceCode code, SlmpPlcProfile PlcProfile)
     {
-        if (PlcProfile is SlmpPlcProfile.IqF &&
-            code is SlmpDeviceCode.DX or SlmpDeviceCode.DY)
+        if (SlmpPlcProfiles.IsDeviceCodeUnsupported(code, PlcProfile))
         {
+            var profileId = SlmpPlcProfiles.ToCanonicalString(PlcProfile);
             throw new NotSupportedException(
-                $"SLMP device code '{code}' is not supported for PlcProfile 'IqF'.");
+                $"SLMP device code '{code}' is not supported for PlcProfile '{profileId}'.");
         }
     }
 

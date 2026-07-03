@@ -236,11 +236,12 @@ public static class SlmpDeviceParser
         SlmpDeviceCode code,
         SlmpPlcProfile? PlcProfile)
     {
-        if (PlcProfile is SlmpPlcProfile.IqF &&
-            code is SlmpDeviceCode.DX or SlmpDeviceCode.DY)
+        if (PlcProfile is SlmpPlcProfile profile &&
+            SlmpPlcProfiles.IsDeviceCodeUnsupported(code, profile))
         {
+            var profileId = SlmpPlcProfiles.ToCanonicalString(profile);
             throw new NotSupportedException(
-                $"SLMP device code '{prefix}' is not supported for PlcProfile 'IqF'.");
+                $"SLMP device code '{prefix}' is not supported for PlcProfile '{profileId}'.");
         }
     }
 

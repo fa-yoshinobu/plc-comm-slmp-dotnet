@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library: Added `SlmpProfileFeatureException` for profile guard failures with profile ID, feature key, state, evidence, and the `StrictProfile=false` bypass hint.
 - Library: Moved direct/random point limits to the capability table for all canonical built-in Ethernet profiles, including `melsec:qcpu` and `melsec:qnu`.
 - Library: Enforced capability write policies independently of `StrictProfile`; `S` is read-only on iQ-R/iQ-L/MX/Q/L profiles and read-write on iQ-F.
+- Library: Rejected profile-unsupported device families before transport while leaving device address upper-bound checks to application/live-probe code.
 - Library: Moved Q/L profile Read Block (`0x0406`) and Write Block (`0x1406`) rejection to the capability profile guard so `StrictProfile=false` can intentionally send the request and let the PLC answer.
 - Library: Batched named plain-bit reads through random word-read only for `SM/X/Y/M/L/F/V/B/SB`; `TS/TC/STS/STC/CS/CC/DX/DY` stay on direct bit reads.
 - Docs: Documented the Q-series Read Block (`0x0406`) and Write Block (`0x1406`) profile guard in user profiles and gotchas.
