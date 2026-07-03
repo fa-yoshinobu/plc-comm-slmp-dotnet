@@ -1,6 +1,6 @@
 # Latest communication verification
 
-This page keeps the current public summary only. Older detailed notes are not kept in the public documentation set.
+This page keeps the current public summary only.
 
 ## Current Retained Summary
 
@@ -18,9 +18,3 @@ This page keeps the current public summary only. Older detailed notes are not ke
 
 - keep frame type and compatibility mode explicit for every connection
 - keep module-buffer families such as `G` and `HG` out of the first smoke test
-- public docs keep only the current recommendation-level summary, not the historical probe archive
-
-## Where Older Evidence Went
-
-This public page keeps only the current summary. Detailed historical evidence is retained as maintainer notes.
-

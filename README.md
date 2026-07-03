@@ -10,7 +10,7 @@
 
 The maintained profile table is in [PLC profiles](docsrc/user/PROFILES.md). Choose one exact canonical PLC profile from that table.
 
-The library embeds built-in Ethernet capability profiles from `plc-comm-slmp-profiles` v1.0.0. `SlmpConnectionOptions.StrictProfile` defaults to `true`; with a known profile, high-level APIs reject features marked `blocked` or `unverified` before transport by throwing `SlmpProfileFeatureException`. Set `StrictProfile = false` only when you intentionally want to send that request and let the PLC answer. Point limits and read-only write policies are always enforced.
+`SlmpConnectionOptions.StrictProfile` defaults to `true`. With a selected profile, operations known to be unavailable for that PLC are rejected before sending. Set `StrictProfile = false` only for deliberate verification where you want the PLC to answer directly. Point limits and read-only write policies are always enforced.
 
 ## Supported device types
 

@@ -75,7 +75,7 @@ Console.WriteLine($"LTC0 = {state}");
 | --- | --- |
 | Symptom | `S10:BIT` can be read, but write routes reject it. |
 | Root cause | The selected profile marks step relay `S` as read-only. iQ-F profiles allow `S` writes. |
-| Fix | Keep `S` out of write lists and use it only for reads. |
+| Fix | Follow the selected profile's write policy. |
 
 ## G/HG fails
 
@@ -104,7 +104,7 @@ Console.WriteLine($"G100 words = {words.Length}");
 | Item | Detail |
 | --- | --- |
 | Symptom | One mixed write containing word values and bit values fails. |
-| Root cause | The PLC rejects SLMP command `0x1406` for a mixed word and bit request. |
+| Root cause | Some PLCs reject mixed word and bit block writes. |
 | Fix | Send word writes and bit writes as separate calls. |
 
 ## Q-series profiles reject block commands
@@ -112,7 +112,7 @@ Console.WriteLine($"G100 words = {words.Length}");
 | Item | Detail |
 | --- | --- |
 | Symptom | `ReadBlockAsync` or `WriteBlockAsync` throws when the client is configured for `melsec:qcpu`, `melsec:qnu`, or `melsec:qnudv`. |
-| Root cause | These Q-series profiles reject SLMP Read Block (`0x0406`) and Write Block (`0x1406`) before transport. |
+| Root cause | These Q-series profiles do not use block access for normal high-level flows. |
 | Fix | Use direct or random device commands for those profiles. |
 
 ```csharp
