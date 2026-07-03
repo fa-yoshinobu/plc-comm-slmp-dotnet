@@ -71,7 +71,7 @@ internal static class SlmpCapabilityProfiles
                 "iQ-R",
                 CommonIqrFeatures(SlmpProfileFeatureState.Supported),
                 IqrLimits(),
-                WritePolicy("S", "LCS")),
+                WritePolicy("S")),
             [SlmpPlcProfile.IqL] = Profile(
                 SlmpPlcProfile.IqL,
                 "melsec:iq-l",
@@ -79,7 +79,7 @@ internal static class SlmpCapabilityProfiles
                 "iQ-R",
                 CommonIqrFeatures(SlmpProfileFeatureState.Blocked),
                 IqlMxLimits(),
-                WritePolicy("S", "LCS")),
+                WritePolicy("S")),
             [SlmpPlcProfile.MxR] = Profile(
                 SlmpPlcProfile.MxR,
                 "melsec:mx-r",
@@ -87,7 +87,7 @@ internal static class SlmpCapabilityProfiles
                 "iQ-R",
                 CommonIqrFeatures(SlmpProfileFeatureState.Blocked),
                 IqrLimits(),
-                WritePolicy("S", "LCS")),
+                WritePolicy("S")),
             [SlmpPlcProfile.MxF] = Profile(
                 SlmpPlcProfile.MxF,
                 "melsec:mx-f",
@@ -95,7 +95,7 @@ internal static class SlmpCapabilityProfiles
                 "iQ-R",
                 CommonIqrFeatures(SlmpProfileFeatureState.Blocked),
                 IqrLimits(),
-                WritePolicy("S", "LCS")),
+                WritePolicy("S")),
             [SlmpPlcProfile.IqF] = Profile(
                 SlmpPlcProfile.IqF,
                 "melsec:iq-f",
@@ -108,28 +108,44 @@ internal static class SlmpCapabilityProfiles
                     (SlmpProfileFeature.Block, SlmpProfileFeatureState.Supported, "live", null),
                     (SlmpProfileFeature.Monitor, SlmpProfileFeatureState.Blocked, "live", "0x0801/0x0802 returned C059 on FX5U."),
                     (SlmpProfileFeature.ExtModuleAccess, SlmpProfileFeatureState.ConfigDependent, "live", "U1\\G0 depends on the installed special module."),
-                    (SlmpProfileFeature.ExtLinkDirect, SlmpProfileFeatureState.Unverified, "policy", "No link unit was available in the iQ-F verification set."),
-                    (SlmpProfileFeature.HgCpuBuffer, SlmpProfileFeatureState.Blocked, "manual", "CPU-buffer HG is an iQ-R-only path."),
+                    (SlmpProfileFeature.ExtLinkDirect, SlmpProfileFeatureState.Blocked, "live", "J1 link-direct access returned a PLC error."),
+                    (SlmpProfileFeature.HgCpuBuffer, SlmpProfileFeatureState.Blocked, "spec", "CPU-buffer HG is an iQ-R-only path."),
                     (SlmpProfileFeature.LongDevicePath, SlmpProfileFeatureState.Supported, "live", null),
                     (SlmpProfileFeature.Lz32BitPath, SlmpProfileFeatureState.Supported, "live", null)),
                 IqFLimits(),
-                WritePolicy("X")),
+                Policy(("S", "read-write"))),
+            [SlmpPlcProfile.QCpu] = Profile(
+                SlmpPlcProfile.QCpu,
+                "melsec:qcpu",
+                "3E",
+                "Q/L",
+                QlMeasuredFeatures("policy"),
+                QlLimits(),
+                WritePolicy("S")),
             [SlmpPlcProfile.LCpu] = Profile(
                 SlmpPlcProfile.LCpu,
                 "melsec:lcpu",
                 "3E",
                 "Q/L",
-                QlMeasuredFeatures(),
+                QlMeasuredFeatures("live"),
                 QlLimits(),
-                WritePolicy()),
+                WritePolicy("S")),
+            [SlmpPlcProfile.QnU] = Profile(
+                SlmpPlcProfile.QnU,
+                "melsec:qnu",
+                "3E",
+                "Q/L",
+                QlMeasuredFeatures("live"),
+                QlLimits(),
+                WritePolicy("S")),
             [SlmpPlcProfile.QnUDV] = Profile(
                 SlmpPlcProfile.QnUDV,
                 "melsec:qnudv",
                 "3E",
                 "Q/L",
-                QlMeasuredFeatures(),
+                QlMeasuredFeatures("live"),
                 QlLimits(),
-                WritePolicy()),
+                WritePolicy("S")),
         };
 
     internal static IReadOnlyDictionary<SlmpPlcProfile, SlmpCapabilityProfile> All => Profiles;
@@ -237,18 +253,18 @@ internal static class SlmpCapabilityProfiles
             (SlmpProfileFeature.LongDevicePath, SlmpProfileFeatureState.Supported, "live", null),
             (SlmpProfileFeature.Lz32BitPath, SlmpProfileFeatureState.Supported, "live", null));
 
-    private static Dictionary<SlmpProfileFeature, SlmpCapabilityFeature> QlMeasuredFeatures()
+    private static Dictionary<SlmpProfileFeature, SlmpCapabilityFeature> QlMeasuredFeatures(string source)
         => Features(
-            (SlmpProfileFeature.TypeName, SlmpProfileFeatureState.Blocked, "live", "Read Type Name returned C059."),
-            (SlmpProfileFeature.Direct, SlmpProfileFeatureState.Supported, "live", null),
-            (SlmpProfileFeature.Random, SlmpProfileFeatureState.Supported, "live", null),
-            (SlmpProfileFeature.Block, SlmpProfileFeatureState.Blocked, "live", "Read/Write Block returned C059."),
-            (SlmpProfileFeature.Monitor, SlmpProfileFeatureState.Supported, "live", null),
-            (SlmpProfileFeature.ExtModuleAccess, SlmpProfileFeatureState.Blocked, "live", "U\\G access is not available on the tested built-in CPU port."),
-            (SlmpProfileFeature.ExtLinkDirect, SlmpProfileFeatureState.Unverified, "policy", "No link unit was available in the verification set."),
-            (SlmpProfileFeature.HgCpuBuffer, SlmpProfileFeatureState.Blocked, "manual", "CPU-buffer HG is an iQ-R-only path."),
-            (SlmpProfileFeature.LongDevicePath, SlmpProfileFeatureState.Delegated, "policy", "Existing long-device route rules decide this feature."),
-            (SlmpProfileFeature.Lz32BitPath, SlmpProfileFeatureState.Delegated, "policy", "Existing 32-bit route rules decide this feature."));
+            (SlmpProfileFeature.TypeName, SlmpProfileFeatureState.Blocked, source, "Read Type Name returned C059."),
+            (SlmpProfileFeature.Direct, SlmpProfileFeatureState.Supported, source, null),
+            (SlmpProfileFeature.Random, SlmpProfileFeatureState.Supported, source, null),
+            (SlmpProfileFeature.Block, SlmpProfileFeatureState.Blocked, source, "Read/Write Block returned C059."),
+            (SlmpProfileFeature.Monitor, SlmpProfileFeatureState.Supported, source, null),
+            (SlmpProfileFeature.ExtModuleAccess, SlmpProfileFeatureState.Blocked, source, "U\\G access is not available on the tested built-in CPU port."),
+            (SlmpProfileFeature.ExtLinkDirect, SlmpProfileFeatureState.Blocked, source, "Link-direct access is not available on the tested built-in CPU port."),
+            (SlmpProfileFeature.HgCpuBuffer, SlmpProfileFeatureState.Blocked, "spec", "CPU-buffer HG is an iQ-R-only path."),
+            (SlmpProfileFeature.LongDevicePath, SlmpProfileFeatureState.Delegated, source, "Existing long-device route rules decide this feature."),
+            (SlmpProfileFeature.Lz32BitPath, SlmpProfileFeatureState.Delegated, source, "Existing 32-bit route rules decide this feature."));
 
     private static Dictionary<SlmpProfileFeature, SlmpCapabilityFeature> Features(
         params (SlmpProfileFeature Feature, SlmpProfileFeatureState State, string Source, string? Note)[] entries)
@@ -307,4 +323,7 @@ internal static class SlmpCapabilityProfiles
 
     private static Dictionary<string, string> WritePolicy(params string[] readOnlyDeviceCodes)
         => readOnlyDeviceCodes.ToDictionary(static deviceCode => deviceCode, static _ => "read-only");
+
+    private static Dictionary<string, string> Policy(params (string DeviceCode, string Policy)[] entries)
+        => entries.ToDictionary(static entry => entry.DeviceCode, static entry => entry.Policy);
 }

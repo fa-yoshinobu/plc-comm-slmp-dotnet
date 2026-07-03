@@ -1810,12 +1810,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         return points;
     }
 
-    private void ValidateBlockRouteForProfile(string commandLabel)
+    private static void ValidateBlockRouteForProfile(string commandLabel)
     {
-        if (PlcProfile is SlmpPlcProfile.QCpu or SlmpPlcProfile.QnU)
-        {
-            throw new ArgumentException($"{commandLabel} is not supported for PlcProfile '{SlmpPlcProfiles.ToCanonicalString(PlcProfile)}'. Use direct or random device commands.");
-        }
+        _ = commandLabel;
     }
 
     private static void ValidateMemoryWordLength(int wordLength, string name)

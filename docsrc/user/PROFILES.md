@@ -34,7 +34,7 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR);
 | `melsec:iq-l` | MELSEC iQ-L | Frame 4E, iQ-R mode. |
 | `melsec:mx-f` | MELSEC MX-F | Frame 4E, iQ-R mode. |
 | `melsec:mx-r` | MELSEC MX-R | Frame 4E, iQ-R mode. |
-| `melsec:qcpu` | MELSEC QCPU | Frame 3E, legacy mode. Block commands `0x0406` / `0x1406` are rejected. |
+| `melsec:qcpu` | MELSEC QCPU | Frame 3E, legacy mode. Strict profile rejects block commands `0x0406` / `0x1406`. |
 | `melsec:lcpu` | MELSEC LCPU | Frame 3E, legacy mode. |
-| `melsec:qnu` | MELSEC QnU | Frame 3E, legacy mode. Block commands `0x0406` / `0x1406` are rejected. |
-| `melsec:qnudv` | MELSEC QnUDV | Frame 3E, legacy mode. Block commands `0x0406` / `0x1406` are rejected. |
+| `melsec:qnu` | MELSEC QnU | Frame 3E, legacy mode. Strict profile rejects block commands `0x0406` / `0x1406`. |
+| `melsec:qnudv` | MELSEC QnUDV | Frame 3E, legacy mode. Strict profile rejects Read Type Name (`0x0101`) and block commands `0x0406` / `0x1406`; disabling strict profile sends them and lets the PLC respond. |

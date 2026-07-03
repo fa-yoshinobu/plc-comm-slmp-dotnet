@@ -300,7 +300,7 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
-    public async Task ReadWordsExtendedAsync_IqFStrictProfileRejectsUnverifiedLinkDirect()
+    public async Task ReadWordsExtendedAsync_IqFStrictProfileRejectsBlockedLinkDirect()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF);
         var device = SlmpQualifiedDeviceParser.Parse(@"J2\SW10");
@@ -309,7 +309,7 @@ public sealed class SlmpClientGuardTests
             () => client.ReadWordsExtendedAsync(device, 1, new SlmpExtensionSpec()));
 
         Assert.Equal("ext_link_direct", ex.FeatureKey);
-        Assert.Equal("unverified", ex.State);
+        Assert.Equal("blocked", ex.State);
     }
 
     [Fact]
@@ -344,14 +344,14 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
-    public async Task WriteBitsAsync_IqFRejectsInputDeviceByWritePolicy()
+    public async Task WriteBitsAsync_IqRRejectsStepRelayByWritePolicy()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF, strictProfile: false);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, strictProfile: false);
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.X, 0), SingleTrue));
+            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 0), SingleTrue));
 
-        Assert.Contains("X is read-only in SLMP", ex.Message);
+        Assert.Contains("S is read-only in SLMP", ex.Message);
     }
 
     [Theory]
@@ -365,10 +365,7 @@ public sealed class SlmpClientGuardTests
                 new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(code, 10), null),
                 SingleTrue,
                 new SlmpExtensionSpec()));
-        if (code == SlmpDeviceCode.LCS)
-            Assert.Contains("LCS is read-only in SLMP", ex.Message);
-        else
-            Assert.Contains($"Direct bit write is not supported for {code}", ex.Message);
+        Assert.Contains($"Direct bit write is not supported for {code}", ex.Message);
     }
 
     [Fact]
@@ -525,10 +522,10 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
-    public async Task ReadRandomExtAsync_LegacyRejectsMoreThan96DevicesBeforeTransport()
+    public async Task ReadRandomExtAsync_QlProfilesRejectMoreThan192DevicesBeforeTransport()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpu);
-        var devices = Enumerable.Range(0, 97)
+        var devices = Enumerable.Range(0, 193)
             .Select(index => (
                 new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index), null),
                 new SlmpExtensionSpec()))
@@ -538,7 +535,7 @@ public sealed class SlmpClientGuardTests
             () => client.ReadRandomExtAsync(
                 devices,
                 Array.Empty<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)>()));
-        Assert.Contains("(1..96)", ex.Message);
+        Assert.Contains("(1..192)", ex.Message);
     }
 
     [Fact]
@@ -558,12 +555,13 @@ public sealed class SlmpClientGuardTests
     public async Task ReadBlockAsync_RejectsQSeriesProfiles(SlmpPlcProfile profile, string profileText)
     {
         using var client = new SlmpClient("127.0.0.1", profile);
-        var ex = await Assert.ThrowsAsync<ArgumentException>(
+        var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
             () => client.ReadBlockAsync(
                 new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 1) },
                 new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.M, 100), 1) }));
-        Assert.Contains("Read Block (0x0406)", ex.Message);
-        Assert.Contains(profileText, ex.Message);
+        Assert.Equal(profileText, ex.ProfileId);
+        Assert.Equal("block", ex.FeatureKey);
+        Assert.Equal("blocked", ex.State);
     }
 
     [Fact]
@@ -613,12 +611,13 @@ public sealed class SlmpClientGuardTests
     public async Task WriteBlockAsync_RejectsQSeriesProfiles(SlmpPlcProfile profile, string profileText)
     {
         using var client = new SlmpClient("127.0.0.1", profile);
-        var ex = await Assert.ThrowsAsync<ArgumentException>(
+        var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
             () => client.WriteBlockAsync(
                 new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), new ushort[] { 1 }) },
                 new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.M, 100), new ushort[] { 1 }) }));
-        Assert.Contains("Write Block (0x1406)", ex.Message);
-        Assert.Contains(profileText, ex.Message);
+        Assert.Equal(profileText, ex.ProfileId);
+        Assert.Equal("block", ex.FeatureKey);
+        Assert.Equal("blocked", ex.State);
     }
 
     [Theory]

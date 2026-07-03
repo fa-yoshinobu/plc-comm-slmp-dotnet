@@ -74,7 +74,7 @@ Console.WriteLine($"LTC0 = {state}");
 | Item | Detail |
 | --- | --- |
 | Symptom | `S10:BIT` can be read, but write routes reject it. |
-| Root cause | Step relay `S` is treated as a read-only SLMP bit family. |
+| Root cause | The selected profile marks step relay `S` as read-only. iQ-F profiles allow `S` writes. |
 | Fix | Keep `S` out of write lists and use it only for reads. |
 
 ## G/HG fails

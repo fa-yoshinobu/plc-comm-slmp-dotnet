@@ -9,7 +9,7 @@ public enum SlmpDeviceRangeCategory
     Word,
     TimerCounter,
     Index,
-    FileRefresh,
+    FileRegister,
 }
 
 /// <summary>Number notation used by the public address text for the device.</summary>
@@ -125,8 +125,8 @@ internal static class SlmpDeviceRangeResolver
                 ["LC"] = Multi("LC", SlmpDeviceRangeCategory.TimerCounter, SlmpDeviceRangeNotation.Base10, ("LCS", true), ("LCC", true), ("LCN", false)),
                 ["Z"] = Single("Z", SlmpDeviceRangeCategory.Index, isBitDevice: false, SlmpDeviceRangeNotation.Base10),
                 ["LZ"] = Single("LZ", SlmpDeviceRangeCategory.Index, isBitDevice: false, SlmpDeviceRangeNotation.Base10),
-                ["ZR"] = Single("ZR", SlmpDeviceRangeCategory.FileRefresh, isBitDevice: false, SlmpDeviceRangeNotation.Base10),
-                ["RD"] = Single("RD", SlmpDeviceRangeCategory.FileRefresh, isBitDevice: false, SlmpDeviceRangeNotation.Base10),
+                ["ZR"] = Single("ZR", SlmpDeviceRangeCategory.FileRegister, isBitDevice: false, SlmpDeviceRangeNotation.Base10),
+                ["RD"] = Single("RD", SlmpDeviceRangeCategory.FileRegister, isBitDevice: false, SlmpDeviceRangeNotation.Base10),
                 ["SM"] = Single("SM", SlmpDeviceRangeCategory.Bit, isBitDevice: true, SlmpDeviceRangeNotation.Base10),
                 ["SD"] = Single("SD", SlmpDeviceRangeCategory.Word, isBitDevice: false, SlmpDeviceRangeNotation.Base10),
             });

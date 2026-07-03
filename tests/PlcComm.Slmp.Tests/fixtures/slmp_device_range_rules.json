@@ -1,0 +1,1504 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-03",
+  "ordered_items": [
+    "X",
+    "Y",
+    "M",
+    "B",
+    "SB",
+    "F",
+    "V",
+    "L",
+    "S",
+    "D",
+    "W",
+    "SW",
+    "R",
+    "T",
+    "ST",
+    "C",
+    "LT",
+    "LST",
+    "LC",
+    "Z",
+    "LZ",
+    "ZR",
+    "RD",
+    "SM",
+    "SD"
+  ],
+  "rows": {
+    "X": {
+      "classification": "User device",
+      "device_name": "Input",
+      "devices": [
+        {
+          "device": "X",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base16"
+    },
+    "Y": {
+      "classification": "User device",
+      "device_name": "Output",
+      "devices": [
+        {
+          "device": "Y",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base16"
+    },
+    "M": {
+      "classification": "User device",
+      "device_name": "Internal relay",
+      "devices": [
+        {
+          "device": "M",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base10"
+    },
+    "B": {
+      "classification": "User device",
+      "device_name": "Link relay",
+      "devices": [
+        {
+          "device": "B",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base16"
+    },
+    "F": {
+      "classification": "User device",
+      "device_name": "Annunciator",
+      "devices": [
+        {
+          "device": "F",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base10"
+    },
+    "SB": {
+      "classification": "User device",
+      "device_name": "Link special relay",
+      "devices": [
+        {
+          "device": "SB",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base16"
+    },
+    "V": {
+      "classification": "User device",
+      "device_name": "Edge relay",
+      "devices": [
+        {
+          "device": "V",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base10"
+    },
+    "S": {
+      "classification": "User device",
+      "device_name": "Step relay",
+      "devices": [
+        {
+          "device": "S",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base10"
+    },
+    "T": {
+      "classification": "User device",
+      "device_name": "Timer",
+      "devices": [
+        {
+          "device": "TS",
+          "type": "bit",
+          "is_bit": true
+        },
+        {
+          "device": "TC",
+          "type": "bit",
+          "is_bit": true
+        },
+        {
+          "device": "TN",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "ST": {
+      "classification": "User device",
+      "device_name": "Retentive timer",
+      "devices": [
+        {
+          "device": "STS",
+          "type": "bit",
+          "is_bit": true
+        },
+        {
+          "device": "STC",
+          "type": "bit",
+          "is_bit": true
+        },
+        {
+          "device": "STN",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "LT": {
+      "classification": "User device",
+      "device_name": "Long timer",
+      "devices": [
+        {
+          "device": "LTS",
+          "type": "bit",
+          "is_bit": true
+        },
+        {
+          "device": "LTC",
+          "type": "bit",
+          "is_bit": true
+        },
+        {
+          "device": "LTN",
+          "type": "dword",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "LST": {
+      "classification": "User device",
+      "device_name": "Long retentive timer",
+      "devices": [
+        {
+          "device": "LSTS",
+          "type": "bit",
+          "is_bit": true
+        },
+        {
+          "device": "LSTC",
+          "type": "bit",
+          "is_bit": true
+        },
+        {
+          "device": "LSTN",
+          "type": "dword",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "C": {
+      "classification": "User device",
+      "device_name": "Counter",
+      "devices": [
+        {
+          "device": "CS",
+          "type": "bit",
+          "is_bit": true
+        },
+        {
+          "device": "CC",
+          "type": "bit",
+          "is_bit": true
+        },
+        {
+          "device": "CN",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "LC": {
+      "classification": "User device",
+      "device_name": "Long counter",
+      "devices": [
+        {
+          "device": "LCS",
+          "type": "bit",
+          "is_bit": true
+        },
+        {
+          "device": "LCC",
+          "type": "bit",
+          "is_bit": true
+        },
+        {
+          "device": "LCN",
+          "type": "dword",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "D": {
+      "classification": "User device",
+      "device_name": "Data register",
+      "devices": [
+        {
+          "device": "D",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "W": {
+      "classification": "User device",
+      "device_name": "Link register",
+      "devices": [
+        {
+          "device": "W",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base16"
+    },
+    "SW": {
+      "classification": "User device",
+      "device_name": "Link special register",
+      "devices": [
+        {
+          "device": "SW",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base16"
+    },
+    "L": {
+      "classification": "User device",
+      "device_name": "Latch relay",
+      "devices": [
+        {
+          "device": "L",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base10"
+    },
+    "SM": {
+      "classification": "System Device",
+      "device_name": "Special relay",
+      "devices": [
+        {
+          "device": "SM",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base10"
+    },
+    "SD": {
+      "classification": "System Device",
+      "device_name": "Special register",
+      "devices": [
+        {
+          "device": "SD",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "Jn\\X": {
+      "classification": "Link Direct Device",
+      "device_name": "Link input",
+      "devices": [
+        {
+          "device": "Jn\\X",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base16"
+    },
+    "Jn\\Y": {
+      "classification": "Link Direct Device",
+      "device_name": "Link output",
+      "devices": [
+        {
+          "device": "Jn\\Y",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base16"
+    },
+    "Jn\\B": {
+      "classification": "Link Direct Device",
+      "device_name": "Link relay",
+      "devices": [
+        {
+          "device": "Jn\\B",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base16"
+    },
+    "Jn\\SB": {
+      "classification": "Link Direct Device",
+      "device_name": "Link special relay",
+      "devices": [
+        {
+          "device": "Jn\\SB",
+          "type": "bit",
+          "is_bit": true
+        }
+      ],
+      "notation": "base16"
+    },
+    "Jn\\W": {
+      "classification": "Link Direct Device",
+      "device_name": "Link register",
+      "devices": [
+        {
+          "device": "Jn\\W",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base16"
+    },
+    "Jn\\SW": {
+      "classification": "Link Direct Device",
+      "device_name": "Link special register",
+      "devices": [
+        {
+          "device": "Jn\\SW",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base16"
+    },
+    "Un\\G": {
+      "classification": "Module access device",
+      "device_name": "Module access device",
+      "devices": [
+        {
+          "device": "Un\\G",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "U3En\\G": {
+      "classification": "CPU buffer memory access device",
+      "device_name": "CPU buffer memory access device",
+      "devices": [
+        {
+          "device": "U3En\\G",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "U3En\\HG": {
+      "classification": "CPU buffer memory access device",
+      "device_name": "CPU buffer memory access device",
+      "devices": [
+        {
+          "device": "U3En\\HG",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "Z": {
+      "classification": "Index register",
+      "device_name": "Index register",
+      "devices": [
+        {
+          "device": "Z",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "LZ": {
+      "classification": "Index register",
+      "device_name": "Long index register",
+      "devices": [
+        {
+          "device": "LZ",
+          "type": "dword",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "R": {
+      "classification": "File register",
+      "device_name": "File register",
+      "devices": [
+        {
+          "device": "R",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "ZR": {
+      "classification": "File register",
+      "device_name": "File register",
+      "devices": [
+        {
+          "device": "ZR",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    },
+    "RD": {
+      "classification": "Refresh data register",
+      "device_name": "Refresh data register",
+      "devices": [
+        {
+          "device": "RD",
+          "type": "word",
+          "is_bit": false
+        }
+      ],
+      "notation": "base10"
+    }
+  },
+  "notation_overrides": {
+    "melsec:iq-f": {
+      "X": "base8",
+      "Y": "base8"
+    }
+  },
+  "runtime_probes": {
+    "applies_to": [
+      "melsec:lcpu",
+      "melsec:qcpu",
+      "melsec:qnu",
+      "melsec:qnudv"
+    ],
+    "max_probe_count": 1048576,
+    "steps": [
+      {
+        "order": 1,
+        "profiles": [
+          "melsec:qcpu"
+        ],
+        "family": "Z",
+        "method": "single-address-check",
+        "parameters": {
+          "check_address": 15,
+          "readable_count": 16,
+          "unreadable_count": 10
+        }
+      },
+      {
+        "order": 2,
+        "profiles": [
+          "melsec:lcpu",
+          "melsec:qcpu",
+          "melsec:qnu",
+          "melsec:qnudv"
+        ],
+        "family": "ZR",
+        "method": "doubling-then-binary-search"
+      },
+      {
+        "order": 3,
+        "profiles": [
+          "melsec:lcpu",
+          "melsec:qcpu",
+          "melsec:qnu",
+          "melsec:qnudv"
+        ],
+        "family": "R",
+        "method": "derived",
+        "parameters": {
+          "source_family": "ZR",
+          "max_value": 32768
+        }
+      }
+    ]
+  },
+  "profiles": {
+    "melsec:iq-r": {
+      "register_start": 260,
+      "register_count": 50,
+      "rules": {
+        "X": {
+          "kind": "dword-register",
+          "register": 260
+        },
+        "Y": {
+          "kind": "dword-register",
+          "register": 262
+        },
+        "M": {
+          "kind": "dword-register",
+          "register": 264
+        },
+        "B": {
+          "kind": "dword-register",
+          "register": 266
+        },
+        "SB": {
+          "kind": "dword-register",
+          "register": 268
+        },
+        "F": {
+          "kind": "dword-register",
+          "register": 270
+        },
+        "V": {
+          "kind": "dword-register",
+          "register": 272
+        },
+        "L": {
+          "kind": "dword-register",
+          "register": 274
+        },
+        "S": {
+          "kind": "dword-register",
+          "register": 276
+        },
+        "D": {
+          "kind": "dword-register",
+          "register": 280
+        },
+        "W": {
+          "kind": "dword-register",
+          "register": 282
+        },
+        "SW": {
+          "kind": "dword-register",
+          "register": 284
+        },
+        "R": {
+          "kind": "dword-register-clipped",
+          "clip_value": 32768,
+          "register": 306
+        },
+        "T": {
+          "kind": "dword-register",
+          "register": 288
+        },
+        "ST": {
+          "kind": "dword-register",
+          "register": 290
+        },
+        "C": {
+          "kind": "dword-register",
+          "register": 292
+        },
+        "LT": {
+          "kind": "dword-register",
+          "register": 294
+        },
+        "LST": {
+          "kind": "dword-register",
+          "register": 296
+        },
+        "LC": {
+          "kind": "dword-register",
+          "register": 298
+        },
+        "Z": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "LZ": {
+          "kind": "word-register",
+          "register": 302
+        },
+        "ZR": {
+          "kind": "dword-register",
+          "register": 306
+        },
+        "RD": {
+          "kind": "dword-register",
+          "register": 308
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 4096
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 4096
+        }
+      }
+    },
+    "melsec:iq-l": {
+      "register_start": 260,
+      "register_count": 50,
+      "rules": {
+        "X": {
+          "kind": "dword-register",
+          "register": 260
+        },
+        "Y": {
+          "kind": "dword-register",
+          "register": 262
+        },
+        "M": {
+          "kind": "dword-register",
+          "register": 264
+        },
+        "B": {
+          "kind": "dword-register",
+          "register": 266
+        },
+        "SB": {
+          "kind": "dword-register",
+          "register": 268
+        },
+        "F": {
+          "kind": "dword-register",
+          "register": 270
+        },
+        "V": {
+          "kind": "dword-register",
+          "register": 272
+        },
+        "L": {
+          "kind": "dword-register",
+          "register": 274
+        },
+        "S": {
+          "kind": "dword-register",
+          "register": 276
+        },
+        "D": {
+          "kind": "dword-register",
+          "register": 280
+        },
+        "W": {
+          "kind": "dword-register",
+          "register": 282
+        },
+        "SW": {
+          "kind": "dword-register",
+          "register": 284
+        },
+        "R": {
+          "kind": "dword-register-clipped",
+          "clip_value": 32768,
+          "register": 306
+        },
+        "T": {
+          "kind": "dword-register",
+          "register": 288
+        },
+        "ST": {
+          "kind": "dword-register",
+          "register": 290
+        },
+        "C": {
+          "kind": "dword-register",
+          "register": 292
+        },
+        "LT": {
+          "kind": "dword-register",
+          "register": 294
+        },
+        "LST": {
+          "kind": "dword-register",
+          "register": 296
+        },
+        "LC": {
+          "kind": "dword-register",
+          "register": 298
+        },
+        "Z": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "LZ": {
+          "kind": "word-register",
+          "register": 302
+        },
+        "ZR": {
+          "kind": "dword-register",
+          "register": 306
+        },
+        "RD": {
+          "kind": "dword-register",
+          "register": 308
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 4096
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 4096
+        }
+      }
+    },
+    "melsec:mx-f": {
+      "register_start": 260,
+      "register_count": 50,
+      "rules": {
+        "X": {
+          "kind": "dword-register",
+          "register": 260
+        },
+        "Y": {
+          "kind": "dword-register",
+          "register": 262
+        },
+        "M": {
+          "kind": "dword-register",
+          "register": 264
+        },
+        "B": {
+          "kind": "dword-register",
+          "register": 266
+        },
+        "SB": {
+          "kind": "dword-register",
+          "register": 268
+        },
+        "F": {
+          "kind": "dword-register",
+          "register": 270
+        },
+        "V": {
+          "kind": "dword-register",
+          "register": 272
+        },
+        "L": {
+          "kind": "dword-register",
+          "register": 274
+        },
+        "S": {
+          "kind": "dword-register",
+          "register": 276
+        },
+        "D": {
+          "kind": "dword-register",
+          "register": 280
+        },
+        "W": {
+          "kind": "dword-register",
+          "register": 282
+        },
+        "SW": {
+          "kind": "dword-register",
+          "register": 284
+        },
+        "R": {
+          "kind": "dword-register-clipped",
+          "clip_value": 32768,
+          "register": 306
+        },
+        "T": {
+          "kind": "dword-register",
+          "register": 288
+        },
+        "ST": {
+          "kind": "dword-register",
+          "register": 290
+        },
+        "C": {
+          "kind": "dword-register",
+          "register": 292
+        },
+        "LT": {
+          "kind": "dword-register",
+          "register": 294
+        },
+        "LST": {
+          "kind": "dword-register",
+          "register": 296
+        },
+        "LC": {
+          "kind": "dword-register",
+          "register": 298
+        },
+        "Z": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "LZ": {
+          "kind": "word-register",
+          "register": 302
+        },
+        "ZR": {
+          "kind": "dword-register",
+          "register": 306
+        },
+        "RD": {
+          "kind": "dword-register",
+          "register": 308
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 10000
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 10000
+        }
+      }
+    },
+    "melsec:mx-r": {
+      "register_start": 260,
+      "register_count": 50,
+      "rules": {
+        "X": {
+          "kind": "dword-register",
+          "register": 260
+        },
+        "Y": {
+          "kind": "dword-register",
+          "register": 262
+        },
+        "M": {
+          "kind": "dword-register",
+          "register": 264
+        },
+        "B": {
+          "kind": "dword-register",
+          "register": 266
+        },
+        "SB": {
+          "kind": "dword-register",
+          "register": 268
+        },
+        "F": {
+          "kind": "dword-register",
+          "register": 270
+        },
+        "V": {
+          "kind": "dword-register",
+          "register": 272
+        },
+        "L": {
+          "kind": "dword-register",
+          "register": 274
+        },
+        "S": {
+          "kind": "dword-register",
+          "register": 276
+        },
+        "D": {
+          "kind": "dword-register",
+          "register": 280
+        },
+        "W": {
+          "kind": "dword-register",
+          "register": 282
+        },
+        "SW": {
+          "kind": "dword-register",
+          "register": 284
+        },
+        "R": {
+          "kind": "dword-register-clipped",
+          "clip_value": 32768,
+          "register": 306
+        },
+        "T": {
+          "kind": "dword-register",
+          "register": 288
+        },
+        "ST": {
+          "kind": "dword-register",
+          "register": 290
+        },
+        "C": {
+          "kind": "dword-register",
+          "register": 292
+        },
+        "LT": {
+          "kind": "dword-register",
+          "register": 294
+        },
+        "LST": {
+          "kind": "dword-register",
+          "register": 296
+        },
+        "LC": {
+          "kind": "dword-register",
+          "register": 298
+        },
+        "Z": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "LZ": {
+          "kind": "word-register",
+          "register": 302
+        },
+        "ZR": {
+          "kind": "dword-register",
+          "register": 306
+        },
+        "RD": {
+          "kind": "dword-register",
+          "register": 308
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 4496
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 4496
+        }
+      }
+    },
+    "melsec:iq-f": {
+      "register_start": 260,
+      "register_count": 46,
+      "rules": {
+        "X": {
+          "kind": "dword-register",
+          "register": 260
+        },
+        "Y": {
+          "kind": "dword-register",
+          "register": 262
+        },
+        "M": {
+          "kind": "dword-register",
+          "register": 264
+        },
+        "B": {
+          "kind": "dword-register",
+          "register": 266
+        },
+        "SB": {
+          "kind": "dword-register",
+          "register": 268
+        },
+        "F": {
+          "kind": "dword-register",
+          "register": 270
+        },
+        "V": {
+          "kind": "unsupported"
+        },
+        "L": {
+          "kind": "dword-register",
+          "register": 274
+        },
+        "S": {
+          "kind": "dword-register",
+          "register": 276
+        },
+        "D": {
+          "kind": "dword-register",
+          "register": 280
+        },
+        "W": {
+          "kind": "dword-register",
+          "register": 282
+        },
+        "SW": {
+          "kind": "dword-register",
+          "register": 284
+        },
+        "R": {
+          "kind": "dword-register",
+          "register": 304
+        },
+        "T": {
+          "kind": "dword-register",
+          "register": 288
+        },
+        "ST": {
+          "kind": "dword-register",
+          "register": 290
+        },
+        "C": {
+          "kind": "dword-register",
+          "register": 292
+        },
+        "LT": {
+          "kind": "unsupported"
+        },
+        "LST": {
+          "kind": "unsupported"
+        },
+        "LC": {
+          "kind": "dword-register",
+          "register": 298
+        },
+        "Z": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "LZ": {
+          "kind": "word-register",
+          "register": 302
+        },
+        "ZR": {
+          "kind": "unsupported"
+        },
+        "RD": {
+          "kind": "unsupported"
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 10000
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 12000
+        }
+      }
+    },
+    "melsec:qcpu": {
+      "register_start": 290,
+      "register_count": 15,
+      "rules": {
+        "X": {
+          "kind": "word-register",
+          "register": 290
+        },
+        "Y": {
+          "kind": "word-register",
+          "register": 291
+        },
+        "M": {
+          "kind": "word-register-clipped",
+          "clip_value": 32768,
+          "register": 292
+        },
+        "B": {
+          "kind": "word-register-clipped",
+          "clip_value": 32768,
+          "register": 294
+        },
+        "SB": {
+          "kind": "word-register",
+          "register": 296
+        },
+        "F": {
+          "kind": "word-register",
+          "register": 295
+        },
+        "V": {
+          "kind": "word-register",
+          "register": 297
+        },
+        "L": {
+          "kind": "word-register",
+          "register": 293
+        },
+        "S": {
+          "kind": "word-register",
+          "register": 298
+        },
+        "D": {
+          "kind": "word-register-clipped",
+          "clip_value": 32768,
+          "register": 302
+        },
+        "W": {
+          "kind": "word-register-clipped",
+          "clip_value": 32768,
+          "register": 303
+        },
+        "SW": {
+          "kind": "word-register",
+          "register": 304
+        },
+        "R": {
+          "kind": "fixed",
+          "fixed_value": 32768,
+          "probe": true
+        },
+        "T": {
+          "kind": "word-register",
+          "register": 299
+        },
+        "ST": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "C": {
+          "kind": "word-register",
+          "register": 301
+        },
+        "LT": {
+          "kind": "unsupported"
+        },
+        "LST": {
+          "kind": "unsupported"
+        },
+        "LC": {
+          "kind": "unsupported"
+        },
+        "Z": {
+          "kind": "fixed",
+          "fixed_value": 10,
+          "probe": true
+        },
+        "LZ": {
+          "kind": "unsupported"
+        },
+        "ZR": {
+          "kind": "undefined",
+          "probe": true
+        },
+        "RD": {
+          "kind": "unsupported"
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 1024
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 1024
+        }
+      }
+    },
+    "melsec:lcpu": {
+      "register_start": 286,
+      "register_count": 26,
+      "rules": {
+        "X": {
+          "kind": "word-register",
+          "register": 290
+        },
+        "Y": {
+          "kind": "word-register",
+          "register": 291
+        },
+        "M": {
+          "kind": "dword-register",
+          "register": 286
+        },
+        "B": {
+          "kind": "dword-register",
+          "register": 288
+        },
+        "SB": {
+          "kind": "word-register",
+          "register": 296
+        },
+        "F": {
+          "kind": "word-register",
+          "register": 295
+        },
+        "V": {
+          "kind": "word-register",
+          "register": 297
+        },
+        "L": {
+          "kind": "word-register",
+          "register": 293
+        },
+        "S": {
+          "kind": "word-register",
+          "register": 298
+        },
+        "D": {
+          "kind": "dword-register",
+          "register": 308
+        },
+        "W": {
+          "kind": "dword-register",
+          "register": 310
+        },
+        "SW": {
+          "kind": "word-register",
+          "register": 304
+        },
+        "R": {
+          "kind": "dword-register",
+          "probe": true,
+          "register": 306
+        },
+        "T": {
+          "kind": "word-register",
+          "register": 299
+        },
+        "ST": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "C": {
+          "kind": "word-register",
+          "register": 301
+        },
+        "LT": {
+          "kind": "unsupported"
+        },
+        "LST": {
+          "kind": "unsupported"
+        },
+        "LC": {
+          "kind": "unsupported"
+        },
+        "Z": {
+          "kind": "fixed",
+          "fixed_value": 20
+        },
+        "LZ": {
+          "kind": "unsupported"
+        },
+        "ZR": {
+          "kind": "dword-register",
+          "probe": true,
+          "register": 306
+        },
+        "RD": {
+          "kind": "unsupported"
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 2048
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 2048
+        }
+      }
+    },
+    "melsec:qnu": {
+      "register_start": 286,
+      "register_count": 26,
+      "rules": {
+        "X": {
+          "kind": "word-register",
+          "register": 290
+        },
+        "Y": {
+          "kind": "word-register",
+          "register": 291
+        },
+        "M": {
+          "kind": "dword-register",
+          "register": 286
+        },
+        "B": {
+          "kind": "dword-register",
+          "register": 288
+        },
+        "SB": {
+          "kind": "word-register",
+          "register": 296
+        },
+        "F": {
+          "kind": "word-register",
+          "register": 295
+        },
+        "V": {
+          "kind": "word-register",
+          "register": 297
+        },
+        "L": {
+          "kind": "word-register",
+          "register": 293
+        },
+        "S": {
+          "kind": "word-register",
+          "register": 298
+        },
+        "D": {
+          "kind": "dword-register",
+          "register": 308
+        },
+        "W": {
+          "kind": "dword-register",
+          "register": 310
+        },
+        "SW": {
+          "kind": "word-register",
+          "register": 304
+        },
+        "R": {
+          "kind": "dword-register",
+          "probe": true,
+          "register": 306
+        },
+        "T": {
+          "kind": "word-register",
+          "register": 299
+        },
+        "ST": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "C": {
+          "kind": "word-register",
+          "register": 301
+        },
+        "LT": {
+          "kind": "unsupported"
+        },
+        "LST": {
+          "kind": "unsupported"
+        },
+        "LC": {
+          "kind": "unsupported"
+        },
+        "Z": {
+          "kind": "fixed",
+          "fixed_value": 20
+        },
+        "LZ": {
+          "kind": "unsupported"
+        },
+        "ZR": {
+          "kind": "dword-register",
+          "probe": true,
+          "register": 306
+        },
+        "RD": {
+          "kind": "unsupported"
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 2048
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 2048
+        }
+      }
+    },
+    "melsec:qnudv": {
+      "register_start": 286,
+      "register_count": 26,
+      "rules": {
+        "X": {
+          "kind": "word-register",
+          "register": 290
+        },
+        "Y": {
+          "kind": "word-register",
+          "register": 291
+        },
+        "M": {
+          "kind": "dword-register",
+          "register": 286
+        },
+        "B": {
+          "kind": "dword-register",
+          "register": 288
+        },
+        "SB": {
+          "kind": "word-register",
+          "register": 296
+        },
+        "F": {
+          "kind": "word-register",
+          "register": 295
+        },
+        "V": {
+          "kind": "word-register",
+          "register": 297
+        },
+        "L": {
+          "kind": "word-register",
+          "register": 293
+        },
+        "S": {
+          "kind": "word-register",
+          "register": 298
+        },
+        "D": {
+          "kind": "dword-register",
+          "register": 308
+        },
+        "W": {
+          "kind": "dword-register",
+          "register": 310
+        },
+        "SW": {
+          "kind": "word-register",
+          "register": 304
+        },
+        "R": {
+          "kind": "dword-register",
+          "probe": true,
+          "register": 306
+        },
+        "T": {
+          "kind": "word-register",
+          "register": 299
+        },
+        "ST": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "C": {
+          "kind": "word-register",
+          "register": 301
+        },
+        "LT": {
+          "kind": "unsupported"
+        },
+        "LST": {
+          "kind": "unsupported"
+        },
+        "LC": {
+          "kind": "unsupported"
+        },
+        "Z": {
+          "kind": "fixed",
+          "fixed_value": 20
+        },
+        "LZ": {
+          "kind": "unsupported"
+        },
+        "ZR": {
+          "kind": "dword-register",
+          "probe": true,
+          "register": 306
+        },
+        "RD": {
+          "kind": "unsupported"
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 2048
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 2048
+        }
+      }
+    }
+  }
+}

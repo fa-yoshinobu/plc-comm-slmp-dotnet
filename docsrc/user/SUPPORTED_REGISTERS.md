@@ -71,7 +71,7 @@ This page lists the high-level string device families accepted by the public hel
 | Long 32-bit families | `LTN`, `LSTN`, `LCN`, and `LZ` require `:D` or `:L`; plain word access is rejected. |
 | iQ-F direct devices | `DX` and `DY` are not valid for `SlmpPlcProfile.IqF`. |
 | Module buffer devices | `G` and `HG` are not in the public high-level surface. Use low-level raw client methods for module buffer access. |
-| Step relay | `S` can be read as a bit device, but direct, random, block, and extended writes are rejected as read-only. |
+| Step relay | `S` can be read as a bit device. Writes follow the selected profile's write policy; iQ-F allows writes, while iQ-R/iQ-L/MX/Q/L profiles mark `S` read-only. |
 | Bit-in-word syntax | `.n` is valid only on word devices, for example `D50.3`. Address bit devices directly with `:BIT`, for example `M1000:BIT`. |
 | Profile-aware `X` and `Y` | Use a connected client or `SlmpAddress.Parse(text, profile)` so iQ-F octal rules are applied. |
 
