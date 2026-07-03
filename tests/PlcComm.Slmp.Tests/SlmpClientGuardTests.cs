@@ -370,6 +370,27 @@ public sealed class SlmpClientGuardTests
         Assert.Single(server.RequestFrames);
     }
 
+    [Fact]
+    public async Task DirectAccess_DoesNotUseDeviceRangeUpperBoundsAsSendGuard()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0, new byte[] { 0x34, 0x12 }),
+            (0, Array.Empty<byte>()),
+        ]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        {
+            MonitoringTimer = 0x0010,
+        };
+
+        var values = await client.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 999_999), 1);
+        Assert.Equal(new ushort[] { 0x1234 }, values);
+
+        await client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 999_999), [0x5678]);
+        Assert.Equal(2, server.RequestFrames.Count);
+    }
+
     [Theory]
     [InlineData(SlmpDeviceCode.LSTS)]
     [InlineData(SlmpDeviceCode.LCS)]
