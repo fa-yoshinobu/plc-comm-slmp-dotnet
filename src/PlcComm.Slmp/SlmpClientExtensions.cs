@@ -213,7 +213,7 @@ public static class SlmpClientExtensions
         CancellationToken ct = default)
     {
         var normalizedDType = RequireDType(dtype, nameof(dtype));
-        switch (ResolveWriteRoute(device, normalizedDType))
+        switch (ResolveWriteRoute(device, normalizedDType, client.PlcProfile))
         {
             case SlmpNamedWriteRoute.RandomBits:
                 await client.WriteRandomBitsAsync(
@@ -1681,12 +1681,15 @@ public static class SlmpClientExtensions
         return NormalizeDTypeForDevice(device, dtype);
     }
 
-    internal static SlmpNamedWriteRoute ResolveWriteRoute(SlmpDeviceAddress device, string dtype)
+    internal static SlmpNamedWriteRoute ResolveWriteRoute(
+        SlmpDeviceAddress device,
+        string dtype,
+        SlmpPlcProfile plcProfile = SlmpPlcProfile.Unspecified)
     {
         var normalized = NormalizeDTypeForDevice(device, dtype);
         ValidateLongFamilyDType(device, normalized, nameof(dtype));
         ValidateDWordOnlyDType(device, normalized, nameof(dtype));
-        ValidateWritableDevice(device);
+        ValidateWritableDevice(device, plcProfile);
         return normalized switch
         {
             // Long-family state writes must use Device Write Random
@@ -1722,15 +1725,15 @@ public static class SlmpClientExtensions
         => spec.BaseCode is SlmpDeviceCode.LCS or SlmpDeviceCode.LCC
            && spec.Kind is SlmpLongTimerReadKind.Contact or SlmpLongTimerReadKind.Coil;
 
-    private static bool IsSlmpReadOnlyDevice(SlmpDeviceCode code)
-        => code is SlmpDeviceCode.S;
+    private static bool IsReadOnlyForProfile(SlmpDeviceCode code, SlmpPlcProfile plcProfile)
+        => SlmpCapabilityProfiles.IsReadOnly(plcProfile, code.ToString());
 
-    private static void ValidateWritableDevice(SlmpDeviceAddress device)
+    private static void ValidateWritableDevice(SlmpDeviceAddress device, SlmpPlcProfile plcProfile)
     {
-        if (IsSlmpReadOnlyDevice(device.Code))
+        if (IsReadOnlyForProfile(device.Code, plcProfile))
         {
             throw new ArgumentException(
-                $"{device.Code} is read-only in SLMP and cannot be written.",
+                $"{device.Code} is read-only for PLC profile '{SlmpPlcProfiles.ToCanonicalString(plcProfile)}' and cannot be written.",
                 nameof(device));
         }
     }

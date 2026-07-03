@@ -2030,7 +2030,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (readOnlyBlock is not null)
         {
             throw new ArgumentException(
-                $"{readOnlyBlock.Device.Code} is read-only in SLMP and cannot be written.",
+                ReadOnlyForProfileMessage(readOnlyBlock.Device.Code),
                 nameof(wordBlocks));
         }
 
@@ -2088,9 +2088,6 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         => IsLongTimerStateDevice(code)
             || code is SlmpDeviceCode.LCS or SlmpDeviceCode.LCC;
 
-    private static bool IsSlmpReadOnlyDevice(SlmpDeviceCode code)
-        => code is SlmpDeviceCode.S;
-
     private static bool IsLongTimerStateDevice(SlmpDeviceCode code)
         => code is SlmpDeviceCode.LTS
             or SlmpDeviceCode.LTC
@@ -2113,7 +2110,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         => code is SlmpDeviceCode.G or SlmpDeviceCode.HG;
 
     private bool IsReadOnlyForProfile(SlmpDeviceCode code)
-        => SlmpCapabilityProfiles.IsReadOnly(PlcProfile, code.ToString()) || IsSlmpReadOnlyDevice(code);
+        => SlmpCapabilityProfiles.IsReadOnly(PlcProfile, code.ToString());
 
     private void ValidateRandomWriteDevices(
         IReadOnlyList<SlmpDeviceAddress> wordDevices,
@@ -2124,7 +2121,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (readOnlyDevice.Code != default)
         {
             throw new ArgumentException(
-                $"{readOnlyDevice.Code} is read-only in SLMP and cannot be written.",
+                ReadOnlyForProfileMessage(readOnlyDevice.Code),
                 nameof(wordDevices));
         }
 
@@ -2151,7 +2148,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (readOnlyEntry.Device.Code != default)
         {
             throw new ArgumentException(
-                $"{readOnlyEntry.Device.Code} is read-only in SLMP and cannot be written.",
+                ReadOnlyForProfileMessage(readOnlyEntry.Device.Code),
                 nameof(bitEntries));
         }
 
@@ -2168,10 +2165,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (IsReadOnlyForProfile(device.Code))
         {
             throw new ArgumentException(
-                $"{device.Code} is read-only in SLMP and cannot be written.",
+                ReadOnlyForProfileMessage(device.Code),
                 nameof(device));
         }
     }
+
+    private string ReadOnlyForProfileMessage(SlmpDeviceCode code)
+        => $"{code} is read-only for PLC profile '{SlmpPlcProfiles.ToCanonicalString(PlcProfile)}' and cannot be written.";
 
     private byte[] BuildReadWritePayload(SlmpDeviceAddress device, ushort points, IReadOnlyList<ushort>? values, bool bitUnit)
     {

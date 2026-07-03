@@ -190,7 +190,7 @@ public sealed class SlmpClientGuardTests
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), SingleTrue));
-        Assert.Contains("S is read-only in SLMP", ex.Message);
+        Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
     [Fact]
@@ -199,7 +199,7 @@ public sealed class SlmpClientGuardTests
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), new ushort[] { 1 }));
-        Assert.Contains("S is read-only in SLMP", ex.Message);
+        Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
     [Fact]
@@ -351,7 +351,23 @@ public sealed class SlmpClientGuardTests
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 0), SingleTrue));
 
-        Assert.Contains("S is read-only in SLMP", ex.Message);
+        Assert.Contains("S is read-only for PLC profile", ex.Message);
+    }
+
+    [Fact]
+    public async Task WriteBitsAsync_IqFAllowsStepRelayWritesByWritePolicy()
+    {
+        await using var server = new MultiShotSlmpServer([(0, Array.Empty<byte>())]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF, server.Port)
+        {
+            MonitoringTimer = 0x0010,
+        };
+
+        await client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 0), SingleTrue);
+
+        Assert.Single(server.RequestFrames);
     }
 
     [Theory]
@@ -377,7 +393,7 @@ public sealed class SlmpClientGuardTests
                 new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), null),
                 SingleTrue,
                 new SlmpExtensionSpec()));
-        Assert.Contains("S is read-only in SLMP", ex.Message);
+        Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
     [Fact]
@@ -800,7 +816,7 @@ public sealed class SlmpClientGuardTests
             () => client.WriteRandomWordsAsync(
                 new[] { (new SlmpDeviceAddress(SlmpDeviceCode.S, 10), (ushort)1) },
                 Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
-        Assert.Contains("S is read-only in SLMP", ex.Message);
+        Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
     [Theory]
@@ -823,7 +839,7 @@ public sealed class SlmpClientGuardTests
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteRandomBitsAsync(
                 new[] { (new SlmpDeviceAddress(SlmpDeviceCode.S, 10), true) }));
-        Assert.Contains("S is read-only in SLMP", ex.Message);
+        Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
     [Theory]
@@ -845,7 +861,7 @@ public sealed class SlmpClientGuardTests
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteRandomBitsExtAsync(
                 new[] { (new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), null), true, new SlmpExtensionSpec()) }));
-        Assert.Contains("S is read-only in SLMP", ex.Message);
+        Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
     [Theory]
@@ -868,7 +884,7 @@ public sealed class SlmpClientGuardTests
             () => client.WriteBlockAsync(
                 Array.Empty<SlmpBlockWrite>(),
                 new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), new ushort[] { 1 }) }));
-        Assert.Contains("S is read-only in SLMP", ex.Message);
+        Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
     [Fact]

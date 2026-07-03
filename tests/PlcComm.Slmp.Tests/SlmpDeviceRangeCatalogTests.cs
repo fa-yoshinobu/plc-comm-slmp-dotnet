@@ -103,6 +103,8 @@ public sealed class SlmpDeviceRangeCatalogTests
         registers[261] = 0;
         registers[262] = 1024;
         registers[263] = 0;
+        registers[276] = 256;
+        registers[277] = 0;
 
         var catalog = SlmpDeviceRangeResolver.BuildCatalog(SlmpPlcProfile.IqF, registers);
 
@@ -115,6 +117,10 @@ public sealed class SlmpDeviceRangeCatalogTests
         Assert.Equal(1024u, GetEntry(catalog, "Y").PointCount);
         Assert.Equal(1023u, GetEntry(catalog, "Y").UpperBound);
         Assert.Equal("Y0000-Y1777", GetEntry(catalog, "Y").AddressRange);
+
+        Assert.True(GetEntry(catalog, "S").Supported);
+        Assert.Equal(256u, GetEntry(catalog, "S").PointCount);
+        Assert.Equal("S0-S255", GetEntry(catalog, "S").AddressRange);
     }
 
     [Fact]

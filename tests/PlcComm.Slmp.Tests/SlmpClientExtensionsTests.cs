@@ -329,10 +329,17 @@ public sealed class SlmpClientExtensionsTests
     }
 
     [Fact]
-    public void ResolveWriteRoute_RejectsStepRelayWrites()
+    public void ResolveWriteRoute_IqRRejectsStepRelayWrites()
     {
         var ex = Assert.Throws<ArgumentException>(
-            () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), "BIT"));
-        Assert.Contains("S is read-only in SLMP", ex.Message);
+            () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), "BIT", SlmpPlcProfile.IqR));
+        Assert.Contains("S is read-only for PLC profile", ex.Message);
+    }
+
+    [Fact]
+    public void ResolveWriteRoute_IqFAllowsStepRelayWrites()
+    {
+        var route = SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), "BIT", SlmpPlcProfile.IqF);
+        Assert.Equal(SlmpNamedWriteRoute.ContiguousBits, route);
     }
 }
