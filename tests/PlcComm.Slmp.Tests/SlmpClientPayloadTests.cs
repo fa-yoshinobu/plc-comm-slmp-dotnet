@@ -45,7 +45,23 @@ public sealed class SlmpClientPayloadTests
     }
 
     [Fact]
-    public void BuildExtendedRandomReadPayload_MatchesCurrentEncodingForRegularAndQualifiedBufferMemory()
+    public void EncodeExtendedDeviceSpec_RegularDevice_UsesManualExtendedLayout()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpu);
+        var device = new SlmpDeviceAddress(SlmpDeviceCode.D, 100);
+
+        Assert.Equal(
+            Convert.FromHexString("0000640000A80000000000"),
+            client.EncodeExtendedDeviceSpec(device, new SlmpExtensionSpec()));
+        Assert.Equal(
+            Convert.FromHexString("0440640000A80000000000"),
+            client.EncodeExtendedDeviceSpec(
+                device,
+                new SlmpExtensionSpec(DeviceModificationIndex: 0x04, DeviceModificationFlags: 0x40)));
+    }
+
+    [Fact]
+    public void BuildExtendedRandomReadPayload_UsesManualLayoutForRegularAndQualifiedBufferMemory()
     {
         var payload = SlmpPayloads.BuildExtendedRandomReadPayload(
             [(Qualified(SlmpDeviceCode.D, 100), Extension(0x0102, 0x03, 0x04, 0x05, 0x06))],
@@ -53,12 +69,12 @@ public sealed class SlmpClientPayloadTests
             SlmpCompatibilityMode.Iqr);
 
         Assert.Equal(
-            Convert.FromHexString("0101020103040564000000A8000607080A000000AB0009000100F8"),
+            Convert.FromHexString("0101040564000000A800030002010608090A000000AB0007000100F8"),
             payload);
     }
 
     [Fact]
-    public void BuildExtendedRandomWordWritePayload_MatchesCurrentEncoding()
+    public void BuildExtendedRandomWordWritePayload_UsesManualLayout()
     {
         var payload = SlmpPayloads.BuildExtendedRandomWordWritePayload(
             [(Qualified(SlmpDeviceCode.D, 10), (ushort)0x1234, Extension(0x0001))],
@@ -66,7 +82,7 @@ public sealed class SlmpClientPayloadTests
             SlmpCompatibilityMode.Iqr);
 
         Assert.Equal(
-            Convert.FromHexString("010101000000000A000000A800003412020000000020000000B40000EFCDAB89"),
+            Convert.FromHexString("010100000A000000A80000000100003412000020000000B4000000020000EFCDAB89"),
             payload);
     }
 
@@ -80,10 +96,10 @@ public sealed class SlmpClientPayloadTests
         ];
 
         Assert.Equal(
-            Convert.FromHexString("0203000000000700000090000001000400000000080000009000000000"),
+            Convert.FromHexString("02000007000000900000000300000100000008000000900000000400000000"),
             SlmpPayloads.BuildExtendedRandomBitWritePayload(entries, SlmpCompatibilityMode.Iqr));
         Assert.Equal(
-            Convert.FromHexString("0203000000000700009000010400000000080000900000"),
+            Convert.FromHexString("02000007000090000003000001000008000090000004000000"),
             SlmpPayloads.BuildExtendedRandomBitWritePayload(entries, SlmpCompatibilityMode.Legacy));
     }
 
@@ -96,7 +112,7 @@ public sealed class SlmpClientPayloadTests
             SlmpCompatibilityMode.Iqr);
 
         Assert.Equal(
-            Convert.FromHexString("01010000100000B500000200F90500000000C8000000A80000"),
+            Convert.FromHexString("01010000100000B500000200F90000C8000000A8000000050000"),
             payload);
     }
 
@@ -244,4 +260,3 @@ public sealed class SlmpClientPayloadTests
             });
     }
 }
-

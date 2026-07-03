@@ -28,6 +28,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     private const uint MaxRuntimeRangeProbeCount = 1_048_576;
     private const int DirectWordPointLimit = 960;
     private const int DirectBitPointLimit = 7168;
+    private const int DirectIqFBitPointLimit = 3584;
     private const int MemoryWordLimit = 480;
     private const int ExtendUnitByteLimit = 1920;
     private readonly string _host;
@@ -660,7 +661,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(wordDevices), "random counts must be <= 255");
         }
-        ValidateRandomReadLikeCounts(wordDevices.Count, dwordDevices.Count, "read_random_ext");
+        ValidateRandomReadLikeCounts(wordDevices.Count, dwordDevices.Count, "read_random_ext", extended: true);
         ValidateRandomReadDevices(
             wordDevices.Select(entry => entry.Device.Device).ToArray(),
             dwordDevices.Select(entry => entry.Device.Device).ToArray(),
@@ -701,7 +702,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(wordEntries), "random counts must be <= 255");
         }
-        ValidateRandomWriteWordCounts(wordEntries.Count, dwordEntries.Count, "write_random_words_ext");
+        ValidateRandomWriteWordCounts(wordEntries.Count, dwordEntries.Count, "write_random_words_ext", extended: true);
         ValidateRandomWriteDevices(
             wordEntries.Select(entry => (entry.Device.Device, entry.Value)).ToArray(),
             allowQualifiedOnlyDevices: true);
@@ -720,7 +721,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             throw new ArgumentOutOfRangeException(nameof(bitEntries), "random bit count must be <= 255");
         }
-        ValidateRandomBitWriteCount(bitEntries.Count, "write_random_bits_ext");
+        ValidateRandomBitWriteCount(bitEntries.Count, "write_random_bits_ext", extended: true);
         ValidateRandomBitWriteDevices(bitEntries.Select(entry => (entry.Device.Device, entry.Value)).ToArray());
 
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0081 : (ushort)0x0083;
@@ -904,7 +905,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             throw new ArgumentException("wordDevices and dwordDevices must not both be empty.");
         if (wordDevices.Count > 0xFF || dwordDevices.Count > 0xFF)
             throw new ArgumentOutOfRangeException(nameof(wordDevices), "device counts must be <= 255.");
-        ValidateRandomReadLikeCounts(wordDevices.Count, dwordDevices.Count, "register_monitor_devices_ext");
+        ValidateRandomReadLikeCounts(wordDevices.Count, dwordDevices.Count, "register_monitor_devices_ext", extended: true);
         ValidateMonitorRegisterDevices(
             wordDevices.Select(entry => entry.Device.Device).ToArray(),
             dwordDevices.Select(entry => entry.Device.Device).ToArray(),
@@ -1409,6 +1410,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         if (!IsOpen) await OpenAsync(cancellationToken).ConfigureAwait(false);
         var frame = BuildRequestFrame(command, subcommand, payload.Span);
+        ushort? expectedSerial = FrameType == SlmpFrameType.Frame4E
+            ? BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(2, 2))
+            : null;
         LastRequestFrame = frame;
         FireTrace(SlmpTraceDirection.Send, frame);
         if (_transportMode == SlmpTransportMode.Tcp)
@@ -1421,10 +1425,17 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 return [];
             }
 
-            var response = await ReceiveTcpFrameAsync(_tcpStream, cancellationToken).ConfigureAwait(false);
-            LastResponseFrame = response;
-            FireTrace(SlmpTraceDirection.Receive, response);
-            return ParseResponse(command, subcommand, response);
+            while (true)
+            {
+                var response = await ReceiveTcpFrameAsync(_tcpStream, cancellationToken).ConfigureAwait(false);
+                LastResponseFrame = response;
+                FireTrace(SlmpTraceDirection.Receive, response);
+                if (!HasExpectedResponseSerial(response, expectedSerial))
+                {
+                    continue;
+                }
+                return ParseResponse(command, subcommand, response);
+            }
         }
 
         if (_udp is null) throw new SlmpError("udp not open");
@@ -1437,10 +1448,17 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         linked.CancelAfter(Timeout);
-        var datagram = await _udp.ReceiveAsync(linked.Token).ConfigureAwait(false);
-        LastResponseFrame = datagram.Buffer;
-        FireTrace(SlmpTraceDirection.Receive, datagram.Buffer);
-        return ParseResponse(command, subcommand, datagram.Buffer);
+        while (true)
+        {
+            var datagram = await _udp.ReceiveAsync(linked.Token).ConfigureAwait(false);
+            LastResponseFrame = datagram.Buffer;
+            FireTrace(SlmpTraceDirection.Receive, datagram.Buffer);
+            if (!HasExpectedResponseSerial(datagram.Buffer, expectedSerial))
+            {
+                continue;
+            }
+            return ParseResponse(command, subcommand, datagram.Buffer);
+        }
     }
 
     private byte[] BuildRequestFrame(SlmpCommand command, ushort subcommand, ReadOnlySpan<byte> payload)
@@ -1516,8 +1534,30 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var dataLength = is4E ? BinaryPrimitives.ReadUInt16LittleEndian(response.AsSpan(11, 2)) : BinaryPrimitives.ReadUInt16LittleEndian(response.AsSpan(7, 2));
         if (response.Length < headerSize + dataLength || dataLength < 2) throw new SlmpError("malformed response", command: command, subcommand: subcommand);
         var endCode = BinaryPrimitives.ReadUInt16LittleEndian(response.AsSpan(headerSize, 2));
-        if (endCode != 0) throw new SlmpError($"SLMP error end_code=0x{endCode:X4} command=0x{(ushort)command:X4} subcommand=0x{subcommand:X4}", endCode, command, subcommand);
+        if (endCode != 0)
+        {
+            var errorInfo = SlmpErrorInfo.Parse(response.AsSpan(headerSize + 2, dataLength - 2));
+            throw new SlmpError(
+                $"SLMP error end_code=0x{endCode:X4} command=0x{(ushort)command:X4} subcommand=0x{subcommand:X4}",
+                endCode,
+                command,
+                subcommand,
+                errorInfo: errorInfo);
+        }
         return dataLength == 2 ? [] : response.AsSpan(headerSize + 2, dataLength - 2).ToArray();
+    }
+
+    private static bool HasExpectedResponseSerial(byte[] response, ushort? expectedSerial)
+    {
+        if (expectedSerial is null)
+        {
+            return true;
+        }
+        if (response.Length < 4 || response[0] != 0xD4 || response[1] != 0x00)
+        {
+            return true;
+        }
+        return BinaryPrimitives.ReadUInt16LittleEndian(response.AsSpan(2, 2)) == expectedSerial.Value;
     }
 
     private static async Task ReadExactAsync(NetworkStream stream, Memory<byte> buffer, CancellationToken cancellationToken)
@@ -1535,39 +1575,44 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     internal int EncodeDeviceSpec(SlmpDeviceAddress device, Span<byte> output)
         => SlmpPayloads.EncodeDeviceSpec(device, output, CompatibilityMode);
 
-    private static void ValidateDirectAccessPoints(int points, bool bitUnit, string name)
+    private int DirectPointLimit(bool bitUnit)
+        => bitUnit
+            ? (PlcProfile == SlmpPlcProfile.IqF ? DirectIqFBitPointLimit : DirectBitPointLimit)
+            : DirectWordPointLimit;
+
+    private void ValidateDirectAccessPoints(int points, bool bitUnit, string name)
     {
-        var limit = bitUnit ? DirectBitPointLimit : DirectWordPointLimit;
+        var limit = DirectPointLimit(bitUnit);
         var unit = bitUnit ? "bit" : "word";
         if (points < 1 || points > limit)
             throw new ArgumentOutOfRangeException(name, $"{name} {unit} access points out of range (1..{limit}): {points}");
     }
 
-    private void ValidateRandomReadLikeCounts(int wordPoints, int dwordPoints, string name)
+    private void ValidateRandomReadLikeCounts(int wordPoints, int dwordPoints, string name, bool extended = false)
     {
         var total = wordPoints + dwordPoints;
-        var limit = CompatibilityMode == SlmpCompatibilityMode.Legacy ? 192 : 96;
+        var limit = extended || CompatibilityMode != SlmpCompatibilityMode.Legacy ? 96 : 192;
         if (total < 1 || total > limit)
             throw new ArgumentOutOfRangeException(name, $"{name} total access points out of range (1..{limit}): word={wordPoints}, dword={dwordPoints}");
     }
 
-    private void ValidateRandomWriteWordCounts(int wordPoints, int dwordPoints, string name)
+    private void ValidateRandomWriteWordCounts(int wordPoints, int dwordPoints, string name, bool extended = false)
     {
         var total = wordPoints + dwordPoints;
         if (total < 1)
             throw new ArgumentOutOfRangeException(name, $"{name} word/dword access points out of range: word={wordPoints}, dword={dwordPoints}");
 
         var weighted = (wordPoints * 12) + (dwordPoints * 14);
-        var limit = CompatibilityMode == SlmpCompatibilityMode.Legacy ? 1920 : 960;
+        var limit = extended || CompatibilityMode != SlmpCompatibilityMode.Legacy ? 960 : 1920;
         if (weighted > limit)
             throw new ArgumentOutOfRangeException(
                 name,
                 $"{name} word/dword access points out of range: word={wordPoints}, dword={dwordPoints}, weighted={weighted}, limit={limit}");
     }
 
-    private void ValidateRandomBitWriteCount(int points, string name)
+    private void ValidateRandomBitWriteCount(int points, string name, bool extended = false)
     {
-        var limit = CompatibilityMode == SlmpCompatibilityMode.Legacy ? 188 : 94;
+        var limit = extended || CompatibilityMode != SlmpCompatibilityMode.Legacy ? 94 : 188;
         if (points < 1 || points > limit)
             throw new ArgumentOutOfRangeException(name, $"{name} bit access points out of range (1..{limit}): {points}");
     }

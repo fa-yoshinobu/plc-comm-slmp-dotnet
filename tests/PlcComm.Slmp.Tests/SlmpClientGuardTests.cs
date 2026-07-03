@@ -157,6 +157,22 @@ public sealed class SlmpClientGuardTests
         AssertDeviceReadBitShape(request, code, 10, 1);
     }
 
+    [Fact]
+    public async Task Frame4E_IgnoresMismatchedSerialResponses()
+    {
+        await using var server = new SerialSkewSlmpServer(
+            staleResponseData: BuildWordPayload(0x1111),
+            matchingResponseData: BuildWordPayload(0x2222));
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port);
+
+        var words = await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), 1);
+
+        Assert.Equal(new ushort[] { 0x2222 }, words);
+        Assert.Single(server.RequestFrames);
+    }
+
     [Theory]
     [InlineData(SlmpDeviceCode.LTC)]
     [InlineData(SlmpDeviceCode.LCC)]
@@ -199,6 +215,20 @@ public sealed class SlmpClientGuardTests
             () => client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), 7169));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), new bool[7169]));
+    }
+
+    [Fact]
+    public async Task DirectAccess_IqFRejectsFxBitPointLimitOverruns()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF);
+
+        var readError = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), 3585));
+        var writeError = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), new bool[3585]));
+
+        Assert.Contains("1..3584", readError.Message);
+        Assert.Contains("1..3584", writeError.Message);
     }
 
     [Theory]
@@ -369,6 +399,23 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task ReadRandomExtAsync_LegacyRejectsMoreThan96DevicesBeforeTransport()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpu);
+        var devices = Enumerable.Range(0, 97)
+            .Select(index => (
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index), null),
+                new SlmpExtensionSpec()))
+            .ToArray();
+
+        var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.ReadRandomExtAsync(
+                devices,
+                Array.Empty<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)>()));
+        Assert.Contains("(1..96)", ex.Message);
+    }
+
+    [Fact]
     public async Task ReadBlockAsync_RejectsLongCounterContacts()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
@@ -527,6 +574,33 @@ public sealed class SlmpClientGuardTests
 
         var request = Assert.Single(server.RequestFrames);
         AssertBlockWriteShape(request, wordBlocks: 1, bitBlocks: 1);
+    }
+
+    [Fact]
+    public async Task PlcError_ExposesStructuredErrorInformation()
+    {
+        byte[] errorData = [0x00, 0xFF, 0xFF, 0x03, 0x00, 0x01, 0x04, 0x01, 0x00];
+        await using var server = new MultiShotSlmpServer([
+            (0xC051, errorData),
+        ]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        {
+        };
+
+        var ex = await Assert.ThrowsAsync<SlmpError>(
+            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), 1));
+
+        Assert.Equal((ushort)0xC051, ex.EndCode);
+        Assert.NotNull(ex.ErrorInfo);
+        Assert.Equal((byte)0x00, ex.ErrorInfo.Network);
+        Assert.Equal((byte)0xFF, ex.ErrorInfo.Station);
+        Assert.Equal((ushort)0x03FF, ex.ErrorInfo.ModuleIo);
+        Assert.Equal((byte)0x00, ex.ErrorInfo.Multidrop);
+        Assert.Equal((ushort)0x0401, ex.ErrorInfo.Command);
+        Assert.Equal((ushort)0x0001, ex.ErrorInfo.Subcommand);
+        Assert.Equal(errorData, ex.ErrorInfo.Raw);
     }
 
     [Fact]
@@ -839,6 +913,103 @@ public sealed class SlmpClientGuardTests
             response[0] = 0xD4;
             response[1] = 0x00;
             request.Slice(2, 2).CopyTo(response.AsSpan(2));
+            request.Slice(6, 5).CopyTo(response.AsSpan(6));
+            BinaryPrimitives.WriteUInt16LittleEndian(response.AsSpan(11, 2), checked((ushort)payload.Length));
+            payload.CopyTo(response.AsSpan(13));
+            return response;
+        }
+
+        private static async Task<byte[]> ReadExactAsync(NetworkStream stream, int size)
+        {
+            var buffer = new byte[size];
+            var read = 0;
+            while (read < size)
+            {
+                var chunk = await stream.ReadAsync(buffer.AsMemory(read, size - read)).ConfigureAwait(false);
+                if (chunk == 0)
+                {
+                    throw new IOException("Unexpected end of stream.");
+                }
+                read += chunk;
+            }
+            return buffer;
+        }
+    }
+
+    private sealed class SerialSkewSlmpServer : IAsyncDisposable
+    {
+        private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
+        private readonly byte[] _staleResponseData;
+        private readonly byte[] _matchingResponseData;
+        private Task? _serverTask;
+
+        public SerialSkewSlmpServer(byte[] staleResponseData, byte[] matchingResponseData)
+        {
+            _staleResponseData = staleResponseData;
+            _matchingResponseData = matchingResponseData;
+        }
+
+        public int Port => ((IPEndPoint)_listener.LocalEndpoint).Port;
+
+        public List<byte[]> RequestFrames { get; } = [];
+
+        public Task StartAsync()
+        {
+            _listener.Start();
+            _serverTask = RunAsync();
+            return Task.CompletedTask;
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            _listener.Stop();
+            if (_serverTask is not null)
+            {
+                await _serverTask.ConfigureAwait(false);
+            }
+        }
+
+        private async Task RunAsync()
+        {
+            try
+            {
+                using var client = await _listener.AcceptTcpClientAsync().ConfigureAwait(false);
+                using var stream = client.GetStream();
+                var head = await ReadExactAsync(stream, 13).ConfigureAwait(false);
+                var bodyLength = BinaryPrimitives.ReadUInt16LittleEndian(head.AsSpan(11, 2));
+                var body = await ReadExactAsync(stream, bodyLength).ConfigureAwait(false);
+                var request = new byte[head.Length + body.Length];
+                head.CopyTo(request, 0);
+                body.CopyTo(request, head.Length);
+                RequestFrames.Add(request);
+
+                var requestSerial = BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(2, 2));
+                var stale = Build4EResponse(request, _staleResponseData, unchecked((ushort)(requestSerial + 1)));
+                var matching = Build4EResponse(request, _matchingResponseData, requestSerial);
+                await stream.WriteAsync(stale).ConfigureAwait(false);
+                await stream.WriteAsync(matching).ConfigureAwait(false);
+                await stream.FlushAsync().ConfigureAwait(false);
+            }
+            catch (SocketException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (IOException)
+            {
+            }
+        }
+
+        private static byte[] Build4EResponse(ReadOnlySpan<byte> request, ReadOnlySpan<byte> responseData, ushort serial)
+        {
+            var payload = new byte[2 + responseData.Length];
+            responseData.CopyTo(payload.AsSpan(2));
+
+            var response = new byte[13 + payload.Length];
+            response[0] = 0xD4;
+            response[1] = 0x00;
+            BinaryPrimitives.WriteUInt16LittleEndian(response.AsSpan(2, 2), serial);
             request.Slice(6, 5).CopyTo(response.AsSpan(6));
             BinaryPrimitives.WriteUInt16LittleEndian(response.AsSpan(11, 2), checked((ushort)payload.Length));
             payload.CopyTo(response.AsSpan(13));

@@ -289,34 +289,19 @@ internal static class SlmpPayloads
         if (extension.DirectMemorySpecification == 0xF9)
             return EncodeLinkDirectDeviceSpec(device, extension);
 
-        var captureAligned = (device.Code is SlmpDeviceCode.G or SlmpDeviceCode.HG) && (extension.DirectMemorySpecification is 0xF8 or 0xFA);
         var deviceSpec = new byte[DeviceSpecSize(compatibilityMode)];
         _ = EncodeDeviceSpec(device, deviceSpec, compatibilityMode);
-        if (captureAligned)
-        {
-            var payload = new byte[2 + deviceSpec.Length + 1 + 1 + 2 + 1];
-            var offset = 0;
-            payload[offset++] = extension.ExtensionSpecificationModification;
-            payload[offset++] = extension.DeviceModificationIndex;
-            deviceSpec.CopyTo(payload, offset);
-            offset += deviceSpec.Length;
-            payload[offset++] = extension.DeviceModificationFlags;
-            payload[offset++] = 0x00;
-            BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), extension.ExtensionSpecification);
-            offset += 2;
-            payload[offset] = extension.DirectMemorySpecification;
-            return payload;
-        }
 
-        var data = new byte[2 + 1 + 1 + 1 + deviceSpec.Length + 1];
+        var data = new byte[2 + deviceSpec.Length + 2 + 2 + 1];
         var cursor = 0;
-        BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(cursor, 2), extension.ExtensionSpecification);
-        cursor += 2;
-        data[cursor++] = extension.ExtensionSpecificationModification;
         data[cursor++] = extension.DeviceModificationIndex;
         data[cursor++] = extension.DeviceModificationFlags;
         deviceSpec.CopyTo(data, cursor);
         cursor += deviceSpec.Length;
+        data[cursor++] = extension.ExtensionSpecificationModification;
+        data[cursor++] = 0x00;
+        BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(cursor, 2), extension.ExtensionSpecification);
+        cursor += 2;
         data[cursor] = extension.DirectMemorySpecification;
         return data;
     }
@@ -490,4 +475,3 @@ internal static class SlmpPayloads
         ];
     }
 }
-

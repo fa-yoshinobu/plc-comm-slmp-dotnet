@@ -34,4 +34,21 @@ public sealed class SlmpEndCodesTests
         Assert.Null(error.EndCodeMessage);
         Assert.True(error.IsRemotePasswordError);
     }
+
+    [Fact]
+    public void SlmpErrorInfo_ParseDecodesManualErrorInformationBlock()
+    {
+        byte[] data = [0x00, 0xFF, 0xFF, 0x03, 0x00, 0x01, 0x04, 0x01, 0x00];
+
+        var info = SlmpErrorInfo.Parse(data);
+
+        Assert.NotNull(info);
+        Assert.Equal((byte)0x00, info.Network);
+        Assert.Equal((byte)0xFF, info.Station);
+        Assert.Equal((ushort)0x03FF, info.ModuleIo);
+        Assert.Equal((byte)0x00, info.Multidrop);
+        Assert.Equal((ushort)0x0401, info.Command);
+        Assert.Equal((ushort)0x0001, info.Subcommand);
+        Assert.Equal(data, info.Raw);
+    }
 }
