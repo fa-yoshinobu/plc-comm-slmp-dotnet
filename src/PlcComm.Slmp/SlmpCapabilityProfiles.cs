@@ -290,7 +290,7 @@ internal static class SlmpCapabilityProfiles
             (SlmpProfileLimit.DirectBitRead, 7168, "C052", "live", null, null),
             (SlmpProfileLimit.DirectBitWrite, 7168, "C052", "live", null, null),
             (SlmpProfileLimit.RandomReadWord, 96, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomWriteWord, 80, "C054", "live", null, null),
+            (SlmpProfileLimit.RandomWriteWord, 80, "C054", "live", 960, null),
             (SlmpProfileLimit.RandomWriteBit, 94, "C053", "live", null, null),
             (SlmpProfileLimit.MonitorRegisterWord, 96, "C054", "live", null, null));
 
@@ -301,7 +301,7 @@ internal static class SlmpCapabilityProfiles
             (SlmpProfileLimit.DirectBitRead, 3584, "C052", "live", null, null),
             (SlmpProfileLimit.DirectBitWrite, 3584, "C052", "live", null, null),
             (SlmpProfileLimit.RandomReadWord, 192, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomWriteWord, 160, "C054", "live", null, null),
+            (SlmpProfileLimit.RandomWriteWord, 160, "C054", "live", 1920, null),
             (SlmpProfileLimit.RandomWriteBit, 188, "C053", "live", null, null));
 
     private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> QlLimits()

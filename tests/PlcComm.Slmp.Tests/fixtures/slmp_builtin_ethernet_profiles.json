@@ -209,6 +209,7 @@
         "random_write_word": {
           "source": "live",
           "max": 80,
+          "weighted_max": 960,
           "over_end_code": "C054"
         },
         "random_write_bit": {
@@ -511,6 +512,7 @@
         "random_write_word": {
           "source": "live",
           "max": 160,
+          "weighted_max": 1920,
           "over_end_code": "C054"
         },
         "random_write_bit": {
