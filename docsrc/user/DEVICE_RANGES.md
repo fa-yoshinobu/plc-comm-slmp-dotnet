@@ -8,6 +8,10 @@ the client can read the profile-specific registers or apply a fixed profile rule
 Node-RED uses the supported/unsupported device-code part of this table to avoid
 sending clearly unsupported device codes for a selected profile, but it does not
 pre-check PLC model-specific address upper bounds.
+Normal read/write APIs do not use this catalog to reject addresses by configured
+upper bound before sending a request. Applications that need PLC-specific range
+validation should read the catalog and apply that policy outside the transport
+operation.
 
 The library now owns the device-range rules in source code and reads live upper
 bounds from the PLC itself after the caller chooses the PLC profile:
