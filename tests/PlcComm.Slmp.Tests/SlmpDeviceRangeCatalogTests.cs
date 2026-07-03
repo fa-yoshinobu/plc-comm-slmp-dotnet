@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using PlcComm.Slmp;
 
 namespace PlcComm.Slmp.Tests;
@@ -139,6 +140,46 @@ public sealed class SlmpDeviceRangeCatalogTests
         Assert.Equal("SD276-SD277 (32-bit)", GetEntry(catalog, "S").Source);
         Assert.Equal(123u, GetEntry(catalog, "S").PointCount);
         Assert.Equal("S0-S122", GetEntry(catalog, "S").AddressRange);
+    }
+
+    [Fact]
+    public void BuildCatalog_MatchesCanonicalDeviceRangeRulesFixture()
+    {
+        using var document = LoadCanonicalDeviceRangeRules();
+        var root = document.RootElement;
+        var rows = root.GetProperty("rows");
+        var profiles = root.GetProperty("profiles");
+        var notationOverrides = root.GetProperty("notation_overrides");
+
+        foreach (var profileProperty in profiles.EnumerateObject())
+        {
+            var plcProfile = SlmpPlcProfiles.Parse(profileProperty.Name);
+            foreach (var ruleProperty in profileProperty.Value.GetProperty("rules").EnumerateObject())
+            {
+                var catalog = SlmpDeviceRangeResolver.BuildCatalog(
+                    plcProfile,
+                    CreateCanonicalRegisterSnapshot(profileProperty.Value, ruleProperty.Name));
+                var row = rows.GetProperty(ruleProperty.Name);
+                var rule = ruleProperty.Value;
+                var expectedSupported = rule.GetProperty("kind").GetString() != "unsupported";
+                var expectedPointCount = CanonicalExpectedPointCount(rule);
+                var expectedNotationText = row.GetProperty("notation").GetString();
+                if (notationOverrides.TryGetProperty(profileProperty.Name, out var profileOverrides)
+                    && profileOverrides.TryGetProperty(ruleProperty.Name, out var overrideValue))
+                {
+                    expectedNotationText = overrideValue.GetString();
+                }
+
+                foreach (var device in row.GetProperty("devices").EnumerateArray())
+                {
+                    var deviceName = device.GetProperty("device").GetString()!;
+                    var entry = GetEntry(catalog, deviceName);
+                    Assert.Equal(expectedSupported, entry.Supported);
+                    Assert.Equal(expectedPointCount, entry.PointCount);
+                    Assert.Equal(CanonicalNotation(expectedNotationText!), entry.Notation);
+                }
+            }
+        }
     }
 
     [Fact]
@@ -350,6 +391,82 @@ public sealed class SlmpDeviceRangeCatalogTests
 
         return snapshot;
     }
+
+    private static JsonDocument LoadCanonicalDeviceRangeRules()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "fixtures", "slmp_device_range_rules.json");
+        return JsonDocument.Parse(File.ReadAllText(path));
+    }
+
+    private static Dictionary<int, ushort> CreateCanonicalRegisterSnapshot(JsonElement profile, string? onlyItem = null)
+    {
+        var start = profile.GetProperty("register_start").GetInt32();
+        var count = profile.GetProperty("register_count").GetInt32();
+        var registers = new Dictionary<int, ushort>(count);
+        for (var i = 0; i < count; i++)
+        {
+            registers[start + i] = 0;
+        }
+
+        var rules = profile.GetProperty("rules");
+        var selectedRules = onlyItem is null
+            ? rules.EnumerateObject().Select(static property => property.Value)
+            : [rules.GetProperty(onlyItem)];
+
+        foreach (var rule in selectedRules)
+        {
+            if (!rule.TryGetProperty("register", out var registerElement))
+            {
+                continue;
+            }
+
+            var register = registerElement.GetInt32();
+            var value = CanonicalRuleValue(rule);
+            var kind = rule.GetProperty("kind").GetString()!;
+            if (kind.StartsWith("dword-register", StringComparison.Ordinal))
+            {
+                registers[register] = (ushort)(value & 0xFFFF);
+                registers[register + 1] = (ushort)(value >> 16);
+            }
+            else if (kind.StartsWith("word-register", StringComparison.Ordinal))
+            {
+                registers[register] = (ushort)value;
+            }
+        }
+
+        return registers;
+    }
+
+    private static uint CanonicalRuleValue(JsonElement rule)
+    {
+        var kind = rule.GetProperty("kind").GetString()!;
+        return kind.EndsWith("clipped", StringComparison.Ordinal)
+            ? rule.GetProperty("clip_value").GetUInt32() + 5
+            : 123u;
+    }
+
+    private static uint? CanonicalExpectedPointCount(JsonElement rule)
+    {
+        var kind = rule.GetProperty("kind").GetString()!;
+        return kind switch
+        {
+            "unsupported" or "undefined" => null,
+            "fixed" => rule.GetProperty("fixed_value").GetUInt32(),
+            _ when kind.EndsWith("clipped", StringComparison.Ordinal) => Math.Min(
+                CanonicalRuleValue(rule),
+                rule.GetProperty("clip_value").GetUInt32()),
+            _ => CanonicalRuleValue(rule),
+        };
+    }
+
+    private static SlmpDeviceRangeNotation CanonicalNotation(string notation)
+        => notation switch
+        {
+            "base10" => SlmpDeviceRangeNotation.Base10,
+            "base8" => SlmpDeviceRangeNotation.Base8,
+            "base16" => SlmpDeviceRangeNotation.Base16,
+            _ => throw new InvalidOperationException($"Unsupported notation '{notation}'."),
+        };
 
     private static SlmpDeviceRangeEntry GetEntry(SlmpDeviceRangeCatalog catalog, string device)
         => Assert.Single(catalog.Entries, entry => entry.Device == device);

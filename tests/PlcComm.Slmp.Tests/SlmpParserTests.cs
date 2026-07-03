@@ -1,4 +1,5 @@
 using PlcComm.Slmp;
+using System.Text.Json;
 
 namespace PlcComm.Slmp.Tests;
 
@@ -68,6 +69,43 @@ public sealed class SlmpParserTests
         var error = Assert.Throws<NotSupportedException>(() => SlmpDeviceParser.Parse(text, profile));
         Assert.Contains("not supported", error.Message, StringComparison.Ordinal);
         Assert.False(SlmpAddress.TryParse(text, profile, out _));
+    }
+
+    [Fact]
+    public void ParseDevice_ProfileUnsupportedFamiliesMatchCanonicalFixture()
+    {
+        using var document = LoadCanonicalDeviceRangeRules();
+        var rows = document.RootElement.GetProperty("rows");
+        var profiles = document.RootElement.GetProperty("profiles");
+
+        foreach (var profileProperty in profiles.EnumerateObject())
+        {
+            var plcProfile = SlmpPlcProfiles.Parse(profileProperty.Name);
+            foreach (var ruleProperty in profileProperty.Value.GetProperty("rules").EnumerateObject())
+            {
+                var unsupported = ruleProperty.Value.GetProperty("kind").GetString() == "unsupported";
+                var row = rows.GetProperty(ruleProperty.Name);
+                foreach (var deviceElement in row.GetProperty("devices").EnumerateArray())
+                {
+                    var device = deviceElement.GetProperty("device").GetString()!;
+                    var address = $"{device}10";
+
+                    if (unsupported)
+                    {
+                        var error = Assert.Throws<NotSupportedException>(() =>
+                            SlmpDeviceParser.Parse(address, plcProfile));
+                        Assert.Contains("not supported", error.Message, StringComparison.Ordinal);
+                    }
+                    else
+                    {
+                        _ = SlmpDeviceParser.Parse(address, plcProfile);
+                    }
+                }
+            }
+        }
+
+        Assert.Throws<NotSupportedException>(() => SlmpDeviceParser.Parse("DX10", SlmpPlcProfile.IqF));
+        Assert.Throws<NotSupportedException>(() => SlmpDeviceParser.Parse("DY10", SlmpPlcProfile.IqF));
     }
 
     [Fact]
@@ -213,5 +251,11 @@ public sealed class SlmpParserTests
         var extension = new SlmpExtensionSpec(ExtensionSpecification: 2, DirectMemorySpecification: 0xF9);
         var spec = client.EncodeExtendedDeviceSpec(device, extension);
         Assert.Equal(new byte[] { 0x00, 0x00, 0x10, 0x00, 0x00, 0xB5, 0x00, 0x00, 0x02, 0x00, 0xF9 }, spec);
+    }
+
+    private static JsonDocument LoadCanonicalDeviceRangeRules()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "fixtures", "slmp_device_range_rules.json");
+        return JsonDocument.Parse(File.ReadAllText(path));
     }
 }
