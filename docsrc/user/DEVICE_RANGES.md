@@ -1,9 +1,8 @@
 # Device Range Catalog
 
-Device range rule definitions are maintained in the shared SLMP profile reference, not in this .NET library documentation.
+Device range rule definitions are maintained in the shared SLMP profile comparison, not in this .NET library documentation.
 
-- [SLMP profile comparison](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/profile-comparison/)
-- [SLMP device range rules](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/device-range-rules/)
+See the [SLMP profile comparison](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/profile-comparison/) for cross-profile capability and device-range details.
 
 This page only describes the .NET API surface.
 
