@@ -123,6 +123,24 @@ public sealed class SlmpDeviceRangeCatalogTests
         Assert.Equal("S0-S255", GetEntry(catalog, "S").AddressRange);
     }
 
+    [Theory]
+    [InlineData(SlmpPlcProfile.MxF)]
+    [InlineData(SlmpPlcProfile.MxR)]
+    public void BuildCatalog_MxProfilesKeepSSupportedFromSd276(SlmpPlcProfile family)
+    {
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(family);
+        var registers = CreateRegisterSnapshot(profile);
+        registers[276] = 123;
+        registers[277] = 0;
+
+        var catalog = SlmpDeviceRangeResolver.BuildCatalog(family, registers);
+
+        Assert.True(GetEntry(catalog, "S").Supported);
+        Assert.Equal("SD276-SD277 (32-bit)", GetEntry(catalog, "S").Source);
+        Assert.Equal(123u, GetEntry(catalog, "S").PointCount);
+        Assert.Equal("S0-S122", GetEntry(catalog, "S").AddressRange);
+    }
+
     [Fact]
     public void BuildCatalog_QnUUsesSd300ForStFamilyAndFixedZRange()
     {
