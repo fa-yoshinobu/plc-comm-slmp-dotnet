@@ -33,8 +33,7 @@ Implemented in `SlmpClient`:
 - `ClearErrorAsync`
 - low-level `RequestAsync`
 
-## Follow-Up
+## Current Status
 
-Semantic parity with `plc-comm-slmp-python` is still the target, but the
-remaining items are now mostly environment-dependent follow-up work rather than
-missing core APIs. See `TODO.md` for the active list.
+No active protocol TODO is tracked here. Use the repository-root `TODO.md` for
+any future active item.
