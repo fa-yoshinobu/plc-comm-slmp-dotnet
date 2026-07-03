@@ -1,0 +1,790 @@
+{
+  "schema_version": 1,
+  "date": "2026-07-03",
+  "scope": "builtin-ethernet-port",
+  "description": "SLMPライブラリ6兄弟の機種プロファイル正準定義。内蔵Ethernetポートで使える機能のみを基準とする。この JSON が唯一の正であり、各言語実装・適合テストはここから生成する。編集時は必ず evidence を伴うこと。",
+  "policy": {
+    "default_strict": true,
+    "state_semantics": {
+      "supported": "実機で成功を確認済み。通常送信する",
+      "blocked": "実機で不可を確認済み。strict時は送信前ガードでエラーにする",
+      "config-dependent": "PLC構成（ユニット実在等）に依存。ガードせず送信し、PLC応答に委ねる",
+      "unverified": "未検証。strict時はガード（blocked扱い）、strict解除で送信可",
+      "delegated": "既存の実行時機構（SD由来のデバイス範囲取得関数・グローバル規則）が判定する。プロファイルは関与せずガードしない"
+    },
+    "notes": [
+      "デバイスファミリの存在有無・デバイス範囲はプロファイルに持たない（SD読出しの既存範囲取得関数が判定する）",
+      "limits はプロトコル上限（実測根拠つき）であり strict 解除でも常に強制する",
+      "standalone G/HG の拒否は全プロファイル共通の既存グローバル規則であり、ここには持たない"
+    ]
+  },
+  "evidence_files": {
+    "melsec:iq-r": "evidence/r120p_slmp_live_verify_20260703.md",
+    "melsec:iq-f": "evidence/iqf_slmp_live_verify_20260703.md",
+    "melsec:iq-l": "evidence/iql_slmp_live_verify_20260703.md",
+    "melsec:lcpu": "evidence/lcpu_slmp_live_verify_20260703.md",
+    "melsec:qnudv": "evidence/qnudv_slmp_live_verify_20260703.md",
+    "qnudv_monitor_probe": "evidence/qnudv_frame_results_20260703/qnudv_monitor_probe_20260703.md",
+    "audit_report": "evidence/review_slmp_spec_audit_20260703.md"
+  },
+  "profiles": {
+    "melsec:iq-r": {
+      "frame": "4E",
+      "compat": "iQ-R",
+      "subcommands": {
+        "word": "0002",
+        "bit": "0003",
+        "ext_word": "0082",
+        "ext_bit": "0083"
+      },
+      "verified_models": [
+        "R120PCPU"
+      ],
+      "features": {
+        "type_name": {
+          "state": "supported",
+          "source": "live"
+        },
+        "direct": {
+          "state": "supported",
+          "source": "live"
+        },
+        "random": {
+          "state": "supported",
+          "source": "live"
+        },
+        "block": {
+          "state": "supported",
+          "source": "live",
+          "note": "mixed word+bit 1リクエスト成功"
+        },
+        "monitor": {
+          "state": "supported",
+          "source": "live"
+        },
+        "ext_module_access": {
+          "state": "config-dependent",
+          "source": "live",
+          "note": "U3E0\\G10 / U2\\G100 は本構成で成功。ユニット実在はPLC構成依存のためガードしない"
+        },
+        "ext_link_direct": {
+          "state": "config-dependent",
+          "source": "policy",
+          "note": "未実測。ネットワークユニット構成依存としてガードしない（iQ-Lの2026-07-03判断に整合させた推定。要ユーザー承認）"
+        },
+        "hg_cpu_buffer": {
+          "state": "supported",
+          "source": "live",
+          "note": "iQ-R専用経路。U3E0\\HG20 direct/random/monitor成功"
+        },
+        "long_device_path": {
+          "state": "supported",
+          "source": "live",
+          "note": "LT/LST/LCは専用ロング系経路のみ。LTS/LTC/LSTS/LSTCのdirect/block bitは経路規則で禁止（write 4030実測）"
+        },
+        "lz_32bit_path": {
+          "state": "supported",
+          "source": "live",
+          "note": "LZは32-bit経路のみ。16-bit direct/blockは経路規則で禁止"
+        }
+      },
+      "limits": {
+        "direct_word_read": {
+          "max": 960,
+          "over_end_code": "C051",
+          "source": "live"
+        },
+        "direct_word_write": {
+          "max": 960,
+          "over_end_code": "C051",
+          "source": "live"
+        },
+        "direct_bit_read": {
+          "max": 7168,
+          "over_end_code": "C052",
+          "source": "live"
+        },
+        "direct_bit_write": {
+          "max": 7168,
+          "over_end_code": "C052",
+          "source": "live"
+        },
+        "random_read_word": {
+          "max": 96,
+          "over_end_code": "C054",
+          "source": "live"
+        },
+        "random_write_word": {
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054",
+          "source": "live"
+        },
+        "random_write_bit": {
+          "max": 94,
+          "over_end_code": "C053",
+          "source": "live"
+        },
+        "monitor_register_word": {
+          "max": 96,
+          "over_end_code": "C054",
+          "source": "live"
+        }
+      },
+      "write_policy": {
+        "S": "read-only",
+        "LCS": "read-only"
+      }
+    },
+    "melsec:iq-l": {
+      "frame": "4E",
+      "compat": "iQ-R",
+      "subcommands": {
+        "word": "0002",
+        "bit": "0003",
+        "ext_word": "0082",
+        "ext_bit": "0083"
+      },
+      "verified_models": [
+        "L16HCPU (model 0x48C2)"
+      ],
+      "features": {
+        "type_name": {
+          "state": "supported",
+          "source": "live"
+        },
+        "direct": {
+          "state": "supported",
+          "source": "live"
+        },
+        "random": {
+          "state": "supported",
+          "source": "live"
+        },
+        "block": {
+          "state": "supported",
+          "source": "live"
+        },
+        "monitor": {
+          "state": "supported",
+          "source": "live"
+        },
+        "ext_module_access": {
+          "state": "config-dependent",
+          "source": "live",
+          "note": "U1\\G10 は本構成で成功。ユニット実在はPLC構成依存のためガードしない"
+        },
+        "ext_link_direct": {
+          "state": "config-dependent",
+          "source": "policy",
+          "note": "機材なしで未実測だが使用可能性が高い。2026-07-03 ユーザー判断で許可（ガードしない）"
+        },
+        "hg_cpu_buffer": {
+          "state": "blocked",
+          "source": "policy",
+          "note": "iQ-R専用経路。iQ-Lには定義しない"
+        },
+        "long_device_path": {
+          "state": "supported",
+          "source": "live",
+          "note": "LTN/LSTN/LCN/LCC write-read-restore実測。専用ロング系経路のみ"
+        },
+        "lz_32bit_path": {
+          "state": "supported",
+          "source": "live",
+          "note": "LZは32-bit経路のみ（LZ1:D実測）"
+        }
+      },
+      "limits": {
+        "direct_word_read": {
+          "max": 960,
+          "over_end_code": "C051",
+          "source": "live"
+        },
+        "direct_word_write": {
+          "max": 960,
+          "over_end_code": "C051",
+          "source": "live"
+        },
+        "direct_bit_read": {
+          "max": 7168,
+          "over_end_code": "C052",
+          "source": "live"
+        },
+        "direct_bit_write": {
+          "max": 7168,
+          "over_end_code": "C052",
+          "source": "live"
+        },
+        "random_read_word": {
+          "max": 96,
+          "over_end_code": "C054",
+          "source": "live"
+        },
+        "random_write_word": {
+          "max": 80,
+          "over_end_code": "C054",
+          "source": "live",
+          "note": "weighted上限は未実測（iq-rでは960）"
+        },
+        "random_write_bit": {
+          "max": 94,
+          "over_end_code": "C053",
+          "source": "live"
+        },
+        "monitor_register_word": {
+          "max": 96,
+          "source": "inferred",
+          "note": "未実測。同一サブコマンド組のiq-r実測96から推定"
+        }
+      },
+      "write_policy": {
+        "S": "read-only",
+        "LCS": "read-only"
+      }
+    },
+    "melsec:mx-r": {
+      "frame": "4E",
+      "compat": "iQ-R",
+      "subcommands": {
+        "word": "0002",
+        "bit": "0003",
+        "ext_word": "0082",
+        "ext_bit": "0083"
+      },
+      "verified_models": [],
+      "derived_from": "melsec:iq-r",
+      "profile_note": "機器がないため実機未検証。2026-07-03 ユーザー判断で iQ-R 同等扱いとする。ただしマルチCPU構成が組めないため HG CPUバッファ経路のみ使用不可で確定",
+      "features": {
+        "type_name": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い（実機未検証）"
+        },
+        "direct": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い（実機未検証）"
+        },
+        "random": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い（実機未検証）"
+        },
+        "block": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い（実機未検証）"
+        },
+        "monitor": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い（実機未検証）"
+        },
+        "ext_module_access": {
+          "state": "config-dependent",
+          "source": "policy",
+          "note": "iQ-R同等扱い。ユニット実在はPLC構成依存のためガードしない"
+        },
+        "ext_link_direct": {
+          "state": "config-dependent",
+          "source": "policy",
+          "note": "iQ-R同等扱い。ネットワークユニット構成依存としてガードしない"
+        },
+        "hg_cpu_buffer": {
+          "state": "blocked",
+          "source": "spec",
+          "note": "マルチCPU構成不可のため使用不可で確定（2026-07-03 ユーザー判断）"
+        },
+        "long_device_path": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い。専用ロング系経路のみ"
+        },
+        "lz_32bit_path": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い。LZは32-bit経路のみ"
+        }
+      },
+      "limits": {
+        "direct_word_read": {
+          "max": 960,
+          "over_end_code": "C051",
+          "source": "inferred",
+          "note": "iq-r実測値を採用"
+        },
+        "direct_word_write": {
+          "max": 960,
+          "over_end_code": "C051",
+          "source": "inferred"
+        },
+        "direct_bit_read": {
+          "max": 7168,
+          "over_end_code": "C052",
+          "source": "inferred"
+        },
+        "direct_bit_write": {
+          "max": 7168,
+          "over_end_code": "C052",
+          "source": "inferred"
+        },
+        "random_read_word": {
+          "max": 96,
+          "over_end_code": "C054",
+          "source": "inferred"
+        },
+        "random_write_word": {
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054",
+          "source": "inferred"
+        },
+        "random_write_bit": {
+          "max": 94,
+          "over_end_code": "C053",
+          "source": "inferred"
+        },
+        "monitor_register_word": {
+          "max": 96,
+          "over_end_code": "C054",
+          "source": "inferred"
+        }
+      },
+      "write_policy": {
+        "S": "read-only",
+        "LCS": "read-only"
+      }
+    },
+    "melsec:mx-f": {
+      "frame": "4E",
+      "compat": "iQ-R",
+      "subcommands": {
+        "word": "0002",
+        "bit": "0003",
+        "ext_word": "0082",
+        "ext_bit": "0083"
+      },
+      "verified_models": [],
+      "derived_from": "melsec:iq-r",
+      "profile_note": "機器がないため実機未検証。2026-07-03 ユーザー判断で iQ-R 同等扱いとする。ただしマルチCPU構成が組めないため HG CPUバッファ経路のみ使用不可で確定",
+      "features": {
+        "type_name": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い（実機未検証）"
+        },
+        "direct": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い（実機未検証）"
+        },
+        "random": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い（実機未検証）"
+        },
+        "block": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い（実機未検証）"
+        },
+        "monitor": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い（実機未検証）"
+        },
+        "ext_module_access": {
+          "state": "config-dependent",
+          "source": "policy",
+          "note": "iQ-R同等扱い。ユニット実在はPLC構成依存のためガードしない"
+        },
+        "ext_link_direct": {
+          "state": "config-dependent",
+          "source": "policy",
+          "note": "iQ-R同等扱い。ネットワークユニット構成依存としてガードしない"
+        },
+        "hg_cpu_buffer": {
+          "state": "blocked",
+          "source": "spec",
+          "note": "マルチCPU構成不可のため使用不可で確定（2026-07-03 ユーザー判断）"
+        },
+        "long_device_path": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い。専用ロング系経路のみ"
+        },
+        "lz_32bit_path": {
+          "state": "supported",
+          "source": "policy",
+          "note": "iQ-R同等扱い。LZは32-bit経路のみ"
+        }
+      },
+      "limits": {
+        "direct_word_read": {
+          "max": 960,
+          "over_end_code": "C051",
+          "source": "inferred",
+          "note": "iq-r実測値を採用"
+        },
+        "direct_word_write": {
+          "max": 960,
+          "over_end_code": "C051",
+          "source": "inferred"
+        },
+        "direct_bit_read": {
+          "max": 7168,
+          "over_end_code": "C052",
+          "source": "inferred"
+        },
+        "direct_bit_write": {
+          "max": 7168,
+          "over_end_code": "C052",
+          "source": "inferred"
+        },
+        "random_read_word": {
+          "max": 96,
+          "over_end_code": "C054",
+          "source": "inferred"
+        },
+        "random_write_word": {
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054",
+          "source": "inferred"
+        },
+        "random_write_bit": {
+          "max": 94,
+          "over_end_code": "C053",
+          "source": "inferred"
+        },
+        "monitor_register_word": {
+          "max": 96,
+          "over_end_code": "C054",
+          "source": "inferred"
+        }
+      },
+      "write_policy": {
+        "S": "read-only",
+        "LCS": "read-only"
+      }
+    },
+    "melsec:iq-f": {
+      "frame": "3E",
+      "compat": "Q/L",
+      "subcommands": {
+        "word": "0000",
+        "bit": "0001",
+        "ext_word": "0080",
+        "ext_bit": "0081"
+      },
+      "verified_models": [
+        "FX5UC-32MT/D (model 0x4A91)",
+        "FX5U-32MR/DS (model 0x4A41)"
+      ],
+      "features": {
+        "type_name": {
+          "state": "supported",
+          "source": "live"
+        },
+        "direct": {
+          "state": "supported",
+          "source": "live"
+        },
+        "random": {
+          "state": "supported",
+          "source": "live"
+        },
+        "block": {
+          "state": "supported",
+          "source": "live"
+        },
+        "monitor": {
+          "state": "blocked",
+          "source": "live",
+          "evidence": "D10単独登録でも C059（FX5UC/FX5U両方）"
+        },
+        "ext_module_access": {
+          "state": "config-dependent",
+          "source": "live",
+          "note": "特殊ユニットあり構成で U1\\G0/G1/G10 成功、ユニットなしは C060。構成差として扱いガードしない"
+        },
+        "ext_link_direct": {
+          "state": "unverified",
+          "source": "policy",
+          "note": "未実測。strict時はガード"
+        },
+        "hg_cpu_buffer": {
+          "state": "blocked",
+          "source": "policy",
+          "note": "iQ-R専用経路。iQ-Fには定義しない"
+        },
+        "long_device_path": {
+          "state": "supported",
+          "source": "live",
+          "note": "LCロングカウンタのみ（LC0..LC63実測）。LT/LSTファミリはFX5に存在せず範囲取得関数が判定"
+        },
+        "lz_32bit_path": {
+          "state": "supported",
+          "source": "live",
+          "note": "LZは32-bit経路のみ"
+        }
+      },
+      "limits": {
+        "direct_word_read": {
+          "max": 960,
+          "over_end_code": "C052",
+          "source": "live"
+        },
+        "direct_word_write": {
+          "max": 960,
+          "over_end_code": "C052",
+          "source": "live"
+        },
+        "direct_bit_read": {
+          "max": 3584,
+          "over_end_code": "C051",
+          "source": "live",
+          "note": "他機種の7168と異なるFX5固有上限（監査F-4）"
+        },
+        "direct_bit_write": {
+          "max": 3584,
+          "over_end_code": "C051",
+          "source": "live"
+        },
+        "random_read_word": {
+          "max": 192,
+          "over_end_code": "C054",
+          "source": "live"
+        },
+        "random_write_word": {
+          "max": 160,
+          "over_end_code": "C054",
+          "source": "live"
+        },
+        "random_write_bit": {
+          "max": 188,
+          "over_end_code": "C053",
+          "source": "live"
+        }
+      },
+      "write_policy": {
+        "X": "read-only"
+      }
+    },
+    "melsec:lcpu": {
+      "frame": "3E",
+      "compat": "Q/L",
+      "subcommands": {
+        "word": "0000",
+        "bit": "0001",
+        "ext_word": "0080",
+        "ext_bit": "0081"
+      },
+      "verified_models": [
+        "L16HCPU相当LCPU（型名読出し不可のため終了コードで同定）"
+      ],
+      "features": {
+        "type_name": {
+          "state": "blocked",
+          "source": "live",
+          "evidence": "0101/0000 が C059"
+        },
+        "direct": {
+          "state": "supported",
+          "source": "live"
+        },
+        "random": {
+          "state": "supported",
+          "source": "live"
+        },
+        "block": {
+          "state": "blocked",
+          "source": "live",
+          "evidence": "raw送信でも C059"
+        },
+        "monitor": {
+          "state": "supported",
+          "source": "live",
+          "note": "D10/R10/ZR10 で成功"
+        },
+        "ext_module_access": {
+          "state": "blocked",
+          "source": "live",
+          "evidence": "U0\\G10 / U2\\G1000 が C070"
+        },
+        "ext_link_direct": {
+          "state": "unverified",
+          "source": "policy",
+          "note": "未実測。strict時はガード"
+        },
+        "hg_cpu_buffer": {
+          "state": "blocked",
+          "source": "policy",
+          "note": "iQ-R専用経路。LCPUには定義しない"
+        },
+        "long_device_path": {
+          "state": "delegated",
+          "source": "live",
+          "note": "LT/LST/LCファミリ不存在（代表read C05B）。判定は範囲取得関数に委ねる"
+        },
+        "lz_32bit_path": {
+          "state": "delegated",
+          "source": "live",
+          "note": "LZファミリ不存在（C05B）。判定は範囲取得関数に委ねる"
+        }
+      },
+      "limits": {
+        "direct_word_read": {
+          "max": 960,
+          "over_end_code": "C051",
+          "source": "live"
+        },
+        "direct_word_write": {
+          "max": 960,
+          "over_end_code": "C051",
+          "source": "live"
+        },
+        "direct_bit_read": {
+          "max": 7168,
+          "over_end_code": "C052",
+          "source": "live"
+        },
+        "direct_bit_write": {
+          "max": 7168,
+          "over_end_code": "C052",
+          "source": "live"
+        },
+        "random_read_word": {
+          "max": 192,
+          "over_end_code": "C054",
+          "source": "live"
+        },
+        "random_write_word": {
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "C054",
+          "source": "live"
+        },
+        "random_write_bit": {
+          "max": 188,
+          "over_end_code": "C053",
+          "source": "live"
+        },
+        "monitor_register_word": {
+          "max": 192,
+          "source": "inferred",
+          "note": "未実測。同一サブコマンド組のqnudv実測192から推定"
+        }
+      },
+      "write_policy": {}
+    },
+    "melsec:qnudv": {
+      "frame": "3E",
+      "compat": "Q/L",
+      "subcommands": {
+        "word": "0000",
+        "bit": "0001",
+        "ext_word": "0080",
+        "ext_bit": "0081"
+      },
+      "verified_models": [
+        "QnUDV内蔵Ethernet（型名読出し不可のため終了コードで同定）"
+      ],
+      "features": {
+        "type_name": {
+          "state": "blocked",
+          "source": "live",
+          "evidence": "0101/0000 が C059"
+        },
+        "direct": {
+          "state": "supported",
+          "source": "live"
+        },
+        "random": {
+          "state": "supported",
+          "source": "live"
+        },
+        "block": {
+          "state": "blocked",
+          "source": "live",
+          "evidence": "raw送信でも C059。高レベルAPIは送信前ガード対象"
+        },
+        "monitor": {
+          "state": "supported",
+          "source": "live",
+          "evidence": "qnudv_monitor_probe_20260703.md: D9000/R10/ZR10 単独・同時、192 word 登録成功"
+        },
+        "ext_module_access": {
+          "state": "blocked",
+          "source": "live",
+          "evidence": "U0\\G10 / U2\\G1000 が C070"
+        },
+        "ext_link_direct": {
+          "state": "unverified",
+          "source": "policy",
+          "note": "未実測。strict時はガード"
+        },
+        "hg_cpu_buffer": {
+          "state": "blocked",
+          "source": "policy",
+          "note": "iQ-R専用経路。QnUDVには定義しない"
+        },
+        "long_device_path": {
+          "state": "delegated",
+          "source": "live",
+          "note": "LT/LST/LCファミリ不存在（代表read C05B）。判定は範囲取得関数に委ねる"
+        },
+        "lz_32bit_path": {
+          "state": "delegated",
+          "source": "policy",
+          "note": "LZファミリ不存在想定（未実測）。判定は範囲取得関数に委ねる"
+        }
+      },
+      "limits": {
+        "direct_word_read": {
+          "max": 960,
+          "over_end_code": "C051",
+          "source": "live"
+        },
+        "direct_word_write": {
+          "max": 960,
+          "over_end_code": "C051",
+          "source": "live"
+        },
+        "direct_bit_read": {
+          "max": 7168,
+          "over_end_code": "C052",
+          "source": "live"
+        },
+        "direct_bit_write": {
+          "max": 7168,
+          "over_end_code": "C052",
+          "source": "live"
+        },
+        "random_read_word": {
+          "max": 192,
+          "over_end_code": "C054",
+          "source": "live"
+        },
+        "random_write_word": {
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "C054",
+          "source": "live"
+        },
+        "random_write_bit": {
+          "max": 188,
+          "over_end_code": "C053",
+          "source": "live"
+        },
+        "monitor_register_word": {
+          "max": 192,
+          "over_end_code": "C054",
+          "source": "live"
+        }
+      },
+      "write_policy": {}
+    }
+  }
+}

@@ -51,6 +51,15 @@ public sealed record SlmpConnectionOptions(string Host, SlmpPlcProfile PlcProfil
     /// </remarks>
     public ushort MonitoringTimer { get; init; } = 0x0010;
 
+    /// <summary>
+    /// Gets or sets whether high-level APIs reject profile-blocked or unverified features before transport.
+    /// </summary>
+    /// <remarks>
+    /// The default is <see langword="true"/>. Limits and write policies are always enforced.
+    /// Set this to <see langword="false"/> only when intentionally probing a PLC feature.
+    /// </remarks>
+    public bool StrictProfile { get; init; } = true;
+
     /// <summary>Gets the effective frame type after applying <see cref="PlcProfile"/> defaults.</summary>
     public SlmpFrameType ResolvedFrameType => SlmpPlcProfiles.Resolve(PlcProfile).FrameType;
 

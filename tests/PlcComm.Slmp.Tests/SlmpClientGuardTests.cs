@@ -231,6 +231,129 @@ public sealed class SlmpClientGuardTests
         Assert.Contains("1..3584", writeError.Message);
     }
 
+    [Fact]
+    public async Task ReadTypeNameAsync_QnUDVStrictProfileRejectsBeforeTransport()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnUDV);
+
+        var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
+            () => client.ReadTypeNameAsync());
+
+        Assert.Equal("melsec:qnudv", ex.ProfileId);
+        Assert.Equal("type_name", ex.FeatureKey);
+        Assert.Equal("blocked", ex.State);
+        Assert.Contains("C059", ex.Message);
+        Assert.Contains("StrictProfile=false", ex.Message);
+    }
+
+    [Fact]
+    public async Task ReadBlockAsync_QnUDVStrictProfileRejectsBeforeTransport()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnUDV);
+
+        var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
+            () => client.ReadBlockAsync(
+                [new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 1)],
+                []));
+
+        Assert.Equal("block", ex.FeatureKey);
+        Assert.Equal("blocked", ex.State);
+        Assert.Contains("melsec:qnudv", ex.Message);
+    }
+
+    [Fact]
+    public async Task ReadBlockAsync_QnUDVStrictProfileFalseSendsRequest()
+    {
+        await using var server = new MultiShotSlmpServer([(0, new byte[] { 0x34, 0x12 })]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.QnUDV,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            strictProfile: false);
+        await client.OpenAsync();
+
+        var result = await client.ReadBlockAsync(
+            [new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 1)],
+            []);
+
+        Assert.Equal(new ushort[] { 0x1234 }, result.WordValues);
+        var request = Assert.Single(server.RequestFrames);
+        Assert.Equal(0x50, request[0]);
+        Assert.Equal(0x00, request[1]);
+    }
+
+    [Fact]
+    public async Task RegisterMonitorDevicesAsync_IqFStrictProfileRejectsBlockedMonitor()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF);
+
+        var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
+            () => client.RegisterMonitorDevicesAsync(
+                [new SlmpDeviceAddress(SlmpDeviceCode.D, 0)],
+                []));
+
+        Assert.Equal("monitor", ex.FeatureKey);
+        Assert.Equal("blocked", ex.State);
+    }
+
+    [Fact]
+    public async Task ReadWordsExtendedAsync_IqFStrictProfileRejectsUnverifiedLinkDirect()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF);
+        var device = SlmpQualifiedDeviceParser.Parse(@"J2\SW10");
+
+        var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
+            () => client.ReadWordsExtendedAsync(device, 1, new SlmpExtensionSpec()));
+
+        Assert.Equal("ext_link_direct", ex.FeatureKey);
+        Assert.Equal("unverified", ex.State);
+    }
+
+    [Fact]
+    public async Task ReadWordsExtendedAsync_IqLStrictProfileRejectsCpuBufferHg()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqL);
+        var device = SlmpQualifiedDeviceParser.Parse(@"U3E0\HG20");
+
+        var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
+            () => client.ReadWordsExtendedAsync(device, 1, new SlmpExtensionSpec()));
+
+        Assert.Equal("hg_cpu_buffer", ex.FeatureKey);
+        Assert.Equal("blocked", ex.State);
+    }
+
+    [Fact]
+    public async Task ReadWordsExtendedAsync_IqFDoesNotGuardConfigDependentModuleAccess()
+    {
+        await using var server = new MultiShotSlmpServer([(0, new byte[] { 0x78, 0x56 })]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF, server.Port);
+        await client.OpenAsync();
+
+        var values = await client.ReadWordsExtendedAsync(
+            SlmpQualifiedDeviceParser.Parse(@"U1\G0"),
+            1,
+            new SlmpExtensionSpec());
+
+        Assert.Equal(new ushort[] { 0x5678 }, values);
+        Assert.Single(server.RequestFrames);
+    }
+
+    [Fact]
+    public async Task WriteBitsAsync_IqFRejectsInputDeviceByWritePolicy()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF, strictProfile: false);
+
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.X, 0), SingleTrue));
+
+        Assert.Contains("X is read-only in SLMP", ex.Message);
+    }
+
     [Theory]
     [InlineData(SlmpDeviceCode.LSTS)]
     [InlineData(SlmpDeviceCode.LCS)]
@@ -242,7 +365,10 @@ public sealed class SlmpClientGuardTests
                 new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(code, 10), null),
                 SingleTrue,
                 new SlmpExtensionSpec()));
-        Assert.Contains($"Direct bit write is not supported for {code}", ex.Message);
+        if (code == SlmpDeviceCode.LCS)
+            Assert.Contains("LCS is read-only in SLMP", ex.Message);
+        else
+            Assert.Contains($"Direct bit write is not supported for {code}", ex.Message);
     }
 
     [Fact]
@@ -429,7 +555,6 @@ public sealed class SlmpClientGuardTests
     [Theory]
     [InlineData(SlmpPlcProfile.QCpu, "melsec:qcpu")]
     [InlineData(SlmpPlcProfile.QnU, "melsec:qnu")]
-    [InlineData(SlmpPlcProfile.QnUDV, "melsec:qnudv")]
     public async Task ReadBlockAsync_RejectsQSeriesProfiles(SlmpPlcProfile profile, string profileText)
     {
         using var client = new SlmpClient("127.0.0.1", profile);
@@ -485,7 +610,6 @@ public sealed class SlmpClientGuardTests
     [Theory]
     [InlineData(SlmpPlcProfile.QCpu, "melsec:qcpu")]
     [InlineData(SlmpPlcProfile.QnU, "melsec:qnu")]
-    [InlineData(SlmpPlcProfile.QnUDV, "melsec:qnudv")]
     public async Task WriteBlockAsync_RejectsQSeriesProfiles(SlmpPlcProfile profile, string profileText)
     {
         using var client = new SlmpClient("127.0.0.1", profile);
@@ -881,16 +1005,11 @@ public sealed class SlmpClientGuardTests
                 using var stream = client.GetStream();
                 while (_responses.Count > 0)
                 {
-                    var head = await ReadExactAsync(stream, 13).ConfigureAwait(false);
-                    var bodyLength = BinaryPrimitives.ReadUInt16LittleEndian(head.AsSpan(11, 2));
-                    var body = await ReadExactAsync(stream, bodyLength).ConfigureAwait(false);
-                    var request = new byte[head.Length + body.Length];
-                    head.CopyTo(request, 0);
-                    body.CopyTo(request, head.Length);
+                    var request = await ReadRequestFrameAsync(stream).ConfigureAwait(false);
                     RequestFrames.Add(request);
 
                     var (endCode, responseData) = _responses.Dequeue();
-                    var response = Build4EResponse(request, responseData, endCode);
+                    var response = BuildResponse(request, responseData, endCode);
                     await stream.WriteAsync(response).ConfigureAwait(false);
                     await stream.FlushAsync().ConfigureAwait(false);
                 }
@@ -902,6 +1021,38 @@ public sealed class SlmpClientGuardTests
             {
             }
         }
+
+        private static async Task<byte[]> ReadRequestFrameAsync(NetworkStream stream)
+        {
+            var head = await ReadExactAsync(stream, 2).ConfigureAwait(false);
+            if (head[0] == 0x54 && head[1] == 0x00)
+            {
+                var rest = await ReadExactAsync(stream, 11).ConfigureAwait(false);
+                var header = head.Concat(rest).ToArray();
+                var bodyLength = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(11, 2));
+                var body = await ReadExactAsync(stream, bodyLength).ConfigureAwait(false);
+                return header.Concat(body).ToArray();
+            }
+
+            if (head[0] == 0x50 && head[1] == 0x00)
+            {
+                var rest = await ReadExactAsync(stream, 7).ConfigureAwait(false);
+                var header = head.Concat(rest).ToArray();
+                var bodyLength = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(7, 2));
+                var body = await ReadExactAsync(stream, bodyLength).ConfigureAwait(false);
+                return header.Concat(body).ToArray();
+            }
+
+            throw new IOException("Unexpected SLMP request subheader.");
+        }
+
+        private static byte[] BuildResponse(ReadOnlySpan<byte> request, ReadOnlySpan<byte> responseData, ushort endCode)
+            => request[0] switch
+            {
+                0x54 => Build4EResponse(request, responseData, endCode),
+                0x50 => Build3EResponse(request, responseData, endCode),
+                _ => throw new IOException("Unexpected SLMP request subheader."),
+            };
 
         private static byte[] Build4EResponse(ReadOnlySpan<byte> request, ReadOnlySpan<byte> responseData, ushort endCode)
         {
@@ -916,6 +1067,21 @@ public sealed class SlmpClientGuardTests
             request.Slice(6, 5).CopyTo(response.AsSpan(6));
             BinaryPrimitives.WriteUInt16LittleEndian(response.AsSpan(11, 2), checked((ushort)payload.Length));
             payload.CopyTo(response.AsSpan(13));
+            return response;
+        }
+
+        private static byte[] Build3EResponse(ReadOnlySpan<byte> request, ReadOnlySpan<byte> responseData, ushort endCode)
+        {
+            var payload = new byte[2 + responseData.Length];
+            BinaryPrimitives.WriteUInt16LittleEndian(payload, endCode);
+            responseData.CopyTo(payload.AsSpan(2));
+
+            var response = new byte[9 + payload.Length];
+            response[0] = 0xD0;
+            response[1] = 0x00;
+            request.Slice(2, 5).CopyTo(response.AsSpan(2));
+            BinaryPrimitives.WriteUInt16LittleEndian(response.AsSpan(7, 2), checked((ushort)payload.Length));
+            payload.CopyTo(response.AsSpan(9));
             return response;
         }
 

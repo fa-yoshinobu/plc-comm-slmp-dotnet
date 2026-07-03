@@ -24,7 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library: Routed long timer, long retentive timer, and long counter status reads through the dedicated long-state helper path instead of the normal bit-read path.
 - Library: Kept long counter contact and coil reads on the direct bit helper used by the long-state helper path.
 - Library: Added SLMP step relay `S` device parsing and read support.
-- Library: Rejected Read Block (`0x0406`) and Write Block (`0x1406`) for `melsec:qcpu`, `melsec:qnu`, and `melsec:qnudv` before transport; callers should use direct or random device commands for those profiles.
+- Library: Added built-in SLMP capability profiles from `plc-comm-slmp-profiles` v1.0.0 and `SlmpConnectionOptions.StrictProfile` (default `true`) so high-level APIs reject profile `blocked` / `unverified` features before transport.
+- Library: Added `SlmpProfileFeatureException` for profile guard failures with profile ID, feature key, state, evidence, and the `StrictProfile=false` bypass hint.
+- Library: Moved direct/random point limits to the capability table for defined profiles while preserving legacy fallback behavior for profiles without capability data such as `melsec:qcpu` and `melsec:qnu`.
+- Library: Enforced capability write policies independently of `StrictProfile`, including `X` as read-only for `melsec:iq-f` and `LCS` as read-only for iQ-R-compatible profiles.
+- Library: Kept the legacy Read Block (`0x0406`) and Write Block (`0x1406`) guard for `melsec:qcpu` and `melsec:qnu`; `melsec:lcpu` and `melsec:qnudv` now use the capability profile guard and can be intentionally sent with `StrictProfile=false`.
 - Library: Batched named plain-bit reads through random word-read only for `SM/X/Y/M/L/F/V/B/SB`; `TS/TC/STS/STC/CS/CC/DX/DY` stay on direct bit reads.
 - Docs: Documented the Q-series Read Block (`0x0406`) and Write Block (`0x1406`) profile guard in user profiles and gotchas.
 - Docs: Cleaned up obsolete maintainer notes and normalized the root TODO.
@@ -37,7 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library: Reject standalone `G` and `HG` device access, including random bit writes; callers must use qualified `Un\Gn` / `Un\HGn` routes.
 - Docs: Documented `S` as a read-only bit device in supported-register and gotcha guidance.
 - Tests: Added coverage for long-state helper routing, `S` write rejection, and standalone `G` / `HG` random bit write rejection.
-- Tests: Added guard coverage that Q-series profiles reject block read/write before transport.
+- Tests: Added canonical capability fixture comparison plus strict-profile coverage for qnudv/lcpu block/type-name guards, qnudv `StrictProfile=false`, iQ-F link-direct, iQ-F `U\G`, iQ-L HG, profile limits, and profile write policies.
+- Tests: Kept coverage that `melsec:qcpu` and `melsec:qnu` reject block read/write before transport through the legacy guard.
 - Tests: Added named-read planning coverage for random-word-safe plain bit families versus direct-bit-only families.
 
 ## [1.1.1] - 2026-06-29

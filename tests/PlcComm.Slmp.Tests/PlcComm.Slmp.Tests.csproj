@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <None Include="vectors\**" CopyToOutputDirectory="Always" />
+    <None Include="fixtures\**\*.json" CopyToOutputDirectory="Always" />
     <None Include="shared-spec\**\*.json" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
