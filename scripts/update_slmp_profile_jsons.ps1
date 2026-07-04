@@ -1,12 +1,13 @@
 param(
     [string]$Ref = $env:SLMP_PROFILES_REF,
+    [string]$SourceRoot = $env:SLMP_PROFILES_SOURCE_ROOT,
     [switch]$FailIfChanged
 )
 
 $ErrorActionPreference = "Stop"
 
 if ([string]::IsNullOrWhiteSpace($Ref)) {
-    $Ref = "v1.1.0"
+    $Ref = "v1.1.1"
 }
 
 $RawBase = "https://raw.githubusercontent.com/fa-yoshinobu/plc-comm-slmp-profiles/$Ref"
@@ -15,10 +16,16 @@ $Changed = New-Object System.Collections.Generic.List[string]
 
 function Get-CanonicalJson {
     param([string]$Path)
-    $uri = "$RawBase/$Path"
-    Write-Host "[profiles] downloading $uri"
-    $response = Invoke-WebRequest -UseBasicParsing -Uri $uri
-    $content = [string]$response.Content
+    if (-not [string]::IsNullOrWhiteSpace($SourceRoot)) {
+        $sourcePath = Join-Path $SourceRoot $Path
+        Write-Host "[profiles] reading $sourcePath"
+        $content = [System.IO.File]::ReadAllText($sourcePath)
+    } else {
+        $uri = "$RawBase/$Path"
+        Write-Host "[profiles] downloading $uri"
+        $response = Invoke-WebRequest -UseBasicParsing -Uri $uri
+        $content = [string]$response.Content
+    }
     $null = $content | ConvertFrom-Json
     return $content
 }

@@ -145,7 +145,8 @@
       },
       "write_policy": {
         "S": "read-only"
-      }
+      },
+      "display_name": "MELSEC iQ-R (built-in Ethernet)"
     },
     "melsec:iq-l": {
       "frame": "4E",
@@ -267,7 +268,8 @@
       },
       "write_policy": {
         "S": "read-only"
-      }
+      },
+      "display_name": "MELSEC iQ-L (built-in Ethernet)"
     },
     "melsec:mx-r": {
       "frame": "4E",
@@ -389,7 +391,8 @@
       },
       "write_policy": {
         "S": "read-only"
-      }
+      },
+      "display_name": "MELSEC MX (R mode)"
     },
     "melsec:mx-f": {
       "frame": "4E",
@@ -511,7 +514,8 @@
       },
       "write_policy": {
         "S": "read-only"
-      }
+      },
+      "display_name": "MELSEC MX (F mode)"
     },
     "melsec:iq-f": {
       "frame": "3E",
@@ -623,7 +627,8 @@
       },
       "write_policy": {
         "S": "read-write"
-      }
+      },
+      "display_name": "MELSEC iQ-F / FX5 (built-in Ethernet)"
     },
     "melsec:qcpu": {
       "frame": "3E",
@@ -745,7 +750,8 @@
       },
       "write_policy": {
         "S": "read-only"
-      }
+      },
+      "display_name": "MELSEC Q (conservative baseline)"
     },
     "melsec:lcpu": {
       "frame": "3E",
@@ -867,7 +873,8 @@
       },
       "write_policy": {
         "S": "read-only"
-      }
+      },
+      "display_name": "MELSEC L (built-in Ethernet)"
     },
     "melsec:qnu": {
       "frame": "3E",
@@ -989,7 +996,8 @@
       },
       "write_policy": {
         "S": "read-only"
-      }
+      },
+      "display_name": "MELSEC QnU (built-in Ethernet)"
     },
     "melsec:qnudv": {
       "frame": "3E",
@@ -1111,7 +1119,8 @@
       },
       "write_policy": {
         "S": "read-only"
-      }
+      },
+      "display_name": "MELSEC QnUDV (built-in Ethernet)"
     }
   }
 }
