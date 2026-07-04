@@ -15,6 +15,9 @@
 | `WriteBitInWordAsync` | Sets or clears one bit in a word device. |
 | `PollAsync` | Repeats a named snapshot on an async interval. |
 | `SlmpAddress` | Parses, formats, and normalizes SLMP address text. |
+| `SlmpQualifiedDeviceParser` | Parses extended device text such as `U3\G100`, `U3E0\HG0`, and `J2\SW10`. |
+| `ReadWordsExtendedAsync` / `WriteWordsExtendedAsync` | Reads or writes routed `U...` / `J...` word devices. |
+| `ReadBitsExtendedAsync` / `WriteBitsExtendedAsync` | Reads or writes routed `U...` / `J...` bit devices. |
 
 ## Connection
 
@@ -82,6 +85,39 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
 ```
 
 Use the default target unless the PLC routing setup gives you specific values.
+
+## Extended device access
+
+`G`, `HG`, and `J` devices are not normal standalone addresses. Use the
+extended device APIs with a qualified address:
+
+| Address form | Meaning |
+| --- | --- |
+| `U3\G100` | Module access buffer memory `G100` on unit `U3`. |
+| `U3E0\HG0` | CPU buffer memory `HG0` on `U3E0`, when the selected profile supports it. |
+| `J2\SW10` | Link direct `SW10` on J network `2`. |
+| `J1\X10` | Link direct `X10` on J network `1`. |
+
+The selected PLC profile and the actual PLC configuration still decide whether
+the route is accepted.
+
+```csharp
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
+var ext = new SlmpExtensionSpec();
+
+var module = SlmpQualifiedDeviceParser.Parse(@"U3\G100");
+ushort[] moduleWords = await client.ReadWordsExtendedAsync(module, 4, ext);
+await client.WriteWordsExtendedAsync(module, new ushort[] { 1, 2, 3, 4 }, ext);
+
+var cpuBuffer = SlmpQualifiedDeviceParser.Parse(@"U3E0\HG0");
+ushort[] cpuBufferWords = await client.ReadWordsExtendedAsync(cpuBuffer, 2, ext);
+
+var linkWord = SlmpQualifiedDeviceParser.Parse(@"J2\SW10");
+ushort[] linkWords = await client.ReadWordsExtendedAsync(linkWord, 1, ext);
+
+var linkBits = SlmpQualifiedDeviceParser.Parse(@"J1\X10");
+bool[] bits = await client.ReadBitsExtendedAsync(linkBits, 16, ext);
+```
 
 ## SLMP response end codes
 
