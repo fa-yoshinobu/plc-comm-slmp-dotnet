@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "date": "2026-07-03",
+  "date": "2026-07-04",
   "scope": "builtin-ethernet-port",
   "description": "Canonical PLC model profile definitions for the SLMP library family. Generated from evidence/profile-definitions.",
   "policy": {
@@ -15,10 +15,10 @@
   },
   "evidence_files": {
     "melsec:iq-r": "evidence/profile-definitions/iq-r_slmp_profile_definition_20260703.md",
-    "melsec:iq-l": "evidence/profile-definitions/iql_slmp_profile_definition_20260703.md",
+    "melsec:iq-l": "evidence/profile-definitions/iq-l_slmp_profile_definition_20260703.md",
     "melsec:mx-r": "evidence/profile-definitions/mx-r_slmp_profile_definition_20260703.md",
     "melsec:mx-f": "evidence/profile-definitions/mx-f_slmp_profile_definition_20260703.md",
-    "melsec:iq-f": "evidence/profile-definitions/iqf_slmp_profile_definition_20260703.md",
+    "melsec:iq-f": "evidence/profile-definitions/iq-f_slmp_profile_definition_20260703.md",
     "melsec:qcpu": "evidence/profile-definitions/qcpu_slmp_profile_definition_20260703.md",
     "melsec:lcpu": "evidence/profile-definitions/lcpu_slmp_profile_definition_20260703.md",
     "melsec:qnu": "evidence/profile-definitions/qnu_slmp_profile_definition_20260703.md",
@@ -117,6 +117,27 @@
           "over_end_code": "C053"
         },
         "monitor_register_word": {
+          "source": "live",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "live",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "live",
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054"
+        },
+        "random_write_bit_ext": {
+          "source": "live",
+          "max": 94,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
           "source": "live",
           "max": 96,
           "over_end_code": "C054"
@@ -221,6 +242,27 @@
           "source": "live",
           "max": 96,
           "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "live",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "live",
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054"
+        },
+        "random_write_bit_ext": {
+          "source": "live",
+          "max": 94,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "live",
+          "max": 96,
+          "over_end_code": "C054"
         }
       },
       "write_policy": {
@@ -319,6 +361,27 @@
           "over_end_code": "C053"
         },
         "monitor_register_word": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "inferred",
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054"
+        },
+        "random_write_bit_ext": {
+          "source": "inferred",
+          "max": 94,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
           "source": "inferred",
           "max": 96,
           "over_end_code": "C054"
@@ -423,6 +486,27 @@
           "source": "inferred",
           "max": 96,
           "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "inferred",
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054"
+        },
+        "random_write_bit_ext": {
+          "source": "inferred",
+          "max": 94,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
         }
       },
       "write_policy": {
@@ -519,6 +603,22 @@
           "source": "live",
           "max": 188,
           "over_end_code": "C053"
+        },
+        "random_read_word_ext": {
+          "source": "live",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "live",
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054"
+        },
+        "random_write_bit_ext": {
+          "source": "live",
+          "max": 94,
+          "over_end_code": "C053"
         }
       },
       "write_policy": {
@@ -535,7 +635,7 @@
         "ext_bit": "0081"
       },
       "verified_models": [
-        "Unconfirmed"
+        "No built-in Ethernet CPU target (QnU-derived conservative baseline)"
       ],
       "features": {
         "type_name": {
@@ -619,6 +719,27 @@
         "monitor_register_word": {
           "source": "inferred",
           "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "inferred",
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054"
+        },
+        "random_write_bit_ext": {
+          "source": "inferred",
+          "max": 94,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "inferred",
+          "max": 96,
           "over_end_code": "C054"
         }
       },
@@ -721,6 +842,27 @@
           "source": "live",
           "max": 192,
           "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "inferred",
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054"
+        },
+        "random_write_bit_ext": {
+          "source": "inferred",
+          "max": 94,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
         }
       },
       "write_policy": {
@@ -822,6 +964,27 @@
           "source": "live",
           "max": 192,
           "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "inferred",
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054"
+        },
+        "random_write_bit_ext": {
+          "source": "inferred",
+          "max": 94,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
         }
       },
       "write_policy": {
@@ -922,6 +1085,27 @@
         "monitor_register_word": {
           "source": "live",
           "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "inferred",
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054"
+        },
+        "random_write_bit_ext": {
+          "source": "inferred",
+          "max": 94,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "inferred",
+          "max": 96,
           "over_end_code": "C054"
         }
       },

@@ -606,17 +606,23 @@ public sealed class SlmpClientGuardTests
     public async Task WriteRandomWordsExtAsync_ProfileLimitsDoNotRelaxExtendedWeightedLimit()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpu);
-        var entries = Enumerable.Range(0, 81)
+        var wordEntries = Enumerable.Range(0, 40)
             .Select(index => (
                 new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index), null),
                 (ushort)index,
                 new SlmpExtensionSpec()))
             .ToArray();
+        var dwordEntries = Enumerable.Range(0, 40)
+            .Select(index => (
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(200 + (index * 2))), null),
+                (uint)index,
+                new SlmpExtensionSpec()))
+            .ToArray();
 
         var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.WriteRandomWordsExtAsync(
-                entries,
-                Array.Empty<(SlmpQualifiedDeviceAddress Device, uint Value, SlmpExtensionSpec Extension)>()));
+                wordEntries,
+                dwordEntries));
         Assert.Contains("limit=960", ex.Message);
     }
 

@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library: Exposed structured PLC error information on `SlmpError.ErrorInfo` when a non-zero end-code response carries the 9-byte error information block.
 - Library: Enforced documented point limits before transport: iQ-F direct bit access is limited to 3584 points, and 008x extended random/monitor routes use the 96-point / weighted-960 / 94-bit limits.
 - Library: Routed long timer, long retentive timer, and long counter status reads through the dedicated long-state helper path instead of the normal bit-read path.
+- Tooling: Changed the canonical profile update script default ref from `v1.0.0` to `v1.1.0`.
 - Library: Kept long counter contact and coil reads on the direct bit helper used by the long-state helper path.
 - Library: Added SLMP step relay `S` device parsing and read support.
 - Library: Added built-in SLMP capability profiles from `plc-comm-slmp-profiles` v1.0.0 and `SlmpConnectionOptions.StrictProfile` (default `true`) so high-level APIs reject profile `blocked` / `unverified` features before transport.
