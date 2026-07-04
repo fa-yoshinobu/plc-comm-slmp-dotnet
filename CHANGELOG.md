@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Samples: Added read-only multi-PLC monitoring and JSON config polling recipes with independent reconnect loops, dry-run validation, and long-form CSV output.
 - Docs: Added generated .NET API reference from the public assembly surface and XML documentation comments, with CI freshness validation.
 - Library: Added non-breaking SLMP specification-audit updates for manual-conformant request framing, point-limit guards, response correlation, and PLC error diagnostics.
 - Library: Exposed structured PLC error information on `SlmpError.ErrorInfo` when a non-zero end-code response carries the 9-byte error information block.

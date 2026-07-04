@@ -1,0 +1,46 @@
+{
+  "defaults": {
+    "transport": "udp",
+    "port": 1035,
+    "timeout": 3.0,
+    "interval": 1.0
+  },
+  "cycles": 3,
+  "initial_backoff": 1.0,
+  "max_backoff": 30.0,
+  "output": {
+    "csv": "config_polling_output.csv"
+  },
+  "plcs": [
+    {
+      "name": "line-a",
+      "host": "192.168.250.100",
+      "plc_profile": "melsec:iq-r",
+      "tags": [
+        {
+          "name": "d100",
+          "address": "D100:U"
+        },
+        {
+          "name": "d200_float",
+          "address": "D200:F"
+        }
+      ]
+    },
+    {
+      "name": "line-b",
+      "host": "192.168.250.101",
+      "plc_profile": "melsec:iq-r",
+      "tags": [
+        {
+          "name": "d100",
+          "address": "D100:U"
+        },
+        {
+          "name": "status_bit",
+          "address": "M1000:BIT"
+        }
+      ]
+    }
+  ]
+}
