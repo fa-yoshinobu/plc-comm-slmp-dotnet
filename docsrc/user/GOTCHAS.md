@@ -1,256 +1,97 @@
 # Gotchas
 
-## LTN/LSTN/LCN/LZ returns wrong values
+Use this page as a short symptom index. For PLC response codes, use the shared
+[SLMP Troubleshooting & End Codes](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/troubleshooting-end-codes/)
+page. For profile limits and device availability, use the shared
+[SLMP Profile Parameters](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/parameters/)
+page.
 
-| Item | Detail |
-| --- | --- |
-| Symptom | Long timer, long counter, or long index values look truncated or shifted. |
-| Root cause | `LTN`, `LSTN`, `LCN`, and `LZ` are 32-bit logical families. |
-| Fix | Use `:D` or `:L` in named addresses, or pass `D` or `L` to `ReadTypedAsync`. |
+## Connection fails or times out
+
+| Symptom | Root cause | Fix |
+| --- | --- | --- |
+| `OpenAndConnectAsync` cannot open the PLC connection. | Host, port, transport, PLC Ethernet setting, or network route is wrong. | Check the PLC setup first. Built-in Ethernet examples use TCP `192.168.250.100:1025`; use UDP only when the PLC port is configured for UDP. |
+
+## Connection opens but every request returns an end code
+
+| Symptom | Root cause | Fix |
+| --- | --- | --- |
+| Simple reads such as `D100:U` connect but fail with an SLMP end code. | The selected `SlmpPlcProfile` does not match the PLC, or the PLC port data code does not match the library request format. | Select the canonical profile for the PLC and confirm the PLC Ethernet port is configured for binary SLMP. Use the shared end-code page for codes such as `C050`, `C059`, and `4031`. |
+
+## Reads work but writes fail
+
+| Symptom | Root cause | Fix |
+| --- | --- | --- |
+| Reads work, but writes are rejected. | PLC-side write permission during RUN, remote password state, or profile write policy blocks the write. | Check the PLC setup guide and the selected profile's write policy. `S` is read-only except on iQ-F profiles. |
+
+## Large requests fail with point-limit end codes
+
+| Symptom | Root cause | Fix |
+| --- | --- | --- |
+| A large read, write, random request, or monitor request fails with `C051`, `C052`, `C053`, or `C054`. | The request exceeds the selected profile's per-request point limit. | Split the request or use the chunked helper. Check the shared profile parameter table for the limit. |
 
 ```csharp
-using System;
-using PlcComm.Slmp;
-
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
-
-await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
-var value = await client.ReadTypedAsync("LTN0", "D");
-Console.WriteLine($"LTN0 = {value}");
+ushort[] words = await client.ReadWordsChunkedAsync("D1000", 2000, maxWordsPerRequest: 480);
 ```
 
-## LCS/LCC reads incorrect
+## Block commands are rejected on Q/L profiles
 
-| Item | Detail |
-| --- | --- |
-| Symptom | Long counter state reads do not match the expected contact or coil state. |
-| Root cause | `LCS` and `LCC` are state bits; they are not 16-bit word current values. |
-| Fix | Read them as bit values and let `WriteTypedAsync` / `WriteNamedAsync` route writes through random bit write. |
+| Symptom | Root cause | Fix |
+| --- | --- | --- |
+| `ReadBlockAsync` or `WriteBlockAsync` fails for `melsec:qcpu`, `melsec:qnu`, `melsec:qnudv`, or `melsec:lcpu`. | These profiles do not use block commands for normal high-level access. | Use normal direct/random read and write helpers. Disable strict profile only for deliberate compatibility investigation. |
+
+## Mixed word and bit write fails
+
+| Symptom | Root cause | Fix |
+| --- | --- | --- |
+| One write containing word values and bit values fails. | Some PLC paths reject mixed word and bit block writes. | Send word writes and bit writes as separate calls. |
 
 ```csharp
-using System;
-using PlcComm.Slmp;
-
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
-
-await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
-var state = await client.ReadTypedAsync("LCS0", "BIT");
-await client.WriteTypedAsync("LCC0", "BIT", true);
-Console.WriteLine($"LCS0 = {state}");
+await client.WriteNamedAsync(new Dictionary<string, object> { ["D9000:U"] = (ushort)1234 });
+await client.WriteNamedAsync(new Dictionary<string, object> { ["M9000:BIT"] = true });
 ```
 
-## LTS/LTC/LSTS/LSTC write rejected
+## iQ-F X/Y or DX/DY addresses fail
 
-| Item | Detail |
-| --- | --- |
-| Symptom | Writing a long timer contact or coil through a normal direct bit route is rejected. |
-| Root cause | Long timer state writes use SLMP random bit write, not ordinary direct bit write. |
-| Fix | Use `WriteTypedAsync` or `WriteNamedAsync` so the library selects the correct route. |
+| Symptom | Root cause | Fix |
+| --- | --- | --- |
+| `X`/`Y` points look shifted, or `DX`/`DY` is rejected on iQ-F. | iQ-F uses octal text for `X`/`Y`, and the iQ-F profile does not support `DX`/`DY`. | Parse and format addresses with `SlmpPlcProfile.IqF`; use `X` and `Y` on iQ-F. |
 
 ```csharp
-using System;
-using System.Collections.Generic;
-using PlcComm.Slmp;
-
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
-
-await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
-await client.WriteTypedAsync("LTC0", "BIT", true);
-var state = await client.ReadTypedAsync("LTC0", "BIT");
-Console.WriteLine($"LTC0 = {state}");
-```
-
-## S write rejected
-
-| Item | Detail |
-| --- | --- |
-| Symptom | `S10:BIT` can be read, but write routes reject it. |
-| Root cause | The selected profile marks step relay `S` as read-only. iQ-F profiles allow `S` writes. |
-| Fix | Follow the selected profile's write policy. |
-
-## G/HG fails
-
-| Item | Detail |
-| --- | --- |
-| Symptom | `G` or `HG` fails in the high-level typed or named API. |
-| Root cause | Module buffer memory is outside the public high-level device surface. |
-| Fix | Use low-level module-buffer APIs on the raw `SlmpClient` when you need module buffer access. |
-
-```csharp
-using System;
-using System.Threading.Tasks;
-using PlcComm.Slmp;
-
-await using var raw = new SlmpClient("192.168.250.100", SlmpPlcProfile.IqR, port: 1025);
-await raw.OpenAsync();
-
-var device = SlmpQualifiedDeviceParser.Parse(@"U3\G100");
-var extension = new SlmpExtensionSpec();
-ushort[] words = await raw.ReadWordsExtendedAsync(device, points: 4, extension);
-Console.WriteLine($"G100 words = {words.Length}");
-```
-
-## Mixed write fails
-
-| Item | Detail |
-| --- | --- |
-| Symptom | One mixed write containing word values and bit values fails. |
-| Root cause | Some PLCs reject mixed word and bit block writes. |
-| Fix | Send word writes and bit writes as separate calls. |
-
-## Q-series profiles reject block commands
-
-| Item | Detail |
-| --- | --- |
-| Symptom | `ReadBlockAsync` or `WriteBlockAsync` throws when the client is configured for `melsec:qcpu`, `melsec:qnu`, or `melsec:qnudv`. |
-| Root cause | These Q-series profiles do not use block access for normal high-level flows. |
-| Fix | Use direct or random device commands for those profiles. |
-
-```csharp
-using System;
-using PlcComm.Slmp;
-
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
-
-await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
-await client.WriteNamedAsync(new Dictionary<string, object>
-{
-    ["D9000:U"] = (ushort)1234,
-});
-await client.WriteNamedAsync(new Dictionary<string, object>
-{
-    ["M9000:BIT"] = true,
-});
-Console.WriteLine("Separated word and bit writes.");
-```
-
-## DX/DY fails on iQ-F
-
-| Item | Detail |
-| --- | --- |
-| Symptom | `DX` or `DY` is rejected when the selected profile is `SlmpPlcProfile.IqF`. |
-| Root cause | iQ-F profile rules do not support `DX` and `DY`. |
-| Fix | Use `X` and `Y` with the iQ-F profile. |
-
-```csharp
-using System;
-using PlcComm.Slmp;
-
 var parsed = SlmpAddress.Parse("X20", SlmpPlcProfile.IqF);
-Console.WriteLine(SlmpAddress.Format(parsed, SlmpPlcProfile.IqF));
 ```
 
-## All reads return end code
+## Long timer/counter/index values look wrong
 
-| Item | Detail |
-| --- | --- |
-| Symptom | The connection opens, but every read returns an SLMP end-code error. |
-| Root cause | The selected `SlmpPlcProfile` does not match the actual PLC hardware. |
-| Fix | Choose the profile that matches the PLC; the profile determines frame type and compatibility mode. |
+| Symptom | Root cause | Fix |
+| --- | --- | --- |
+| `LTN`, `LSTN`, `LCN`, or `LZ` looks truncated or shifted. | These current-value families are 32-bit values. | Use `:D` or `:L` in named addresses, or pass `D`/`L` to typed helpers. |
+| `LCS` or `LCC` behaves unlike a word value. | Long counter state devices are bits. | Read or write them as `BIT`. |
 
 ```csharp
-using System;
-using PlcComm.Slmp;
-
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
-
-await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
-Console.WriteLine($"{client.FrameType} {client.CompatibilityMode}");
+var values = await client.ReadNamedAsync(["LTN0:D", "LSTN0:L", "LCN0:D", "LZ0:L", "LCS0:BIT"]);
 ```
 
-## SlmpPlcProfile.Unspecified throws immediately
+## G/HG fails as a normal address
 
-| Item | Detail |
-| --- | --- |
-| Symptom | Creating connection options or resolving defaults with `SlmpPlcProfile.Unspecified` fails before any PLC request. |
-| Root cause | `Unspecified` is not a concrete PLC profile and cannot select frame type or compatibility mode. |
-| Fix | Use a concrete .NET selector such as `SlmpPlcProfile.IqR`. |
+| Symptom | Root cause | Fix |
+| --- | --- | --- |
+| `G` or `HG` fails in high-level typed or named access. | Module buffer memory is not a standalone normal device route. | Use qualified routed forms such as `U3\G100` through the low-level extended/module-buffer APIs. `HG` CPU-buffer access is profile-specific. |
 
-```csharp
-using System;
-using PlcComm.Slmp;
+## Missing or unspecified profile is rejected
 
-try
-{
-    _ = SlmpPlcProfiles.Resolve(SlmpPlcProfile.Unspecified);
-}
-catch (ArgumentOutOfRangeException)
-{
-    var defaults = SlmpPlcProfiles.Resolve(SlmpPlcProfile.IqR);
-    Console.WriteLine($"{defaults.FrameType} {defaults.CompatibilityMode}");
-}
-```
+| Symptom | Root cause | Fix |
+| --- | --- | --- |
+| `SlmpPlcProfile.Unspecified` fails before any PLC request. | There is no safe default PLC profile. | Select a concrete profile such as `SlmpPlcProfile.IqR`; the library does not auto-detect the model. |
 
-## Concurrent callers crash
+## Concurrent callers interleave responses
 
-| Item | Detail |
-| --- | --- |
-| Symptom | Multiple async callers using one raw `SlmpClient` cause overlapping requests or inconsistent responses. |
-| Root cause | Raw `SlmpClient` is not thread-safe for concurrent callers. |
-| Fix | Use the `QueuedSlmpClient` returned by `SlmpClientFactory.OpenAndConnectAsync`. |
+| Symptom | Root cause | Fix |
+| --- | --- | --- |
+| Multiple async callers using one raw `SlmpClient` produce overlapping requests or inconsistent responses. | A raw SLMP connection is one ordered frame stream. | Use the queued client returned by `SlmpClientFactory.OpenAndConnectAsync`. |
 
 ```csharp
-using System;
-using PlcComm.Slmp;
-
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
-
-await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var first = client.ReadTypedAsync("D100", "U");
 var second = client.ReadTypedAsync("D101", "U");
 var values = await Task.WhenAll(first, second);
-Console.WriteLine($"{values[0]}, {values[1]}");
-```
-
-## SlmpEndCodes.GetMessage returns null
-
-| Item | Detail |
-| --- | --- |
-| Symptom | Code that calls `SlmpEndCodes.GetMessage(endCode)` to display a human-readable error receives `null`. |
-| Root cause | The library no longer embeds localized SLMP end-code descriptions. |
-| Fix | Call `SlmpEndCodes.GetName(endCode)` to get a stable key such as `slmp_end_code_c201`, then look it up in an application-owned message catalog. |
-
-```csharp
-using System;
-using PlcComm.Slmp;
-
-ushort endCode = 0xC201;
-string key = SlmpEndCodes.GetName(endCode);
-// key == "slmp_end_code_c201"
-// Resolve the display text from your own resource file or dictionary.
-Console.WriteLine(key);
-```
-
-## X or Y addresses do not match an iQ-F manual
-
-| Item | Detail |
-| --- | --- |
-| Symptom | `X` or `Y` addresses look shifted on iQ-F. |
-| Root cause | iQ-F uses octal notation for `X` and `Y`; other supported profiles use hexadecimal. |
-| Fix | Parse or normalize `X` and `Y` with the explicit iQ-F profile. |
-
-```csharp
-using System;
-using PlcComm.Slmp;
-
-var address = SlmpAddress.Parse("Y217", SlmpPlcProfile.IqF);
-Console.WriteLine(SlmpAddress.Format(address, SlmpPlcProfile.IqF));
 ```

@@ -35,6 +35,30 @@ await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 Console.WriteLine($"{client.FrameType} {client.CompatibilityMode}");
 ```
 
+## Routing / target station
+
+Most applications keep the default target, which means the directly connected
+own station/control CPU. Change the target only when your PLC network is
+configured for another station, multi-CPU module I/O, or multidrop access.
+
+`SlmpTargetAddress` controls the SLMP destination header. It is not a device
+family selector; routed devices such as `Un\Gn` and `Jn\...` still need their
+own address syntax.
+
+```csharp
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
+{
+    Port = 1025,
+    Target = new SlmpTargetAddress(
+        Network: 0x01,
+        Station: 0x02,
+        ModuleIo: 0x03FF,
+        Multidrop: 0x00),
+};
+```
+
+Use the default target unless the PLC routing setup gives you specific values.
+
 ## Read a single value
 
 | Type suffix | .NET value | PLC size |
