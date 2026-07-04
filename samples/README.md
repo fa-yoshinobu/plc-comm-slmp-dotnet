@@ -4,10 +4,12 @@ These projects show how to connect to a MELSEC PLC with one explicit `SlmpPlcPro
 
 ## How to run
 
-Use `192.168.250.100` and TCP port `1025` for the standard getting-started setup.
+Use `192.168.250.100` and TCP port `1025` for the standard getting-started setup. Use UDP port `1035` when you intentionally test cable-pull recovery.
 
 ```powershell
 dotnet run --project samples/PlcComm.Slmp.HighLevelSample -- 192.168.250.100 1025 melsec:iq-r
+dotnet run --project samples/PlcComm.Slmp.PollingReconnectSample -- 192.168.250.100 1025 melsec:iq-r D100 U 1
+dotnet run --project samples/PlcComm.Slmp.PollingReconnectSample -- 192.168.250.100 1035 melsec:iq-r D100 U 1 udp
 dotnet run --project samples/PlcComm.Slmp.QueuedSample -- 192.168.250.100 1025 melsec:iq-r 4 10
 dotnet run --project samples/PlcComm.Slmp.Cli -- connection-check --plc-profile melsec:iq-r --host 192.168.250.100 --port 1025
 ```
@@ -19,6 +21,7 @@ Use only test addresses that are safe for your PLC program before you run any wr
 | Project | Purpose | Notes |
 | --- | --- | --- |
 | [PlcComm.Slmp.HighLevelSample](PlcComm.Slmp.HighLevelSample/) | Walks through the main high-level APIs in one program. | Shows `SlmpClientFactory.OpenAndConnectAsync`, typed reads and writes, block reads, bit-in-word updates, named snapshots, and polling. |
+| [PlcComm.Slmp.PollingReconnectSample](PlcComm.Slmp.PollingReconnectSample/) | Read-only polling loop with automatic reconnect. | Logs `connected`, `lost`, `reconnecting`, and `recovered` transitions with exponential backoff. |
 | [PlcComm.Slmp.QueuedSample](PlcComm.Slmp.QueuedSample/) | Demonstrates one shared queued client across concurrent workers. | Uses `QueuedSlmpClient` returned by the factory so multiple tasks serialize access to one connection. |
 | [PlcComm.Slmp.Cli](PlcComm.Slmp.Cli/) | Provides command-line checks and operational probes. | Includes `connection-check` and `device-range-catalog` commands for profile-selected PLC sessions. |
 
@@ -31,7 +34,7 @@ Included examples:
 
 ## Notes
 
-- These two projects are the recommended user-facing examples.
+- The high-level, polling reconnect, and queued samples are the recommended user-facing examples.
 - The newer explicit APIs such as `SlmpClientFactory.OpenAndConnectAsync`,
   `ReadWordsSingleRequestAsync`, and `ReadWordsChunkedAsync` use the same
   queued-client and device-string model shown in these samples.

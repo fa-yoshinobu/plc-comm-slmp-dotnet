@@ -104,3 +104,8 @@ finally
 | First register read fails | Start with `D` word reads. Do not start with `G`, `HG`, `LTN`, or `LCN`. |
 | Several callers share one connection | Use `QueuedSlmpClient`, returned by `SlmpClientFactory.OpenAndConnectAsync`. Raw `SlmpClient` is not thread-safe for concurrent callers. |
 | Long timer or long counter values look wrong | See [Gotchas](GOTCHAS.md) before reading `LTN`, `LSTN`, `LCN`, or `LZ`. |
+
+## Next steps
+
+- Open the runnable samples: [samples README](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/tree/main/samples).
+- Continue with the [Usage guide](USAGE_GUIDE.md) and [Gotchas](GOTCHAS.md).
