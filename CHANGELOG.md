@@ -37,7 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docs: Removed duplicated SLMP supported-register and device-range user pages and linked users to the shared SLMP Profile Reference.
 - Docs: Added a Usage Guide example showing how to read `SlmpError.EndCode` and structured `ErrorInfo`.
 - Docs: Added Usage Guide examples for `U...` module access, `U...HG` CPU-buffer access, and `J...` link direct extended devices.
+- Docs: Removed the manual page-navigation block from Getting Started and rely on site navigation instead.
+- Docs: Moved shared SLMP gotcha items to the common troubleshooting page and kept Gotchas focused on .NET-specific behavior.
 - Docs: Slimmed Gotchas to library-specific items and moved shared setup/end-code symptoms to the PLC Setup Guide.
+- Docs: Standardized the Gotchas page structure with KV Host Link so library-specific caveats have the same destination across protocols.
 - Docs: Cleaned up obsolete maintainer notes and normalized the root TODO.
 - Release: Excluded maintainer-only files, scripts, and tests from generated source archives via `.gitattributes`.
 - Tooling: Changed the canonical profile update script default ref from `main` to fixed tag `v1.0.0`; `SLMP_PROFILES_REF` can still override it.

@@ -104,10 +104,3 @@ finally
 | First register read fails | Start with `D` word reads. Do not start with `G`, `HG`, `LTN`, or `LCN`. |
 | Several callers share one connection | Use `QueuedSlmpClient`, returned by `SlmpClientFactory.OpenAndConnectAsync`. Raw `SlmpClient` is not thread-safe for concurrent callers. |
 | Long timer or long counter values look wrong | See [Gotchas](GOTCHAS.md) before reading `LTN`, `LSTN`, `LCN`, or `LZ`. |
-
-## Next pages
-
-| Page | Link |
-| --- | --- |
-| Usage guide | [USAGE_GUIDE.md](USAGE_GUIDE.md) |
-| SLMP profile reference | [https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/) |
