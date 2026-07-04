@@ -88,15 +88,19 @@ finally
 
 1. Confirm the PLC is reachable at `192.168.250.100`.
 2. Confirm TCP port `1025` is enabled for SLMP.
-3. Confirm `SlmpPlcProfile.IqR` matches your actual PLC hardware, or change it to the correct profile.
-4. Confirm `D100` is a safe test register in your PLC program and restore the original value after a write.
-5. Confirm the read prints a value before you run a write.
+3. Confirm the PLC-side communication data code is Binary and the port/open setting matches your transport; see the [MELSEC SLMP PLC Setup Guide](https://fa-yoshinobu.github.io/plc-comm-docs-site/plc-setup/slmp/).
+4. Confirm PLC-side RUN-time write permission before running a write example where the PLC exposes that setting.
+5. Confirm `SlmpPlcProfile.IqR` matches your actual PLC hardware, or change it to the correct profile.
+6. Confirm `D100` is a safe test register in your PLC program and restore the original value after a write.
+7. Confirm the read prints a value before you run a write.
 
 ## If it does not work
 
 | Symptom | Check |
 | --- | --- |
 | Connection opens but every read returns an end code | `SlmpPlcProfile` must match the actual PLC hardware. The profile selects frame type and access mode. |
+| Connection opens but all requests fail | Confirm Binary communication data code in the PLC setup guide. |
+| Reads work but writes fail | Confirm RUN-time write permission in the PLC setup guide and the selected profile write policy. |
 | First register read fails | Start with `D` word reads. Do not start with `G`, `HG`, `LTN`, or `LCN`. |
 | Several callers share one connection | Use `QueuedSlmpClient`, returned by `SlmpClientFactory.OpenAndConnectAsync`. Raw `SlmpClient` is not thread-safe for concurrent callers. |
 | Long timer or long counter values look wrong | See [Gotchas](GOTCHAS.md) before reading `LTN`, `LSTN`, `LCN`, or `LZ`. |

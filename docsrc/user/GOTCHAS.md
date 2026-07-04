@@ -5,24 +5,27 @@ Use this page as a short symptom index. For PLC response codes, use the shared
 page. For profile limits and device availability, use the shared
 [SLMP Profile Parameters](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/parameters/)
 page.
+For PLC-side Ethernet settings, use the shared
+[MELSEC SLMP PLC Setup Guide](https://fa-yoshinobu.github.io/plc-comm-docs-site/plc-setup/slmp/).
+Check Binary communication data code, port/open settings, and RUN-time write permission there before debugging application code.
 
 ## Connection fails or times out
 
 | Symptom | Root cause | Fix |
 | --- | --- | --- |
-| `OpenAndConnectAsync` cannot open the PLC connection. | Host, port, transport, PLC Ethernet setting, or network route is wrong. | Check the PLC setup first. Built-in Ethernet examples use TCP `192.168.250.100:1025`; use UDP only when the PLC port is configured for UDP. |
+| `OpenAndConnectAsync` cannot open the PLC connection. | Host, port, transport, PLC Ethernet setting, or network route is wrong. | Check the PLC setup guide first. Built-in Ethernet examples use TCP `192.168.250.100:1025`; use UDP only when the PLC port is configured for UDP. |
 
 ## Connection opens but every request returns an end code
 
 | Symptom | Root cause | Fix |
 | --- | --- | --- |
-| Simple reads such as `D100:U` connect but fail with an SLMP end code. | The selected `SlmpPlcProfile` does not match the PLC, or the PLC port data code does not match the library request format. | Select the canonical profile for the PLC and confirm the PLC Ethernet port is configured for binary SLMP. Use the shared end-code page for codes such as `C050`, `C059`, and `4031`. |
+| Simple reads such as `D100:U` connect but fail with an SLMP end code. | The selected `SlmpPlcProfile` does not match the PLC, or the PLC port data code does not match the library request format. | Select the canonical profile for the PLC and confirm the PLC Ethernet port is configured for Binary SLMP. Use the shared end-code page for codes such as `C050`, `C059`, and `4031`. |
 
 ## Reads work but writes fail
 
 | Symptom | Root cause | Fix |
 | --- | --- | --- |
-| Reads work, but writes are rejected. | PLC-side write permission during RUN, remote password state, or profile write policy blocks the write. | Check the PLC setup guide and the selected profile's write policy. `S` is read-only except on iQ-F profiles. |
+| Reads work, but writes are rejected. | PLC-side write permission during RUN, remote password state, or profile write policy blocks the write. | Check RUN-time write permission in the PLC setup guide and the selected profile's write policy. `S` is read-only except on iQ-F profiles. |
 
 ## Large requests fail with point-limit end codes
 

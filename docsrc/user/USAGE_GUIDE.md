@@ -35,6 +35,30 @@ await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 Console.WriteLine($"{client.FrameType} {client.CompatibilityMode}");
 ```
 
+## Remote password
+
+Remote password lock/unlock commands are available on the underlying `SlmpClient`.
+The .NET high-level connection does not automatically unlock or lock a remote password.
+If your PLC route uses remote password protection, unlock after opening the connection
+and lock before closing it.
+
+```csharp
+await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
+await client.ExecuteAsync(inner => inner.RemotePasswordUnlockAsync("secret"));
+try
+{
+    var value = await client.ReadTypedAsync("D100", "U");
+}
+finally
+{
+    await client.ExecuteAsync(inner => inner.RemotePasswordLockAsync("secret"));
+}
+```
+
+For `C200`-series password end codes, see the shared
+[SLMP Troubleshooting & End Codes](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/troubleshooting-end-codes/)
+page.
+
 ## Routing / target station
 
 Most applications keep the default target, which means the directly connected
