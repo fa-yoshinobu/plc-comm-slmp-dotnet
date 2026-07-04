@@ -14,7 +14,7 @@ The maintained profile table is in [PLC profiles](docsrc/user/PROFILES.md). Choo
 
 ## Supported device types
 
-The maintained device and range tables are in [Supported registers](docsrc/user/SUPPORTED_REGISTERS.md). Use that page for supported device families, address syntax, and profile-specific notes.
+The maintained device and range tables are in the [SLMP Profile Reference](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/). Use that page for supported device families, address syntax, and profile-specific notes.
 
 ## Installation
 
@@ -41,7 +41,7 @@ Console.WriteLine($"D100 = {value}");
 | [Full documentation site](https://fa-yoshinobu.github.io/plc-comm-docs-site/) | Unified docs for all PLC communication libraries. |
 | [Getting started](docsrc/user/GETTING_STARTED.md) | Install the package, connect to your PLC, and run your first SLMP read/write. |
 | [Usage guide](docsrc/user/USAGE_GUIDE.md) | Use the high-level API and common SLMP workflows. |
-| [Supported registers](docsrc/user/SUPPORTED_REGISTERS.md) | Check supported device families, address syntax, and numbering rules. |
+| [SLMP profile reference](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/) | Check profile parameters, device families, address syntax, and numbering rules. |
 | [PLC profiles](docsrc/user/PROFILES.md) | Choose the canonical MELSEC profile and frame behavior. |
 | [Examples](samples/README.md) | Run maintained .NET samples. |
 

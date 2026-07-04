@@ -56,7 +56,7 @@ finally
 ```
 
 For `C200`-series password end codes, see the shared
-[SLMP Troubleshooting & End Codes](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/troubleshooting-end-codes/)
+[SLMP Troubleshooting & End Codes](https://fa-yoshinobu.github.io/plc-comm-docs-site/plc-setup/slmp/troubleshooting-end-codes/)
 page.
 
 ## Routing / target station
@@ -82,6 +82,29 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
 ```
 
 Use the default target unless the PLC routing setup gives you specific values.
+
+## SLMP response end codes
+
+When the PLC returns a non-zero SLMP end code, the high-level APIs throw `SlmpError`.
+Read `EndCode` for the PLC response code and `ErrorInfo` when the PLC returned the structured error-information block.
+
+```csharp
+try
+{
+    var value = await client.ReadTypedAsync("D100", "U");
+    Console.WriteLine($"D100={value}");
+}
+catch (SlmpError ex) when (ex.EndCode is ushort endCode)
+{
+    Console.WriteLine($"SLMP end_code=0x{endCode:X4}");
+
+    if (ex.ErrorInfo is not null)
+    {
+        Console.WriteLine($"command=0x{ex.ErrorInfo.Command:X4}");
+        Console.WriteLine($"subcommand=0x{ex.ErrorInfo.Subcommand:X4}");
+    }
+}
+```
 
 ## Read a single value
 
@@ -224,6 +247,7 @@ await foreach (var snapshot in client.PollAsync(["D100:U", "D200:F", "D50.3"], T
 ## Device range catalog
 
 `ReadDeviceRangeCatalogAsync` reads live device range bounds from your PLC after you connect with an explicit PLC profile. It does not auto-discover the profile.
+The source rules for this catalog are maintained in the shared [SLMP device ranges](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/device-ranges/) reference.
 
 ```csharp
 using System;
