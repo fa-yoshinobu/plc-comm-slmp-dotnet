@@ -33,6 +33,10 @@ internal enum SlmpProfileLimit
     RandomWriteWord,
     RandomWriteBit,
     MonitorRegisterWord,
+    RandomReadWordExt,
+    RandomWriteWordExt,
+    RandomWriteBitExt,
+    MonitorRegisterWordExt,
 }
 
 internal sealed record SlmpCapabilityFeature(
@@ -59,7 +63,7 @@ internal sealed record SlmpCapabilityProfile(
 internal static class SlmpCapabilityProfiles
 {
     internal const string CanonicalSource =
-        "plc-comm-slmp-profiles v1.0.0 capability/slmp_builtin_ethernet_profiles.json";
+        "plc-comm-slmp-profiles v1.1.0 capability/slmp_builtin_ethernet_profiles.json";
 
     private static readonly Dictionary<SlmpPlcProfile, SlmpCapabilityProfile> Profiles =
         new Dictionary<SlmpPlcProfile, SlmpCapabilityProfile>
@@ -215,6 +219,10 @@ internal static class SlmpCapabilityProfiles
             SlmpProfileLimit.RandomWriteWord => "random_write_word",
             SlmpProfileLimit.RandomWriteBit => "random_write_bit",
             SlmpProfileLimit.MonitorRegisterWord => "monitor_register_word",
+            SlmpProfileLimit.RandomReadWordExt => "random_read_word_ext",
+            SlmpProfileLimit.RandomWriteWordExt => "random_write_word_ext",
+            SlmpProfileLimit.RandomWriteBitExt => "random_write_bit_ext",
+            SlmpProfileLimit.MonitorRegisterWordExt => "monitor_register_word_ext",
             _ => throw new ArgumentOutOfRangeException(nameof(limit), limit, "Unsupported profile limit."),
         };
 
@@ -281,7 +289,11 @@ internal static class SlmpCapabilityProfiles
             (SlmpProfileLimit.RandomReadWord, 96, "C054", "live", null, null),
             (SlmpProfileLimit.RandomWriteWord, 80, "C054", "live", 960, null),
             (SlmpProfileLimit.RandomWriteBit, 94, "C053", "live", null, null),
-            (SlmpProfileLimit.MonitorRegisterWord, 96, "C054", "live", null, null));
+            (SlmpProfileLimit.MonitorRegisterWord, 96, "C054", "live", null, null),
+            (SlmpProfileLimit.RandomReadWordExt, 96, "C054", "live", null, null),
+            (SlmpProfileLimit.RandomWriteWordExt, 80, "C054", "live", 960, null),
+            (SlmpProfileLimit.RandomWriteBitExt, 94, "C053", "live", null, null),
+            (SlmpProfileLimit.MonitorRegisterWordExt, 96, "C054", "live", null, null));
 
     private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> IqlMxLimits()
         => Limits(
@@ -292,7 +304,11 @@ internal static class SlmpCapabilityProfiles
             (SlmpProfileLimit.RandomReadWord, 96, "C054", "live", null, null),
             (SlmpProfileLimit.RandomWriteWord, 80, "C054", "live", 960, null),
             (SlmpProfileLimit.RandomWriteBit, 94, "C053", "live", null, null),
-            (SlmpProfileLimit.MonitorRegisterWord, 96, "C054", "live", null, null));
+            (SlmpProfileLimit.MonitorRegisterWord, 96, "C054", "live", null, null),
+            (SlmpProfileLimit.RandomReadWordExt, 96, "C054", "live", null, null),
+            (SlmpProfileLimit.RandomWriteWordExt, 80, "C054", "live", 960, null),
+            (SlmpProfileLimit.RandomWriteBitExt, 94, "C053", "live", null, null),
+            (SlmpProfileLimit.MonitorRegisterWordExt, 96, "C054", "live", null, null));
 
     private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> IqFLimits()
         => Limits(
@@ -302,7 +318,10 @@ internal static class SlmpCapabilityProfiles
             (SlmpProfileLimit.DirectBitWrite, 3584, "C052", "live", null, null),
             (SlmpProfileLimit.RandomReadWord, 192, "C054", "live", null, null),
             (SlmpProfileLimit.RandomWriteWord, 160, "C054", "live", 1920, null),
-            (SlmpProfileLimit.RandomWriteBit, 188, "C053", "live", null, null));
+            (SlmpProfileLimit.RandomWriteBit, 188, "C053", "live", null, null),
+            (SlmpProfileLimit.RandomReadWordExt, 96, "C054", "live", null, null),
+            (SlmpProfileLimit.RandomWriteWordExt, 80, "C054", "live", 960, null),
+            (SlmpProfileLimit.RandomWriteBitExt, 94, "C053", "live", null, null));
 
     private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> QlLimits()
         => Limits(
@@ -313,7 +332,11 @@ internal static class SlmpCapabilityProfiles
             (SlmpProfileLimit.RandomReadWord, 192, "C054", "live", null, null),
             (SlmpProfileLimit.RandomWriteWord, 160, "C054", "live", 1920, null),
             (SlmpProfileLimit.RandomWriteBit, 188, "C053", "live", null, null),
-            (SlmpProfileLimit.MonitorRegisterWord, 192, "C054", "live", null, null));
+            (SlmpProfileLimit.MonitorRegisterWord, 192, "C054", "live", null, null),
+            (SlmpProfileLimit.RandomReadWordExt, 96, "C054", "inferred", null, null),
+            (SlmpProfileLimit.RandomWriteWordExt, 80, "C054", "inferred", 960, null),
+            (SlmpProfileLimit.RandomWriteBitExt, 94, "C053", "inferred", null, null),
+            (SlmpProfileLimit.MonitorRegisterWordExt, 96, "C054", "inferred", null, null));
 
     private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> Limits(
         params (SlmpProfileLimit Limit, int Max, string? OverEndCode, string Source, int? WeightedMax, string? Note)[] entries)

@@ -1723,9 +1723,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var total = wordPoints + dwordPoints;
         var fallbackLimit = extended || CompatibilityMode != SlmpCompatibilityMode.Legacy ? 96 : 192;
         var limit = fallbackLimit;
-        if (SlmpCapabilityProfiles.TryGetLimit(PlcProfile, limitKey, out var profileLimit))
+        if (SlmpCapabilityProfiles.TryGetLimit(PlcProfile, extended ? ExtendedLimitKey(limitKey) : limitKey, out var profileLimit))
         {
-            limit = extended ? Math.Min(profileLimit.Max, fallbackLimit) : profileLimit.Max;
+            limit = profileLimit.Max;
         }
         if (total < 1 || total > limit)
             throw new ArgumentOutOfRangeException(name, $"{name} total access points out of range (1..{limit}): word={wordPoints}, dword={dwordPoints}");
@@ -1738,9 +1738,10 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             throw new ArgumentOutOfRangeException(name, $"{name} word/dword access points out of range: word={wordPoints}, dword={dwordPoints}");
 
         var weighted = (wordPoints * 12) + (dwordPoints * 14);
-        if (SlmpCapabilityProfiles.TryGetLimit(PlcProfile, SlmpProfileLimit.RandomWriteWord, out var profileLimit))
+        var profileLimitKey = extended ? SlmpProfileLimit.RandomWriteWordExt : SlmpProfileLimit.RandomWriteWord;
+        if (SlmpCapabilityProfiles.TryGetLimit(PlcProfile, profileLimitKey, out var profileLimit))
         {
-            var countLimit = extended ? Math.Min(profileLimit.Max, 96) : profileLimit.Max;
+            var countLimit = profileLimit.Max;
             if (total > countLimit)
             {
                 throw new ArgumentOutOfRangeException(
@@ -1748,14 +1749,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                     $"{name} word/dword access points out of range (1..{countLimit}): word={wordPoints}, dword={dwordPoints}");
             }
 
-            var fallbackWeightedLimit = extended || CompatibilityMode != SlmpCompatibilityMode.Legacy ? 960 : 1920;
             int? weightedLimit = profileLimit.WeightedMax;
-            if (extended)
-            {
-                weightedLimit = profileLimit.WeightedMax is { } profileWeightedMax
-                    ? Math.Min(profileWeightedMax, fallbackWeightedLimit)
-                    : fallbackWeightedLimit;
-            }
 
             if (weightedLimit is { } effectiveWeightedLimit && weighted > effectiveWeightedLimit)
             {
@@ -1778,13 +1772,22 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         var fallbackLimit = extended || CompatibilityMode != SlmpCompatibilityMode.Legacy ? 94 : 188;
         var limit = fallbackLimit;
-        if (SlmpCapabilityProfiles.TryGetLimit(PlcProfile, SlmpProfileLimit.RandomWriteBit, out var profileLimit))
+        var profileLimitKey = extended ? SlmpProfileLimit.RandomWriteBitExt : SlmpProfileLimit.RandomWriteBit;
+        if (SlmpCapabilityProfiles.TryGetLimit(PlcProfile, profileLimitKey, out var profileLimit))
         {
-            limit = extended ? Math.Min(profileLimit.Max, fallbackLimit) : profileLimit.Max;
+            limit = profileLimit.Max;
         }
         if (points < 1 || points > limit)
             throw new ArgumentOutOfRangeException(name, $"{name} bit access points out of range (1..{limit}): {points}");
     }
+
+    private static SlmpProfileLimit ExtendedLimitKey(SlmpProfileLimit limitKey)
+        => limitKey switch
+        {
+            SlmpProfileLimit.RandomReadWord => SlmpProfileLimit.RandomReadWordExt,
+            SlmpProfileLimit.MonitorRegisterWord => SlmpProfileLimit.MonitorRegisterWordExt,
+            _ => throw new ArgumentOutOfRangeException(nameof(limitKey), limitKey, "Unsupported extended profile limit."),
+        };
 
     private void ValidateBlockReadLimits(IReadOnlyList<SlmpBlockRead> wordBlocks, IReadOnlyList<SlmpBlockRead> bitBlocks)
     {
