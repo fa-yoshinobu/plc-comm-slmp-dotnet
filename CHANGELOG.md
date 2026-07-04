@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Docs: Added generated .NET API reference from the public assembly surface and XML documentation comments, with CI freshness validation.
 - Library: Added non-breaking SLMP specification-audit updates for manual-conformant request framing, point-limit guards, response correlation, and PLC error diagnostics.
 - Library: Exposed structured PLC error information on `SlmpError.ErrorInfo` when a non-zero end-code response carries the 9-byte error information block.
 - Library: Enforced documented point limits before transport: iQ-F direct bit access is limited to 3584 points, and 008x extended random/monitor routes use the 96-point / weighted-960 / 94-bit limits.
