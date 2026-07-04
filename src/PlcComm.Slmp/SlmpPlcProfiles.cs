@@ -135,32 +135,32 @@ public static class SlmpPlcProfiles
         => profile == SlmpPlcProfile.Unspecified
             ? false
             : Resolve(profile).AddressProfile switch
-        {
-            SlmpPlcProfile.IqF => code is SlmpDeviceCode.DX
-                or SlmpDeviceCode.DY
-                or SlmpDeviceCode.V
-                or SlmpDeviceCode.LTS
-                or SlmpDeviceCode.LTC
-                or SlmpDeviceCode.LTN
-                or SlmpDeviceCode.LSTS
-                or SlmpDeviceCode.LSTC
-                or SlmpDeviceCode.LSTN
-                or SlmpDeviceCode.ZR
-                or SlmpDeviceCode.RD,
-            SlmpPlcProfile.QCpu
-                or SlmpPlcProfile.LCpu
-                or SlmpPlcProfile.QnU
-                or SlmpPlcProfile.QnUDV => code is SlmpDeviceCode.LTS
+            {
+                SlmpPlcProfile.IqF => code is SlmpDeviceCode.DX
+                    or SlmpDeviceCode.DY
+                    or SlmpDeviceCode.V
+                    or SlmpDeviceCode.LTS
                     or SlmpDeviceCode.LTC
                     or SlmpDeviceCode.LTN
                     or SlmpDeviceCode.LSTS
                     or SlmpDeviceCode.LSTC
                     or SlmpDeviceCode.LSTN
-                    or SlmpDeviceCode.LCS
-                    or SlmpDeviceCode.LCC
-                    or SlmpDeviceCode.LCN
-                    or SlmpDeviceCode.LZ
+                    or SlmpDeviceCode.ZR
                     or SlmpDeviceCode.RD,
-            _ => false,
-        };
+                SlmpPlcProfile.QCpu
+                    or SlmpPlcProfile.LCpu
+                    or SlmpPlcProfile.QnU
+                    or SlmpPlcProfile.QnUDV => code is SlmpDeviceCode.LTS
+                        or SlmpDeviceCode.LTC
+                        or SlmpDeviceCode.LTN
+                        or SlmpDeviceCode.LSTS
+                        or SlmpDeviceCode.LSTC
+                        or SlmpDeviceCode.LSTN
+                        or SlmpDeviceCode.LCS
+                        or SlmpDeviceCode.LCC
+                        or SlmpDeviceCode.LCN
+                        or SlmpDeviceCode.LZ
+                        or SlmpDeviceCode.RD,
+                _ => false,
+            };
 }
