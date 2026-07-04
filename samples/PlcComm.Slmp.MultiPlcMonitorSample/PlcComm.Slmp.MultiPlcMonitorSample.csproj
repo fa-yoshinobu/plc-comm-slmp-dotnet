@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PlcComm.Slmp\PlcComm.Slmp.csproj" />
+    <Compile Include="..\OperationalCommon\OperationalCommon.cs" Link="OperationalCommon.cs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);CA1305</NoWarn>
+    <AssemblyName>PlcComm.Slmp.MultiPlcMonitorSample</AssemblyName>
+    <Title>PlcComm.Slmp Multi-PLC Monitor Sample</Title>
+    <Description>Read-only multi-PLC monitoring sample with independent reconnect loops.</Description>
+  </PropertyGroup>
+
+</Project>

@@ -280,6 +280,28 @@ await foreach (var snapshot in client.PollAsync(["D100:U", "D200:F", "D50.3"], T
 }
 ```
 
+## Operational recipes
+
+The samples include two read-only operational recipes for applications that need
+repeatable collection rather than one-off reads:
+
+- `PlcComm.Slmp.MultiPlcMonitorSample` monitors multiple PLC endpoints at the
+  same time. Each PLC has its own task, connection, and reconnect loop, so one
+  offline PLC does not block the others.
+- `PlcComm.Slmp.ConfigPollingSample` runs periodic collection from a JSON
+  config file and can append long-form CSV rows as
+  `timestamp,plc,tag,value`.
+
+Both samples use the same reconnect states as the polling reconnect sample:
+`connected`, `lost`, `reconnecting`, and `recovered`, with 1 second initial
+backoff, exponential delay, and a 30 second default maximum. YAML config is
+available only in the Python sample; the .NET sample uses JSON.
+
+```powershell
+dotnet run --project samples/PlcComm.Slmp.MultiPlcMonitorSample -- --plc line-a=192.168.250.101,melsec:iq-r,1035,udp --plc line-b=192.168.250.100,melsec:iq-f,1025,tcp --tag d100=D100:U
+dotnet run --project samples/PlcComm.Slmp.ConfigPollingSample -- --config samples/PlcComm.Slmp.ConfigPollingSample/config_polling.example.json --dry-run
+```
+
 ## Device range catalog
 
 `ReadDeviceRangeCatalogAsync` reads live device range bounds from your PLC after you connect with an explicit PLC profile. It does not auto-discover the profile.

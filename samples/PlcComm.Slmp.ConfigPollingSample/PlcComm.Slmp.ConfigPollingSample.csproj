@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PlcComm.Slmp\PlcComm.Slmp.csproj" />
+    <Compile Include="..\OperationalCommon\OperationalCommon.cs" Link="OperationalCommon.cs" />
+    <None Include="config_polling.example.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);CA1305</NoWarn>
+    <AssemblyName>PlcComm.Slmp.ConfigPollingSample</AssemblyName>
+    <Title>PlcComm.Slmp Config Polling Sample</Title>
+    <Description>Read-only JSON-configured polling sample with long-form CSV output.</Description>
+  </PropertyGroup>
+
+</Project>
