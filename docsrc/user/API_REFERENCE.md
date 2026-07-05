@@ -4090,6 +4090,14 @@ public static string ToCanonicalString(SlmpPlcProfile profile)
 
 Return the canonical string form used in user-facing configuration.
 
+##### GetDisplayName
+
+```csharp
+public static string GetDisplayName(SlmpPlcProfile profile)
+```
+
+Return the canonical human-readable display name for a PLC profile.
+
 ##### Resolve
 
 ```csharp
