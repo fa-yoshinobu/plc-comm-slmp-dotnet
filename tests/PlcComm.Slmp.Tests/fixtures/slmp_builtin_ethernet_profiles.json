@@ -153,7 +153,7 @@
         "S": "read-only"
       },
       "scope": "builtin-ethernet-port",
-      "display_name": "MELSEC iQ-R (built-in Ethernet)"
+      "display_name": "MELSEC iQ-R (built-in)"
     },
     "melsec:iq-r:rj71en71": {
       "frame": "4E",
@@ -277,7 +277,7 @@
         "S": "read-only"
       },
       "scope": "ethernet-unit",
-      "display_name": "MELSEC iQ-R via RJ71EN71 (Ethernet unit)",
+      "display_name": "MELSEC iQ-R (RJ71EN71)",
       "base_profile": "melsec:iq-r"
     },
     "melsec:iq-l": {
@@ -402,7 +402,7 @@
         "S": "read-only"
       },
       "scope": "builtin-ethernet-port",
-      "display_name": "MELSEC iQ-L (built-in Ethernet)"
+      "display_name": "MELSEC iQ-L (built-in)"
     },
     "melsec:mx-r": {
       "frame": "4E",
@@ -526,7 +526,7 @@
         "S": "read-only"
       },
       "scope": "builtin-ethernet-port",
-      "display_name": "MELSEC MX-R (built-in Ethernet)",
+      "display_name": "MELSEC MX-R (built-in)",
       "base_profile": "melsec:iq-r"
     },
     "melsec:mx-f": {
@@ -651,7 +651,7 @@
         "S": "read-only"
       },
       "scope": "builtin-ethernet-port",
-      "display_name": "MELSEC MX-F (built-in Ethernet)",
+      "display_name": "MELSEC MX-F (built-in)",
       "base_profile": "melsec:iq-r"
     },
     "melsec:iq-f": {
@@ -766,7 +766,7 @@
         "S": "read-write"
       },
       "scope": "builtin-ethernet-port",
-      "display_name": "MELSEC iQ-F (built-in Ethernet)"
+      "display_name": "MELSEC iQ-F (built-in)"
     },
     "melsec:qcpu": {
       "frame": "3E",
@@ -869,7 +869,7 @@
         "S": "read-only"
       },
       "scope": "base-profile",
-      "display_name": "MELSEC-Q (conservative baseline)",
+      "display_name": "MELSEC-Q (base profile)",
       "base_profile": "melsec:qnu",
       "role": "base"
     },
@@ -996,7 +996,7 @@
       },
       "base_profile": "melsec:qcpu",
       "scope": "ethernet-unit",
-      "display_name": "MELSEC-Q via QJ71E71-100 (Ethernet unit)"
+      "display_name": "MELSEC-Q (QJ71E71-100)"
     },
     "melsec:lcpu": {
       "frame": "3E",
@@ -1099,7 +1099,7 @@
         "S": "read-only"
       },
       "scope": "builtin-ethernet-port",
-      "display_name": "MELSEC-L (built-in Ethernet)"
+      "display_name": "MELSEC-L (built-in)"
     },
     "melsec:lcpu:lj71e71-100": {
       "frame": "4E",
@@ -1219,7 +1219,7 @@
       },
       "base_profile": "melsec:lcpu",
       "scope": "ethernet-unit",
-      "display_name": "MELSEC-L via LJ71E71-100 (Ethernet unit)"
+      "display_name": "MELSEC-L (LJ71E71-100)"
     },
     "melsec:qnu": {
       "frame": "3E",
@@ -1322,7 +1322,7 @@
         "S": "read-only"
       },
       "scope": "builtin-ethernet-port",
-      "display_name": "MELSEC-QnU (built-in Ethernet)"
+      "display_name": "MELSEC QnU (built-in)"
     },
     "melsec:qnu:qj71e71-100": {
       "frame": "4E",
@@ -1447,7 +1447,7 @@
       },
       "base_profile": "melsec:qnu",
       "scope": "ethernet-unit",
-      "display_name": "MELSEC QnU via QJ71E71-100 (Ethernet unit)"
+      "display_name": "MELSEC QnU (QJ71E71-100)"
     },
     "melsec:qnudv": {
       "frame": "3E",
@@ -1550,7 +1550,7 @@
         "S": "read-only"
       },
       "scope": "builtin-ethernet-port",
-      "display_name": "MELSEC-QnUDV (built-in Ethernet)"
+      "display_name": "MELSEC QnUDV (built-in)"
     },
     "melsec:qnudv:qj71e71-100": {
       "frame": "4E",
@@ -1675,7 +1675,7 @@
       },
       "base_profile": "melsec:qnudv",
       "scope": "ethernet-unit",
-      "display_name": "MELSEC QnUDV via QJ71E71-100 (Ethernet unit)"
+      "display_name": "MELSEC QnUDV (QJ71E71-100)"
     }
   }
 }
