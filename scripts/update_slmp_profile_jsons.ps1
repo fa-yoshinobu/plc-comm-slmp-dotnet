@@ -40,12 +40,13 @@ function Write-IfChanged {
     if (-not (Test-Path -LiteralPath $parent)) {
         New-Item -ItemType Directory -Path $parent | Out-Null
     }
+    $normalizedContent = $Content.Replace("`r`n", "`n")
     $current = $null
     if (Test-Path -LiteralPath $fullPath) {
-        $current = [System.IO.File]::ReadAllText($fullPath)
+        $current = [System.IO.File]::ReadAllText($fullPath).Replace("`r`n", "`n")
     }
-    if ($current -ne $Content) {
-        [System.IO.File]::WriteAllText($fullPath, $Content, $Utf8NoBom)
+    if ($current -ne $normalizedContent) {
+        [System.IO.File]::WriteAllText($fullPath, $normalizedContent, $Utf8NoBom)
         $Changed.Add($Destination) | Out-Null
         Write-Host "[profiles] updated $Destination"
     } else {
