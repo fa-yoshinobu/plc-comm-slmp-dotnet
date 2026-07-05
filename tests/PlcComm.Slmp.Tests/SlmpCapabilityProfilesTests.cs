@@ -22,6 +22,9 @@ public sealed class SlmpCapabilityProfilesTests
             Assert.True(SlmpCapabilityProfiles.TryGetProfile(profile, out var actualProfile));
             var expectedProfile = expectedProfileProperty.Value;
 
+            Assert.Equal(
+                expectedProfile.GetProperty("display_name").GetString(),
+                SlmpPlcProfiles.GetDisplayName(profile));
             Assert.Equal(expectedProfile.GetProperty("frame").GetString(), actualProfile.Frame);
             Assert.Equal(expectedProfile.GetProperty("compat").GetString(), actualProfile.Compat);
 

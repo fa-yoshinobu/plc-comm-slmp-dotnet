@@ -108,6 +108,31 @@ public static class SlmpPlcProfiles
             _ => throw new ArgumentOutOfRangeException(nameof(profile), profile, "Unsupported PLC profile."),
         };
 
+    /// <summary>Return the canonical human-readable display name for a PLC profile.</summary>
+    public static string GetDisplayName(SlmpPlcProfile profile)
+        => profile switch
+        {
+            SlmpPlcProfile.IqF => "MELSEC iQ-F (built-in)",
+            SlmpPlcProfile.IqR => "MELSEC iQ-R (built-in)",
+            SlmpPlcProfile.IqRRj71En71 => "MELSEC iQ-R (RJ71EN71)",
+            SlmpPlcProfile.IqL => "MELSEC iQ-L (built-in)",
+            SlmpPlcProfile.MxF => "MELSEC MX-F (built-in)",
+            SlmpPlcProfile.MxR => "MELSEC MX-R (built-in)",
+            SlmpPlcProfile.QCpu => "MELSEC-Q (base profile)",
+            SlmpPlcProfile.QCpuQj71E71100 => "MELSEC-Q (QJ71E71-100)",
+            SlmpPlcProfile.LCpu => "MELSEC-L (built-in)",
+            SlmpPlcProfile.LCpuLj71E71100 => "MELSEC-L (LJ71E71-100)",
+            SlmpPlcProfile.QnU => "MELSEC QnU (built-in)",
+            SlmpPlcProfile.QnUQj71E71100 => "MELSEC QnU (QJ71E71-100)",
+            SlmpPlcProfile.QnUDV => "MELSEC QnUDV (built-in)",
+            SlmpPlcProfile.QnUDVQj71E71100 => "MELSEC QnUDV (QJ71E71-100)",
+            SlmpPlcProfile.Unspecified => throw new ArgumentOutOfRangeException(
+                nameof(profile),
+                profile,
+                $"PLC profile is required. Valid values: {ValidProfileText}."),
+            _ => throw new ArgumentOutOfRangeException(nameof(profile), profile, "Unsupported PLC profile."),
+        };
+
     /// <summary>Resolve the stable defaults for one explicit PLC profile.</summary>
     public static SlmpPlcProfileDefaults Resolve(SlmpPlcProfile profile)
         => profile switch
