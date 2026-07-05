@@ -18,7 +18,7 @@ public sealed class SlmpCapabilityProfilesTests
 
         foreach (var expectedProfileProperty in expectedProfiles.EnumerateObject())
         {
-            var profile = SlmpPlcProfiles.Parse(expectedProfileProperty.Name);
+            var profile = SlmpPlcProfiles.ParseKnownProfileId(expectedProfileProperty.Name);
             Assert.True(SlmpCapabilityProfiles.TryGetProfile(profile, out var actualProfile));
             var expectedProfile = expectedProfileProperty.Value;
 

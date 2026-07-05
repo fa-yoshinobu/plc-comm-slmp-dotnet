@@ -400,7 +400,13 @@ internal static class SlmpDeviceRangeResolver
 
     public static SlmpDeviceRangeProfile ResolveProfile(SlmpPlcProfile plcProfile)
     {
-        return Profiles[plcProfile];
+        var defaults = SlmpPlcProfiles.Resolve(plcProfile);
+        if (Profiles.TryGetValue(defaults.RangeProfile, out var selectedProfile))
+        {
+            return selectedProfile;
+        }
+
+        return Profiles[defaults.AddressProfile];
     }
 
     public static async Task<IReadOnlyDictionary<int, ushort>> ReadRegistersAsync(
@@ -470,7 +476,17 @@ internal static class SlmpDeviceRangeResolver
         SlmpPlcProfile plcProfile,
         IReadOnlyDictionary<int, ushort> registers)
     {
-        return BuildCatalog(ResolveProfile(plcProfile), registers);
+        var catalog = BuildCatalog(ResolveProfile(plcProfile), registers);
+        if (catalog.PlcProfile == plcProfile)
+        {
+            return catalog;
+        }
+
+        return catalog with
+        {
+            Model = GetProfileLabel(plcProfile),
+            PlcProfile = plcProfile,
+        };
     }
 
     internal static SlmpDeviceRangeCatalog ReplaceFixedPointCount(
@@ -508,14 +524,19 @@ internal static class SlmpDeviceRangeResolver
         return plcProfile switch
         {
             SlmpPlcProfile.IqR => "IQ-R",
+            SlmpPlcProfile.IqRRj71En71 => "iQ-R via RJ71EN71",
             SlmpPlcProfile.IqL => "iQ-L",
             SlmpPlcProfile.MxF => "MX-F",
             SlmpPlcProfile.MxR => "MX-R",
             SlmpPlcProfile.IqF => "IQ-F",
             SlmpPlcProfile.QCpu => "QCPU",
+            SlmpPlcProfile.QCpuQj71E71100 => "QCPU via QJ71E71-100",
             SlmpPlcProfile.LCpu => "LCPU",
+            SlmpPlcProfile.LCpuLj71E71100 => "LCPU via LJ71E71-100",
             SlmpPlcProfile.QnU => "QnU",
+            SlmpPlcProfile.QnUQj71E71100 => "QnU via QJ71E71-100",
             SlmpPlcProfile.QnUDV => "QnUDV",
+            SlmpPlcProfile.QnUDVQj71E71100 => "QnUDV via QJ71E71-100",
             _ => plcProfile.ToString(),
         };
     }

@@ -54,6 +54,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         SlmpTransportMode transportMode = SlmpTransportMode.Tcp,
         bool strictProfile = true)
     {
+        plcProfile = SlmpPlcProfiles.ValidateConnectionProfile(plcProfile);
         _host = host;
         _port = port;
         _transportMode = transportMode;
@@ -243,10 +244,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         SlmpDeviceRangeCatalog catalog,
         CancellationToken cancellationToken)
     {
-        if (catalog.PlcProfile is not (SlmpPlcProfile.QCpu or SlmpPlcProfile.LCpu or SlmpPlcProfile.QnU or SlmpPlcProfile.QnUDV))
+        var addressProfile = SlmpPlcProfiles.Resolve(catalog.PlcProfile).AddressProfile;
+        if (addressProfile is not (SlmpPlcProfile.QCpu or SlmpPlcProfile.LCpu or SlmpPlcProfile.QnU or SlmpPlcProfile.QnUDV))
             return catalog;
 
-        if (catalog.PlcProfile == SlmpPlcProfile.QCpu)
+        if (addressProfile == SlmpPlcProfile.QCpu)
         {
             var zCount = await CanReadWordAddressAsync(SlmpDeviceCode.Z, 15, cancellationToken).ConfigureAwait(false)
                 ? 16u

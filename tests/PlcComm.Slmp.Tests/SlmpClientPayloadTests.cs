@@ -47,7 +47,7 @@ public sealed class SlmpClientPayloadTests
     [Fact]
     public void EncodeExtendedDeviceSpec_RegularDevice_UsesManualExtendedLayout()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpu);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100);
         var device = new SlmpDeviceAddress(SlmpDeviceCode.D, 100);
 
         Assert.Equal(

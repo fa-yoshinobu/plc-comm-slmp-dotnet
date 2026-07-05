@@ -10,17 +10,24 @@ public sealed record SlmpPlcProfileDefaults(
 /// <summary>Fixed high-level defaults driven by <see cref="SlmpPlcProfile"/>.</summary>
 public static class SlmpPlcProfiles
 {
+    private const string QCpuBaseProfileMessage =
+        "melsec:qcpu is a base profile; use melsec:qcpu:qj71e71-100.";
+
     private static readonly string ValidProfileText = string.Join(", ", new[]
     {
         "melsec:iq-f",
         "melsec:iq-r",
+        "melsec:iq-r:rj71en71",
         "melsec:iq-l",
         "melsec:mx-f",
         "melsec:mx-r",
-        "melsec:qcpu",
+        "melsec:qcpu:qj71e71-100",
         "melsec:lcpu",
+        "melsec:lcpu:lj71e71-100",
         "melsec:qnu",
+        "melsec:qnu:qj71e71-100",
         "melsec:qnudv",
+        "melsec:qnudv:qj71e71-100",
     });
 
     /// <summary>Parse a canonical PLC profile string.</summary>
@@ -32,20 +39,49 @@ public static class SlmpPlcProfiles
         }
 
         var normalized = text.Trim();
+        if (string.Equals(normalized, "melsec:qcpu", StringComparison.Ordinal))
+        {
+            throw new ArgumentException(QCpuBaseProfileMessage, nameof(text));
+        }
+
         return normalized switch
         {
             "melsec:iq-f" => SlmpPlcProfile.IqF,
             "melsec:iq-r" => SlmpPlcProfile.IqR,
+            "melsec:iq-r:rj71en71" => SlmpPlcProfile.IqRRj71En71,
+            "melsec:iq-l" => SlmpPlcProfile.IqL,
+            "melsec:mx-f" => SlmpPlcProfile.MxF,
+            "melsec:mx-r" => SlmpPlcProfile.MxR,
+            "melsec:qcpu:qj71e71-100" => SlmpPlcProfile.QCpuQj71E71100,
+            "melsec:lcpu" => SlmpPlcProfile.LCpu,
+            "melsec:lcpu:lj71e71-100" => SlmpPlcProfile.LCpuLj71E71100,
+            "melsec:qnu" => SlmpPlcProfile.QnU,
+            "melsec:qnu:qj71e71-100" => SlmpPlcProfile.QnUQj71E71100,
+            "melsec:qnudv" => SlmpPlcProfile.QnUDV,
+            "melsec:qnudv:qj71e71-100" => SlmpPlcProfile.QnUDVQj71E71100,
+            _ => throw new ArgumentException($"Unsupported PLC profile '{text}'. Valid values: {ValidProfileText}.", nameof(text)),
+        };
+    }
+
+    internal static SlmpPlcProfile ParseKnownProfileId(string text)
+        => text switch
+        {
+            "melsec:iq-f" => SlmpPlcProfile.IqF,
+            "melsec:iq-r" => SlmpPlcProfile.IqR,
+            "melsec:iq-r:rj71en71" => SlmpPlcProfile.IqRRj71En71,
             "melsec:iq-l" => SlmpPlcProfile.IqL,
             "melsec:mx-f" => SlmpPlcProfile.MxF,
             "melsec:mx-r" => SlmpPlcProfile.MxR,
             "melsec:qcpu" => SlmpPlcProfile.QCpu,
+            "melsec:qcpu:qj71e71-100" => SlmpPlcProfile.QCpuQj71E71100,
             "melsec:lcpu" => SlmpPlcProfile.LCpu,
+            "melsec:lcpu:lj71e71-100" => SlmpPlcProfile.LCpuLj71E71100,
             "melsec:qnu" => SlmpPlcProfile.QnU,
+            "melsec:qnu:qj71e71-100" => SlmpPlcProfile.QnUQj71E71100,
             "melsec:qnudv" => SlmpPlcProfile.QnUDV,
-            _ => throw new ArgumentException($"Unsupported PLC profile '{text}'. Valid values: {ValidProfileText}.", nameof(text)),
+            "melsec:qnudv:qj71e71-100" => SlmpPlcProfile.QnUDVQj71E71100,
+            _ => throw new ArgumentException($"Unsupported PLC profile '{text}'.", nameof(text)),
         };
-    }
 
     /// <summary>Return the canonical string form used in user-facing configuration.</summary>
     public static string ToCanonicalString(SlmpPlcProfile profile)
@@ -53,13 +89,18 @@ public static class SlmpPlcProfiles
         {
             SlmpPlcProfile.IqF => "melsec:iq-f",
             SlmpPlcProfile.IqR => "melsec:iq-r",
+            SlmpPlcProfile.IqRRj71En71 => "melsec:iq-r:rj71en71",
             SlmpPlcProfile.IqL => "melsec:iq-l",
             SlmpPlcProfile.MxF => "melsec:mx-f",
             SlmpPlcProfile.MxR => "melsec:mx-r",
             SlmpPlcProfile.QCpu => "melsec:qcpu",
+            SlmpPlcProfile.QCpuQj71E71100 => "melsec:qcpu:qj71e71-100",
             SlmpPlcProfile.LCpu => "melsec:lcpu",
+            SlmpPlcProfile.LCpuLj71E71100 => "melsec:lcpu:lj71e71-100",
             SlmpPlcProfile.QnU => "melsec:qnu",
+            SlmpPlcProfile.QnUQj71E71100 => "melsec:qnu:qj71e71-100",
             SlmpPlcProfile.QnUDV => "melsec:qnudv",
+            SlmpPlcProfile.QnUDVQj71E71100 => "melsec:qnudv:qj71e71-100",
             SlmpPlcProfile.Unspecified => throw new ArgumentOutOfRangeException(
                 nameof(profile),
                 profile,
@@ -81,6 +122,11 @@ public static class SlmpPlcProfiles
                 SlmpCompatibilityMode.Iqr,
                 SlmpPlcProfile.IqR,
                 SlmpPlcProfile.IqR),
+            SlmpPlcProfile.IqRRj71En71 => new(
+                SlmpFrameType.Frame4E,
+                SlmpCompatibilityMode.Iqr,
+                SlmpPlcProfile.IqR,
+                SlmpPlcProfile.IqRRj71En71),
             SlmpPlcProfile.IqL => new(
                 SlmpFrameType.Frame4E,
                 SlmpCompatibilityMode.Iqr,
@@ -101,27 +147,59 @@ public static class SlmpPlcProfiles
                 SlmpCompatibilityMode.Legacy,
                 SlmpPlcProfile.QCpu,
                 SlmpPlcProfile.QCpu),
+            SlmpPlcProfile.QCpuQj71E71100 => new(
+                SlmpFrameType.Frame4E,
+                SlmpCompatibilityMode.Legacy,
+                SlmpPlcProfile.QCpu,
+                SlmpPlcProfile.QCpuQj71E71100),
             SlmpPlcProfile.LCpu => new(
                 SlmpFrameType.Frame3E,
                 SlmpCompatibilityMode.Legacy,
                 SlmpPlcProfile.LCpu,
                 SlmpPlcProfile.LCpu),
+            SlmpPlcProfile.LCpuLj71E71100 => new(
+                SlmpFrameType.Frame4E,
+                SlmpCompatibilityMode.Legacy,
+                SlmpPlcProfile.LCpu,
+                SlmpPlcProfile.LCpuLj71E71100),
             SlmpPlcProfile.QnU => new(
                 SlmpFrameType.Frame3E,
                 SlmpCompatibilityMode.Legacy,
                 SlmpPlcProfile.QnU,
                 SlmpPlcProfile.QnU),
+            SlmpPlcProfile.QnUQj71E71100 => new(
+                SlmpFrameType.Frame4E,
+                SlmpCompatibilityMode.Legacy,
+                SlmpPlcProfile.QnU,
+                SlmpPlcProfile.QnUQj71E71100),
             SlmpPlcProfile.QnUDV => new(
                 SlmpFrameType.Frame3E,
                 SlmpCompatibilityMode.Legacy,
                 SlmpPlcProfile.QnUDV,
                 SlmpPlcProfile.QnUDV),
+            SlmpPlcProfile.QnUDVQj71E71100 => new(
+                SlmpFrameType.Frame4E,
+                SlmpCompatibilityMode.Legacy,
+                SlmpPlcProfile.QnUDV,
+                SlmpPlcProfile.QnUDVQj71E71100),
             SlmpPlcProfile.Unspecified => throw new ArgumentOutOfRangeException(
                 nameof(profile),
                 profile,
                 $"PLC profile is required. Valid values: {ValidProfileText}."),
             _ => throw new ArgumentOutOfRangeException(nameof(profile), profile, "Unsupported PLC profile."),
         };
+
+    /// <summary>Validate that the profile can be used to open an SLMP connection.</summary>
+    public static SlmpPlcProfile ValidateConnectionProfile(SlmpPlcProfile profile)
+    {
+        _ = Resolve(profile);
+        if (profile == SlmpPlcProfile.QCpu)
+        {
+            throw new ArgumentOutOfRangeException(nameof(profile), profile, QCpuBaseProfileMessage);
+        }
+
+        return profile;
+    }
 
     /// <summary>True when the selected profile uses iQ-R-compatible command subcommands and payloads.</summary>
     public static bool UsesIqrProtocol(SlmpPlcProfile profile)

@@ -44,6 +44,21 @@ public sealed class SlmpDeviceRangeCatalogTests
     }
 
     [Fact]
+    public void BuildCatalog_QCpuUnitUsesBaseRulesButReportsUnitProfile()
+    {
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.QCpuQj71E71100);
+        var registers = CreateRegisterSnapshot(profile);
+        registers[290] = 123;
+
+        var catalog = SlmpDeviceRangeResolver.BuildCatalog(SlmpPlcProfile.QCpuQj71E71100, registers);
+
+        Assert.Equal(SlmpPlcProfile.QCpuQj71E71100, catalog.PlcProfile);
+        Assert.Equal("QCPU via QJ71E71-100", catalog.Model);
+        Assert.Equal(123u, GetEntry(catalog, "X").PointCount);
+        Assert.Equal("X000-X07A", GetEntry(catalog, "X").AddressRange);
+    }
+
+    [Fact]
     public void BuildCatalog_IqRReadsDwordRegistersAndExpandsLongFamilies()
     {
         var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.IqR);
@@ -67,6 +82,22 @@ public sealed class SlmpDeviceRangeCatalogTests
         Assert.Equal(32768u, GetEntry(catalog, "R").PointCount);
         Assert.Equal(32767u, GetEntry(catalog, "R").UpperBound);
         Assert.Equal("R0-R32767", GetEntry(catalog, "R").AddressRange);
+    }
+
+    [Fact]
+    public void BuildCatalog_IqRUnitUsesIqRRulesButReportsUnitProfile()
+    {
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.IqRRj71En71);
+        var registers = CreateRegisterSnapshot(profile);
+        registers[280] = 0x0034;
+        registers[281] = 0x0001;
+
+        var catalog = SlmpDeviceRangeResolver.BuildCatalog(SlmpPlcProfile.IqRRj71En71, registers);
+
+        Assert.Equal(SlmpPlcProfile.IqRRj71En71, catalog.PlcProfile);
+        Assert.Equal("iQ-R via RJ71EN71", catalog.Model);
+        Assert.Equal(0x00010034u, GetEntry(catalog, "D").PointCount);
+        Assert.Equal("D0-D65587", GetEntry(catalog, "D").AddressRange);
     }
 
     [Fact]
@@ -153,7 +184,7 @@ public sealed class SlmpDeviceRangeCatalogTests
 
         foreach (var profileProperty in profiles.EnumerateObject())
         {
-            var plcProfile = SlmpPlcProfiles.Parse(profileProperty.Name);
+            var plcProfile = SlmpPlcProfiles.ParseKnownProfileId(profileProperty.Name);
             foreach (var ruleProperty in profileProperty.Value.GetProperty("rules").EnumerateObject())
             {
                 var catalog = SlmpDeviceRangeResolver.BuildCatalog(
@@ -262,9 +293,9 @@ public sealed class SlmpDeviceRangeCatalogTests
     }
 
     [Fact]
-    public async Task ReadDeviceRangeCatalogAsync_QCpuUsesSixteenPointZWhenZ15IsReadable()
+    public async Task ReadDeviceRangeCatalogAsync_QCpuUnitUsesSixteenPointZWhenZ15IsReadable()
     {
-        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.QCpu);
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.QCpuQj71E71100);
         var sdValues = new ushort[profile.RegisterCount];
 
         await using var server = new MultiResponseSlmpServer(
@@ -289,9 +320,10 @@ public sealed class SlmpDeviceRangeCatalogTests
             MonitoringTimer = 0x0010,
         };
 
-        var catalog = await client.ReadDeviceRangeCatalogAsync(SlmpPlcProfile.QCpu);
+        var catalog = await client.ReadDeviceRangeCatalogAsync(SlmpPlcProfile.QCpuQj71E71100);
 
         Assert.Equal(12, server.RequestFrames.Count);
+        Assert.Equal(SlmpPlcProfile.QCpuQj71E71100, catalog.PlcProfile);
         Assert.Equal(16u, GetEntry(catalog, "Z").PointCount);
         Assert.Equal(15u, GetEntry(catalog, "Z").UpperBound);
         Assert.Equal("Z0-Z15", GetEntry(catalog, "Z").AddressRange);

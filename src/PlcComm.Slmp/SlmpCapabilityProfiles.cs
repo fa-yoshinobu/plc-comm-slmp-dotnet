@@ -63,7 +63,7 @@ internal sealed record SlmpCapabilityProfile(
 internal static class SlmpCapabilityProfiles
 {
     internal const string CanonicalSource =
-        "plc-comm-slmp-profiles v1.1.2 capability/slmp_builtin_ethernet_profiles.json";
+        "plc-comm-slmp-profiles v1.2.0 capability/slmp_builtin_ethernet_profiles.json";
 
     private static readonly Dictionary<SlmpPlcProfile, SlmpCapabilityProfile> Profiles =
         new Dictionary<SlmpPlcProfile, SlmpCapabilityProfile>
@@ -71,6 +71,14 @@ internal static class SlmpCapabilityProfiles
             [SlmpPlcProfile.IqR] = Profile(
                 SlmpPlcProfile.IqR,
                 "melsec:iq-r",
+                "4E",
+                "iQ-R",
+                CommonIqrFeatures(SlmpProfileFeatureState.Supported),
+                IqrLimits(),
+                WritePolicy("S")),
+            [SlmpPlcProfile.IqRRj71En71] = Profile(
+                SlmpPlcProfile.IqRRj71En71,
+                "melsec:iq-r:rj71en71",
                 "4E",
                 "iQ-R",
                 CommonIqrFeatures(SlmpProfileFeatureState.Supported),
@@ -124,32 +132,64 @@ internal static class SlmpCapabilityProfiles
                 "3E",
                 "Q/L",
                 QlMeasuredFeatures("policy"),
-                QlLimits(),
+                QlLimits("inferred"),
                 WritePolicy("S")),
+            [SlmpPlcProfile.QCpuQj71E71100] = Profile(
+                SlmpPlcProfile.QCpuQj71E71100,
+                "melsec:qcpu:qj71e71-100",
+                "4E",
+                "Q/L",
+                QlUnitFeatures(),
+                QlUnitLimits(extReadMax: 185, includeBitExt: true),
+                Policy(("S", "read-write"))),
             [SlmpPlcProfile.LCpu] = Profile(
                 SlmpPlcProfile.LCpu,
                 "melsec:lcpu",
                 "3E",
                 "Q/L",
                 QlMeasuredFeatures("live"),
-                QlLimits(),
+                QlLimits("live"),
                 WritePolicy("S")),
+            [SlmpPlcProfile.LCpuLj71E71100] = Profile(
+                SlmpPlcProfile.LCpuLj71E71100,
+                "melsec:lcpu:lj71e71-100",
+                "4E",
+                "Q/L",
+                QlUnitFeatures(),
+                QlUnitLimits(extReadMax: 192, includeBitExt: false),
+                Policy(("S", "read-write"))),
             [SlmpPlcProfile.QnU] = Profile(
                 SlmpPlcProfile.QnU,
                 "melsec:qnu",
                 "3E",
                 "Q/L",
                 QlMeasuredFeatures("live"),
-                QlLimits(),
+                QlLimits("live"),
                 WritePolicy("S")),
+            [SlmpPlcProfile.QnUQj71E71100] = Profile(
+                SlmpPlcProfile.QnUQj71E71100,
+                "melsec:qnu:qj71e71-100",
+                "4E",
+                "Q/L",
+                QlUnitFeatures(),
+                QlUnitLimits(extReadMax: 192, includeBitExt: true),
+                Policy(("S", "read-write"))),
             [SlmpPlcProfile.QnUDV] = Profile(
                 SlmpPlcProfile.QnUDV,
                 "melsec:qnudv",
                 "3E",
                 "Q/L",
                 QlMeasuredFeatures("live"),
-                QlLimits(),
+                QlLimits("live"),
                 WritePolicy("S")),
+            [SlmpPlcProfile.QnUDVQj71E71100] = Profile(
+                SlmpPlcProfile.QnUDVQj71E71100,
+                "melsec:qnudv:qj71e71-100",
+                "4E",
+                "Q/L",
+                QlUnitFeatures(),
+                QlUnitLimits(extReadMax: 192, includeBitExt: true),
+                Policy(("S", "read-write"))),
         };
 
     internal static IReadOnlyDictionary<SlmpPlcProfile, SlmpCapabilityProfile> All => Profiles;
@@ -274,6 +314,19 @@ internal static class SlmpCapabilityProfiles
             (SlmpProfileFeature.LongDevicePath, SlmpProfileFeatureState.Delegated, source, "Existing long-device route rules decide this feature."),
             (SlmpProfileFeature.Lz32BitPath, SlmpProfileFeatureState.Delegated, source, "Existing 32-bit route rules decide this feature."));
 
+    private static Dictionary<SlmpProfileFeature, SlmpCapabilityFeature> QlUnitFeatures()
+        => Features(
+            (SlmpProfileFeature.TypeName, SlmpProfileFeatureState.Supported, "live", null),
+            (SlmpProfileFeature.Direct, SlmpProfileFeatureState.Supported, "live", null),
+            (SlmpProfileFeature.Random, SlmpProfileFeatureState.Supported, "live", null),
+            (SlmpProfileFeature.Block, SlmpProfileFeatureState.Supported, "live", null),
+            (SlmpProfileFeature.Monitor, SlmpProfileFeatureState.Supported, "live", null),
+            (SlmpProfileFeature.ExtModuleAccess, SlmpProfileFeatureState.ConfigDependent, "live", null),
+            (SlmpProfileFeature.ExtLinkDirect, SlmpProfileFeatureState.ConfigDependent, "live", null),
+            (SlmpProfileFeature.HgCpuBuffer, SlmpProfileFeatureState.Blocked, "spec", "CPU-buffer HG is an iQ-R-only path."),
+            (SlmpProfileFeature.LongDevicePath, SlmpProfileFeatureState.Blocked, "live", null),
+            (SlmpProfileFeature.Lz32BitPath, SlmpProfileFeatureState.Blocked, "live", null));
+
     private static Dictionary<SlmpProfileFeature, SlmpCapabilityFeature> Features(
         params (SlmpProfileFeature Feature, SlmpProfileFeatureState State, string Source, string? Note)[] entries)
         => entries.ToDictionary(
@@ -323,20 +376,41 @@ internal static class SlmpCapabilityProfiles
             (SlmpProfileLimit.RandomWriteWordExt, 80, "C054", "live", 960, null),
             (SlmpProfileLimit.RandomWriteBitExt, 94, "C053", "live", null, null));
 
-    private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> QlLimits()
+    private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> QlLimits(string source)
         => Limits(
+            (SlmpProfileLimit.DirectWordRead, 960, "C051", source, null, null),
+            (SlmpProfileLimit.DirectWordWrite, 960, "C051", source, null, null),
+            (SlmpProfileLimit.DirectBitRead, 7168, "C052", source, null, null),
+            (SlmpProfileLimit.DirectBitWrite, 7168, "C052", source, null, null),
+            (SlmpProfileLimit.RandomReadWord, 192, "C054", source, null, null),
+            (SlmpProfileLimit.RandomWriteWord, 160, "C054", source, 1920, null),
+            (SlmpProfileLimit.RandomWriteBit, 188, "C053", source, null, null),
+            (SlmpProfileLimit.MonitorRegisterWord, 192, "C054", source, null, null));
+
+    private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> QlUnitLimits(int extReadMax, bool includeBitExt)
+    {
+        var entries = new List<(SlmpProfileLimit Limit, int Max, string? OverEndCode, string Source, int? WeightedMax, string? Note)>
+        {
             (SlmpProfileLimit.DirectWordRead, 960, "C051", "live", null, null),
             (SlmpProfileLimit.DirectWordWrite, 960, "C051", "live", null, null),
             (SlmpProfileLimit.DirectBitRead, 7168, "C052", "live", null, null),
             (SlmpProfileLimit.DirectBitWrite, 7168, "C052", "live", null, null),
             (SlmpProfileLimit.RandomReadWord, 192, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomWriteWord, 160, "C054", "live", 1920, null),
+            (SlmpProfileLimit.RandomWriteWord, 160, "4080", "live", 1920, null),
             (SlmpProfileLimit.RandomWriteBit, 188, "C053", "live", null, null),
             (SlmpProfileLimit.MonitorRegisterWord, 192, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomReadWordExt, 96, "C054", "inferred", null, null),
-            (SlmpProfileLimit.RandomWriteWordExt, 80, "C054", "inferred", 960, null),
-            (SlmpProfileLimit.RandomWriteBitExt, 94, "C053", "inferred", null, null),
-            (SlmpProfileLimit.MonitorRegisterWordExt, 96, "C054", "inferred", null, null));
+            (SlmpProfileLimit.RandomReadWordExt, extReadMax, extReadMax == 185 ? "4080" : "C054", "live", null, null),
+            (SlmpProfileLimit.RandomWriteWordExt, 160, "4080", "live", 1920, null),
+            (SlmpProfileLimit.MonitorRegisterWordExt, 192, "C054", "live", null, null),
+        };
+
+        if (includeBitExt)
+        {
+            entries.Add((SlmpProfileLimit.RandomWriteBitExt, 188, "C053", "live", null, null));
+        }
+
+        return Limits(entries.ToArray());
+    }
 
     private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> Limits(
         params (SlmpProfileLimit Limit, int Max, string? OverEndCode, string Source, int? WeightedMax, string? Note)[] entries)

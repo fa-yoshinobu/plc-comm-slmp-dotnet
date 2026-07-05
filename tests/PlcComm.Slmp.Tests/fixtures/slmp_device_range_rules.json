@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "date": "2026-07-03",
+  "date": "2026-07-05",
   "ordered_items": [
     "X",
     "Y",
@@ -507,16 +507,21 @@
   "runtime_probes": {
     "applies_to": [
       "melsec:lcpu",
+      "melsec:lcpu:lj71e71-100",
       "melsec:qcpu",
+      "melsec:qcpu:qj71e71-100",
       "melsec:qnu",
-      "melsec:qnudv"
+      "melsec:qnu:qj71e71-100",
+      "melsec:qnudv",
+      "melsec:qnudv:qj71e71-100"
     ],
     "max_probe_count": 1048576,
     "steps": [
       {
         "order": 1,
         "profiles": [
-          "melsec:qcpu"
+          "melsec:qcpu",
+          "melsec:qcpu:qj71e71-100"
         ],
         "family": "Z",
         "method": "single-address-check",
@@ -530,9 +535,13 @@
         "order": 2,
         "profiles": [
           "melsec:lcpu",
+          "melsec:lcpu:lj71e71-100",
           "melsec:qcpu",
+          "melsec:qcpu:qj71e71-100",
           "melsec:qnu",
-          "melsec:qnudv"
+          "melsec:qnu:qj71e71-100",
+          "melsec:qnudv",
+          "melsec:qnudv:qj71e71-100"
         ],
         "family": "ZR",
         "method": "doubling-then-binary-search"
@@ -541,9 +550,13 @@
         "order": 3,
         "profiles": [
           "melsec:lcpu",
+          "melsec:lcpu:lj71e71-100",
           "melsec:qcpu",
+          "melsec:qcpu:qj71e71-100",
           "melsec:qnu",
-          "melsec:qnudv"
+          "melsec:qnu:qj71e71-100",
+          "melsec:qnudv",
+          "melsec:qnudv:qj71e71-100"
         ],
         "family": "R",
         "method": "derived",
@@ -661,6 +674,114 @@
           "fixed_value": 4096
         }
       }
+    },
+    "melsec:iq-r:rj71en71": {
+      "register_start": 260,
+      "register_count": 50,
+      "rules": {
+        "X": {
+          "kind": "dword-register",
+          "register": 260
+        },
+        "Y": {
+          "kind": "dword-register",
+          "register": 262
+        },
+        "M": {
+          "kind": "dword-register",
+          "register": 264
+        },
+        "B": {
+          "kind": "dword-register",
+          "register": 266
+        },
+        "SB": {
+          "kind": "dword-register",
+          "register": 268
+        },
+        "F": {
+          "kind": "dword-register",
+          "register": 270
+        },
+        "V": {
+          "kind": "dword-register",
+          "register": 272
+        },
+        "L": {
+          "kind": "dword-register",
+          "register": 274
+        },
+        "S": {
+          "kind": "dword-register",
+          "register": 276
+        },
+        "D": {
+          "kind": "dword-register",
+          "register": 280
+        },
+        "W": {
+          "kind": "dword-register",
+          "register": 282
+        },
+        "SW": {
+          "kind": "dword-register",
+          "register": 284
+        },
+        "R": {
+          "kind": "dword-register-clipped",
+          "clip_value": 32768,
+          "register": 306
+        },
+        "T": {
+          "kind": "dword-register",
+          "register": 288
+        },
+        "ST": {
+          "kind": "dword-register",
+          "register": 290
+        },
+        "C": {
+          "kind": "dword-register",
+          "register": 292
+        },
+        "LT": {
+          "kind": "dword-register",
+          "register": 294
+        },
+        "LST": {
+          "kind": "dword-register",
+          "register": 296
+        },
+        "LC": {
+          "kind": "dword-register",
+          "register": 298
+        },
+        "Z": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "LZ": {
+          "kind": "word-register",
+          "register": 302
+        },
+        "ZR": {
+          "kind": "dword-register",
+          "register": 306
+        },
+        "RD": {
+          "kind": "dword-register",
+          "register": 308
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 4096
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 4096
+        }
+      },
+      "base_profile": "melsec:iq-r"
     },
     "melsec:iq-l": {
       "register_start": 260,
@@ -1191,6 +1312,114 @@
         }
       }
     },
+    "melsec:qcpu:qj71e71-100": {
+      "register_start": 290,
+      "register_count": 15,
+      "rules": {
+        "X": {
+          "kind": "word-register",
+          "register": 290
+        },
+        "Y": {
+          "kind": "word-register",
+          "register": 291
+        },
+        "M": {
+          "kind": "word-register-clipped",
+          "clip_value": 32768,
+          "register": 292
+        },
+        "B": {
+          "kind": "word-register-clipped",
+          "clip_value": 32768,
+          "register": 294
+        },
+        "SB": {
+          "kind": "word-register",
+          "register": 296
+        },
+        "F": {
+          "kind": "word-register",
+          "register": 295
+        },
+        "V": {
+          "kind": "word-register",
+          "register": 297
+        },
+        "L": {
+          "kind": "word-register",
+          "register": 293
+        },
+        "S": {
+          "kind": "word-register",
+          "register": 298
+        },
+        "D": {
+          "kind": "word-register-clipped",
+          "clip_value": 32768,
+          "register": 302
+        },
+        "W": {
+          "kind": "word-register-clipped",
+          "clip_value": 32768,
+          "register": 303
+        },
+        "SW": {
+          "kind": "word-register",
+          "register": 304
+        },
+        "R": {
+          "kind": "fixed",
+          "fixed_value": 32768,
+          "probe": true
+        },
+        "T": {
+          "kind": "word-register",
+          "register": 299
+        },
+        "ST": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "C": {
+          "kind": "word-register",
+          "register": 301
+        },
+        "LT": {
+          "kind": "unsupported"
+        },
+        "LST": {
+          "kind": "unsupported"
+        },
+        "LC": {
+          "kind": "unsupported"
+        },
+        "Z": {
+          "kind": "fixed",
+          "fixed_value": 10,
+          "probe": true
+        },
+        "LZ": {
+          "kind": "unsupported"
+        },
+        "ZR": {
+          "kind": "undefined",
+          "probe": true
+        },
+        "RD": {
+          "kind": "unsupported"
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 1024
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 1024
+        }
+      },
+      "base_profile": "melsec:qcpu"
+    },
     "melsec:lcpu": {
       "register_start": 286,
       "register_count": 26,
@@ -1293,6 +1522,110 @@
           "fixed_value": 2048
         }
       }
+    },
+    "melsec:lcpu:lj71e71-100": {
+      "register_start": 286,
+      "register_count": 26,
+      "rules": {
+        "X": {
+          "kind": "word-register",
+          "register": 290
+        },
+        "Y": {
+          "kind": "word-register",
+          "register": 291
+        },
+        "M": {
+          "kind": "dword-register",
+          "register": 286
+        },
+        "B": {
+          "kind": "dword-register",
+          "register": 288
+        },
+        "SB": {
+          "kind": "word-register",
+          "register": 296
+        },
+        "F": {
+          "kind": "word-register",
+          "register": 295
+        },
+        "V": {
+          "kind": "word-register",
+          "register": 297
+        },
+        "L": {
+          "kind": "word-register",
+          "register": 293
+        },
+        "S": {
+          "kind": "word-register",
+          "register": 298
+        },
+        "D": {
+          "kind": "dword-register",
+          "register": 308
+        },
+        "W": {
+          "kind": "dword-register",
+          "register": 310
+        },
+        "SW": {
+          "kind": "word-register",
+          "register": 304
+        },
+        "R": {
+          "kind": "dword-register",
+          "probe": true,
+          "register": 306
+        },
+        "T": {
+          "kind": "word-register",
+          "register": 299
+        },
+        "ST": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "C": {
+          "kind": "word-register",
+          "register": 301
+        },
+        "LT": {
+          "kind": "unsupported"
+        },
+        "LST": {
+          "kind": "unsupported"
+        },
+        "LC": {
+          "kind": "unsupported"
+        },
+        "Z": {
+          "kind": "fixed",
+          "fixed_value": 20
+        },
+        "LZ": {
+          "kind": "unsupported"
+        },
+        "ZR": {
+          "kind": "dword-register",
+          "probe": true,
+          "register": 306
+        },
+        "RD": {
+          "kind": "unsupported"
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 2048
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 2048
+        }
+      },
+      "base_profile": "melsec:lcpu"
     },
     "melsec:qnu": {
       "register_start": 286,
@@ -1397,6 +1730,110 @@
         }
       }
     },
+    "melsec:qnu:qj71e71-100": {
+      "register_start": 286,
+      "register_count": 26,
+      "rules": {
+        "X": {
+          "kind": "word-register",
+          "register": 290
+        },
+        "Y": {
+          "kind": "word-register",
+          "register": 291
+        },
+        "M": {
+          "kind": "dword-register",
+          "register": 286
+        },
+        "B": {
+          "kind": "dword-register",
+          "register": 288
+        },
+        "SB": {
+          "kind": "word-register",
+          "register": 296
+        },
+        "F": {
+          "kind": "word-register",
+          "register": 295
+        },
+        "V": {
+          "kind": "word-register",
+          "register": 297
+        },
+        "L": {
+          "kind": "word-register",
+          "register": 293
+        },
+        "S": {
+          "kind": "word-register",
+          "register": 298
+        },
+        "D": {
+          "kind": "dword-register",
+          "register": 308
+        },
+        "W": {
+          "kind": "dword-register",
+          "register": 310
+        },
+        "SW": {
+          "kind": "word-register",
+          "register": 304
+        },
+        "R": {
+          "kind": "dword-register",
+          "probe": true,
+          "register": 306
+        },
+        "T": {
+          "kind": "word-register",
+          "register": 299
+        },
+        "ST": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "C": {
+          "kind": "word-register",
+          "register": 301
+        },
+        "LT": {
+          "kind": "unsupported"
+        },
+        "LST": {
+          "kind": "unsupported"
+        },
+        "LC": {
+          "kind": "unsupported"
+        },
+        "Z": {
+          "kind": "fixed",
+          "fixed_value": 20
+        },
+        "LZ": {
+          "kind": "unsupported"
+        },
+        "ZR": {
+          "kind": "dword-register",
+          "probe": true,
+          "register": 306
+        },
+        "RD": {
+          "kind": "unsupported"
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 2048
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 2048
+        }
+      },
+      "base_profile": "melsec:qnu"
+    },
     "melsec:qnudv": {
       "register_start": 286,
       "register_count": 26,
@@ -1499,6 +1936,110 @@
           "fixed_value": 2048
         }
       }
+    },
+    "melsec:qnudv:qj71e71-100": {
+      "register_start": 286,
+      "register_count": 26,
+      "rules": {
+        "X": {
+          "kind": "word-register",
+          "register": 290
+        },
+        "Y": {
+          "kind": "word-register",
+          "register": 291
+        },
+        "M": {
+          "kind": "dword-register",
+          "register": 286
+        },
+        "B": {
+          "kind": "dword-register",
+          "register": 288
+        },
+        "SB": {
+          "kind": "word-register",
+          "register": 296
+        },
+        "F": {
+          "kind": "word-register",
+          "register": 295
+        },
+        "V": {
+          "kind": "word-register",
+          "register": 297
+        },
+        "L": {
+          "kind": "word-register",
+          "register": 293
+        },
+        "S": {
+          "kind": "word-register",
+          "register": 298
+        },
+        "D": {
+          "kind": "dword-register",
+          "register": 308
+        },
+        "W": {
+          "kind": "dword-register",
+          "register": 310
+        },
+        "SW": {
+          "kind": "word-register",
+          "register": 304
+        },
+        "R": {
+          "kind": "dword-register",
+          "probe": true,
+          "register": 306
+        },
+        "T": {
+          "kind": "word-register",
+          "register": 299
+        },
+        "ST": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "C": {
+          "kind": "word-register",
+          "register": 301
+        },
+        "LT": {
+          "kind": "unsupported"
+        },
+        "LST": {
+          "kind": "unsupported"
+        },
+        "LC": {
+          "kind": "unsupported"
+        },
+        "Z": {
+          "kind": "fixed",
+          "fixed_value": 20
+        },
+        "LZ": {
+          "kind": "unsupported"
+        },
+        "ZR": {
+          "kind": "dword-register",
+          "probe": true,
+          "register": 306
+        },
+        "RD": {
+          "kind": "unsupported"
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 2048
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 2048
+        }
+      },
+      "base_profile": "melsec:qnudv"
     }
   }
 }

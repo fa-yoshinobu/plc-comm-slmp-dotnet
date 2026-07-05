@@ -588,7 +588,7 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task ReadRandomExtAsync_ProfileLimitsDoNotRelaxExtendedPointLimit()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpu);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU);
         var devices = Enumerable.Range(0, 97)
             .Select(index => (
                 new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index), null),
@@ -605,7 +605,7 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task WriteRandomWordsExtAsync_ProfileLimitsDoNotRelaxExtendedWeightedLimit()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpu);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU);
         var wordEntries = Enumerable.Range(0, 40)
             .Select(index => (
                 new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index), null),
@@ -629,7 +629,7 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task WriteRandomBitsExtAsync_ProfileLimitsDoNotRelaxExtendedBitLimit()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpu);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU);
         var entries = Enumerable.Range(0, 95)
             .Select(index => (
                 new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.M, (uint)index), null),
@@ -645,7 +645,7 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task RegisterMonitorDevicesExtAsync_ProfileLimitsDoNotRelaxExtendedPointLimit()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpu);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU);
         var devices = Enumerable.Range(0, 97)
             .Select(index => (
                 new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index), null),
@@ -671,7 +671,7 @@ public sealed class SlmpClientGuardTests
     }
 
     [Theory]
-    [InlineData(SlmpPlcProfile.QCpu, "melsec:qcpu")]
+    [InlineData(SlmpPlcProfile.LCpu, "melsec:lcpu")]
     [InlineData(SlmpPlcProfile.QnU, "melsec:qnu")]
     public async Task ReadBlockAsync_RejectsQSeriesProfiles(SlmpPlcProfile profile, string profileText)
     {
@@ -727,7 +727,7 @@ public sealed class SlmpClientGuardTests
     }
 
     [Theory]
-    [InlineData(SlmpPlcProfile.QCpu, "melsec:qcpu")]
+    [InlineData(SlmpPlcProfile.LCpu, "melsec:lcpu")]
     [InlineData(SlmpPlcProfile.QnU, "melsec:qnu")]
     public async Task WriteBlockAsync_RejectsQSeriesProfiles(SlmpPlcProfile profile, string profileText)
     {

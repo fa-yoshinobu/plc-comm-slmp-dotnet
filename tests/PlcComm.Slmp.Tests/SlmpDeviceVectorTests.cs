@@ -31,7 +31,7 @@ public sealed class SlmpDeviceVectorTests
     [MemberData(nameof(Vectors))]
     public void EncodeDeviceSpec_MatchesVector(string id, string device, string series, string hex)
     {
-        var PlcProfile = series == "iqr" ? SlmpPlcProfile.IqR : SlmpPlcProfile.QCpu;
+        var PlcProfile = series == "iqr" ? SlmpPlcProfile.IqR : SlmpPlcProfile.QCpuQj71E71100;
 
         using var client = new SlmpClient("127.0.0.1", PlcProfile);
         var addr = SlmpDeviceParser.Parse(device);
@@ -43,4 +43,3 @@ public sealed class SlmpDeviceVectorTests
             $"[{id}] device={device} series={series}: got {Convert.ToHexString(buf)}, expected {hex}");
     }
 }
-

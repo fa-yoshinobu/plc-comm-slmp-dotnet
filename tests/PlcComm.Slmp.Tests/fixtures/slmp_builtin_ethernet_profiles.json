@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "date": "2026-07-04",
-  "scope": "builtin-ethernet-port",
-  "description": "Canonical PLC model profile definitions for the SLMP library family. Generated from evidence/profile-definitions.",
+  "date": "2026-07-05",
+  "scope": "slmp-ethernet-port",
+  "description": "Canonical PLC model and Ethernet-unit profile definitions for the SLMP library family. Generated from evidence/profile-definitions.",
   "policy": {
     "default_strict": true,
     "state_semantics": {
@@ -15,14 +15,19 @@
   },
   "evidence_files": {
     "melsec:iq-r": "evidence/profile-definitions/iq-r_slmp_profile_definition_20260703.md",
+    "melsec:iq-r:rj71en71": "evidence/profile-definitions/iq-r_rj71en71_slmp_profile_definition_20260705.md",
     "melsec:iq-l": "evidence/profile-definitions/iq-l_slmp_profile_definition_20260703.md",
     "melsec:mx-r": "evidence/profile-definitions/mx-r_slmp_profile_definition_20260703.md",
     "melsec:mx-f": "evidence/profile-definitions/mx-f_slmp_profile_definition_20260703.md",
     "melsec:iq-f": "evidence/profile-definitions/iq-f_slmp_profile_definition_20260703.md",
     "melsec:qcpu": "evidence/profile-definitions/qcpu_slmp_profile_definition_20260703.md",
+    "melsec:qcpu:qj71e71-100": "evidence/profile-definitions/qcpu_qj71e71-100_slmp_profile_definition_20260705.md",
     "melsec:lcpu": "evidence/profile-definitions/lcpu_slmp_profile_definition_20260703.md",
+    "melsec:lcpu:lj71e71-100": "evidence/profile-definitions/lcpu_lj71e71-100_slmp_profile_definition_20260705.md",
     "melsec:qnu": "evidence/profile-definitions/qnu_slmp_profile_definition_20260703.md",
-    "melsec:qnudv": "evidence/profile-definitions/qnudv_slmp_profile_definition_20260703.md"
+    "melsec:qnu:qj71e71-100": "evidence/profile-definitions/qnu_qj71e71-100_slmp_profile_definition_20260705.md",
+    "melsec:qnudv": "evidence/profile-definitions/qnudv_slmp_profile_definition_20260703.md",
+    "melsec:qnudv:qj71e71-100": "evidence/profile-definitions/qnudv_qj71e71-100_slmp_profile_definition_20260705.md"
   },
   "profiles": {
     "melsec:iq-r": {
@@ -35,7 +40,8 @@
         "ext_bit": "0083"
       },
       "verified_models": [
-        "R120PCPU(built-in Ethernet)"
+        "R120PCPU(built-in Ethernet)",
+        "R120PCPU via RJ71EN71"
       ],
       "features": {
         "type_name": {
@@ -146,7 +152,133 @@
       "write_policy": {
         "S": "read-only"
       },
+      "scope": "builtin-ethernet-port",
       "display_name": "MELSEC iQ-R (built-in Ethernet)"
+    },
+    "melsec:iq-r:rj71en71": {
+      "frame": "4E",
+      "compat": "iQ-R",
+      "subcommands": {
+        "word": "0002",
+        "bit": "0003",
+        "ext_word": "0082",
+        "ext_bit": "0083"
+      },
+      "verified_models": [
+        "R120PCPU via RJ71EN71"
+      ],
+      "features": {
+        "type_name": {
+          "state": "supported",
+          "source": "policy"
+        },
+        "direct": {
+          "state": "supported",
+          "source": "policy"
+        },
+        "random": {
+          "state": "supported",
+          "source": "policy"
+        },
+        "block": {
+          "state": "supported",
+          "source": "policy"
+        },
+        "monitor": {
+          "state": "supported",
+          "source": "policy"
+        },
+        "ext_module_access": {
+          "state": "config-dependent",
+          "source": "policy"
+        },
+        "ext_link_direct": {
+          "state": "config-dependent",
+          "source": "policy"
+        },
+        "hg_cpu_buffer": {
+          "state": "supported",
+          "source": "policy"
+        },
+        "long_device_path": {
+          "state": "supported",
+          "source": "policy"
+        },
+        "lz_32bit_path": {
+          "state": "supported",
+          "source": "policy"
+        }
+      },
+      "limits": {
+        "direct_word_read": {
+          "source": "inferred",
+          "max": 960,
+          "over_end_code": "C051"
+        },
+        "direct_word_write": {
+          "source": "inferred",
+          "max": 960,
+          "over_end_code": "C051"
+        },
+        "direct_bit_read": {
+          "source": "inferred",
+          "max": 7168,
+          "over_end_code": "C052"
+        },
+        "direct_bit_write": {
+          "source": "inferred",
+          "max": 7168,
+          "over_end_code": "C052"
+        },
+        "random_read_word": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_write_word": {
+          "source": "inferred",
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054"
+        },
+        "random_write_bit": {
+          "source": "inferred",
+          "max": 94,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "inferred",
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054"
+        },
+        "random_write_bit_ext": {
+          "source": "inferred",
+          "max": 94,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "inferred",
+          "max": 96,
+          "over_end_code": "C054"
+        }
+      },
+      "write_policy": {
+        "S": "read-only"
+      },
+      "scope": "ethernet-unit",
+      "display_name": "MELSEC iQ-R via RJ71EN71 (Ethernet unit)",
+      "base_profile": "melsec:iq-r"
     },
     "melsec:iq-l": {
       "frame": "4E",
@@ -269,6 +401,7 @@
       "write_policy": {
         "S": "read-only"
       },
+      "scope": "builtin-ethernet-port",
       "display_name": "MELSEC iQ-L (built-in Ethernet)"
     },
     "melsec:mx-r": {
@@ -392,7 +525,9 @@
       "write_policy": {
         "S": "read-only"
       },
-      "display_name": "MELSEC MX-R (built-in Ethernet)"
+      "scope": "builtin-ethernet-port",
+      "display_name": "MELSEC MX-R (built-in Ethernet)",
+      "base_profile": "melsec:iq-r"
     },
     "melsec:mx-f": {
       "frame": "4E",
@@ -515,7 +650,9 @@
       "write_policy": {
         "S": "read-only"
       },
-      "display_name": "MELSEC MX-F (built-in Ethernet)"
+      "scope": "builtin-ethernet-port",
+      "display_name": "MELSEC MX-F (built-in Ethernet)",
+      "base_profile": "melsec:iq-r"
     },
     "melsec:iq-f": {
       "frame": "3E",
@@ -628,6 +765,7 @@
       "write_policy": {
         "S": "read-write"
       },
+      "scope": "builtin-ethernet-port",
       "display_name": "MELSEC iQ-F (built-in Ethernet)"
     },
     "melsec:qcpu": {
@@ -725,33 +863,140 @@
           "source": "inferred",
           "max": 192,
           "over_end_code": "C054"
-        },
-        "random_read_word_ext": {
-          "source": "inferred",
-          "max": 96,
-          "over_end_code": "C054"
-        },
-        "random_write_word_ext": {
-          "source": "inferred",
-          "max": 80,
-          "weighted_max": 960,
-          "over_end_code": "C054"
-        },
-        "random_write_bit_ext": {
-          "source": "inferred",
-          "max": 94,
-          "over_end_code": "C053"
-        },
-        "monitor_register_word_ext": {
-          "source": "inferred",
-          "max": 96,
-          "over_end_code": "C054"
         }
       },
       "write_policy": {
         "S": "read-only"
       },
-      "display_name": "MELSEC-Q (conservative baseline)"
+      "scope": "base-profile",
+      "display_name": "MELSEC-Q (conservative baseline)",
+      "base_profile": "melsec:qnu",
+      "role": "base"
+    },
+    "melsec:qcpu:qj71e71-100": {
+      "frame": "4E",
+      "compat": "Q/L",
+      "subcommands": {
+        "word": "0000",
+        "bit": "0001",
+        "ext_word": "0080",
+        "ext_bit": "0081"
+      },
+      "verified_models": [
+        "Q12HCPU via QJ71E71-100"
+      ],
+      "features": {
+        "type_name": {
+          "state": "supported",
+          "source": "live"
+        },
+        "direct": {
+          "state": "supported",
+          "source": "live"
+        },
+        "random": {
+          "state": "supported",
+          "source": "live"
+        },
+        "block": {
+          "state": "supported",
+          "source": "live"
+        },
+        "monitor": {
+          "state": "supported",
+          "source": "live"
+        },
+        "ext_module_access": {
+          "state": "config-dependent",
+          "source": "live"
+        },
+        "ext_link_direct": {
+          "state": "config-dependent",
+          "source": "live"
+        },
+        "hg_cpu_buffer": {
+          "state": "blocked",
+          "source": "spec"
+        },
+        "long_device_path": {
+          "state": "blocked",
+          "source": "live"
+        },
+        "lz_32bit_path": {
+          "state": "blocked",
+          "source": "live"
+        }
+      },
+      "limits": {
+        "direct_word_read": {
+          "source": "live",
+          "max": 960,
+          "over_end_code": "C051"
+        },
+        "direct_word_write": {
+          "source": "live",
+          "max": 960,
+          "over_end_code": "C051"
+        },
+        "direct_bit_read": {
+          "source": "live",
+          "max": 7168,
+          "over_end_code": "C052"
+        },
+        "direct_bit_write": {
+          "source": "live",
+          "max": 7168,
+          "over_end_code": "C052"
+        },
+        "random_read_word": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_write_word": {
+          "source": "live",
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "4080"
+        },
+        "random_write_bit": {
+          "source": "live",
+          "max": 188,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "live",
+          "max": 185,
+          "over_end_code": "4080"
+        },
+        "random_write_word_ext": {
+          "source": "live",
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "4080"
+        },
+        "random_write_bit_ext": {
+          "source": "live",
+          "max": 188,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        }
+      },
+      "write_policy": {
+        "S": "read-write"
+      },
+      "base_profile": "melsec:qcpu",
+      "scope": "ethernet-unit",
+      "display_name": "MELSEC-Q via QJ71E71-100 (Ethernet unit)"
     },
     "melsec:lcpu": {
       "frame": "3E",
@@ -848,33 +1093,133 @@
           "source": "live",
           "max": 192,
           "over_end_code": "C054"
-        },
-        "random_read_word_ext": {
-          "source": "inferred",
-          "max": 96,
-          "over_end_code": "C054"
-        },
-        "random_write_word_ext": {
-          "source": "inferred",
-          "max": 80,
-          "weighted_max": 960,
-          "over_end_code": "C054"
-        },
-        "random_write_bit_ext": {
-          "source": "inferred",
-          "max": 94,
-          "over_end_code": "C053"
-        },
-        "monitor_register_word_ext": {
-          "source": "inferred",
-          "max": 96,
-          "over_end_code": "C054"
         }
       },
       "write_policy": {
         "S": "read-only"
       },
+      "scope": "builtin-ethernet-port",
       "display_name": "MELSEC-L (built-in Ethernet)"
+    },
+    "melsec:lcpu:lj71e71-100": {
+      "frame": "4E",
+      "compat": "Q/L",
+      "subcommands": {
+        "word": "0000",
+        "bit": "0001",
+        "ext_word": "0080",
+        "ext_bit": "0081"
+      },
+      "verified_models": [
+        "L02SCPU via LJ71E71-100"
+      ],
+      "features": {
+        "type_name": {
+          "state": "supported",
+          "source": "live"
+        },
+        "direct": {
+          "state": "supported",
+          "source": "live"
+        },
+        "random": {
+          "state": "supported",
+          "source": "live"
+        },
+        "block": {
+          "state": "supported",
+          "source": "live"
+        },
+        "monitor": {
+          "state": "supported",
+          "source": "live"
+        },
+        "ext_module_access": {
+          "state": "config-dependent",
+          "source": "live"
+        },
+        "ext_link_direct": {
+          "state": "config-dependent",
+          "source": "live"
+        },
+        "hg_cpu_buffer": {
+          "state": "blocked",
+          "source": "spec"
+        },
+        "long_device_path": {
+          "state": "blocked",
+          "source": "live"
+        },
+        "lz_32bit_path": {
+          "state": "blocked",
+          "source": "live"
+        }
+      },
+      "limits": {
+        "direct_word_read": {
+          "source": "live",
+          "max": 960,
+          "over_end_code": "C051"
+        },
+        "direct_word_write": {
+          "source": "live",
+          "max": 960,
+          "over_end_code": "C051"
+        },
+        "direct_bit_read": {
+          "source": "live",
+          "max": 7168,
+          "over_end_code": "C052"
+        },
+        "direct_bit_write": {
+          "source": "live",
+          "max": 7168,
+          "over_end_code": "C052"
+        },
+        "random_read_word": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_write_word": {
+          "source": "live",
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "4080"
+        },
+        "random_write_bit": {
+          "source": "live",
+          "max": 188,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "live",
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "4080"
+        },
+        "monitor_register_word_ext": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        }
+      },
+      "write_policy": {
+        "S": "read-write"
+      },
+      "base_profile": "melsec:lcpu",
+      "scope": "ethernet-unit",
+      "display_name": "MELSEC-L via LJ71E71-100 (Ethernet unit)"
     },
     "melsec:qnu": {
       "frame": "3E",
@@ -971,33 +1316,138 @@
           "source": "live",
           "max": 192,
           "over_end_code": "C054"
-        },
-        "random_read_word_ext": {
-          "source": "inferred",
-          "max": 96,
-          "over_end_code": "C054"
-        },
-        "random_write_word_ext": {
-          "source": "inferred",
-          "max": 80,
-          "weighted_max": 960,
-          "over_end_code": "C054"
-        },
-        "random_write_bit_ext": {
-          "source": "inferred",
-          "max": 94,
-          "over_end_code": "C053"
-        },
-        "monitor_register_word_ext": {
-          "source": "inferred",
-          "max": 96,
-          "over_end_code": "C054"
         }
       },
       "write_policy": {
         "S": "read-only"
       },
+      "scope": "builtin-ethernet-port",
       "display_name": "MELSEC-QnU (built-in Ethernet)"
+    },
+    "melsec:qnu:qj71e71-100": {
+      "frame": "4E",
+      "compat": "Q/L",
+      "subcommands": {
+        "word": "0000",
+        "bit": "0001",
+        "ext_word": "0080",
+        "ext_bit": "0081"
+      },
+      "verified_models": [
+        "Q26UDEHCPU via QJ71E71-100"
+      ],
+      "features": {
+        "type_name": {
+          "state": "supported",
+          "source": "live"
+        },
+        "direct": {
+          "state": "supported",
+          "source": "live"
+        },
+        "random": {
+          "state": "supported",
+          "source": "live"
+        },
+        "block": {
+          "state": "supported",
+          "source": "live"
+        },
+        "monitor": {
+          "state": "supported",
+          "source": "live"
+        },
+        "ext_module_access": {
+          "state": "config-dependent",
+          "source": "live"
+        },
+        "ext_link_direct": {
+          "state": "config-dependent",
+          "source": "live"
+        },
+        "hg_cpu_buffer": {
+          "state": "blocked",
+          "source": "spec"
+        },
+        "long_device_path": {
+          "state": "blocked",
+          "source": "live"
+        },
+        "lz_32bit_path": {
+          "state": "blocked",
+          "source": "live"
+        }
+      },
+      "limits": {
+        "direct_word_read": {
+          "source": "live",
+          "max": 960,
+          "over_end_code": "C051"
+        },
+        "direct_word_write": {
+          "source": "live",
+          "max": 960,
+          "over_end_code": "C051"
+        },
+        "direct_bit_read": {
+          "source": "live",
+          "max": 7168,
+          "over_end_code": "C052"
+        },
+        "direct_bit_write": {
+          "source": "live",
+          "max": 7168,
+          "over_end_code": "C052"
+        },
+        "random_read_word": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_write_word": {
+          "source": "live",
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "4080"
+        },
+        "random_write_bit": {
+          "source": "live",
+          "max": 188,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "live",
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "4080"
+        },
+        "random_write_bit_ext": {
+          "source": "live",
+          "max": 188,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        }
+      },
+      "write_policy": {
+        "S": "read-write"
+      },
+      "base_profile": "melsec:qnu",
+      "scope": "ethernet-unit",
+      "display_name": "MELSEC QnU via QJ71E71-100 (Ethernet unit)"
     },
     "melsec:qnudv": {
       "frame": "3E",
@@ -1094,33 +1544,138 @@
           "source": "live",
           "max": 192,
           "over_end_code": "C054"
-        },
-        "random_read_word_ext": {
-          "source": "inferred",
-          "max": 96,
-          "over_end_code": "C054"
-        },
-        "random_write_word_ext": {
-          "source": "inferred",
-          "max": 80,
-          "weighted_max": 960,
-          "over_end_code": "C054"
-        },
-        "random_write_bit_ext": {
-          "source": "inferred",
-          "max": 94,
-          "over_end_code": "C053"
-        },
-        "monitor_register_word_ext": {
-          "source": "inferred",
-          "max": 96,
-          "over_end_code": "C054"
         }
       },
       "write_policy": {
         "S": "read-only"
       },
+      "scope": "builtin-ethernet-port",
       "display_name": "MELSEC-QnUDV (built-in Ethernet)"
+    },
+    "melsec:qnudv:qj71e71-100": {
+      "frame": "4E",
+      "compat": "Q/L",
+      "subcommands": {
+        "word": "0000",
+        "bit": "0001",
+        "ext_word": "0080",
+        "ext_bit": "0081"
+      },
+      "verified_models": [
+        "Q06UDVCPU via QJ71E71-100"
+      ],
+      "features": {
+        "type_name": {
+          "state": "supported",
+          "source": "live"
+        },
+        "direct": {
+          "state": "supported",
+          "source": "live"
+        },
+        "random": {
+          "state": "supported",
+          "source": "live"
+        },
+        "block": {
+          "state": "supported",
+          "source": "live"
+        },
+        "monitor": {
+          "state": "supported",
+          "source": "live"
+        },
+        "ext_module_access": {
+          "state": "config-dependent",
+          "source": "live"
+        },
+        "ext_link_direct": {
+          "state": "config-dependent",
+          "source": "live"
+        },
+        "hg_cpu_buffer": {
+          "state": "blocked",
+          "source": "spec"
+        },
+        "long_device_path": {
+          "state": "blocked",
+          "source": "live"
+        },
+        "lz_32bit_path": {
+          "state": "blocked",
+          "source": "live"
+        }
+      },
+      "limits": {
+        "direct_word_read": {
+          "source": "live",
+          "max": 960,
+          "over_end_code": "C051"
+        },
+        "direct_word_write": {
+          "source": "live",
+          "max": 960,
+          "over_end_code": "C051"
+        },
+        "direct_bit_read": {
+          "source": "live",
+          "max": 7168,
+          "over_end_code": "C052"
+        },
+        "direct_bit_write": {
+          "source": "live",
+          "max": 7168,
+          "over_end_code": "C052"
+        },
+        "random_read_word": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_write_word": {
+          "source": "live",
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "4080"
+        },
+        "random_write_bit": {
+          "source": "live",
+          "max": 188,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "live",
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "4080"
+        },
+        "random_write_bit_ext": {
+          "source": "live",
+          "max": 188,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        }
+      },
+      "write_policy": {
+        "S": "read-write"
+      },
+      "base_profile": "melsec:qnudv",
+      "scope": "ethernet-unit",
+      "display_name": "MELSEC QnUDV via QJ71E71-100 (Ethernet unit)"
     }
   }
 }

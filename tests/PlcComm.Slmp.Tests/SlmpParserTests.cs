@@ -80,7 +80,7 @@ public sealed class SlmpParserTests
 
         foreach (var profileProperty in profiles.EnumerateObject())
         {
-            var plcProfile = SlmpPlcProfiles.Parse(profileProperty.Name);
+            var plcProfile = SlmpPlcProfiles.ParseKnownProfileId(profileProperty.Name);
             foreach (var ruleProperty in profileProperty.Value.GetProperty("rules").EnumerateObject())
             {
                 var unsupported = ruleProperty.Value.GetProperty("kind").GetString() == "unsupported";
@@ -184,7 +184,7 @@ public sealed class SlmpParserTests
     [Fact]
     public void QueuedClient_ExposesConfigurationProperties()
     {
-        using var inner = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpu);
+        using var inner = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100);
         using var queued = new QueuedSlmpClient(inner)
         {
             TargetAddress = new SlmpTargetAddress(0x01, 0x02, 0x03E0, 0x00),
@@ -192,7 +192,7 @@ public sealed class SlmpParserTests
             Timeout = TimeSpan.FromSeconds(5),
         };
 
-        Assert.Equal(SlmpFrameType.Frame3E, inner.FrameType);
+        Assert.Equal(SlmpFrameType.Frame4E, inner.FrameType);
         Assert.Equal(SlmpCompatibilityMode.Legacy, inner.CompatibilityMode);
         Assert.Equal((byte)0x01, inner.TargetAddress.Network);
         Assert.Equal((ushort)0x0020, inner.MonitoringTimer);
@@ -212,6 +212,28 @@ public sealed class SlmpParserTests
     }
 
     [Fact]
+    public void ConnectionOptions_ResolveUnitProfileWithIndependentFrameAndCompatibility()
+    {
+        var options = new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100);
+
+        Assert.Equal(SlmpFrameType.Frame4E, options.ResolvedFrameType);
+        Assert.Equal(SlmpCompatibilityMode.Legacy, options.ResolvedCompatibilityMode);
+        Assert.Equal(SlmpPlcProfile.QCpu, options.ResolvedAddressProfile);
+        Assert.Equal(SlmpPlcProfile.QCpuQj71E71100, options.ResolvedRangeProfile);
+    }
+
+    [Fact]
+    public void ConnectionOptions_ResolveIqRUnitProfileWithIqRAddressRules()
+    {
+        var options = new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.IqRRj71En71);
+
+        Assert.Equal(SlmpFrameType.Frame4E, options.ResolvedFrameType);
+        Assert.Equal(SlmpCompatibilityMode.Iqr, options.ResolvedCompatibilityMode);
+        Assert.Equal(SlmpPlcProfile.IqR, options.ResolvedAddressProfile);
+        Assert.Equal(SlmpPlcProfile.IqRRj71En71, options.ResolvedRangeProfile);
+    }
+
+    [Fact]
     public void ConnectionOptions_RejectsUnspecifiedPlcProfile()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -219,12 +241,27 @@ public sealed class SlmpParserTests
     }
 
     [Fact]
+    public void ConnectionOptions_RejectsBaseQcpuProfile()
+    {
+        var error = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.QCpu));
+        Assert.Contains("melsec:qcpu is a base profile", error.Message, StringComparison.Ordinal);
+        Assert.Contains("melsec:qcpu:qj71e71-100", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void SlmpPlcProfiles_Parse_AcceptsOnlyCanonicalProfileText()
     {
         Assert.Equal(SlmpPlcProfile.IqR, SlmpPlcProfiles.Parse("melsec:iq-r"));
+        Assert.Equal(SlmpPlcProfile.IqRRj71En71, SlmpPlcProfiles.Parse("melsec:iq-r:rj71en71"));
+        Assert.Equal(SlmpPlcProfile.QCpuQj71E71100, SlmpPlcProfiles.Parse("melsec:qcpu:qj71e71-100"));
+        Assert.Equal(SlmpPlcProfile.LCpuLj71E71100, SlmpPlcProfiles.Parse("melsec:lcpu:lj71e71-100"));
 
         Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse(null));
         Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse(""));
+        var baseError = Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse("melsec:qcpu"));
+        Assert.Contains("melsec:qcpu is a base profile", baseError.Message, StringComparison.Ordinal);
+        Assert.Contains("melsec:qcpu:qj71e71-100", baseError.Message, StringComparison.Ordinal);
         Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse("MELSEC:IQ-F"));
         Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse("iq-r"));
         Assert.Throws<ArgumentException>(() => SlmpPlcProfiles.Parse("iqr"));
@@ -246,7 +283,7 @@ public sealed class SlmpParserTests
     public void EncodeExtendedDeviceSpec_LinkDirect_J2SW10_MatchesPcap()
     {
         // Verified by GOT pcap: J2\SW10 -> 00 00 10 00 00 b5 00 00 02 00 f9
-        var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpu);
+        var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100);
         var device = new SlmpDeviceAddress(SlmpDeviceCode.SW, 0x10);
         var extension = new SlmpExtensionSpec(ExtensionSpecification: 2, DirectMemorySpecification: 0xF9);
         var spec = client.EncodeExtendedDeviceSpec(device, extension);

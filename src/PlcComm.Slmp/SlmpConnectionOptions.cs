@@ -74,7 +74,6 @@ public sealed record SlmpConnectionOptions(string Host, SlmpPlcProfile PlcProfil
 
     private static SlmpPlcProfile ValidatePlcProfile(SlmpPlcProfile profile)
     {
-        _ = SlmpPlcProfiles.Resolve(profile);
-        return profile;
+        return SlmpPlcProfiles.ValidateConnectionProfile(profile);
     }
 }

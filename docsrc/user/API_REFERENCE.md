@@ -3950,6 +3950,12 @@ public const SlmpPlcProfile IqF
 public const SlmpPlcProfile IqR
 ```
 
+##### IqRRj71En71
+
+```csharp
+public const SlmpPlcProfile IqRRj71En71
+```
+
 ##### IqL
 
 ```csharp
@@ -3990,6 +3996,30 @@ public const SlmpPlcProfile QnU
 
 ```csharp
 public const SlmpPlcProfile QnUDV
+```
+
+##### QCpuQj71E71100
+
+```csharp
+public const SlmpPlcProfile QCpuQj71E71100
+```
+
+##### LCpuLj71E71100
+
+```csharp
+public const SlmpPlcProfile LCpuLj71E71100
+```
+
+##### QnUQj71E71100
+
+```csharp
+public const SlmpPlcProfile QnUQj71E71100
+```
+
+##### QnUDVQj71E71100
+
+```csharp
+public const SlmpPlcProfile QnUDVQj71E71100
 ```
 
 ### SlmpPlcProfileDefaults
@@ -4067,6 +4097,14 @@ public static SlmpPlcProfileDefaults Resolve(SlmpPlcProfile profile)
 ```
 
 Resolve the stable defaults for one explicit PLC profile.
+
+##### ValidateConnectionProfile
+
+```csharp
+public static SlmpPlcProfile ValidateConnectionProfile(SlmpPlcProfile profile)
+```
+
+Validate that the profile can be used to open an SLMP connection.
 
 ##### UsesIqrProtocol
 

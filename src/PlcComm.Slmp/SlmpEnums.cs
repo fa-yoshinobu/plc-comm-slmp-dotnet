@@ -34,6 +34,7 @@ public enum SlmpPlcProfile : byte
     Unspecified = 0,
     IqF = 1,
     IqR = 2,
+    IqRRj71En71 = 14,
     IqL = 3,
     MxF = 4,
     MxR = 5,
@@ -41,6 +42,10 @@ public enum SlmpPlcProfile : byte
     LCpu = 7,
     QnU = 8,
     QnUDV = 9,
+    QCpuQj71E71100 = 10,
+    LCpuLj71E71100 = 11,
+    QnUQj71E71100 = 12,
+    QnUDVQj71E71100 = 13,
 }
 
 /// <summary>Direction of a frame captured by <see cref="SlmpClient.TraceHook"/>.</summary>
