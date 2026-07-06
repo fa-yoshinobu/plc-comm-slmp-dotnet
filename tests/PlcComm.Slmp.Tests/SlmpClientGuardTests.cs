@@ -586,10 +586,10 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
-    public async Task ReadRandomExtAsync_ProfileLimitsDoNotRelaxExtendedPointLimit()
+    public async Task ReadRandomExtAsync_UsesProfileExtendedPointLimit()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU);
-        var devices = Enumerable.Range(0, 97)
+        var devices = Enumerable.Range(0, 193)
             .Select(index => (
                 new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index), null),
                 new SlmpExtensionSpec()))
@@ -599,20 +599,14 @@ public sealed class SlmpClientGuardTests
             () => client.ReadRandomExtAsync(
                 devices,
                 Array.Empty<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)>()));
-        Assert.Contains("(1..96)", ex.Message);
+        Assert.Contains("(1..192)", ex.Message);
     }
 
     [Fact]
-    public async Task WriteRandomWordsExtAsync_ProfileLimitsDoNotRelaxExtendedWeightedLimit()
+    public async Task WriteRandomWordsExtAsync_UsesProfileExtendedWeightedLimit()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU);
-        var wordEntries = Enumerable.Range(0, 40)
-            .Select(index => (
-                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index), null),
-                (ushort)index,
-                new SlmpExtensionSpec()))
-            .ToArray();
-        var dwordEntries = Enumerable.Range(0, 40)
+        var dwordEntries = Enumerable.Range(0, 138)
             .Select(index => (
                 new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(200 + (index * 2))), null),
                 (uint)index,
@@ -621,16 +615,16 @@ public sealed class SlmpClientGuardTests
 
         var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.WriteRandomWordsExtAsync(
-                wordEntries,
+                Array.Empty<(SlmpQualifiedDeviceAddress Device, ushort Value, SlmpExtensionSpec Extension)>(),
                 dwordEntries));
-        Assert.Contains("limit=960", ex.Message);
+        Assert.Contains("limit=1920", ex.Message);
     }
 
     [Fact]
-    public async Task WriteRandomBitsExtAsync_ProfileLimitsDoNotRelaxExtendedBitLimit()
+    public async Task WriteRandomBitsExtAsync_UsesProfileExtendedBitLimit()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU);
-        var entries = Enumerable.Range(0, 95)
+        var entries = Enumerable.Range(0, 189)
             .Select(index => (
                 new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.M, (uint)index), null),
                 true,
@@ -639,14 +633,14 @@ public sealed class SlmpClientGuardTests
 
         var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.WriteRandomBitsExtAsync(entries));
-        Assert.Contains("(1..94)", ex.Message);
+        Assert.Contains("(1..188)", ex.Message);
     }
 
     [Fact]
-    public async Task RegisterMonitorDevicesExtAsync_ProfileLimitsDoNotRelaxExtendedPointLimit()
+    public async Task RegisterMonitorDevicesExtAsync_UsesProfileExtendedPointLimit()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU);
-        var devices = Enumerable.Range(0, 97)
+        var devices = Enumerable.Range(0, 193)
             .Select(index => (
                 new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index), null),
                 new SlmpExtensionSpec()))
@@ -656,7 +650,7 @@ public sealed class SlmpClientGuardTests
             () => client.RegisterMonitorDevicesExtAsync(
                 devices,
                 Array.Empty<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)>()));
-        Assert.Contains("(1..96)", ex.Message);
+        Assert.Contains("(1..192)", ex.Message);
     }
 
     [Fact]

@@ -23,7 +23,7 @@ Confirm that local output is excluded:
 
 Before packaging:
 
-1. Update `<Version>` in `src/PlcComm.Slmp/PlcComm.Slmp.csproj`.
+1. Update `<Version>` in `Directory.Build.props`.
 2. Update `CHANGELOG.md` so the released changes are recorded in the target version section.
 3. Make sure the release tag matches the package version, for example `v1.0.0`.
 

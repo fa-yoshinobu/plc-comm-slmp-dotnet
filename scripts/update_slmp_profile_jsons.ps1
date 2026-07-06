@@ -7,12 +7,13 @@ param(
 $ErrorActionPreference = "Stop"
 
 if ([string]::IsNullOrWhiteSpace($Ref)) {
-    $Ref = "v1.2.1"
+    $Ref = "v1.2.2"
 }
 
 $RawBase = "https://raw.githubusercontent.com/fa-yoshinobu/plc-comm-slmp-profiles/$Ref"
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $Changed = New-Object System.Collections.Generic.List[string]
+$RepoRoot = Split-Path -Parent $PSScriptRoot
 
 function Get-CanonicalJson {
     param([string]$Path)
@@ -35,7 +36,7 @@ function Write-IfChanged {
         [string]$Destination,
         [string]$Content
     )
-    $fullPath = Join-Path (Get-Location) $Destination
+    $fullPath = Join-Path $RepoRoot $Destination
     $parent = Split-Path -Parent $fullPath
     if (-not (Test-Path -LiteralPath $parent)) {
         New-Item -ItemType Directory -Path $parent | Out-Null

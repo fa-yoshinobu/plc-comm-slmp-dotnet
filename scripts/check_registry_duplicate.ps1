@@ -17,6 +17,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$RepoRoot = Split-Path -Parent $PSScriptRoot
+
 function Resolve-LocalPath([string] $Path) {
     if ([string]::IsNullOrWhiteSpace($Path)) {
         throw "Manifest path is required."
@@ -24,7 +26,7 @@ function Resolve-LocalPath([string] $Path) {
     if ([System.IO.Path]::IsPathRooted($Path)) {
         return $Path
     }
-    return (Join-Path (Get-Location) $Path)
+    return (Join-Path $RepoRoot $Path)
 }
 
 function Read-Version([string] $Source, [string] $Path) {

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "date": "2026-07-05",
+  "date": "2026-07-06",
   "scope": "slmp-ethernet-port",
   "description": "Canonical PLC model and Ethernet-unit profile definitions for the SLMP library family. Generated from evidence/profile-definitions.",
   "policy": {
@@ -745,6 +745,11 @@
           "max": 188,
           "over_end_code": "C053"
         },
+        "monitor_register_word": {
+          "source": "not-adopted",
+          "max": 192,
+          "over_end_code": "C054"
+        },
         "random_read_word_ext": {
           "source": "live",
           "max": 96,
@@ -760,6 +765,11 @@
           "source": "live",
           "max": 94,
           "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "not-adopted",
+          "max": 96,
+          "over_end_code": "C054"
         }
       },
       "write_policy": {
@@ -860,6 +870,27 @@
           "over_end_code": "C053"
         },
         "monitor_register_word": {
+          "source": "inferred",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "inferred",
+          "max": 185,
+          "over_end_code": "4080"
+        },
+        "random_write_word_ext": {
+          "source": "inferred",
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "4080"
+        },
+        "random_write_bit_ext": {
+          "source": "inferred",
+          "max": 188,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
           "source": "inferred",
           "max": 192,
           "over_end_code": "C054"
@@ -1093,6 +1124,27 @@
           "source": "live",
           "max": 192,
           "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "inferred",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "inferred",
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "4080"
+        },
+        "random_write_bit_ext": {
+          "source": "inferred",
+          "max": 188,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "inferred",
+          "max": 192,
+          "over_end_code": "C054"
         }
       },
       "write_policy": {
@@ -1208,6 +1260,11 @@
           "weighted_max": 1920,
           "over_end_code": "4080"
         },
+        "random_write_bit_ext": {
+          "source": "inferred",
+          "max": 188,
+          "over_end_code": "C053"
+        },
         "monitor_register_word_ext": {
           "source": "live",
           "max": 192,
@@ -1314,6 +1371,27 @@
         },
         "monitor_register_word": {
           "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "inferred",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "inferred",
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "4080"
+        },
+        "random_write_bit_ext": {
+          "source": "inferred",
+          "max": 188,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "inferred",
           "max": 192,
           "over_end_code": "C054"
         }
@@ -1542,6 +1620,27 @@
         },
         "monitor_register_word": {
           "source": "live",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "inferred",
+          "max": 192,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "inferred",
+          "max": 160,
+          "weighted_max": 1920,
+          "over_end_code": "4080"
+        },
+        "random_write_bit_ext": {
+          "source": "inferred",
+          "max": 188,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "inferred",
           "max": 192,
           "over_end_code": "C054"
         }

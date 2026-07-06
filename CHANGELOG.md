@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Tooling`: Developer/operator command-line tools and helper utilities.
 - `CI`: Release checks, workflow scripts, or automation-only changes.
 
+## [Unreleased]
+
+### Changed
+- Library: Synced the embedded SLMP capability fixture to `plc-comm-slmp-profiles` `v1.2.2`, including inferred Q/L 008x extended random/monitor limit keys and iQ-F `not-adopted` monitor limit placeholders.
+- Tooling: Changed the canonical profile update script default ref to `v1.2.2`.
+- Tooling: Moved .NET project version metadata to `Directory.Build.props` so the library, CLI, and samples no longer carry stale per-project versions.
+
 ## [1.2.0] - 2026-07-05
 
 ### Changed
