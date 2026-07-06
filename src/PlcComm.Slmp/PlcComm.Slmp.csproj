@@ -9,7 +9,7 @@
     <PackageId>PlcComm.Slmp</PackageId>
     <Title>PLC Communication SLMP .NET</Title>
     <Description>SLMP binary 3E/4E client library for MELSEC PLCs.</Description>
-    <PackageTags>slmp melsec plc 3e 4e binary tcp udp</PackageTags>
+    <PackageTags>plc-comm slmp melsec mitsubishi plc 3e 4e binary tcp udp</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>

@@ -17,14 +17,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-07-06
+
+### BREAKING
+- Library: Removed short `SlmpModuleIo` aliases in favor of the canonical module I/O vocabulary.
+
+| Removed name | Use instead |
+| --- | --- |
+| `ControlCpu`, `ConnectedCpu`, `Default` | `OwnStation` |
+| `ActiveCpu` | `ControlSystemCpu` |
+| `StandbyCpu` | `StandbySystemCpu` |
+| `TypeACpu` | `SystemACpu` |
+| `TypeBCpu` | `SystemBCpu` |
+| `Cpu1` to `Cpu4` | `MultipleCpu1` to `MultipleCpu4` |
+| `SELF-CPU1` to `SELF-CPU4` | `SELF-MULTIPLE-CPU-1` to `SELF-MULTIPLE-CPU-4` |
+
 ### Changed
+- Release: Bumped package metadata to `2.0.0`.
 - Library: Added `SlmpModuleIo` named constants for multi-CPU target routing while keeping the default own-station target unchanged.
-- Library: Removed short module I/O aliases as a breaking terminology cleanup; use `ControlCpu` -> `OwnStation` for the previous connected-CPU behavior or `ControlSystemCpu` for the redundant control-system route, `ConnectedCpu` / `Default` -> `OwnStation`, `ActiveCpu` -> `ControlSystemCpu`, `StandbyCpu` -> `StandbySystemCpu`, `TypeACpu` -> `SystemACpu`, `TypeBCpu` -> `SystemBCpu`, and `Cpu1`-`Cpu4` -> `MultipleCpu1`-`MultipleCpu4`. The self target shortcut moved from `SELF-CPU1`-`SELF-CPU4` to `SELF-MULTIPLE-CPU-1`-`SELF-MULTIPLE-CPU-4`.
-- Docs: Documented the module I/O constants through generated XML API documentation.
-- Tests: Added request-header coverage proving `SlmpTargetAddress.ModuleIo` accepts the named constants.
-- Library: Synced the embedded SLMP capability fixture to `plc-comm-slmp-profiles` `v1.2.2`, including inferred Q/L 008x extended random/monitor limit keys and iQ-F `not-adopted` monitor limit placeholders.
-- Tooling: Changed the canonical profile update script default ref to `v1.2.2`.
-- Tooling: Moved .NET project version metadata to `Directory.Build.props` so the library, CLI, and samples no longer carry stale per-project versions.
+- Library: Synced the embedded SLMP capability fixture to `plc-comm-slmp-profiles` `v1.2.2`.
+- Tooling: Moved .NET project version metadata to `Directory.Build.props` and added common `plc-comm` package tags.
 
 ## [1.2.0] - 2026-07-05
 
