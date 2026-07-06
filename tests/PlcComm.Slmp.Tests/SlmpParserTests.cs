@@ -139,9 +139,26 @@ public sealed class SlmpParserTests
     {
         var target = SlmpTargetParser.ParseNamed("SELF-CPU2");
         Assert.Equal("SELF-CPU2", target.Name);
-        Assert.Equal((ushort)0x03E1, target.Target.ModuleIo);
+        Assert.Equal(SlmpModuleIo.Cpu2, target.Target.ModuleIo);
         Assert.Equal((byte)0x00, target.Target.Network);
         Assert.Equal((byte)0xFF, target.Target.Station);
+    }
+
+    [Fact]
+    public void SlmpModuleIo_ConstantsMatchSlmpTargetValues()
+    {
+        Assert.Equal((ushort)0x03D0, SlmpModuleIo.ControlCpu);
+        Assert.Equal(SlmpModuleIo.ControlCpu, SlmpModuleIo.ActiveCpu);
+        Assert.Equal((ushort)0x03D1, SlmpModuleIo.StandbyCpu);
+        Assert.Equal((ushort)0x03D2, SlmpModuleIo.TypeACpu);
+        Assert.Equal((ushort)0x03D3, SlmpModuleIo.TypeBCpu);
+        Assert.Equal((ushort)0x03E0, SlmpModuleIo.Cpu1);
+        Assert.Equal((ushort)0x03E1, SlmpModuleIo.Cpu2);
+        Assert.Equal((ushort)0x03E2, SlmpModuleIo.Cpu3);
+        Assert.Equal((ushort)0x03E3, SlmpModuleIo.Cpu4);
+        Assert.Equal((ushort)0x03FF, SlmpModuleIo.ConnectedCpu);
+        Assert.Equal(SlmpModuleIo.ConnectedCpu, SlmpModuleIo.Default);
+        Assert.Equal(SlmpModuleIo.ConnectedCpu, SlmpModuleIo.OwnStation);
     }
 
     [Fact]

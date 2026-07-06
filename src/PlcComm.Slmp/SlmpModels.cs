@@ -3,6 +3,53 @@ using System.Globalization;
 namespace PlcComm.Slmp;
 
 /// <summary>
+/// Named SLMP request-header module I/O numbers for CPU routing.
+/// </summary>
+/// <remarks>
+/// Use these constants with <see cref="SlmpTargetAddress.ModuleIo"/> when routing
+/// a request to a multi-CPU or redundant CPU target. The default connected CPU
+/// target remains <see cref="ConnectedCpu"/>.
+/// </remarks>
+public static class SlmpModuleIo
+{
+    /// <summary>Control or active CPU in a redundant CPU system.</summary>
+    public const ushort ControlCpu = 0x03D0;
+
+    /// <summary>Alias for <see cref="ControlCpu"/>.</summary>
+    public const ushort ActiveCpu = ControlCpu;
+
+    /// <summary>Standby CPU in a redundant CPU system.</summary>
+    public const ushort StandbyCpu = 0x03D1;
+
+    /// <summary>Type A CPU in a redundant CPU system.</summary>
+    public const ushort TypeACpu = 0x03D2;
+
+    /// <summary>Type B CPU in a redundant CPU system.</summary>
+    public const ushort TypeBCpu = 0x03D3;
+
+    /// <summary>CPU No. 1 in a multi-CPU system.</summary>
+    public const ushort Cpu1 = 0x03E0;
+
+    /// <summary>CPU No. 2 in a multi-CPU system.</summary>
+    public const ushort Cpu2 = 0x03E1;
+
+    /// <summary>CPU No. 3 in a multi-CPU system.</summary>
+    public const ushort Cpu3 = 0x03E2;
+
+    /// <summary>CPU No. 4 in a multi-CPU system.</summary>
+    public const ushort Cpu4 = 0x03E3;
+
+    /// <summary>Default connected CPU route.</summary>
+    public const ushort ConnectedCpu = 0x03FF;
+
+    /// <summary>Alias for <see cref="ConnectedCpu"/>.</summary>
+    public const ushort Default = ConnectedCpu;
+
+    /// <summary>Alias for <see cref="ConnectedCpu"/>.</summary>
+    public const ushort OwnStation = ConnectedCpu;
+}
+
+/// <summary>
 /// Represents the destination routing fields for an SLMP frame.
 /// </summary>
 /// <param name="Network">Network number (0x00 for local network).</param>

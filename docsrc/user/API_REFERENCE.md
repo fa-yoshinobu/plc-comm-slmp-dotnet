@@ -3852,6 +3852,114 @@ public ushort[] RawWords { get; set; }
 
 The four raw 16-bit words that make up this timer entry.
 
+### SlmpModuleIo
+
+```csharp
+public static class SlmpModuleIo
+```
+
+Named SLMP request-header module I/O numbers for CPU routing.
+
+Remarks: Use these constants with `ModuleIo` when routing a request to a multi-CPU or redundant CPU target. The default connected CPU target remains `ConnectedCpu`.
+
+#### Members
+
+##### ControlCpu
+
+```csharp
+public const ushort ControlCpu
+```
+
+Control or active CPU in a redundant CPU system.
+
+##### ActiveCpu
+
+```csharp
+public const ushort ActiveCpu
+```
+
+Alias for `ControlCpu`.
+
+##### StandbyCpu
+
+```csharp
+public const ushort StandbyCpu
+```
+
+Standby CPU in a redundant CPU system.
+
+##### TypeACpu
+
+```csharp
+public const ushort TypeACpu
+```
+
+Type A CPU in a redundant CPU system.
+
+##### TypeBCpu
+
+```csharp
+public const ushort TypeBCpu
+```
+
+Type B CPU in a redundant CPU system.
+
+##### Cpu1
+
+```csharp
+public const ushort Cpu1
+```
+
+CPU No. 1 in a multi-CPU system.
+
+##### Cpu2
+
+```csharp
+public const ushort Cpu2
+```
+
+CPU No. 2 in a multi-CPU system.
+
+##### Cpu3
+
+```csharp
+public const ushort Cpu3
+```
+
+CPU No. 3 in a multi-CPU system.
+
+##### Cpu4
+
+```csharp
+public const ushort Cpu4
+```
+
+CPU No. 4 in a multi-CPU system.
+
+##### ConnectedCpu
+
+```csharp
+public const ushort ConnectedCpu
+```
+
+Default connected CPU route.
+
+##### Default
+
+```csharp
+public const ushort Default
+```
+
+Alias for `ConnectedCpu`.
+
+##### OwnStation
+
+```csharp
+public const ushort OwnStation
+```
+
+Alias for `ConnectedCpu`.
+
 ### SlmpMonitorResult
 
 ```csharp

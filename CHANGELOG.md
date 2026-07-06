@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Library: Added `SlmpModuleIo` named constants for multi-CPU target routing while keeping the default connected-CPU target unchanged.
+- Docs: Documented the module I/O constants through generated XML API documentation.
+- Tests: Added request-header coverage proving `SlmpTargetAddress.ModuleIo` accepts the named constants.
 - Library: Synced the embedded SLMP capability fixture to `plc-comm-slmp-profiles` `v1.2.2`, including inferred Q/L 008x extended random/monitor limit keys and iQ-F `not-adopted` monitor limit placeholders.
 - Tooling: Changed the canonical profile update script default ref to `v1.2.2`.
 - Tooling: Moved .NET project version metadata to `Directory.Build.props` so the library, CLI, and samples no longer carry stale per-project versions.

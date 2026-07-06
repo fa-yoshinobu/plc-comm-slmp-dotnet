@@ -90,7 +90,7 @@ public static class SlmpTargetParser
     private static readonly Regex SelfCpuPattern = new(@"^SELF-CPU(?<cpu>[1-4])$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private const byte DefaultSelfNetwork = 0x00;
     private const byte DefaultSelfStation = 0xFF;
-    private const ushort DefaultModuleIo = 0x03FF;
+    private const ushort DefaultModuleIo = SlmpModuleIo.ConnectedCpu;
     private const byte DefaultMultidrop = 0x00;
 
     /// <summary>
@@ -153,7 +153,7 @@ public static class SlmpTargetParser
         if (selfCpu.Success)
         {
             var cpuIndex = int.Parse(selfCpu.Groups["cpu"].Value, CultureInfo.InvariantCulture);
-            var moduleIo = checked((ushort)(0x03E0 + (cpuIndex - 1)));
+            var moduleIo = checked((ushort)(SlmpModuleIo.Cpu1 + (cpuIndex - 1)));
             return new SlmpNamedTarget($"SELF-CPU{cpuIndex}", new SlmpTargetAddress(DefaultSelfNetwork, DefaultSelfStation, moduleIo, DefaultMultidrop));
         }
 
@@ -173,4 +173,3 @@ public static class SlmpTargetParser
         return int.Parse(text, CultureInfo.InvariantCulture);
     }
 }
-
