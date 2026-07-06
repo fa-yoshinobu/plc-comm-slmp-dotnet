@@ -6,6 +6,10 @@
 
 .NET library for MELSEC SLMP (Binary 3E/4E) PLC communication.
 
+## PLC Comm Family
+
+This library is part of the plc-comm family. See the [package matrix](https://fa-yoshinobu.github.io/plc-comm-docs-site/package-matrix/) for protocol, language, registry, and install-command mapping.
+
 ## Supported PLC profiles
 
 The maintained profile table is in [PLC profiles](docsrc/user/PROFILES.md). Choose one exact canonical PLC profile from that table.
