@@ -173,6 +173,25 @@ public sealed class SlmpClientGuardTests
         Assert.Single(server.RequestFrames);
     }
 
+    [Fact]
+    public async Task TargetAddress_AcceptsModuleIoConstantsInRequestHeader()
+    {
+        await using var server = new MultiShotSlmpServer([(0, BuildWordPayload(0x1234))]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        {
+            TargetAddress = new SlmpTargetAddress(ModuleIo: SlmpModuleIo.MultipleCpu2),
+            MonitoringTimer = 0x0010,
+        };
+
+        var words = await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), 1);
+
+        Assert.Equal(new ushort[] { 0x1234 }, words);
+        var request = Assert.Single(server.RequestFrames);
+        Assert.Equal(SlmpModuleIo.MultipleCpu2, BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(8, 2)));
+    }
+
     [Theory]
     [InlineData(SlmpDeviceCode.LTC)]
     [InlineData(SlmpDeviceCode.LCC)]

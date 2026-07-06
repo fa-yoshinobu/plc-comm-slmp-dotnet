@@ -65,7 +65,7 @@ page.
 ## Routing / target station
 
 Most applications keep the default target, which means the directly connected
-own station/control CPU. Change the target only when your PLC network is
+own station. Change the target only when your PLC network is
 configured for another station, multi-CPU module I/O, or multidrop access.
 
 `SlmpTargetAddress` controls the SLMP destination header. It is not a device

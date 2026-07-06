@@ -729,7 +729,7 @@ if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
 {
     Console.WriteLine("SLMP .NET CLI");
     const string profiles = "melsec:iq-r|melsec:iq-r:rj71en71|melsec:iq-l|melsec:mx-f|melsec:mx-r|melsec:iq-f|melsec:qcpu:qj71e71-100|melsec:lcpu|melsec:lcpu:lj71e71-100|melsec:qnu|melsec:qnu:qj71e71-100|melsec:qnudv|melsec:qnudv:qj71e71-100";
-    Console.WriteLine($"  connection-check --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target SELF|SELF-CPU1|name,0x00,0xFF,0x03FF,0x00 --network ... --station ... --quiet]");
+    Console.WriteLine($"  connection-check --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target SELF|SELF-MULTIPLE-CPU-1|name,0x00,0xFF,0x03FF,0x00 --network ... --station ... --quiet]");
     Console.WriteLine($"  device-range-catalog --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --quiet]");
     Console.WriteLine($"  other-station-check --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --network ... --station ... (repeatable) --quiet]");
     Console.WriteLine($"  random-check --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target ... --network ... --station ... --write-check --quiet]");

@@ -3852,6 +3852,122 @@ public ushort[] RawWords { get; set; }
 
 The four raw 16-bit words that make up this timer entry.
 
+### SlmpModuleIo
+
+```csharp
+public static class SlmpModuleIo
+```
+
+Named SLMP request-header module I/O numbers for CPU routing.
+
+Remarks: Use these constants with `ModuleIo` when routing a request to a multi-CPU or redundant CPU target. Values are from the SLMP specification SH080956 request destination module I/O number field. The default own-station target remains `OwnStation`.
+
+#### Members
+
+##### ControlSystemCpu
+
+```csharp
+public const ushort ControlSystemCpu
+```
+
+Control system CPU in a redundant CPU system.
+
+##### StandbySystemCpu
+
+```csharp
+public const ushort StandbySystemCpu
+```
+
+Standby system CPU in a redundant CPU system.
+
+##### SystemACpu
+
+```csharp
+public const ushort SystemACpu
+```
+
+System A CPU in a redundant CPU system.
+
+##### SystemBCpu
+
+```csharp
+public const ushort SystemBCpu
+```
+
+System B CPU in a redundant CPU system.
+
+##### MultipleCpu1
+
+```csharp
+public const ushort MultipleCpu1
+```
+
+CPU No. 1 in a multi-CPU system.
+
+##### MultipleCpu2
+
+```csharp
+public const ushort MultipleCpu2
+```
+
+CPU No. 2 in a multi-CPU system.
+
+##### MultipleCpu3
+
+```csharp
+public const ushort MultipleCpu3
+```
+
+CPU No. 3 in a multi-CPU system.
+
+##### MultipleCpu4
+
+```csharp
+public const ushort MultipleCpu4
+```
+
+CPU No. 4 in a multi-CPU system.
+
+##### RemoteHead1
+
+```csharp
+public const ushort RemoteHead1
+```
+
+Remote head No. 1 route.
+
+##### RemoteHead2
+
+```csharp
+public const ushort RemoteHead2
+```
+
+Remote head No. 2 route.
+
+##### ControlSystemRemoteHead
+
+```csharp
+public const ushort ControlSystemRemoteHead
+```
+
+Control system remote head route.
+
+##### StandbySystemRemoteHead
+
+```csharp
+public const ushort StandbySystemRemoteHead
+```
+
+Standby system remote head route.
+
+##### OwnStation
+
+```csharp
+public const ushort OwnStation
+```
+
+Own station route.
+
 ### SlmpMonitorResult
 
 ```csharp
@@ -4268,7 +4384,7 @@ Represents the destination routing fields for an SLMP frame.
 
 Parameters:
 - `Network`: Network number (0x00 for local network).
-- `Station`: Station number (0xFF for control CPU).
+- `Station`: Station number (0xFF for the connected station).
 - `ModuleIo`: Module I/O number (0x03FF for own station).
 - `Multidrop`: Multidrop station number (0x00 for no multidrop).
 
@@ -4286,7 +4402,7 @@ Network number (0x00 for local network).
 public byte Station { get; set; }
 ```
 
-Station number (0xFF for control CPU).
+Station number (0xFF for the connected station).
 
 ##### ModuleIo
 
@@ -4320,7 +4436,7 @@ Utility for parsing target station descriptions into `SlmpNamedTarget`.
 public static SlmpNamedTarget ParseNamed(string text)
 ```
 
-Parses a single target string. Supports "SELF", "SELF-CPU1..4", or "NAME,NETWORK,STATION,MODULE_IO,MULTIDROP".
+Parses a single target string. Supports "SELF", "SELF-MULTIPLE-CPU-1..4", or "NAME,NETWORK,STATION,MODULE_IO,MULTIDROP".
 
 ##### ParseMany
 
