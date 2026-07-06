@@ -9,15 +9,12 @@ namespace PlcComm.Slmp;
 /// Use these constants with <see cref="SlmpTargetAddress.ModuleIo"/> when routing
 /// a request to a multi-CPU or redundant CPU target. Values are from the SLMP
 /// specification SH080956 request destination module I/O number field. The
-/// default connected CPU target remains <see cref="ConnectedCpu"/>.
+/// default own-station target remains <see cref="OwnStation"/>.
 /// </remarks>
 public static class SlmpModuleIo
 {
-    /// <summary>Control-system CPU route in a redundant CPU system.</summary>
-    public const ushort ControlCpu = 0x03D0;
-
     /// <summary>Control system CPU in a redundant CPU system.</summary>
-    public const ushort ControlSystemCpu = ControlCpu;
+    public const ushort ControlSystemCpu = 0x03D0;
 
     /// <summary>Standby system CPU in a redundant CPU system.</summary>
     public const ushort StandbySystemCpu = 0x03D1;
@@ -47,19 +44,13 @@ public static class SlmpModuleIo
     public const ushort RemoteHead2 = MultipleCpu2;
 
     /// <summary>Control system remote head route.</summary>
-    public const ushort ControlSystemRemoteHead = ControlCpu;
+    public const ushort ControlSystemRemoteHead = ControlSystemCpu;
 
     /// <summary>Standby system remote head route.</summary>
     public const ushort StandbySystemRemoteHead = StandbySystemCpu;
 
-    /// <summary>Default connected CPU route.</summary>
-    public const ushort ConnectedCpu = 0x03FF;
-
-    /// <summary>Alias for <see cref="ConnectedCpu"/>.</summary>
-    public const ushort Default = ConnectedCpu;
-
-    /// <summary>Alias for <see cref="ConnectedCpu"/>.</summary>
-    public const ushort OwnStation = ConnectedCpu;
+    /// <summary>Own station route.</summary>
+    public const ushort OwnStation = 0x03FF;
 }
 
 /// <summary>

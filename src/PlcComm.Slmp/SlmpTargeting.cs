@@ -90,7 +90,7 @@ public static class SlmpTargetParser
     private static readonly Regex SelfMultipleCpuPattern = new(@"^SELF-MULTIPLE-CPU-(?<cpu>[1-4])$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private const byte DefaultSelfNetwork = 0x00;
     private const byte DefaultSelfStation = 0xFF;
-    private const ushort DefaultModuleIo = SlmpModuleIo.ConnectedCpu;
+    private const ushort DefaultModuleIo = SlmpModuleIo.OwnStation;
     private const byte DefaultMultidrop = 0x00;
 
     /// <summary>

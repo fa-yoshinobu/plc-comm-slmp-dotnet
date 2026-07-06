@@ -42,7 +42,7 @@ public sealed record SlmpConnectionOptions(string Host, SlmpPlcProfile PlcProfil
     /// The default value targets the directly connected local CPU.
     /// Override this when routing through a specific network, station, or module path.
     /// </remarks>
-    public SlmpTargetAddress Target { get; init; } = new(Station: 0xFF, ModuleIo: SlmpModuleIo.ConnectedCpu);
+    public SlmpTargetAddress Target { get; init; } = new(Station: 0xFF, ModuleIo: SlmpModuleIo.OwnStation);
 
     /// <summary>Gets or sets the SLMP monitoring timer value in 250 ms units.</summary>
     /// <remarks>

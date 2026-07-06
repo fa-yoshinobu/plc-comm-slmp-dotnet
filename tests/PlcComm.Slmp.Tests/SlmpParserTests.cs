@@ -147,8 +147,7 @@ public sealed class SlmpParserTests
     [Fact]
     public void SlmpModuleIo_ConstantsMatchSlmpTargetValues()
     {
-        Assert.Equal((ushort)0x03D0, SlmpModuleIo.ControlCpu);
-        Assert.Equal(SlmpModuleIo.ControlCpu, SlmpModuleIo.ControlSystemCpu);
+        Assert.Equal((ushort)0x03D0, SlmpModuleIo.ControlSystemCpu);
         Assert.Equal((ushort)0x03D1, SlmpModuleIo.StandbySystemCpu);
         Assert.Equal((ushort)0x03D2, SlmpModuleIo.SystemACpu);
         Assert.Equal((ushort)0x03D3, SlmpModuleIo.SystemBCpu);
@@ -158,11 +157,9 @@ public sealed class SlmpParserTests
         Assert.Equal((ushort)0x03E3, SlmpModuleIo.MultipleCpu4);
         Assert.Equal(SlmpModuleIo.MultipleCpu1, SlmpModuleIo.RemoteHead1);
         Assert.Equal(SlmpModuleIo.MultipleCpu2, SlmpModuleIo.RemoteHead2);
-        Assert.Equal(SlmpModuleIo.ControlCpu, SlmpModuleIo.ControlSystemRemoteHead);
+        Assert.Equal(SlmpModuleIo.ControlSystemCpu, SlmpModuleIo.ControlSystemRemoteHead);
         Assert.Equal(SlmpModuleIo.StandbySystemCpu, SlmpModuleIo.StandbySystemRemoteHead);
-        Assert.Equal((ushort)0x03FF, SlmpModuleIo.ConnectedCpu);
-        Assert.Equal(SlmpModuleIo.ConnectedCpu, SlmpModuleIo.Default);
-        Assert.Equal(SlmpModuleIo.ConnectedCpu, SlmpModuleIo.OwnStation);
+        Assert.Equal((ushort)0x03FF, SlmpModuleIo.OwnStation);
     }
 
     [Fact]

@@ -3860,17 +3860,9 @@ public static class SlmpModuleIo
 
 Named SLMP request-header module I/O numbers for CPU routing.
 
-Remarks: Use these constants with `ModuleIo` when routing a request to a multi-CPU or redundant CPU target. Values are from the SLMP specification SH080956 request destination module I/O number field. The default connected CPU target remains `ConnectedCpu`.
+Remarks: Use these constants with `ModuleIo` when routing a request to a multi-CPU or redundant CPU target. Values are from the SLMP specification SH080956 request destination module I/O number field. The default own-station target remains `OwnStation`.
 
 #### Members
-
-##### ControlCpu
-
-```csharp
-public const ushort ControlCpu
-```
-
-Control-system CPU route in a redundant CPU system.
 
 ##### ControlSystemCpu
 
@@ -3968,29 +3960,13 @@ public const ushort StandbySystemRemoteHead
 
 Standby system remote head route.
 
-##### ConnectedCpu
-
-```csharp
-public const ushort ConnectedCpu
-```
-
-Default connected CPU route.
-
-##### Default
-
-```csharp
-public const ushort Default
-```
-
-Alias for `ConnectedCpu`.
-
 ##### OwnStation
 
 ```csharp
 public const ushort OwnStation
 ```
 
-Alias for `ConnectedCpu`.
+Own station route.
 
 ### SlmpMonitorResult
 
