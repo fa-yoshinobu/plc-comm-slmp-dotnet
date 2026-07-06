@@ -87,7 +87,7 @@ public static class SlmpQualifiedDeviceParser
 /// </summary>
 public static class SlmpTargetParser
 {
-    private static readonly Regex SelfCpuPattern = new(@"^SELF-CPU(?<cpu>[1-4])$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex SelfMultipleCpuPattern = new(@"^SELF-MULTIPLE-CPU-(?<cpu>[1-4])$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private const byte DefaultSelfNetwork = 0x00;
     private const byte DefaultSelfStation = 0xFF;
     private const ushort DefaultModuleIo = SlmpModuleIo.ConnectedCpu;
@@ -95,7 +95,7 @@ public static class SlmpTargetParser
 
     /// <summary>
     /// Parses a single target string. 
-    /// Supports "SELF", "SELF-CPU1..4", or "NAME,NETWORK,STATION,MODULE_IO,MULTIDROP".
+    /// Supports "SELF", "SELF-MULTIPLE-CPU-1..4", or "NAME,NETWORK,STATION,MODULE_IO,MULTIDROP".
     /// </summary>
     public static SlmpNamedTarget ParseNamed(string text)
     {
@@ -112,7 +112,7 @@ public static class SlmpTargetParser
 
         if (parts.Length != 5)
         {
-            throw new ArgumentException("target must be SELF, SELF-CPU1..4, or NAME,NETWORK,STATION,MODULE_IO,MULTIDROP");
+            throw new ArgumentException("target must be SELF, SELF-MULTIPLE-CPU-1..4, or NAME,NETWORK,STATION,MODULE_IO,MULTIDROP");
         }
 
         var name = parts[0];
@@ -149,15 +149,15 @@ public static class SlmpTargetParser
             return new SlmpNamedTarget("SELF", new SlmpTargetAddress(DefaultSelfNetwork, DefaultSelfStation, DefaultModuleIo, DefaultMultidrop));
         }
 
-        var selfCpu = SelfCpuPattern.Match(name);
+        var selfCpu = SelfMultipleCpuPattern.Match(name);
         if (selfCpu.Success)
         {
             var cpuIndex = int.Parse(selfCpu.Groups["cpu"].Value, CultureInfo.InvariantCulture);
-            var moduleIo = checked((ushort)(SlmpModuleIo.Cpu1 + (cpuIndex - 1)));
-            return new SlmpNamedTarget($"SELF-CPU{cpuIndex}", new SlmpTargetAddress(DefaultSelfNetwork, DefaultSelfStation, moduleIo, DefaultMultidrop));
+            var moduleIo = checked((ushort)(SlmpModuleIo.MultipleCpu1 + (cpuIndex - 1)));
+            return new SlmpNamedTarget($"SELF-MULTIPLE-CPU-{cpuIndex}", new SlmpTargetAddress(DefaultSelfNetwork, DefaultSelfStation, moduleIo, DefaultMultidrop));
         }
 
-        throw new ArgumentException("target must be SELF, SELF-CPU1..4, or NAME,NETWORK,STATION,MODULE_IO,MULTIDROP");
+        throw new ArgumentException("target must be SELF, SELF-MULTIPLE-CPU-1..4, or NAME,NETWORK,STATION,MODULE_IO,MULTIDROP");
     }
 
     /// <summary>

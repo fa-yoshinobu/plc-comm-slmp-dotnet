@@ -181,7 +181,7 @@ public sealed class SlmpClientGuardTests
 
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
         {
-            TargetAddress = new SlmpTargetAddress(ModuleIo: SlmpModuleIo.Cpu2),
+            TargetAddress = new SlmpTargetAddress(ModuleIo: SlmpModuleIo.MultipleCpu2),
             MonitoringTimer = 0x0010,
         };
 
@@ -189,7 +189,7 @@ public sealed class SlmpClientGuardTests
 
         Assert.Equal(new ushort[] { 0x1234 }, words);
         var request = Assert.Single(server.RequestFrames);
-        Assert.Equal(SlmpModuleIo.Cpu2, BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(8, 2)));
+        Assert.Equal(SlmpModuleIo.MultipleCpu2, BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(8, 2)));
     }
 
     [Theory]

@@ -7,37 +7,50 @@ namespace PlcComm.Slmp;
 /// </summary>
 /// <remarks>
 /// Use these constants with <see cref="SlmpTargetAddress.ModuleIo"/> when routing
-/// a request to a multi-CPU or redundant CPU target. The default connected CPU
-/// target remains <see cref="ConnectedCpu"/>.
+/// a request to a multi-CPU or redundant CPU target. Values are from the SLMP
+/// specification SH080956 request destination module I/O number field. The
+/// default connected CPU target remains <see cref="ConnectedCpu"/>.
 /// </remarks>
 public static class SlmpModuleIo
 {
-    /// <summary>Control or active CPU in a redundant CPU system.</summary>
+    /// <summary>Control-system CPU route in a redundant CPU system.</summary>
     public const ushort ControlCpu = 0x03D0;
 
-    /// <summary>Alias for <see cref="ControlCpu"/>.</summary>
-    public const ushort ActiveCpu = ControlCpu;
+    /// <summary>Control system CPU in a redundant CPU system.</summary>
+    public const ushort ControlSystemCpu = ControlCpu;
 
-    /// <summary>Standby CPU in a redundant CPU system.</summary>
-    public const ushort StandbyCpu = 0x03D1;
+    /// <summary>Standby system CPU in a redundant CPU system.</summary>
+    public const ushort StandbySystemCpu = 0x03D1;
 
-    /// <summary>Type A CPU in a redundant CPU system.</summary>
-    public const ushort TypeACpu = 0x03D2;
+    /// <summary>System A CPU in a redundant CPU system.</summary>
+    public const ushort SystemACpu = 0x03D2;
 
-    /// <summary>Type B CPU in a redundant CPU system.</summary>
-    public const ushort TypeBCpu = 0x03D3;
+    /// <summary>System B CPU in a redundant CPU system.</summary>
+    public const ushort SystemBCpu = 0x03D3;
 
     /// <summary>CPU No. 1 in a multi-CPU system.</summary>
-    public const ushort Cpu1 = 0x03E0;
+    public const ushort MultipleCpu1 = 0x03E0;
 
     /// <summary>CPU No. 2 in a multi-CPU system.</summary>
-    public const ushort Cpu2 = 0x03E1;
+    public const ushort MultipleCpu2 = 0x03E1;
 
     /// <summary>CPU No. 3 in a multi-CPU system.</summary>
-    public const ushort Cpu3 = 0x03E2;
+    public const ushort MultipleCpu3 = 0x03E2;
 
     /// <summary>CPU No. 4 in a multi-CPU system.</summary>
-    public const ushort Cpu4 = 0x03E3;
+    public const ushort MultipleCpu4 = 0x03E3;
+
+    /// <summary>Remote head No. 1 route.</summary>
+    public const ushort RemoteHead1 = MultipleCpu1;
+
+    /// <summary>Remote head No. 2 route.</summary>
+    public const ushort RemoteHead2 = MultipleCpu2;
+
+    /// <summary>Control system remote head route.</summary>
+    public const ushort ControlSystemRemoteHead = ControlCpu;
+
+    /// <summary>Standby system remote head route.</summary>
+    public const ushort StandbySystemRemoteHead = StandbySystemCpu;
 
     /// <summary>Default connected CPU route.</summary>
     public const ushort ConnectedCpu = 0x03FF;
@@ -53,7 +66,7 @@ public static class SlmpModuleIo
 /// Represents the destination routing fields for an SLMP frame.
 /// </summary>
 /// <param name="Network">Network number (0x00 for local network).</param>
-/// <param name="Station">Station number (0xFF for control CPU).</param>
+/// <param name="Station">Station number (0xFF for the connected station).</param>
 /// <param name="ModuleIo">Module I/O number (0x03FF for own station).</param>
 /// <param name="Multidrop">Multidrop station number (0x00 for no multidrop).</param>
 public readonly record struct SlmpTargetAddress(byte Network = 0x00, byte Station = 0xFF, ushort ModuleIo = 0x03FF, byte Multidrop = 0x00);

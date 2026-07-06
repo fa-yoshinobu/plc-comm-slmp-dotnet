@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Library: Added `SlmpModuleIo` named constants for multi-CPU target routing while keeping the default connected-CPU target unchanged.
+- Library: Removed short module I/O aliases as a breaking terminology cleanup; use `ActiveCpu` -> `ControlSystemCpu`, `StandbyCpu` -> `StandbySystemCpu`, `TypeACpu` -> `SystemACpu`, `TypeBCpu` -> `SystemBCpu`, and `Cpu1`-`Cpu4` -> `MultipleCpu1`-`MultipleCpu4`. The self target shortcut moved from `SELF-CPU1`-`SELF-CPU4` to `SELF-MULTIPLE-CPU-1`-`SELF-MULTIPLE-CPU-4`.
 - Docs: Documented the module I/O constants through generated XML API documentation.
 - Tests: Added request-header coverage proving `SlmpTargetAddress.ModuleIo` accepts the named constants.
 - Library: Synced the embedded SLMP capability fixture to `plc-comm-slmp-profiles` `v1.2.2`, including inferred Q/L 008x extended random/monitor limit keys and iQ-F `not-adopted` monitor limit placeholders.

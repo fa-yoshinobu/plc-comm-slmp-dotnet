@@ -3860,7 +3860,7 @@ public static class SlmpModuleIo
 
 Named SLMP request-header module I/O numbers for CPU routing.
 
-Remarks: Use these constants with `ModuleIo` when routing a request to a multi-CPU or redundant CPU target. The default connected CPU target remains `ConnectedCpu`.
+Remarks: Use these constants with `ModuleIo` when routing a request to a multi-CPU or redundant CPU target. Values are from the SLMP specification SH080956 request destination module I/O number field. The default connected CPU target remains `ConnectedCpu`.
 
 #### Members
 
@@ -3870,71 +3870,103 @@ Remarks: Use these constants with `ModuleIo` when routing a request to a multi-C
 public const ushort ControlCpu
 ```
 
-Control or active CPU in a redundant CPU system.
+Control-system CPU route in a redundant CPU system.
 
-##### ActiveCpu
+##### ControlSystemCpu
 
 ```csharp
-public const ushort ActiveCpu
+public const ushort ControlSystemCpu
 ```
 
-Alias for `ControlCpu`.
+Control system CPU in a redundant CPU system.
 
-##### StandbyCpu
+##### StandbySystemCpu
 
 ```csharp
-public const ushort StandbyCpu
+public const ushort StandbySystemCpu
 ```
 
-Standby CPU in a redundant CPU system.
+Standby system CPU in a redundant CPU system.
 
-##### TypeACpu
+##### SystemACpu
 
 ```csharp
-public const ushort TypeACpu
+public const ushort SystemACpu
 ```
 
-Type A CPU in a redundant CPU system.
+System A CPU in a redundant CPU system.
 
-##### TypeBCpu
+##### SystemBCpu
 
 ```csharp
-public const ushort TypeBCpu
+public const ushort SystemBCpu
 ```
 
-Type B CPU in a redundant CPU system.
+System B CPU in a redundant CPU system.
 
-##### Cpu1
+##### MultipleCpu1
 
 ```csharp
-public const ushort Cpu1
+public const ushort MultipleCpu1
 ```
 
 CPU No. 1 in a multi-CPU system.
 
-##### Cpu2
+##### MultipleCpu2
 
 ```csharp
-public const ushort Cpu2
+public const ushort MultipleCpu2
 ```
 
 CPU No. 2 in a multi-CPU system.
 
-##### Cpu3
+##### MultipleCpu3
 
 ```csharp
-public const ushort Cpu3
+public const ushort MultipleCpu3
 ```
 
 CPU No. 3 in a multi-CPU system.
 
-##### Cpu4
+##### MultipleCpu4
 
 ```csharp
-public const ushort Cpu4
+public const ushort MultipleCpu4
 ```
 
 CPU No. 4 in a multi-CPU system.
+
+##### RemoteHead1
+
+```csharp
+public const ushort RemoteHead1
+```
+
+Remote head No. 1 route.
+
+##### RemoteHead2
+
+```csharp
+public const ushort RemoteHead2
+```
+
+Remote head No. 2 route.
+
+##### ControlSystemRemoteHead
+
+```csharp
+public const ushort ControlSystemRemoteHead
+```
+
+Control system remote head route.
+
+##### StandbySystemRemoteHead
+
+```csharp
+public const ushort StandbySystemRemoteHead
+```
+
+Standby system remote head route.
 
 ##### ConnectedCpu
 
@@ -4376,7 +4408,7 @@ Represents the destination routing fields for an SLMP frame.
 
 Parameters:
 - `Network`: Network number (0x00 for local network).
-- `Station`: Station number (0xFF for control CPU).
+- `Station`: Station number (0xFF for the connected station).
 - `ModuleIo`: Module I/O number (0x03FF for own station).
 - `Multidrop`: Multidrop station number (0x00 for no multidrop).
 
@@ -4394,7 +4426,7 @@ Network number (0x00 for local network).
 public byte Station { get; set; }
 ```
 
-Station number (0xFF for control CPU).
+Station number (0xFF for the connected station).
 
 ##### ModuleIo
 
@@ -4428,7 +4460,7 @@ Utility for parsing target station descriptions into `SlmpNamedTarget`.
 public static SlmpNamedTarget ParseNamed(string text)
 ```
 
-Parses a single target string. Supports "SELF", "SELF-CPU1..4", or "NAME,NETWORK,STATION,MODULE_IO,MULTIDROP".
+Parses a single target string. Supports "SELF", "SELF-MULTIPLE-CPU-1..4", or "NAME,NETWORK,STATION,MODULE_IO,MULTIDROP".
 
 ##### ParseMany
 
