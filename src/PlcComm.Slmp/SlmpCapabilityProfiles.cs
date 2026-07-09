@@ -63,7 +63,7 @@ internal sealed record SlmpCapabilityProfile(
 internal static class SlmpCapabilityProfiles
 {
     internal const string CanonicalSource =
-        "plc-comm-slmp-profiles v1.2.2 capability/slmp_builtin_ethernet_profiles.json";
+        "plc-comm-slmp-profiles main capability/slmp_ethernet_profiles.json";
 
     private static readonly Dictionary<SlmpPlcProfile, SlmpCapabilityProfile> Profiles =
         new Dictionary<SlmpPlcProfile, SlmpCapabilityProfile>

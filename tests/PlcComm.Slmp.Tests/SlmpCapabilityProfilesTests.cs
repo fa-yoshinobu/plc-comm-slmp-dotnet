@@ -8,7 +8,7 @@ public sealed class SlmpCapabilityProfilesTests
     [Fact]
     public void BuiltInCapabilityProfiles_MatchCanonicalFixture()
     {
-        var fixturePath = Path.Combine(AppContext.BaseDirectory, "fixtures", "slmp_builtin_ethernet_profiles.json");
+        var fixturePath = Path.Combine(AppContext.BaseDirectory, "fixtures", "slmp_ethernet_profiles.json");
         using var document = JsonDocument.Parse(File.ReadAllText(fixturePath));
         var expectedProfiles = document.RootElement.GetProperty("profiles");
         var expectedIds = expectedProfiles.EnumerateObject().Select(static property => property.Name).Order().ToArray();

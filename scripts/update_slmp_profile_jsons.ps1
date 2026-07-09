@@ -7,7 +7,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 if ([string]::IsNullOrWhiteSpace($Ref)) {
-    $Ref = "v1.2.2"
+    $Ref = "main"
 }
 
 $RawBase = "https://raw.githubusercontent.com/fa-yoshinobu/plc-comm-slmp-profiles/$Ref"
@@ -55,10 +55,10 @@ function Write-IfChanged {
     }
 }
 
-$capability = Get-CanonicalJson "capability/slmp_builtin_ethernet_profiles.json"
+$capability = Get-CanonicalJson "capability/slmp_ethernet_profiles.json"
 $deviceRanges = Get-CanonicalJson "device-ranges/slmp_device_range_rules.json"
 
-Write-IfChanged "tests/PlcComm.Slmp.Tests/fixtures/slmp_builtin_ethernet_profiles.json" $capability
+Write-IfChanged "tests/PlcComm.Slmp.Tests/fixtures/slmp_ethernet_profiles.json" $capability
 Write-IfChanged "tests/PlcComm.Slmp.Tests/fixtures/slmp_device_range_rules.json" $deviceRanges
 
 if ($Changed.Count -gt 0) {
