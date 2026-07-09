@@ -15,6 +15,18 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
 {
     private readonly SlmpClient _client;
     private readonly SemaphoreSlim _gate = new(1, 1);
+    private int _disposed;
+
+    private async Task EnterAsync(CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        if (Volatile.Read(ref _disposed) != 0)
+        {
+            _gate.Release();
+            ObjectDisposedException.ThrowIf(true, this);
+        }
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="QueuedSlmpClient"/> class.
@@ -83,7 +95,7 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     /// </remarks>
     public async Task OpenAsync(CancellationToken cancellationToken = default)
     {
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await EnterAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             await _client.OpenAsync(cancellationToken).ConfigureAwait(false);
@@ -104,7 +116,7 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     public async Task<T> ExecuteAsync<T>(Func<SlmpClient, Task<T>> operation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await EnterAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             return await operation(_client).ConfigureAwait(false);
@@ -123,7 +135,7 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     public async Task ExecuteAsync(Func<SlmpClient, Task> operation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operation);
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await EnterAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             await operation(_client).ConfigureAwait(false);
@@ -430,14 +442,30 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     /// <summary>Disposes the client and releases resources.</summary>
     public void Dispose()
     {
-        _gate.Dispose();
-        _client.Dispose();
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        _gate.Wait();
+        try
+        {
+            _client.Dispose();
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     /// <summary>Disposes the client asynchronously.</summary>
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        Dispose();
-        return ValueTask.CompletedTask;
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        await _gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            await _client.DisposeAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 }

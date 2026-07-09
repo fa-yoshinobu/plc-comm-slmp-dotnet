@@ -102,14 +102,23 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (IsOpen) return;
         if (_transportMode == SlmpTransportMode.Tcp)
         {
-            _tcp = new TcpClient();
+            var tcp = new TcpClient();
             using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             linked.CancelAfter(Timeout);
-            await _tcp.ConnectAsync(_host, _port, linked.Token).ConfigureAwait(false);
-            _tcp.NoDelay = true;
-            _tcp.ReceiveTimeout = (int)Timeout.TotalMilliseconds;
-            _tcp.SendTimeout = (int)Timeout.TotalMilliseconds;
-            _tcpStream = _tcp.GetStream();
+            try
+            {
+                await tcp.ConnectAsync(_host, _port, linked.Token).ConfigureAwait(false);
+                tcp.NoDelay = true;
+                tcp.ReceiveTimeout = (int)Timeout.TotalMilliseconds;
+                tcp.SendTimeout = (int)Timeout.TotalMilliseconds;
+                _tcp = tcp;
+                _tcpStream = tcp.GetStream();
+            }
+            catch
+            {
+                tcp.Dispose();
+                throw;
+            }
             return;
         }
 
@@ -1501,23 +1510,33 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (_transportMode == SlmpTransportMode.Tcp)
         {
             if (_tcpStream is null) throw new SlmpError("tcp not open");
-            await _tcpStream.WriteAsync(frame, cancellationToken).ConfigureAwait(false);
-            if (!expectResponse)
+            using var tcpTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            tcpTimeout.CancelAfter(Timeout);
+            try
             {
-                LastResponseFrame = [];
-                return [];
-            }
-
-            while (true)
-            {
-                var response = await ReceiveTcpFrameAsync(_tcpStream, cancellationToken).ConfigureAwait(false);
-                LastResponseFrame = response;
-                FireTrace(SlmpTraceDirection.Receive, response);
-                if (!HasExpectedResponseSerial(response, expectedSerial))
+                await _tcpStream.WriteAsync(frame, tcpTimeout.Token).ConfigureAwait(false);
+                if (!expectResponse)
                 {
-                    continue;
+                    LastResponseFrame = [];
+                    return [];
                 }
-                return ParseResponse(command, subcommand, response);
+
+                while (true)
+                {
+                    var response = await ReceiveTcpFrameAsync(_tcpStream, FrameType, tcpTimeout.Token).ConfigureAwait(false);
+                    LastResponseFrame = response;
+                    FireTrace(SlmpTraceDirection.Receive, response);
+                    if (!HasExpectedResponseFrameType(response, FrameType))
+                        throw new SlmpError("unexpected response frame type");
+                    if (!HasExpectedResponseSerial(response, expectedSerial))
+                        continue;
+                    return ParseResponse(command, subcommand, response);
+                }
+            }
+            catch
+            {
+                Close();
+                throw;
             }
         }
 
@@ -1536,6 +1555,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             var datagram = await _udp.ReceiveAsync(linked.Token).ConfigureAwait(false);
             LastResponseFrame = datagram.Buffer;
             FireTrace(SlmpTraceDirection.Receive, datagram.Buffer);
+            if (!HasExpectedResponseFrameType(datagram.Buffer, FrameType))
+                throw new SlmpError("unexpected response frame type");
             if (!HasExpectedResponseSerial(datagram.Buffer, expectedSerial))
             {
                 continue;
@@ -1578,12 +1599,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         return frame;
     }
 
-    private static async Task<byte[]> ReceiveTcpFrameAsync(NetworkStream stream, CancellationToken cancellationToken)
+    private static async Task<byte[]> ReceiveTcpFrameAsync(
+        NetworkStream stream,
+        SlmpFrameType expectedFrameType,
+        CancellationToken cancellationToken)
     {
         var header = new byte[13];
         await ReadExactAsync(stream, header.AsMemory(0, 2), cancellationToken).ConfigureAwait(false);
 
-        if (header[0] == 0xD4 && header[1] == 0x00)
+        if (expectedFrameType == SlmpFrameType.Frame4E && header[0] == 0xD4 && header[1] == 0x00)
         {
             // 4E response: subheader(2) + serial(2) + reserved(2) + net(1) + sta(1) + mod(2) + multi(1) + len(2) = 13 bytes header
             await ReadExactAsync(stream, header.AsMemory(2, 11), cancellationToken).ConfigureAwait(false);
@@ -1594,7 +1618,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             return frame;
         }
 
-        if (header[0] == 0xD0 && header[1] == 0x00)
+        if (expectedFrameType == SlmpFrameType.Frame3E && header[0] == 0xD0 && header[1] == 0x00)
         {
             // 3E response: subheader(2) + net(1) + sta(1) + mod(2) + multi(1) + len(2) = 9 bytes header
             await ReadExactAsync(stream, header.AsMemory(2, 7), cancellationToken).ConfigureAwait(false);
@@ -1638,10 +1662,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         }
         if (response.Length < 4 || response[0] != 0xD4 || response[1] != 0x00)
         {
-            return true;
+            return false;
         }
         return BinaryPrimitives.ReadUInt16LittleEndian(response.AsSpan(2, 2)) == expectedSerial.Value;
     }
+
+    private static bool HasExpectedResponseFrameType(byte[] response, SlmpFrameType expectedFrameType)
+        => expectedFrameType == SlmpFrameType.Frame4E
+            ? response.Length >= 2 && response[0] == 0xD4 && response[1] == 0x00
+            : response.Length >= 2 && response[0] == 0xD0 && response[1] == 0x00;
 
     private static async Task ReadExactAsync(NetworkStream stream, Memory<byte> buffer, CancellationToken cancellationToken)
     {
