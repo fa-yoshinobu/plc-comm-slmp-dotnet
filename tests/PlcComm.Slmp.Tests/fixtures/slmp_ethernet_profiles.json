@@ -14,20 +14,20 @@
     }
   },
   "evidence_files": {
-    "melsec:iq-r": "evidence/profile-definitions/iq-r_slmp_profile_definition_20260703.md",
-    "melsec:iq-r:rj71en71": "evidence/profile-definitions/iq-r_rj71en71_slmp_profile_definition_20260705.md",
-    "melsec:iq-l": "evidence/profile-definitions/iq-l_slmp_profile_definition_20260703.md",
-    "melsec:mx-r": "evidence/profile-definitions/mx-r_slmp_profile_definition_20260703.md",
-    "melsec:mx-f": "evidence/profile-definitions/mx-f_slmp_profile_definition_20260703.md",
-    "melsec:iq-f": "evidence/profile-definitions/iq-f_slmp_profile_definition_20260703.md",
-    "melsec:qcpu": "evidence/profile-definitions/qcpu_slmp_profile_definition_20260703.md",
-    "melsec:qcpu:qj71e71-100": "evidence/profile-definitions/qcpu_qj71e71-100_slmp_profile_definition_20260705.md",
-    "melsec:lcpu": "evidence/profile-definitions/lcpu_slmp_profile_definition_20260703.md",
-    "melsec:lcpu:lj71e71-100": "evidence/profile-definitions/lcpu_lj71e71-100_slmp_profile_definition_20260705.md",
-    "melsec:qnu": "evidence/profile-definitions/qnu_slmp_profile_definition_20260703.md",
-    "melsec:qnu:qj71e71-100": "evidence/profile-definitions/qnu_qj71e71-100_slmp_profile_definition_20260705.md",
-    "melsec:qnudv": "evidence/profile-definitions/qnudv_slmp_profile_definition_20260703.md",
-    "melsec:qnudv:qj71e71-100": "evidence/profile-definitions/qnudv_qj71e71-100_slmp_profile_definition_20260705.md"
+    "melsec:iq-r": "evidence/profile-definitions/iq-r_profile_definition.md",
+    "melsec:iq-r:rj71en71": "evidence/profile-definitions/iq-r_rj71en71_profile_definition.md",
+    "melsec:iq-l": "evidence/profile-definitions/iq-l_profile_definition.md",
+    "melsec:mx-r": "evidence/profile-definitions/mx-r_profile_definition.md",
+    "melsec:mx-f": "evidence/profile-definitions/mx-f_profile_definition.md",
+    "melsec:iq-f": "evidence/profile-definitions/iq-f_profile_definition.md",
+    "melsec:qcpu": "evidence/profile-definitions/qcpu_profile_definition.md",
+    "melsec:qcpu:qj71e71-100": "evidence/profile-definitions/qcpu_qj71e71-100_profile_definition.md",
+    "melsec:lcpu": "evidence/profile-definitions/lcpu_profile_definition.md",
+    "melsec:lcpu:lj71e71-100": "evidence/profile-definitions/lcpu_lj71e71-100_profile_definition.md",
+    "melsec:qnu": "evidence/profile-definitions/qnu_profile_definition.md",
+    "melsec:qnu:qj71e71-100": "evidence/profile-definitions/qnu_qj71e71-100_profile_definition.md",
+    "melsec:qnudv": "evidence/profile-definitions/qnudv_profile_definition.md",
+    "melsec:qnudv:qj71e71-100": "evidence/profile-definitions/qnudv_qj71e71-100_profile_definition.md"
   },
   "profiles": {
     "melsec:iq-r": {
