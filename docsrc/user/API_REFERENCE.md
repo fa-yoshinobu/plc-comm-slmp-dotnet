@@ -4190,6 +4190,15 @@ Fixed high-level defaults driven by `SlmpPlcProfile`.
 
 #### Members
 
+##### AvailableProfiles
+
+```csharp
+public static IReadOnlyList<SlmpPlcProfile> AvailableProfiles()
+```
+
+Returns the built-in profiles accepted by the standard connection helpers.
+The abstract `QCpu` base profile and `Unspecified` are excluded.
+
 ##### Parse
 
 ```csharp

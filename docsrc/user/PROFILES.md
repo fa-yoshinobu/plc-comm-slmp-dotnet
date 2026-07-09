@@ -3,7 +3,9 @@
 The canonical profile is the stable configuration value for PLC selection.
 `SlmpPlcProfile` is the .NET API selector used by the client.
 Use `SlmpPlcProfiles.GetDisplayName(profile)` for UI labels. Store the
-canonical profile string, not the display name.
+canonical profile string from `SlmpPlcProfiles.ToCanonicalString(profile)`, not
+the display name. Use `SlmpPlcProfiles.AvailableProfiles()` when a selector
+should list only profiles accepted by the standard connection helpers.
 
 For cross-profile capability and device-range details, see the [SLMP Profile Reference](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/).
 

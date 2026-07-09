@@ -30,6 +30,27 @@ public static class SlmpPlcProfiles
         "melsec:qnudv:qj71e71-100",
     });
 
+    private static readonly IReadOnlyList<SlmpPlcProfile> ConnectionProfiles =
+        new[]
+        {
+            SlmpPlcProfile.IqF,
+            SlmpPlcProfile.IqR,
+            SlmpPlcProfile.IqRRj71En71,
+            SlmpPlcProfile.IqL,
+            SlmpPlcProfile.MxF,
+            SlmpPlcProfile.MxR,
+            SlmpPlcProfile.QCpuQj71E71100,
+            SlmpPlcProfile.LCpu,
+            SlmpPlcProfile.LCpuLj71E71100,
+            SlmpPlcProfile.QnU,
+            SlmpPlcProfile.QnUQj71E71100,
+            SlmpPlcProfile.QnUDV,
+            SlmpPlcProfile.QnUDVQj71E71100,
+        };
+
+    /// <summary>Return the built-in profiles that can be used to open a connection.</summary>
+    public static IReadOnlyList<SlmpPlcProfile> AvailableProfiles() => ConnectionProfiles;
+
     /// <summary>Parse a canonical PLC profile string.</summary>
     public static SlmpPlcProfile Parse(string? text)
     {

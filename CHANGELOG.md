@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-07-10
+
+### Changed
+- Release: Bumped .NET package metadata to `2.0.1`.
+
+### Added
+- Library: Added `SlmpPlcProfiles.AvailableProfiles()` for connection-selectable profile enumeration, excluding `Unspecified` and the base-only `QCpu` profile.
+- Docs: Documented the connection profile enumeration API.
+
 ## [2.0.0] - 2026-07-06
 
 ### BREAKING
