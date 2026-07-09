@@ -95,4 +95,4 @@ Recommended order:
 2. Verify CI on that commit.
 3. Create and push the version tag.
 4. Let the release workflow build the package artifacts.
-5. Publish the `.nupkg` and `.snupkg` to NuGet manually after the GitHub Release artifacts are verified.
+5. Publish the `.nupkg` and `.snupkg` to NuGet manually after the GitHub Release artifacts are checked.
