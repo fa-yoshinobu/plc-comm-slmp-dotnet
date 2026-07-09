@@ -1533,6 +1533,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                     return ParseResponse(command, subcommand, response);
                 }
             }
+            catch (SlmpError ex) when (ex.EndCode is not null)
+            {
+                // A PLC end code is an application-level response. Keep the
+                // connection usable so callers can handle the error and issue
+                // the next request on the same session.
+                throw;
+            }
             catch
             {
                 Close();
