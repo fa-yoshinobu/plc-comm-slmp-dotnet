@@ -293,9 +293,9 @@ def normalize_text(text: str) -> str:
 
 
 def cref_label(value: str) -> str:
-    value = value.split(":", 1)[-1]
-    value = value.replace("`1", "").replace("`2", "").replace("``1", "").replace("``2", "")
-    return value.split(".")[-1]
+    member_id = value.split(":", 1)[-1].split("(", 1)[0]
+    member_id = re.sub(r"`{1,2}\d+", "", member_id)
+    return member_id.rsplit(".", 1)[-1]
 
 
 def node_text(node: ET.Element | None) -> str:

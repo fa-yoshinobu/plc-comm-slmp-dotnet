@@ -419,7 +419,7 @@ public SlmpClient InnerClient { get; }
 
 Gets the underlying low-level SLMP client.
 
-Remarks: Advanced callers can use this property for APIs that are not surfaced directly on `QueuedSlmpClient`, while still using `CancellationToken)` to preserve serialized access.
+Remarks: Advanced callers can use this property for APIs that are not surfaced directly on `QueuedSlmpClient`, while still using `ExecuteAsync` to preserve serialized access.
 
 ##### FrameType
 
@@ -569,7 +569,7 @@ public static string Normalize(string text)
 
 Normalizes one SLMP device string to canonical text.
 
-Returns: The canonical uppercase representation returned by `SlmpDeviceAddress)`.
+Returns: The canonical uppercase representation returned by `Format`.
 
 Parameters:
 - `text`: Input device text in any supported spelling.
@@ -679,7 +679,7 @@ public sealed class SlmpClient
 
 A high-performance, asynchronous SLMP (MC Protocol) client for .NET. Supports 3E and 4E frame formats over TCP and UDP.
 
-Remarks: This class is not thread-safe. Concurrent calls to `CancellationToken)` will interleave send/receive bytes on the same connection. For concurrent or shared-connection scenarios, wrap this client in a `QueuedSlmpClient`, which serializes all operations with a semaphore. The factory `CancellationToken)` returns a ready-to-use `QueuedSlmpClient` and is the recommended entry point for most use cases.
+Remarks: This class is not thread-safe. Concurrent calls to `RequestAsync` will interleave send/receive bytes on the same connection. For concurrent or shared-connection scenarios, wrap this client in a `QueuedSlmpClient`, which serializes all operations with a semaphore. The factory `OpenAndConnectAsync` returns a ready-to-use `QueuedSlmpClient` and is the recommended entry point for most use cases.
 
 #### Members
 
@@ -955,7 +955,7 @@ public Task WriteBlockAsync(IReadOnlyList<SlmpBlockWrite> wordBlocks, IReadOnlyL
 public Task RegisterMonitorDevicesAsync(IReadOnlyList<SlmpDeviceAddress> wordDevices, IReadOnlyList<SlmpDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
 ```
 
-Registers a set of word and DWord devices for monitoring (command 0x0801). Call `CancellationToken)` to read the registered devices.
+Registers a set of word and DWord devices for monitoring (command 0x0801). Call `RunMonitorCycleAsync` to read the registered devices.
 
 Parameters:
 - `wordDevices`: Word devices to monitor.
@@ -2141,7 +2141,7 @@ Writes multiple named values through a queued client.
 
 Parameters:
 - `client`: Queued SLMP client safe for shared use.
-- `updates`: Address-to-value map in the same format as `CancellationToken)`.
+- `updates`: Address-to-value map in the same format as `WriteNamedAsync`.
 - `ct`: Cancellation token.
 
 ##### PollAsync
@@ -2158,7 +2158,7 @@ Returns: An async stream of snapshot dictionaries.
 
 Parameters:
 - `client`: Connected SLMP client.
-- `addresses`: Address list in the same format as `CancellationToken)`.
+- `addresses`: Address list in the same format as `ReadNamedAsync`.
 - `interval`: Delay between snapshots.
 - `ct`: Cancellation token.
 
@@ -2174,7 +2174,7 @@ Returns: An async stream of snapshot dictionaries.
 
 Parameters:
 - `client`: Queued SLMP client safe for shared use.
-- `addresses`: Address list in the same format as `CancellationToken)`.
+- `addresses`: Address list in the same format as `ReadNamedAsync`.
 - `interval`: Delay between snapshots.
 - `ct`: Cancellation token.
 
@@ -2406,7 +2406,7 @@ public sealed class SlmpConnectionOptions
 
 Explicit connection options for a stable SLMP session profile.
 
-Remarks: Use `PlcProfile` for the recommended high-level API. The library derives frame type, compatibility mode, string-address handling, and device-range handling from that explicit profile. This type is intended for the unified high-level entry point exposed by `CancellationToken)`.
+Remarks: Use `PlcProfile` for the recommended high-level API. The library derives frame type, compatibility mode, string-address handling, and device-range handling from that explicit profile. This type is intended for the unified high-level entry point exposed by `OpenAndConnectAsync`.
 
 #### Members
 
@@ -2418,7 +2418,7 @@ public SlmpConnectionOptions(string Host, SlmpPlcProfile PlcProfile)
 
 Explicit connection options for a stable SLMP session profile.
 
-Remarks: Use `PlcProfile` for the recommended high-level API. The library derives frame type, compatibility mode, string-address handling, and device-range handling from that explicit profile. This type is intended for the unified high-level entry point exposed by `CancellationToken)`.
+Remarks: Use `PlcProfile` for the recommended high-level API. The library derives frame type, compatibility mode, string-address handling, and device-range handling from that explicit profile. This type is intended for the unified high-level entry point exposed by `OpenAndConnectAsync`.
 
 Parameters:
 - `Host`: PLC IP address or hostname.
@@ -3330,7 +3330,7 @@ Returns the stable code-derived key for an SLMP end code.
 public static string GetMessage(ushort endCode, SlmpEndCodeLanguage language = English)
 ```
 
-Returns a user-facing message for an SLMP end code. Localized message text is not embedded in this library; resolve `UInt16)` in an application-owned catalog.
+Returns a user-facing message for an SLMP end code. Localized message text is not embedded in this library; resolve `GetName` in an application-owned catalog.
 
 ##### IsRemotePasswordEndCode
 
