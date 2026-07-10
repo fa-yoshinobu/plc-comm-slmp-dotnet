@@ -7,6 +7,13 @@ public sealed record SlmpPlcProfileDefaults(
     SlmpPlcProfile AddressProfile,
     SlmpPlcProfile RangeProfile);
 
+/// <summary>Canonical metadata used to select and describe one PLC profile.</summary>
+public sealed record SlmpPlcProfileDescriptor(
+    string CanonicalName,
+    string DisplayName,
+    bool Connectable,
+    string? BaseProfile);
+
 /// <summary>Fixed high-level defaults driven by <see cref="SlmpPlcProfile"/>.</summary>
 public static class SlmpPlcProfiles
 {
@@ -48,8 +55,36 @@ public static class SlmpPlcProfiles
             SlmpPlcProfile.QnUDVQj71E71100,
         };
 
+    private static readonly IReadOnlyList<SlmpPlcProfileDescriptor> ProfileDescriptors =
+        new SlmpPlcProfileDescriptor[]
+        {
+            new("melsec:iq-f", "MELSEC iQ-F (built-in)", true, null),
+            new("melsec:iq-r", "MELSEC iQ-R (built-in)", true, null),
+            new("melsec:iq-r:rj71en71", "MELSEC iQ-R (RJ71EN71)", true, "melsec:iq-r"),
+            new("melsec:iq-l", "MELSEC iQ-L (built-in)", true, null),
+            new("melsec:mx-f", "MELSEC MX-F (built-in)", true, "melsec:iq-r"),
+            new("melsec:mx-r", "MELSEC MX-R (built-in)", true, "melsec:iq-r"),
+            new("melsec:qcpu", "MELSEC-Q (base profile)", false, "melsec:qnu"),
+            new("melsec:qcpu:qj71e71-100", "MELSEC-Q (QJ71E71-100)", true, "melsec:qcpu"),
+            new("melsec:lcpu", "MELSEC-L (built-in)", true, null),
+            new("melsec:lcpu:lj71e71-100", "MELSEC-L (LJ71E71-100)", true, "melsec:lcpu"),
+            new("melsec:qnu", "MELSEC QnU (built-in)", true, null),
+            new("melsec:qnu:qj71e71-100", "MELSEC QnU (QJ71E71-100)", true, "melsec:qnu"),
+            new("melsec:qnudv", "MELSEC QnUDV (built-in)", true, null),
+            new("melsec:qnudv:qj71e71-100", "MELSEC QnUDV (QJ71E71-100)", true, "melsec:qnudv"),
+        };
+
     /// <summary>Return the built-in profiles that can be used to open a connection.</summary>
     public static IReadOnlyList<SlmpPlcProfile> AvailableProfiles() => ConnectionProfiles;
+
+    /// <summary>
+    /// Return all canonical profiles with display, connection, and base-profile metadata.
+    /// </summary>
+    /// <remarks>
+    /// The abstract <c>melsec:qcpu</c> entry is included with <see cref="SlmpPlcProfileDescriptor.Connectable"/>
+    /// set to <see langword="false"/> so selectors can explain why it cannot be opened directly.
+    /// </remarks>
+    public static IReadOnlyList<SlmpPlcProfileDescriptor> GetProfileDescriptors() => ProfileDescriptors;
 
     /// <summary>Parse a canonical PLC profile string.</summary>
     public static SlmpPlcProfile Parse(string? text)

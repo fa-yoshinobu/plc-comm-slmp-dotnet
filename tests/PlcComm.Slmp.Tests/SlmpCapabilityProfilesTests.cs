@@ -5,6 +5,13 @@ namespace PlcComm.Slmp.Tests;
 
 public sealed class SlmpCapabilityProfilesTests
 {
+    private static readonly string[] ExpectedDescriptorNames =
+    {
+        "melsec:iq-f", "melsec:iq-r", "melsec:iq-r:rj71en71", "melsec:iq-l", "melsec:mx-f", "melsec:mx-r",
+        "melsec:qcpu", "melsec:qcpu:qj71e71-100", "melsec:lcpu", "melsec:lcpu:lj71e71-100", "melsec:qnu",
+        "melsec:qnu:qj71e71-100", "melsec:qnudv", "melsec:qnudv:qj71e71-100",
+    };
+
     [Fact]
     public void BuiltInCapabilityProfiles_MatchCanonicalFixture()
     {
@@ -64,6 +71,32 @@ public sealed class SlmpCapabilityProfilesTests
                 actualProfile.WritePolicy.Keys.Order().ToArray());
             foreach (var expectedPolicyProperty in expectedWritePolicy.EnumerateObject())
                 Assert.Equal(expectedPolicyProperty.Value.GetString(), actualProfile.WritePolicy[expectedPolicyProperty.Name]);
+        }
+    }
+
+    [Fact]
+    public void ProfileDescriptors_MatchCanonicalProfileMetadata()
+    {
+        var fixturePath = Path.Combine(AppContext.BaseDirectory, "fixtures", "slmp_ethernet_profiles.json");
+        using var document = JsonDocument.Parse(File.ReadAllText(fixturePath));
+        var expectedProfiles = document.RootElement.GetProperty("profiles");
+        var descriptors = SlmpPlcProfiles.GetProfileDescriptors();
+
+        Assert.Equal(14, descriptors.Count);
+        Assert.Equal(
+            ExpectedDescriptorNames,
+            descriptors.Select(static descriptor => descriptor.CanonicalName));
+
+        foreach (var descriptor in descriptors)
+        {
+            var expected = expectedProfiles.GetProperty(descriptor.CanonicalName);
+            Assert.Equal(expected.GetProperty("display_name").GetString(), descriptor.DisplayName);
+            Assert.Equal(
+                !expected.TryGetProperty("role", out var role) || role.GetString() != "base",
+                descriptor.Connectable);
+            Assert.Equal(
+                expected.TryGetProperty("base_profile", out var baseProfile) ? baseProfile.GetString() : null,
+                descriptor.BaseProfile);
         }
     }
 }
