@@ -19,8 +19,44 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      - name: Resolve existing release tag
+        id: release
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ github.event.inputs.version }}"
+            $tag = "v$version"
+          } else {
+            $tag = "${{ github.ref_name }}"
+            $version = $tag.Substring(1)
+          }
+          if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(?:[.-][0-9A-Za-z.-]+)?$') {
+            throw "Invalid release tag: $tag"
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ steps.release.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Verify exact tag checkout and manifest version
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.release.outputs.tag }}"
+          git ls-remote --exit-code --tags origin "refs/tags/$tag" *> $null
+          if ($LASTEXITCODE -ne 0) {
+            throw "Remote tag '$tag' does not exist."
+          }
+          $head = (git rev-parse HEAD).Trim()
+          $tagCommit = (git rev-list -n 1 $tag).Trim()
+          if ($head -cne $tagCommit) {
+            throw "Checkout mismatch: HEAD=$head, tagCommit=$tagCommit"
+          }
+          .\scripts\check_release_version.ps1 -Tag $tag
+          .\scripts\test_check_release_version.ps1
 
       - name: Check canonical SLMP profile JSONs
         shell: pwsh
@@ -34,6 +70,11 @@ jobs:
             9.0.x
             10.0.x
 
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
       - name: Restore
         run: dotnet restore PlcComm.Slmp.sln
 
@@ -43,16 +84,30 @@ jobs:
       - name: Test
         run: dotnet test PlcComm.Slmp.sln -c Release --no-build --logger "trx;LogFileName=test-results.trx"
 
+      - name: Check API reference generator
+        shell: pwsh
+        run: |
+          python scripts\test_generate_api_reference.py
+          python scripts\generate_api_reference.py --assembly src\PlcComm.Slmp\bin\Release\net8.0\PlcComm.Slmp.dll --xml src\PlcComm.Slmp\bin\Release\net8.0\PlcComm.Slmp.xml --output docsrc\user\API_REFERENCE.md --title "SLMP .NET API Reference" --package PlcComm.Slmp --check
+
       - name: Format check
         run: dotnet format PlcComm.Slmp.sln --verify-no-changes --no-restore
 
       - name: Pack
         run: dotnet pack src\PlcComm.Slmp\PlcComm.Slmp.csproj -c Release --no-build --output out
 
+      - name: Verify runtime and package versions
+        shell: pwsh
+        run: >-
+          .\scripts\check_release_version.ps1
+          -Tag "${{ steps.release.outputs.tag }}"
+          -AssemblyPath src\PlcComm.Slmp\bin\Release\net8.0\PlcComm.Slmp.dll
+          -PackageDirectory out
+
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nuget-packages
+          name: nuget-packages-${{ steps.release.outputs.version }}
           path: out\*
           retention-days: 7
 
@@ -61,14 +116,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            $tag = "v${{ github.event.inputs.version }}"
-          } else {
-            $tag = "${{ github.ref_name }}"
-          }
+          $tag = "${{ steps.release.outputs.tag }}"
           $assets = Get-ChildItem out -File | Select-Object -ExpandProperty FullName
-          if (gh release view $tag --repo "${{ github.repository }}") {
+          gh release view $tag --repo "${{ github.repository }}" *> $null
+          if ($LASTEXITCODE -eq 0) {
             gh release upload $tag $assets --repo "${{ github.repository }}" --clobber
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to upload assets to GitHub Release '$tag'."
+            }
           } else {
-            gh release create $tag $assets --repo "${{ github.repository }}" --target main --title "Release $tag" --generate-notes
+            gh release create $tag $assets --repo "${{ github.repository }}" --verify-tag --title "Release $tag" --generate-notes
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to create GitHub Release '$tag'."
+            }
           }
