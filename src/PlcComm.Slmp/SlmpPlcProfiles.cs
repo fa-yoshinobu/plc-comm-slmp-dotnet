@@ -7,6 +7,13 @@ public sealed record SlmpPlcProfileDefaults(
     SlmpPlcProfile AddressProfile,
     SlmpPlcProfile RangeProfile);
 
+/// <summary>Canonical metadata used to select and describe one PLC profile.</summary>
+public sealed record SlmpPlcProfileDescriptor(
+    string CanonicalName,
+    string DisplayName,
+    bool Connectable,
+    string? BaseProfile);
+
 /// <summary>Fixed high-level defaults driven by <see cref="SlmpPlcProfile"/>.</summary>
 public static class SlmpPlcProfiles
 {
@@ -48,8 +55,40 @@ public static class SlmpPlcProfiles
             SlmpPlcProfile.QnUDVQj71E71100,
         };
 
+    private static readonly IReadOnlyList<SlmpPlcProfileDescriptor> ProfileDescriptors =
+        Enum.GetValues<SlmpPlcProfile>()
+            .Where(static profile => profile != SlmpPlcProfile.Unspecified)
+            .Select(static profile => new SlmpPlcProfileDescriptor(
+                ToCanonicalString(profile),
+                GetDisplayName(profile),
+                profile != SlmpPlcProfile.QCpu,
+                GetBaseProfile(profile)))
+            .ToArray();
+
     /// <summary>Return the built-in profiles that can be used to open a connection.</summary>
     public static IReadOnlyList<SlmpPlcProfile> AvailableProfiles() => ConnectionProfiles;
+
+    /// <summary>
+    /// Return all canonical profiles with display, connection, and base-profile metadata.
+    /// </summary>
+    /// <remarks>
+    /// The abstract <c>melsec:qcpu</c> entry is included with <see cref="SlmpPlcProfileDescriptor.Connectable"/>
+    /// set to <see langword="false"/> so selectors can explain why it cannot be opened directly.
+    /// </remarks>
+    public static IReadOnlyList<SlmpPlcProfileDescriptor> GetProfileDescriptors() => ProfileDescriptors;
+
+    private static string? GetBaseProfile(SlmpPlcProfile profile)
+        => profile switch
+        {
+            SlmpPlcProfile.IqRRj71En71 => "melsec:iq-r",
+            SlmpPlcProfile.MxF or SlmpPlcProfile.MxR => "melsec:iq-r",
+            SlmpPlcProfile.QCpu => "melsec:qnu",
+            SlmpPlcProfile.QCpuQj71E71100 => "melsec:qcpu",
+            SlmpPlcProfile.LCpuLj71E71100 => "melsec:lcpu",
+            SlmpPlcProfile.QnUQj71E71100 => "melsec:qnu",
+            SlmpPlcProfile.QnUDVQj71E71100 => "melsec:qnudv",
+            _ => null,
+        };
 
     /// <summary>Parse a canonical PLC profile string.</summary>
     public static SlmpPlcProfile Parse(string? text)

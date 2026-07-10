@@ -17,10 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.0.1] - 2026-07-10
+## [3.1.0] - 2026-07-10
+
+### Added
+- Library: Added `SlmpPlcProfileDescriptor` and `SlmpPlcProfiles.GetProfileDescriptors()` for canonical SLMP profile metadata.
 
 ### Changed
-- Release: Bumped .NET package metadata to `3.0.1`.
+- Release: Bumped .NET package metadata to `3.1.0`.
 - Tooling: Pinned canonical SLMP profile imports to immutable profile commit `e7e8f071ff1819a6b088b6a793e6f08029c54e38`.
 
 ### Fixed

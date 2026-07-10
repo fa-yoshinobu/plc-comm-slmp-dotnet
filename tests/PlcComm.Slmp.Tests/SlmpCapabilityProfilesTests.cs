@@ -66,4 +66,29 @@ public sealed class SlmpCapabilityProfilesTests
                 Assert.Equal(expectedPolicyProperty.Value.GetString(), actualProfile.WritePolicy[expectedPolicyProperty.Name]);
         }
     }
+
+    [Fact]
+    public void ProfileDescriptors_MatchCanonicalProfileMetadata()
+    {
+        var fixturePath = Path.Combine(AppContext.BaseDirectory, "fixtures", "slmp_ethernet_profiles.json");
+        using var document = JsonDocument.Parse(File.ReadAllText(fixturePath));
+        var expectedProfiles = document.RootElement.GetProperty("profiles");
+        var descriptors = SlmpPlcProfiles.GetProfileDescriptors();
+        var expectedIds = expectedProfiles.EnumerateObject().Select(static property => property.Name).Order().ToArray();
+        var actualIds = descriptors.Select(static descriptor => descriptor.CanonicalName).Order().ToArray();
+
+        Assert.Equal(expectedIds, actualIds);
+
+        foreach (var descriptor in descriptors)
+        {
+            var expected = expectedProfiles.GetProperty(descriptor.CanonicalName);
+            Assert.Equal(expected.GetProperty("display_name").GetString(), descriptor.DisplayName);
+            Assert.Equal(
+                !expected.TryGetProperty("role", out var role) || role.GetString() != "base",
+                descriptor.Connectable);
+            Assert.Equal(
+                expected.TryGetProperty("base_profile", out var baseProfile) ? baseProfile.GetString() : null,
+                descriptor.BaseProfile);
+        }
+    }
 }

@@ -4180,6 +4180,48 @@ public SlmpPlcProfile AddressProfile { get; set; }
 public SlmpPlcProfile RangeProfile { get; set; }
 ```
 
+### SlmpPlcProfileDescriptor
+
+```csharp
+public sealed class SlmpPlcProfileDescriptor
+```
+
+Canonical metadata used to select and describe one PLC profile.
+
+#### Members
+
+##### SlmpPlcProfileDescriptor
+
+```csharp
+public SlmpPlcProfileDescriptor(string CanonicalName, string DisplayName, bool Connectable, string BaseProfile)
+```
+
+Canonical metadata used to select and describe one PLC profile.
+
+##### CanonicalName
+
+```csharp
+public string CanonicalName { get; set; }
+```
+
+##### DisplayName
+
+```csharp
+public string DisplayName { get; set; }
+```
+
+##### Connectable
+
+```csharp
+public bool Connectable { get; set; }
+```
+
+##### BaseProfile
+
+```csharp
+public string BaseProfile { get; set; }
+```
+
 ### SlmpPlcProfiles
 
 ```csharp
@@ -4197,6 +4239,16 @@ public static IReadOnlyList<SlmpPlcProfile> AvailableProfiles()
 ```
 
 Return the built-in profiles that can be used to open a connection.
+
+##### GetProfileDescriptors
+
+```csharp
+public static IReadOnlyList<SlmpPlcProfileDescriptor> GetProfileDescriptors()
+```
+
+Return all canonical profiles with display, connection, and base-profile metadata.
+
+Remarks: The abstract `melsec:qcpu` entry is included with `Connectable` set to `false` so selectors can explain why it cannot be opened directly.
 
 ##### Parse
 
