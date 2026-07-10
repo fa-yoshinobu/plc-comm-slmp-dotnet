@@ -15,6 +15,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Check release workflows do not auto-publish
+        shell: pwsh
+        run: ./scripts/check_no_auto_publish.ps1
       - name: Check canonical SLMP profile JSONs
         shell: pwsh
         run: .\scripts\update_slmp_profile_jsons.ps1 -FailIfChanged

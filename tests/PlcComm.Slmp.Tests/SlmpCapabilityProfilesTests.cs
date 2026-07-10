@@ -5,13 +5,6 @@ namespace PlcComm.Slmp.Tests;
 
 public sealed class SlmpCapabilityProfilesTests
 {
-    private static readonly string[] ExpectedDescriptorNames =
-    {
-        "melsec:iq-f", "melsec:iq-r", "melsec:iq-r:rj71en71", "melsec:iq-l", "melsec:mx-f", "melsec:mx-r",
-        "melsec:qcpu", "melsec:qcpu:qj71e71-100", "melsec:lcpu", "melsec:lcpu:lj71e71-100", "melsec:qnu",
-        "melsec:qnu:qj71e71-100", "melsec:qnudv", "melsec:qnudv:qj71e71-100",
-    };
-
     [Fact]
     public void BuiltInCapabilityProfiles_MatchCanonicalFixture()
     {
@@ -81,11 +74,10 @@ public sealed class SlmpCapabilityProfilesTests
         using var document = JsonDocument.Parse(File.ReadAllText(fixturePath));
         var expectedProfiles = document.RootElement.GetProperty("profiles");
         var descriptors = SlmpPlcProfiles.GetProfileDescriptors();
+        var expectedIds = expectedProfiles.EnumerateObject().Select(static property => property.Name).Order().ToArray();
+        var actualIds = descriptors.Select(static descriptor => descriptor.CanonicalName).Order().ToArray();
 
-        Assert.Equal(14, descriptors.Count);
-        Assert.Equal(
-            ExpectedDescriptorNames,
-            descriptors.Select(static descriptor => descriptor.CanonicalName));
+        Assert.Equal(expectedIds, actualIds);
 
         foreach (var descriptor in descriptors)
         {

@@ -125,7 +125,7 @@ jobs:
               throw "Failed to upload assets to GitHub Release '$tag'."
             }
           } else {
-            gh release create $tag $assets --repo "${{ github.repository }}" --verify-tag --title "Release $tag" --generate-notes
+            gh release create $tag $assets --repo "${{ github.repository }}" --verify-tag --title "Release $tag" --generate-notes --draft
             if ($LASTEXITCODE -ne 0) {
               throw "Failed to create GitHub Release '$tag'."
             }

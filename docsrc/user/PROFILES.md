@@ -5,7 +5,8 @@ The canonical profile is the stable configuration value for PLC selection.
 Use `SlmpPlcProfiles.GetProfileDescriptors()` when a UI or configuration schema
 needs the canonical name, display name, connection availability, and
 base-profile relationship in one list. The abstract `melsec:qcpu` entry is
-included with `Connectable == false`. Store `CanonicalName`, not `DisplayName`.
+included with `Connectable == false`. This descriptor list is the stable
+source for selectors; store `CanonicalName`, not `DisplayName`.
 
 For cross-profile capability and device-range details, see the [SLMP Profile Reference](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/).
 

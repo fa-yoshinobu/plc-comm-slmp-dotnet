@@ -24,11 +24,11 @@ foreach ($requiredText in @(
     '--verify-tag',
     'if ($LASTEXITCODE -ne 0)'
 )) {
-    if (-not $workflow.Contains($requiredText, [System.StringComparison]::Ordinal)) {
+    if ($workflow.IndexOf($requiredText, [System.StringComparison]::Ordinal) -lt 0) {
         throw "Release workflow is missing required text: $requiredText"
     }
 }
-if ($workflow.Contains("--target ", [System.StringComparison]::Ordinal)) {
+if ($workflow.IndexOf("--target ", [System.StringComparison]::Ordinal) -ge 0) {
     throw "Release workflow must use the verified remote tag instead of --target."
 }
 

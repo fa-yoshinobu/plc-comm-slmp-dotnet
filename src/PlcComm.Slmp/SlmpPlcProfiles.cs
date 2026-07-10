@@ -56,23 +56,14 @@ public static class SlmpPlcProfiles
         };
 
     private static readonly IReadOnlyList<SlmpPlcProfileDescriptor> ProfileDescriptors =
-        new SlmpPlcProfileDescriptor[]
-        {
-            new("melsec:iq-f", "MELSEC iQ-F (built-in)", true, null),
-            new("melsec:iq-r", "MELSEC iQ-R (built-in)", true, null),
-            new("melsec:iq-r:rj71en71", "MELSEC iQ-R (RJ71EN71)", true, "melsec:iq-r"),
-            new("melsec:iq-l", "MELSEC iQ-L (built-in)", true, null),
-            new("melsec:mx-f", "MELSEC MX-F (built-in)", true, "melsec:iq-r"),
-            new("melsec:mx-r", "MELSEC MX-R (built-in)", true, "melsec:iq-r"),
-            new("melsec:qcpu", "MELSEC-Q (base profile)", false, "melsec:qnu"),
-            new("melsec:qcpu:qj71e71-100", "MELSEC-Q (QJ71E71-100)", true, "melsec:qcpu"),
-            new("melsec:lcpu", "MELSEC-L (built-in)", true, null),
-            new("melsec:lcpu:lj71e71-100", "MELSEC-L (LJ71E71-100)", true, "melsec:lcpu"),
-            new("melsec:qnu", "MELSEC QnU (built-in)", true, null),
-            new("melsec:qnu:qj71e71-100", "MELSEC QnU (QJ71E71-100)", true, "melsec:qnu"),
-            new("melsec:qnudv", "MELSEC QnUDV (built-in)", true, null),
-            new("melsec:qnudv:qj71e71-100", "MELSEC QnUDV (QJ71E71-100)", true, "melsec:qnudv"),
-        };
+        Enum.GetValues<SlmpPlcProfile>()
+            .Where(static profile => profile != SlmpPlcProfile.Unspecified)
+            .Select(static profile => new SlmpPlcProfileDescriptor(
+                ToCanonicalString(profile),
+                GetDisplayName(profile),
+                profile != SlmpPlcProfile.QCpu,
+                GetBaseProfile(profile)))
+            .ToArray();
 
     /// <summary>Return the built-in profiles that can be used to open a connection.</summary>
     public static IReadOnlyList<SlmpPlcProfile> AvailableProfiles() => ConnectionProfiles;
@@ -85,6 +76,19 @@ public static class SlmpPlcProfiles
     /// set to <see langword="false"/> so selectors can explain why it cannot be opened directly.
     /// </remarks>
     public static IReadOnlyList<SlmpPlcProfileDescriptor> GetProfileDescriptors() => ProfileDescriptors;
+
+    private static string? GetBaseProfile(SlmpPlcProfile profile)
+        => profile switch
+        {
+            SlmpPlcProfile.IqRRj71En71 => "melsec:iq-r",
+            SlmpPlcProfile.MxF or SlmpPlcProfile.MxR => "melsec:iq-r",
+            SlmpPlcProfile.QCpu => "melsec:qnu",
+            SlmpPlcProfile.QCpuQj71E71100 => "melsec:qcpu",
+            SlmpPlcProfile.LCpuLj71E71100 => "melsec:lcpu",
+            SlmpPlcProfile.QnUQj71E71100 => "melsec:qnu",
+            SlmpPlcProfile.QnUDVQj71E71100 => "melsec:qnudv",
+            _ => null,
+        };
 
     /// <summary>Parse a canonical PLC profile string.</summary>
     public static SlmpPlcProfile Parse(string? text)
