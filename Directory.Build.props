@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <Version>3.0.0</Version>
+    <IsPackable>false</IsPackable>
     <Company>fa-yoshinobu</Company>
     <Authors>fa-yoshinobu</Authors>
     <Copyright>Copyright (c) 2026 fa-yoshinobu</Copyright>

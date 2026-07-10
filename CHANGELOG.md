@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Release: Bumped .NET package metadata to `3.0.0`.
+- Packaging: Marked samples, CLI, and validation tools non-packable so only the library package is produced.
+- Docs: Replaced relative README links with absolute URLs so they resolve on package registry pages.
 
 ### Added
 - Library: Added `SlmpPlcProfiles.AvailableProfiles()` for connection-selectable profile enumeration, excluding `Unspecified` and the base-only `QCpu` profile.
