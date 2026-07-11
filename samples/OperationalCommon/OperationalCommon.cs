@@ -13,6 +13,7 @@ internal sealed record PlcEndpoint(
     SlmpPlcProfile PlcProfile,
     int Port,
     SlmpTransportMode Transport,
+    SlmpTargetAddress Target,
     TimeSpan Timeout,
     TimeSpan Interval);
 
@@ -59,29 +60,22 @@ internal static class OperationalCommon
         return new TagSpec(NormalizeTagName(value), value.Trim());
     }
 
-    public static TagSpec DefaultTag() => ParseTagSpec("D100:U");
-
     public static PlcEndpoint ParsePlcSpec(
         string value,
-        int defaultPort,
-        SlmpTransportMode defaultTransport,
         TimeSpan defaultTimeout,
         TimeSpan defaultInterval)
     {
         var named = value.Split('=', 2);
         if (named.Length != 2 || string.IsNullOrWhiteSpace(named[0]) || string.IsNullOrWhiteSpace(named[1]))
-            throw new ArgumentException("PLC must be NAME=HOST,PROFILE[,PORT[,TRANSPORT]].", nameof(value));
+            throw new ArgumentException("PLC must be NAME=HOST,PROFILE,PORT,TRANSPORT,TARGET.", nameof(value));
 
-        var parts = named[1].Split(',', StringSplitOptions.TrimEntries);
-        if (parts.Length is < 2 or > 4)
-            throw new ArgumentException("PLC must be NAME=HOST,PROFILE[,PORT[,TRANSPORT]].", nameof(value));
+        var parts = named[1].Split(',', 5, StringSplitOptions.TrimEntries);
+        if (parts.Length != 5 || parts.Any(string.IsNullOrWhiteSpace))
+            throw new ArgumentException("PLC must be NAME=HOST,PROFILE,PORT,TRANSPORT,TARGET.", nameof(value));
 
-        var port = parts.Length >= 3 && !string.IsNullOrWhiteSpace(parts[2])
-            ? int.Parse(parts[2], CultureInfo.InvariantCulture)
-            : defaultPort;
-        var transport = parts.Length == 4 && !string.IsNullOrWhiteSpace(parts[3])
-            ? ParseTransport(parts[3])
-            : defaultTransport;
+        var port = ParsePositiveInt(parts[2], "port");
+        var transport = ParseTransport(parts[3]);
+        var target = SlmpTargetParser.ParseNamed(parts[4]).Target;
 
         return new PlcEndpoint(
             named[0].Trim(),
@@ -89,6 +83,7 @@ internal static class OperationalCommon
             SlmpPlcProfiles.Parse(parts[1]),
             port,
             transport,
+            target,
             defaultTimeout,
             defaultInterval);
     }
@@ -150,8 +145,8 @@ internal static class OperationalCommon
                     var snapshot = new Dictionary<string, object>(StringComparer.Ordinal);
                     foreach (var tag in tags)
                     {
-                        var (device, dtype) = SplitAddress(tag.Address);
-                        snapshot[tag.Name] = await client.ReadTypedAsync(device, dtype, cancellationToken).ConfigureAwait(false);
+                        var result = await client.ReadNamedAsync([tag.Address], cancellationToken).ConfigureAwait(false);
+                        snapshot[tag.Name] = result[tag.Address];
                     }
 
                     LogState(endpoint.Name, "read", FormatSnapshot(snapshot));
@@ -200,10 +195,13 @@ internal static class OperationalCommon
         };
 
     private static SlmpConnectionOptions BuildOptions(PlcEndpoint endpoint)
-        => new(endpoint.Host, endpoint.PlcProfile)
+        => new(
+            endpoint.Host,
+            endpoint.PlcProfile,
+            endpoint.Port,
+            endpoint.Transport,
+            endpoint.Target)
         {
-            Port = endpoint.Port,
-            Transport = endpoint.Transport,
             Timeout = endpoint.Timeout,
         };
 

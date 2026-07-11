@@ -7,31 +7,32 @@ using PlcComm.Slmp;
 if (args.Length > 0 && (string.Equals(args[0], "--help", StringComparison.OrdinalIgnoreCase) || string.Equals(args[0], "-h", StringComparison.OrdinalIgnoreCase)))
 {
     Console.WriteLine("Queued SLMP high-level sample");
-    Console.WriteLine("  dotnet run --project samples/PlcComm.Slmp.QueuedSample -- [host] [port] <plc-profile> [workers] [iterations]");
+    Console.WriteLine("  dotnet run --project samples/PlcComm.Slmp.QueuedSample -- <host> <port> <plc-profile> <tcp|udp> <target> [workers] [iterations]");
     return;
 }
 
-var host = args.Length > 0 ? args[0] : "192.168.250.100";
-var port = args.Length > 1 ? int.Parse(args[1], CultureInfo.InvariantCulture) : 1025;
-if (args.Length <= 2)
+if (args.Length < 5)
 {
-    Console.Error.WriteLine("PLC profile is required. Usage: dotnet run --project samples/PlcComm.Slmp.QueuedSample -- [host] [port] <plc-profile> [workers] [iterations]");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/PlcComm.Slmp.QueuedSample -- <host> <port> <plc-profile> <tcp|udp> <target> [workers] [iterations]");
     Environment.ExitCode = 2;
     return;
 }
+var host = args[0];
+var port = int.Parse(args[1], CultureInfo.InvariantCulture);
 var plcProfileArg = args[2];
-var workers = args.Length > 3 ? int.Parse(args[3], CultureInfo.InvariantCulture) : 4;
-var iterations = args.Length > 4 ? int.Parse(args[4], CultureInfo.InvariantCulture) : 10;
+var transport = args[3].Equals("tcp", StringComparison.OrdinalIgnoreCase) ? SlmpTransportMode.Tcp
+    : args[3].Equals("udp", StringComparison.OrdinalIgnoreCase) ? SlmpTransportMode.Udp
+    : throw new ArgumentException("transport must be tcp or udp");
+var target = SlmpTargetParser.ParseNamed(args[4]).Target;
+var workers = args.Length > 5 ? int.Parse(args[5], CultureInfo.InvariantCulture) : 4;
+var iterations = args.Length > 6 ? int.Parse(args[6], CultureInfo.InvariantCulture) : 10;
 var plcProfile = SlmpPlcProfiles.Parse(plcProfileArg);
 
 // This sample demonstrates the recommended application pattern:
 // 1. open one queued client with one explicit PLC profile
 // 2. share it across multiple tasks
 // 3. use only the high-level helper APIs from SlmpClientExtensions
-var options = new SlmpConnectionOptions(host, plcProfile)
-{
-    Port = port,
-};
+var options = new SlmpConnectionOptions(host, plcProfile, port, transport, target);
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options).ConfigureAwait(false);
 
 Console.WriteLine("[INFO] Using queued high-level client");
@@ -45,10 +46,10 @@ var tasks = Enumerable.Range(0, workers).Select(async workerIndex =>
         // Example 1: typed scalar read
         var counter = await client.ReadTypedAsync("D100", "U").ConfigureAwait(false);
 
-        // Example 2: mixed snapshot read
+        // Example 2: mixed named read (not atomic when command families differ)
         var snapshot = await client.ReadNamedAsync(["D100:U", "D200:F", "D50.3"]).ConfigureAwait(false);
 
-        // Example 3: chunked helper call
+        // Example 3: one explicit single-request block read
         var words = await client.ReadWordsSingleRequestAsync("D0", 4).ConfigureAwait(false);
 
         Console.WriteLine(

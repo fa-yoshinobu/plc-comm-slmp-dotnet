@@ -276,12 +276,12 @@ public sealed class SlmpDeviceRangeCatalogTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
             MonitoringTimer = 0x0010,
         };
 
-        var catalog = await client.ReadDeviceRangeCatalogAsync(SlmpPlcProfile.IqF);
+        var catalog = await client.ReadDeviceRangeCatalogAsync();
 
         Assert.Single(server.RequestFrames);
         Assert.False(catalog.HasModelCode);
@@ -315,12 +315,12 @@ public sealed class SlmpDeviceRangeCatalogTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
             MonitoringTimer = 0x0010,
         };
 
-        var catalog = await client.ReadDeviceRangeCatalogAsync(SlmpPlcProfile.QCpuQj71E71100);
+        var catalog = await client.ReadDeviceRangeCatalogAsync();
 
         Assert.Equal(12, server.RequestFrames.Count);
         Assert.Equal(SlmpPlcProfile.QCpuQj71E71100, catalog.PlcProfile);
@@ -350,12 +350,12 @@ public sealed class SlmpDeviceRangeCatalogTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
             MonitoringTimer = 0x0010,
         };
 
-        var catalog = await client.ReadDeviceRangeCatalogAsync(SlmpPlcProfile.QCpu);
+        var catalog = await client.ReadDeviceRangeCatalogAsync();
 
         Assert.Equal(3, server.RequestFrames.Count);
         Assert.Equal(10u, GetEntry(catalog, "Z").PointCount);
@@ -379,7 +379,7 @@ public sealed class SlmpDeviceRangeCatalogTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
             MonitoringTimer = 0x0010,
         };
@@ -401,7 +401,7 @@ public sealed class SlmpDeviceRangeCatalogTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
             MonitoringTimer = 0x0010,
         };
@@ -568,8 +568,17 @@ public sealed class SlmpDeviceRangeCatalogTests
 
                 while (_responses.Count > 0)
                 {
-                    var head = await ReadExactAsync(stream, 13).ConfigureAwait(false);
-                    var bodyLength = BinaryPrimitives.ReadUInt16LittleEndian(head.AsSpan(11, 2));
+                    var prefix = await ReadExactAsync(stream, 2).ConfigureAwait(false);
+                    var headerLength = prefix[0] switch
+                    {
+                        0x54 => 13,
+                        0x50 => 9,
+                        _ => throw new IOException("Unexpected SLMP request subheader."),
+                    };
+                    var remainder = await ReadExactAsync(stream, headerLength - 2).ConfigureAwait(false);
+                    var head = prefix.Concat(remainder).ToArray();
+                    var bodyLength = BinaryPrimitives.ReadUInt16LittleEndian(
+                        head.AsSpan(headerLength == 13 ? 11 : 7, 2));
                     var body = await ReadExactAsync(stream, bodyLength).ConfigureAwait(false);
                     var request = new byte[head.Length + body.Length];
                     Buffer.BlockCopy(head, 0, request, 0, head.Length);
@@ -577,7 +586,9 @@ public sealed class SlmpDeviceRangeCatalogTests
                     RequestFrames.Add(request);
 
                     var (payload, endCode) = _responses.Dequeue();
-                    var response = Build4EResponse(request, payload, endCode);
+                    var response = request[0] == 0x54
+                        ? Build4EResponse(request, payload, endCode)
+                        : Build3EResponse(request, payload, endCode);
                     await stream.WriteAsync(response).ConfigureAwait(false);
                     await stream.FlushAsync().ConfigureAwait(false);
                 }
@@ -605,6 +616,21 @@ public sealed class SlmpDeviceRangeCatalogTests
             request.Slice(6, 5).CopyTo(response.AsSpan(6));
             BinaryPrimitives.WriteUInt16LittleEndian(response.AsSpan(11, 2), checked((ushort)payload.Length));
             payload.CopyTo(response.AsSpan(13));
+            return response;
+        }
+
+        private static byte[] Build3EResponse(ReadOnlySpan<byte> request, ReadOnlySpan<byte> responseData, ushort endCode = 0)
+        {
+            var payload = new byte[2 + responseData.Length];
+            BinaryPrimitives.WriteUInt16LittleEndian(payload, endCode);
+            responseData.CopyTo(payload.AsSpan(2));
+
+            var response = new byte[9 + payload.Length];
+            response[0] = 0xD0;
+            response[1] = 0x00;
+            request.Slice(2, 5).CopyTo(response.AsSpan(2));
+            BinaryPrimitives.WriteUInt16LittleEndian(response.AsSpan(7, 2), checked((ushort)payload.Length));
+            payload.CopyTo(response.AsSpan(9));
             return response;
         }
 

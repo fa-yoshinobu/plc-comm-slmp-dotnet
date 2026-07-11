@@ -18,6 +18,7 @@ from pathlib import Path
 CSHARP_INSPECTOR = r'''
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -228,6 +229,9 @@ static bool IsDeclaredPublic(MemberInfo member)
     };
 }
 
+static bool IsDocumented(MemberInfo member)
+    => member.GetCustomAttribute<EditorBrowsableAttribute>()?.State != EditorBrowsableState.Never;
+
 var assemblyPath = args[0];
 var assembly = Assembly.LoadFrom(assemblyPath);
 var types = assembly.GetExportedTypes()
@@ -243,7 +247,7 @@ var types = assembly.GetExportedTypes()
         Signature = TypeSignature(type),
         DocId = MemberDocId(type),
         Members = type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
-            .Where(m => !IsCompilerGenerated(m) && IsDeclaredPublic(m))
+            .Where(m => !IsCompilerGenerated(m) && IsDeclaredPublic(m) && IsDocumented(m))
             .OrderBy(m => m.MetadataToken)
             .Select(m => new
             {

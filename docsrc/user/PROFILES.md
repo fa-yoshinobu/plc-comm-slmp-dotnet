@@ -35,5 +35,5 @@ For cross-profile capability and device-range details, see the [SLMP Profile Ref
 ```csharp
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR);
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 ```

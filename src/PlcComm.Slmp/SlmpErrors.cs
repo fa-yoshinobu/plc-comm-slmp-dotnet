@@ -91,11 +91,6 @@ public class SlmpError : Exception
     public string? EndCodeName => EndCode is { } endCode ? SlmpEndCodes.GetName(endCode) : null;
 
     /// <summary>
-    /// English error detail/cause message for <see cref="EndCode"/>, or null when unknown.
-    /// </summary>
-    public string? EndCodeMessage => EndCode is { } endCode ? SlmpEndCodes.GetMessage(endCode) : null;
-
-    /// <summary>
     /// True when <see cref="EndCode"/> is a remote-password-related SLMP error.
     /// </summary>
     public bool IsRemotePasswordError => EndCode is { } endCode && SlmpEndCodes.IsRemotePasswordEndCode(endCode);
@@ -103,7 +98,7 @@ public class SlmpError : Exception
 
 /// <summary>
 /// Error thrown before sending a high-level request when the selected PLC profile
-/// marks a feature as blocked or unverified and strict profile checks are enabled.
+/// marks a feature as blocked or unverified.
 /// </summary>
 public sealed class SlmpProfileFeatureException : InvalidOperationException
 {
@@ -119,7 +114,6 @@ public sealed class SlmpProfileFeatureException : InvalidOperationException
         FeatureKey = featureKey;
         State = state;
         Evidence = evidence;
-        DisableHint = "Set StrictProfile=false to send the request anyway.";
     }
 
     /// <summary>Selected PLC profile.</summary>
@@ -137,9 +131,6 @@ public sealed class SlmpProfileFeatureException : InvalidOperationException
     /// <summary>Evidence source or note that explains why the feature is guarded.</summary>
     public string? Evidence { get; }
 
-    /// <summary>Hint for intentionally bypassing the feature guard.</summary>
-    public string DisableHint { get; }
-
     private static string BuildMessage(
         SlmpPlcProfile plcProfile,
         string featureKey,
@@ -148,6 +139,6 @@ public sealed class SlmpProfileFeatureException : InvalidOperationException
     {
         var profileId = SlmpPlcProfiles.ToCanonicalString(plcProfile);
         var evidenceText = string.IsNullOrWhiteSpace(evidence) ? "" : $" Evidence: {evidence}.";
-        return $"Feature '{featureKey}' is {state} for PlcProfile '{profileId}'.{evidenceText} Set StrictProfile=false to send the request anyway.";
+        return $"Feature '{featureKey}' is {state} for PlcProfile '{profileId}'.{evidenceText}";
     }
 }

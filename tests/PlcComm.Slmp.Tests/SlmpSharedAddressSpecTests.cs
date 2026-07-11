@@ -53,7 +53,7 @@ public sealed class SlmpSharedAddressSpecTests
     public void NormalizeNamedAddress_MatchesSharedSpec(string id, string input, string expected)
     {
         Assert.False(string.IsNullOrWhiteSpace(id));
-        Assert.Equal(expected, SlmpClientExtensions.NormalizeNamedAddress(input));
+        Assert.Equal(expected, SlmpClientExtensions.NormalizeNamedAddress(input, SlmpPlcProfile.IqR));
     }
 
     [Theory]
@@ -71,4 +71,3 @@ public sealed class SlmpSharedAddressSpecTests
         => entry.GetProperty("implementations").EnumerateArray()
             .Any(item => string.Equals(item.GetString(), implementation, StringComparison.Ordinal));
 }
-

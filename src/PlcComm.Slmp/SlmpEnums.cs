@@ -27,6 +27,30 @@ public enum SlmpCompatibilityMode : byte
     Iqr = 1,
 }
 
+/// <summary>Explicit mode for remote RUN and PAUSE operations.</summary>
+public enum SlmpRemoteMode : ushort
+{
+    Normal = 0x0001,
+    Force = 0x0003,
+}
+
+/// <summary>Explicit device-clear policy for remote RUN.</summary>
+public enum SlmpRemoteClearMode : ushort
+{
+    NoClear = 0x0000,
+    ClearExceptLatch = 0x0001,
+    ClearAll = 0x0002,
+}
+
+/// <summary>Explicit CPU module selected by CPU-buffer convenience APIs.</summary>
+public enum SlmpCpuModule : ushort
+{
+    Cpu1 = 0x03E0,
+    Cpu2 = 0x03E1,
+    Cpu3 = 0x03E2,
+    Cpu4 = 0x03E3,
+}
+
 /// <summary>Canonical PLC profile used by the high-level API.</summary>
 public enum SlmpPlcProfile : byte
 {
@@ -48,8 +72,8 @@ public enum SlmpPlcProfile : byte
     QnUDVQj71E71100 = 13,
 }
 
-/// <summary>Direction of a frame captured by <see cref="SlmpClient.TraceHook"/>.</summary>
-public enum SlmpTraceDirection
+/// <summary>Direction of a frame captured by the internal maintainer trace hook.</summary>
+internal enum SlmpTraceDirection
 {
     /// <summary>Frame sent to the PLC.</summary>
     Send,

@@ -25,6 +25,11 @@ class CrefLabelTests(unittest.TestCase):
         self.assertEqual(rendered, "Use `Parse`.")
         self.assertNotRegex(rendered, r"`[^`]*\)`")
 
+    def test_generator_honors_editor_browsable_never(self) -> None:
+        source = __import__("generate_api_reference").CSHARP_INSPECTOR
+        self.assertIn("EditorBrowsableState.Never", source)
+        self.assertIn("IsDocumented(m)", source)
+
 
 if __name__ == "__main__":
     unittest.main()

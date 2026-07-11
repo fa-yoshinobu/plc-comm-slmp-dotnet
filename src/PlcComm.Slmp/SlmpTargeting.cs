@@ -8,24 +8,62 @@ namespace PlcComm.Slmp;
 /// </summary>
 public readonly record struct SlmpNamedTarget(string Name, SlmpTargetAddress Target);
 
-/// <summary>
-/// Represents Extended Device extension fields for device access.
-/// </summary>
-public readonly record struct SlmpExtensionSpec(
-    ushort ExtensionSpecification = 0x0000,
-    byte ExtensionSpecificationModification = 0x00,
-    byte DeviceModificationIndex = 0x00,
-    byte DeviceModificationFlags = 0x00,
-    byte DirectMemorySpecification = 0x00
+internal readonly record struct SlmpExtensionSpec(
+    ushort ExtensionSpecification,
+    byte ExtensionSpecificationModification,
+    byte DeviceModificationIndex,
+    byte DeviceModificationFlags,
+    byte DirectMemorySpecification
 );
 
+/// <summary>Typed Extended Device modification.</summary>
+public abstract record SlmpDeviceModification
+{
+    private SlmpDeviceModification() { }
+
+    public sealed record IndexZ(byte Index) : SlmpDeviceModification;
+    public sealed record IndexLz(byte Index) : SlmpDeviceModification;
+    public sealed record Indirect : SlmpDeviceModification;
+}
+
 /// <summary>
-/// Represents a device address that may include an explicit Extended Device extension specification.
+/// Represents a semantic Extended Device address. Protocol direct-memory bytes are derived internally.
 /// </summary>
-public readonly record struct SlmpQualifiedDeviceAddress(
-    SlmpDeviceAddress Device,
-    ushort? ExtensionSpecification,
-    byte? DirectMemorySpecification = null);
+public readonly record struct SlmpQualifiedDeviceAddress
+{
+    public SlmpQualifiedDeviceAddress(
+        SlmpDeviceAddress device,
+        ushort? extensionSpecification,
+        SlmpDeviceModification? modification = null)
+        : this(device, extensionSpecification, DeriveDirectMemory(device.Code, extensionSpecification), modification)
+    {
+    }
+
+    internal SlmpQualifiedDeviceAddress(
+        SlmpDeviceAddress device,
+        ushort? extensionSpecification,
+        byte? directMemorySpecification,
+        SlmpDeviceModification? modification = null)
+    {
+        Device = device;
+        ExtensionSpecification = extensionSpecification;
+        DirectMemorySpecification = directMemorySpecification;
+        Modification = modification;
+    }
+
+    public SlmpDeviceAddress Device { get; }
+    public ushort? ExtensionSpecification { get; }
+    public SlmpDeviceModification? Modification { get; }
+    internal byte? DirectMemorySpecification { get; }
+
+    private static byte? DeriveDirectMemory(SlmpDeviceCode code, ushort? extensionSpecification)
+        => code switch
+        {
+            SlmpDeviceCode.G when extensionSpecification is not null => 0xF8,
+            SlmpDeviceCode.HG when extensionSpecification is >= 0x03E0 and <= 0x03E3 => 0xFA,
+            _ => null,
+        };
+}
 
 /// <summary>
 /// Utility for parsing qualified device strings (e.g., "U01\G10", "J2\SW10") into <see cref="SlmpQualifiedDeviceAddress"/>.
@@ -38,7 +76,7 @@ public static class SlmpQualifiedDeviceParser
     /// <summary>
     /// Parses a qualified device string into a <see cref="SlmpQualifiedDeviceAddress"/>.
     /// </summary>
-    public static SlmpQualifiedDeviceAddress Parse(string text)
+    public static SlmpQualifiedDeviceAddress Parse(string text, SlmpPlcProfile plcProfile)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -52,18 +90,18 @@ public static class SlmpQualifiedDeviceParser
         if (jMatch.Success)
         {
             var jNetwork = byte.Parse(jMatch.Groups[1].Value, CultureInfo.InvariantCulture);
-            var device = SlmpDeviceParser.Parse(jMatch.Groups[2].Value);
+            var device = SlmpDeviceParser.Parse(jMatch.Groups[2].Value, plcProfile);
             return new SlmpQualifiedDeviceAddress(device, jNetwork, 0xF9);
         }
 
         var match = QualifiedPattern.Match(token);
         if (!match.Success)
         {
-            return new SlmpQualifiedDeviceAddress(SlmpDeviceParser.Parse(token), null);
+            return new SlmpQualifiedDeviceAddress(SlmpDeviceParser.Parse(token, plcProfile), null);
         }
 
         var extensionSpecification = ushort.Parse(match.Groups[1].Value, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
-        var dev = SlmpDeviceParser.Parse(match.Groups[2].Value);
+        var dev = SlmpDeviceParser.Parse(match.Groups[2].Value, plcProfile);
         // G/HG buffer memory devices have a fixed DM by device code (matches GOT pcap-verified format)
         byte? dm = dev.Code switch
         {
@@ -135,7 +173,7 @@ public static class SlmpTargetParser
     {
         if (values.Count == 0)
         {
-            return [new SlmpNamedTarget("SELF", new SlmpTargetAddress(DefaultSelfNetwork, DefaultSelfStation, DefaultModuleIo, DefaultMultidrop))];
+            throw new ArgumentException("At least one explicit target is required.", nameof(values));
         }
 
         return values.Select(ParseNamed).ToArray();

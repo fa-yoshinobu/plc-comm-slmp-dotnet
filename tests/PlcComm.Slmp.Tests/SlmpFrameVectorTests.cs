@@ -41,13 +41,13 @@ public sealed class SlmpFrameVectorTests
         await using var server = new SingleShotSlmpServer(Convert.FromHexString(responseDataHex));
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
             MonitoringTimer = 0x0010,
         };
 
         byte[]? capturedSend = null;
-        client.TraceHook = frame =>
+        client.MaintainerTraceHook = frame =>
         {
             if (frame.Direction == SlmpTraceDirection.Send)
             {
@@ -57,6 +57,7 @@ public sealed class SlmpFrameVectorTests
 
         using var args = JsonDocument.Parse(argsJson);
         await DispatchAsync(client, operation, args.RootElement);
+        await server.WaitForRequestAsync();
 
         Assert.NotNull(capturedSend);
         Assert.Equal(expectedRequestHex, Convert.ToHexString(capturedSend));
@@ -121,8 +122,7 @@ public sealed class SlmpFrameVectorTests
                 return;
             case "remote_reset":
                 {
-                    var expectResponse = args.TryGetProperty("expect_response", out var value) && value.GetBoolean();
-                    await client.RemoteResetAsync(expectResponse: expectResponse);
+                    await client.RemoteResetAsync();
                     return;
                 }
             default:
@@ -130,7 +130,7 @@ public sealed class SlmpFrameVectorTests
         }
     }
 
-    private static SlmpDeviceAddress ParseDevice(string text) => SlmpDeviceParser.Parse(text);
+    private static SlmpDeviceAddress ParseDevice(string text) => SlmpDeviceParser.Parse(text, SlmpPlcProfile.IqR);
 
     private static bool Supports(JsonElement entry, string implementation)
         => entry.GetProperty("implementations").EnumerateArray()
@@ -140,6 +140,7 @@ public sealed class SlmpFrameVectorTests
     {
         private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
         private readonly byte[] _responseData;
+        private readonly TaskCompletionSource _requestReceived = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task? _serverTask;
 
         public SingleShotSlmpServer(byte[] responseData)
@@ -150,6 +151,8 @@ public sealed class SlmpFrameVectorTests
         public int Port => ((IPEndPoint)_listener.LocalEndpoint).Port;
 
         public byte[] RequestFrame { get; private set; } = [];
+
+        public Task WaitForRequestAsync() => _requestReceived.Task;
 
         public Task StartAsync()
         {
@@ -177,6 +180,7 @@ public sealed class SlmpFrameVectorTests
                 var bodyLength = BinaryPrimitives.ReadUInt16LittleEndian(head.AsSpan(11, 2));
                 var body = await ReadExactAsync(stream, bodyLength).ConfigureAwait(false);
                 RequestFrame = [.. head, .. body];
+                _requestReceived.TrySetResult();
                 var response = Build4EResponse(RequestFrame, _responseData);
                 await stream.WriteAsync(response).ConfigureAwait(false);
                 await stream.FlushAsync().ConfigureAwait(false);
@@ -224,4 +228,3 @@ public sealed class SlmpFrameVectorTests
         }
     }
 }
-

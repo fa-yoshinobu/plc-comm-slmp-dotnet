@@ -8,12 +8,11 @@
 | `SlmpClientFactory.OpenAndConnectAsync` | Opens a connected `QueuedSlmpClient` from `SlmpConnectionOptions`. |
 | `ReadTypedAsync` | Reads one typed scalar such as `D100` as `BIT`, `U`, `S`, `D`, `L`, or `F`. |
 | `WriteTypedAsync` | Writes one typed scalar. |
-| `ReadNamedAsync` | Reads a mixed snapshot of named addresses. |
+| `ReadNamedAsync` | Reads a mixed named value set; different command families are not atomic. |
 | `WriteNamedAsync` | Writes a named set of values. |
 | `ReadWordsSingleRequestAsync` / `ReadDWordsSingleRequestAsync` | Reads one contiguous block in one protocol request. |
-| `ReadWordsChunkedAsync` / `ReadDWordsChunkedAsync` | Reads an explicitly chunked contiguous block. |
 | `WriteBitInWordAsync` | Sets or clears one bit in a word device. |
-| `PollAsync` | Repeats a named snapshot on an async interval. |
+| `PollAsync` | Repeats a named value-set read on an async interval. |
 | `SlmpAddress` | Parses, formats, and normalizes SLMP address text. |
 | `SlmpQualifiedDeviceParser` | Parses extended device text such as `U3\G100`, `U3E0\HG0`, and `J2\SW10`. |
 | `ReadWordsExtendedAsync` / `WriteWordsExtendedAsync` | Reads or writes routed `U...` / `J...` word devices. |
@@ -25,12 +24,14 @@
 using System;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
+var options = new SlmpConnectionOptions(
+    "192.168.250.100",
+    SlmpPlcProfile.IqR,
+    1025,
+    SlmpTransportMode.Tcp,
+    SlmpTargetAddress.OwnStation)
 {
-    Port = 1025,
     Timeout = TimeSpan.FromSeconds(3),
-    Transport = SlmpTransportMode.Tcp,
-    Target = new SlmpTargetAddress(Station: 0xFF, ModuleIo: 0x03FF),
     MonitoringTimer = 0x0010,
 };
 
@@ -64,27 +65,28 @@ page.
 
 ## Routing / target station
 
-Most applications keep the default target, which means the directly connected
-own station. Change the target only when your PLC network is
-configured for another station, multi-CPU module I/O, or multidrop access.
+Every connection explicitly selects a target. Use `SlmpTargetAddress.OwnStation`
+for the directly connected station, or provide the complete configured route for
+another station, multi-CPU module I/O, or multidrop access.
 
 `SlmpTargetAddress` controls the SLMP destination header. It is not a device
 family selector; routed devices such as `Un\Gn` and `Jn\...` still need their
 own address syntax.
 
 ```csharp
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-    Target = new SlmpTargetAddress(
+var options = new SlmpConnectionOptions(
+    "192.168.250.100",
+    SlmpPlcProfile.IqR,
+    1025,
+    SlmpTransportMode.Tcp,
+    new SlmpTargetAddress(
         Network: 0x01,
         Station: 0x02,
         ModuleIo: 0x03FF,
-        Multidrop: 0x00),
-};
+        Multidrop: 0x00));
 ```
 
-Use the default target unless the PLC routing setup gives you specific values.
+Use `SlmpTargetAddress.OwnStation` only when the intended route is the directly connected station. The constructor always requires a complete target.
 
 ## Extended device access
 
@@ -103,20 +105,19 @@ the route is accepted.
 
 ```csharp
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
-var ext = new SlmpExtensionSpec();
 
-var module = SlmpQualifiedDeviceParser.Parse(@"U3\G100");
-ushort[] moduleWords = await client.ReadWordsExtendedAsync(module, 4, ext);
-await client.WriteWordsExtendedAsync(module, new ushort[] { 1, 2, 3, 4 }, ext);
+var module = SlmpQualifiedDeviceParser.Parse(@"U3\G100", client.PlcProfile);
+ushort[] moduleWords = await client.ReadWordsExtendedAsync(module, 4);
+await client.WriteWordsExtendedAsync(module, new ushort[] { 1, 2, 3, 4 });
 
-var cpuBuffer = SlmpQualifiedDeviceParser.Parse(@"U3E0\HG0");
-ushort[] cpuBufferWords = await client.ReadWordsExtendedAsync(cpuBuffer, 2, ext);
+var cpuBuffer = SlmpQualifiedDeviceParser.Parse(@"U3E0\HG0", client.PlcProfile);
+ushort[] cpuBufferWords = await client.ReadWordsExtendedAsync(cpuBuffer, 2);
 
-var linkWord = SlmpQualifiedDeviceParser.Parse(@"J2\SW10");
-ushort[] linkWords = await client.ReadWordsExtendedAsync(linkWord, 1, ext);
+var linkWord = SlmpQualifiedDeviceParser.Parse(@"J2\SW10", client.PlcProfile);
+ushort[] linkWords = await client.ReadWordsExtendedAsync(linkWord, 1);
 
-var linkBits = SlmpQualifiedDeviceParser.Parse(@"J1\X10");
-bool[] bits = await client.ReadBitsExtendedAsync(linkBits, 16, ext);
+var linkBits = SlmpQualifiedDeviceParser.Parse(@"J1\X10", client.PlcProfile);
+bool[] bits = await client.ReadBitsExtendedAsync(linkBits, 16);
 ```
 
 ## SLMP response end codes
@@ -156,10 +157,7 @@ catch (SlmpError ex) when (ex.EndCode is ushort endCode)
 using System;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var value = await client.ReadTypedAsync("D100", "U");
@@ -172,10 +170,7 @@ Console.WriteLine($"D100 = {value}");
 using System;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var original = await client.ReadTypedAsync("D100", "U");
@@ -190,16 +185,13 @@ finally
 }
 ```
 
-## Named snapshot
+## Named values
 
 ```csharp
 using System;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var snapshot = await client.ReadNamedAsync(["D100:U", "D200:F", "D300:L", "D50.3"]);
@@ -210,27 +202,30 @@ foreach (var (address, value) in snapshot)
 }
 ```
 
+Compatible word and DWord entries share one random-read request. Long-family,
+bit, or fallback routes can require additional requests, so mixed results are
+not guaranteed to represent one PLC instant. `WriteNamedAsync` can likewise
+perform multiple writes; if a later request fails, earlier writes remain applied.
+
 ## Block reads
 
 ```csharp
 using System;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 
 ushort[] words = await client.ReadWordsSingleRequestAsync("D0", 10);
 uint[] dwords = await client.ReadDWordsSingleRequestAsync("D200", 4);
-ushort[] chunkedWords = await client.ReadWordsChunkedAsync("D1000", 1000, maxWordsPerRequest: 480);
-uint[] chunkedDwords = await client.ReadDWordsChunkedAsync("D2000", 200, maxDwordsPerRequest: 240);
 
 Console.WriteLine($"words={words.Length}, dwords={dwords.Length}");
-Console.WriteLine($"chunked words={chunkedWords.Length}, chunked dwords={chunkedDwords.Length}");
 ```
+
+These helpers issue exactly one PLC request and reject counts above the
+protocol limit. Applications that intentionally issue multiple requests must
+make the boundaries and different acquisition times explicit.
 
 ## Bit in word
 
@@ -240,10 +235,7 @@ Use `WriteBitInWordAsync` when a PLC stores flags inside a word. Use `.n` notati
 using System;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var original = await client.ReadNamedAsync(["D50.3"]);
@@ -266,10 +258,7 @@ using System;
 using System.Threading;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -312,10 +301,7 @@ using System;
 using System.Linq;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var catalog = await client.ReadDeviceRangeCatalogAsync();
@@ -332,10 +318,7 @@ Console.WriteLine($"{row.Device}: supported={row.Supported}, range={row.AddressR
 using System;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var current = await client.ReadTypedAsync("LTN0", "D");

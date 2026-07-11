@@ -1,7 +1,5 @@
 {
   "defaults": {
-    "transport": "udp",
-    "port": 1035,
     "timeout": 3.0,
     "interval": 1.0
   },
@@ -16,6 +14,9 @@
       "name": "line-a",
       "host": "192.168.250.100",
       "plc_profile": "melsec:iq-r",
+      "port": 1035,
+      "transport": "udp",
+      "target": "SELF",
       "tags": [
         {
           "name": "d100",
@@ -31,6 +32,9 @@
       "name": "line-b",
       "host": "192.168.250.101",
       "plc_profile": "melsec:iq-r",
+      "port": 1025,
+      "transport": "tcp",
+      "target": "SELF",
       "tags": [
         {
           "name": "d100",

@@ -7,7 +7,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public async Task ReadWordsSingleRequestAsync_RejectsOversizedRangeBeforeTransport()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.ReadWordsSingleRequestAsync("D0", 961));
     }
@@ -15,7 +15,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public async Task ReadDWordsSingleRequestAsync_RejectsOversizedRangeBeforeTransport()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.ReadDWordsSingleRequestAsync("D0", 481));
     }
@@ -23,7 +23,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public async Task WriteWordsSingleRequestAsync_RejectsOversizedRangeBeforeTransport()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         ushort[] values = Enumerable.Repeat((ushort)1, 961).ToArray();
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.WriteWordsSingleRequestAsync("D0", values));
@@ -32,22 +32,40 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public async Task WriteDWordsSingleRequestAsync_RejectsOversizedRangeBeforeTransport()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         uint[] values = Enumerable.Repeat((uint)1, 481).ToArray();
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.WriteDWordsSingleRequestAsync("D0", values));
     }
 
     [Fact]
+    public async Task ReadNamedAsync_RejectsMoreThanOneRandomRequestBeforeTransport()
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            1025,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var addresses = Enumerable.Range(0, 256).Select(index => $"D{index}:U").ToArray();
+
+        var error = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadNamedAsync(addresses));
+
+        Assert.Contains("one random-read request", error.Message, StringComparison.Ordinal);
+        Assert.False(client.IsOpen);
+    }
+
+    [Fact]
     public void CompileReadPlan_BatchesWordDwordAndBitInWord()
     {
-        var plan = SlmpClientExtensions.CompileReadPlan(["D100:U", "D100.3", "D101:F", "M10:BIT"]);
+        var plan = SlmpClientExtensions.CompileReadPlan(["D100:U", "D100.3", "D101:F", "M10:BIT"], SlmpPlcProfile.IqR);
 
         Assert.Equal(2, plan.WordDevices.Count);
         Assert.Single(plan.DwordDevices);
-        Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), plan.WordDevices[0]);
-        Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), plan.WordDevices[1]);
-        Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.D, 101), plan.DwordDevices[0]);
+        Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.D, 100, SlmpPlcProfile.IqR), plan.WordDevices[0]);
+        Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.M, 0, SlmpPlcProfile.IqR), plan.WordDevices[1]);
+        Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.D, 101, SlmpPlcProfile.IqR), plan.DwordDevices[0]);
 
         Assert.Collection(
             plan.Entries,
@@ -71,7 +89,7 @@ public sealed class SlmpClientExtensionsTests
             {
                 Assert.Equal("M10:BIT", entry.Address);
                 Assert.Equal(SlmpNamedReadKind.BitInWord, entry.Kind);
-                Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), entry.Device);
+                Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.M, 0, SlmpPlcProfile.IqR), entry.Device);
                 Assert.Equal("BIT_IN_WORD", entry.DType);
                 Assert.Equal(10, entry.BitIndex);
             });
@@ -80,7 +98,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public void CompileReadPlan_KeepsRiskyBitFamiliesOnDirectRead()
     {
-        var plan = SlmpClientExtensions.CompileReadPlan(["TS10:BIT", "TC10:BIT", "STS10:BIT", "STC10:BIT", "CS10:BIT", "CC10:BIT", "DX10:BIT", "DY10:BIT"]);
+        var plan = SlmpClientExtensions.CompileReadPlan(["TS10:BIT", "TC10:BIT", "STS10:BIT", "STC10:BIT", "CS10:BIT", "CC10:BIT", "DX10:BIT", "DY10:BIT"], SlmpPlcProfile.IqR);
 
         Assert.Empty(plan.WordDevices);
         Assert.Empty(plan.DwordDevices);
@@ -94,19 +112,20 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public void CompileReadPlan_DeduplicatesRepeatedBatchableDevices()
     {
-        var plan = SlmpClientExtensions.CompileReadPlan(["D0:U", "D0:S", "D0.0", "D1:F", "D1:L"]);
+        var plan = SlmpClientExtensions.CompileReadPlan(["D0:U", "D0:S", "D0.0", "D1:F", "D1:L"], SlmpPlcProfile.IqR);
 
         Assert.Single(plan.WordDevices);
         Assert.Single(plan.DwordDevices);
-        Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), plan.WordDevices[0]);
-        Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.D, 1), plan.DwordDevices[0]);
+        Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR), plan.WordDevices[0]);
+        Assert.Equal(new SlmpDeviceAddress(SlmpDeviceCode.D, 1, SlmpPlcProfile.IqR), plan.DwordDevices[0]);
     }
 
     [Fact]
     public void CompileReadPlan_UsesHelperKindsForLongTimerFamilies()
     {
         var plan = SlmpClientExtensions.CompileReadPlan(
-            ["LTN10:D", "LTS10:BIT", "LTC10:BIT", "LSTN20:D", "LSTS20:BIT", "LSTC20:BIT", "LCN30:D", "LCS30:BIT", "LCC30:BIT"]);
+            ["LTN10:D", "LTS10:BIT", "LTC10:BIT", "LSTN20:D", "LSTS20:BIT", "LSTC20:BIT", "LCN30:D", "LCS30:BIT", "LCC30:BIT"],
+            SlmpPlcProfile.IqR);
 
         Assert.Empty(plan.WordDevices);
         Assert.Empty(plan.DwordDevices);
@@ -181,7 +200,7 @@ public sealed class SlmpClientExtensionsTests
     [Fact]
     public void CompileReadPlan_BitDeviceBitSuffixThrows()
     {
-        var ex = Assert.Throws<ArgumentException>(() => SlmpClientExtensions.CompileReadPlan(["M100.0"]));
+        var ex = Assert.Throws<ArgumentException>(() => SlmpClientExtensions.CompileReadPlan(["M100.0"], SlmpPlcProfile.IqR));
         Assert.Contains("only valid for word devices", ex.Message);
     }
 
@@ -224,61 +243,61 @@ public sealed class SlmpClientExtensionsTests
     {
         Assert.Equal(
             "D",
-            SlmpClientExtensions.ResolveDTypeForAddress("LTN10:D", new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10), "D", null));
+            SlmpClientExtensions.ResolveDTypeForAddress("LTN10:D", new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10, SlmpPlcProfile.IqR), "D", null));
         Assert.Equal(
             "BIT",
-            SlmpClientExtensions.ResolveDTypeForAddress("LTS10:BIT", new SlmpDeviceAddress(SlmpDeviceCode.LTS, 10), "BIT", null));
+            SlmpClientExtensions.ResolveDTypeForAddress("LTS10:BIT", new SlmpDeviceAddress(SlmpDeviceCode.LTS, 10, SlmpPlcProfile.IqR), "BIT", null));
     }
 
     [Fact]
     public async Task ReadTypedAsync_RejectsWordDTypeForLongCurrentValues()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.ReadTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10), "U"));
+            () => client.ReadTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10, SlmpPlcProfile.IqR), "U"));
         Assert.Contains("32-bit long current value", ex.Message);
     }
 
     [Fact]
     public async Task ReadTypedAsync_RejectsWordDTypeForLz()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.ReadTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 10), "U"));
+            () => client.ReadTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 10, SlmpPlcProfile.IqR), "U"));
         Assert.Contains("32-bit device", ex.Message);
     }
 
     [Fact]
     public void CompileReadPlan_RejectsWordDTypeForLz()
     {
-        var ex = Assert.Throws<ArgumentException>(() => SlmpClientExtensions.CompileReadPlan(["LZ10:U"]));
+        var ex = Assert.Throws<ArgumentException>(() => SlmpClientExtensions.CompileReadPlan(["LZ10:U"], SlmpPlcProfile.IqR));
         Assert.Contains("32-bit device", ex.Message);
     }
 
     [Fact]
-    public async Task ReadDWordsAsync_LzUsesRandomDwordLimit()
+    public async Task ReadDWordsSingleRequestAsync_RejectsMoreThanOneRequestCanHold()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
-        var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.ReadDWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0), 256, maxDwordsPerRequest: 255));
-        Assert.Contains("count 256 exceeds maxDwordsPerRequest 255", ex.Message);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.ReadDWordsSingleRequestAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0, SlmpPlcProfile.IqR), 481));
+        Assert.Contains("1-480", ex.Message);
     }
 
     [Fact]
     public async Task WriteTypedAsync_RejectsWordDTypeForLongCurrentValues()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.WriteTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 10), "S", (short)1));
+            () => client.WriteTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 10, SlmpPlcProfile.IqR), "S", (short)1));
         Assert.Contains("32-bit long current value", ex.Message);
     }
 
     [Fact]
     public async Task WriteTypedAsync_SignedWordNegative_DoesNotOverflowBeforeTransport()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Record.ExceptionAsync(
-            () => client.WriteTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), "S", (short)-1));
+            () => client.WriteTypedAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR), "S", (short)-1));
 
         Assert.NotNull(ex);
         Assert.IsNotType<OverflowException>(ex);
@@ -301,7 +320,7 @@ public sealed class SlmpClientExtensionsTests
         string dtype,
         int expected)
     {
-        var route = SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(code, 10), dtype);
+        var route = SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), dtype);
         Assert.Equal((SlmpNamedWriteRoute)expected, route);
     }
 
@@ -312,7 +331,7 @@ public sealed class SlmpClientExtensionsTests
     public void ResolveWriteRoute_RejectsInvalidLongCurrentDTypes(SlmpDeviceCode code, string dtype)
     {
         var ex = Assert.Throws<ArgumentException>(
-            () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(code, 10), dtype));
+            () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), dtype));
         Assert.Contains("32-bit long current value", ex.Message);
     }
 
@@ -324,7 +343,7 @@ public sealed class SlmpClientExtensionsTests
     public void ResolveWriteRoute_RejectsInvalidLzDTypes(string dtype)
     {
         var ex = Assert.Throws<ArgumentException>(
-            () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 10), dtype));
+            () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 10, SlmpPlcProfile.IqR), dtype));
         Assert.Contains("32-bit device", ex.Message);
     }
 
@@ -332,14 +351,14 @@ public sealed class SlmpClientExtensionsTests
     public void ResolveWriteRoute_IqRRejectsStepRelayWrites()
     {
         var ex = Assert.Throws<ArgumentException>(
-            () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), "BIT", SlmpPlcProfile.IqR));
+            () => SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.S, 10, SlmpPlcProfile.IqR), "BIT", SlmpPlcProfile.IqR));
         Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
     [Fact]
     public void ResolveWriteRoute_IqFAllowsStepRelayWrites()
     {
-        var route = SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), "BIT", SlmpPlcProfile.IqF);
+        var route = SlmpClientExtensions.ResolveWriteRoute(new SlmpDeviceAddress(SlmpDeviceCode.S, 10, SlmpPlcProfile.IqR), "BIT", SlmpPlcProfile.IqF);
         Assert.Equal(SlmpNamedWriteRoute.ContiguousBits, route);
     }
 }

@@ -31,12 +31,13 @@ public sealed class SlmpDeviceVectorTests
     [MemberData(nameof(Vectors))]
     public void EncodeDeviceSpec_MatchesVector(string id, string device, string series, string hex)
     {
-        var PlcProfile = series == "iqr" ? SlmpPlcProfile.IqR : SlmpPlcProfile.QCpuQj71E71100;
-
-        using var client = new SlmpClient("127.0.0.1", PlcProfile);
-        var addr = SlmpDeviceParser.Parse(device);
-        var buf = new byte[client.DeviceSpecSize()];
-        client.EncodeDeviceSpec(addr, buf);
+        var compatibility = series == "iqr"
+            ? SlmpCompatibilityMode.Iqr
+            : SlmpCompatibilityMode.Legacy;
+        var parsed = SlmpDeviceParser.Parse(device, SlmpPlcProfile.IqR);
+        var raw = new SlmpRawDeviceAddress(parsed.Code, parsed.Number);
+        var buf = new byte[SlmpPayloads.DeviceSpecSize(compatibility)];
+        SlmpPayloads.EncodeRawDeviceSpec(raw, buf, compatibility);
 
         var expected = Convert.FromHexString(hex);
         Assert.True(expected.SequenceEqual(buf),

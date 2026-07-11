@@ -27,10 +27,7 @@ dotnet add package PlcComm.Slmp
 ```csharp
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 ```
 
 ## First read
@@ -39,10 +36,7 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
 using System;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var value = await client.ReadTypedAsync("D100", "U");
@@ -65,10 +59,7 @@ Use only a test register that your PLC program allows you to change.
 using System;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR)
-{
-    Port = 1025,
-};
+var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var original = await client.ReadTypedAsync("D100", "U");
@@ -102,5 +93,5 @@ finally
 | Connection opens but all requests fail | Confirm Binary communication data code in the PLC setup guide. |
 | Reads work but writes fail | Confirm RUN-time write permission in the PLC setup guide and the selected profile write policy. |
 | First register read fails | Start with `D` word reads. Do not start with `G`, `HG`, `LTN`, or `LCN`. |
-| Several callers share one connection | Use `QueuedSlmpClient`, returned by `SlmpClientFactory.OpenAndConnectAsync`. Raw `SlmpClient` is not thread-safe for concurrent callers. |
+| Several callers share one connection | `SlmpClient` serializes individual exchanges. Use `QueuedSlmpClient`, returned by `SlmpClientFactory.OpenAndConnectAsync`, when a multi-step helper must remain under one application-level gate. |
 | Long timer or long counter values look wrong | See [Gotchas](GOTCHAS.md) before reading `LTN`, `LSTN`, `LCN`, or `LZ`. |

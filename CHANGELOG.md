@@ -17,6 +17,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### BREAKING
+- Library: Connection constructors and options now require port, transport, complete target, and concrete PLC profile; timeout defaults to 3 seconds and the SLMP monitoring timer defaults to 4 seconds.
+- Library: The selected target route is immutable for the lifetime of a client; create a separate client for a different route.
+- Library: Removed public profile-check bypasses, command-specific raw payload overloads, split/chunk helpers, block auto-splitting, end-code messages/language selection, and the profile override on device-range catalog reads.
+- Library: Replaced public Extended Device wire fields with qualified semantic routes and typed Z/LZ/indirect modifiers.
+- Library: Remote RUN and PAUSE now require typed mode choices, RUN requires a typed clear mode, and Remote RESET uses its fixed payload without waiting for a success response.
+- Library: CPU-buffer helpers require an explicit `SlmpCpuModule`; long timer helpers require both head and point count.
+
+### Changed
+- Library: One client now serializes all request/response exchanges, assigns unique 4E serials, and closes TCP or UDP transport after timeout/cancellation so a delayed response cannot contaminate a later request.
+- Library: Random and block operations expose category-specific APIs, reject all-empty requests, and reject duplicate or overlapping write destinations before transport.
+- Library: Label abbreviation definitions remain optional and encode zero when omitted; malformed references, empty points, and count overflow are rejected before transport.
+- Samples: Runtime connection fields, targets, polling addresses, and dtypes are explicit; configuration files no longer infer port or transport.
+
+### Fixed
+- Library: Long timer multi-point reads use one bounded request instead of issuing one request per point.
+- Library: Direct connection options validate host, port, transport, profile, and timeout at construction.
+
+### Tests
+- Tests: Added cross-contract tests for aggregate empty input, overlapping writes, Extended Device public surface, required state-changing arguments, CPU selection, label abbreviation validation, concurrent 4E serial assignment, and UDP cancellation isolation.
+
 ## [3.1.0] - 2026-07-10
 
 ### Added

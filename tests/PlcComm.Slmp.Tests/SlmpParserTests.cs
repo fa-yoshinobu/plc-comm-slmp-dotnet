@@ -8,7 +8,7 @@ public sealed class SlmpParserTests
     [Fact]
     public void ParseDevice_DecimalWord_Succeeds()
     {
-        var device = SlmpDeviceParser.Parse("D100");
+        var device = SlmpDeviceParser.Parse("D100", SlmpPlcProfile.IqR);
         Assert.Equal(SlmpDeviceCode.D, device.Code);
         Assert.Equal((uint)100, device.Number);
     }
@@ -16,7 +16,7 @@ public sealed class SlmpParserTests
     [Fact]
     public void ParseDevice_HexBit_Succeeds()
     {
-        var device = SlmpDeviceParser.Parse("X10");
+        var device = SlmpDeviceParser.Parse("X10", SlmpPlcProfile.IqR);
         Assert.Equal(SlmpDeviceCode.X, device.Code);
         Assert.Equal((uint)0x10, device.Number);
     }
@@ -24,7 +24,7 @@ public sealed class SlmpParserTests
     [Fact]
     public void ParseDevice_HexNumberCanBeAllLetters()
     {
-        var device = SlmpDeviceParser.Parse("XFF");
+        var device = SlmpDeviceParser.Parse("XFF", SlmpPlcProfile.IqR);
         Assert.Equal(SlmpDeviceCode.X, device.Code);
         Assert.Equal((uint)0xFF, device.Number);
     }
@@ -32,7 +32,7 @@ public sealed class SlmpParserTests
     [Fact]
     public void ParseDevice_KnownCodeWithInvalidNumberDoesNotFallback()
     {
-        var error = Assert.Throws<FormatException>(() => SlmpDeviceParser.Parse("DFFFF"));
+        var error = Assert.Throws<FormatException>(() => SlmpDeviceParser.Parse("DFFFF", SlmpPlcProfile.IqR));
         Assert.Contains("device code 'D'", error.Message, StringComparison.Ordinal);
     }
 
@@ -42,7 +42,31 @@ public sealed class SlmpParserTests
         var device = SlmpDeviceParser.Parse("X100", SlmpPlcProfile.IqF);
         Assert.Equal(SlmpDeviceCode.X, device.Code);
         Assert.Equal((uint)0x40, device.Number);
-        Assert.Equal("Y217", SlmpAddress.Format(new SlmpDeviceAddress(SlmpDeviceCode.Y, 0x8F), SlmpPlcProfile.IqF));
+        Assert.Equal("Y217", SlmpAddress.Format(new SlmpDeviceAddress(SlmpDeviceCode.Y, 0x8F, SlmpPlcProfile.IqF)));
+    }
+
+    [Fact]
+    public void ParseDevice_X10_IsBoundToProfileAndUsesProfileRadix()
+    {
+        var iqf = SlmpDeviceParser.Parse("X10", SlmpPlcProfile.IqF);
+        var iqr = SlmpDeviceParser.Parse("X10", SlmpPlcProfile.IqR);
+
+        Assert.Equal((uint)8, iqf.Number);
+        Assert.Equal(SlmpPlcProfile.IqF, iqf.PlcProfile);
+        Assert.Equal("X10", iqf.ToString());
+        Assert.Equal((uint)16, iqr.Number);
+        Assert.Equal(SlmpPlcProfile.IqR, iqr.PlcProfile);
+        Assert.Equal("X10", iqr.ToString());
+        Assert.NotEqual(iqf, iqr);
+    }
+
+    [Fact]
+    public void NumericAddress_IqFX16_FormatsAsX20()
+    {
+        var device = new SlmpDeviceAddress(SlmpDeviceCode.X, 16, SlmpPlcProfile.IqF);
+
+        Assert.Equal("X20", device.ToString());
+        Assert.Equal("X20", SlmpAddress.Format(device));
     }
 
     [Theory]
@@ -63,7 +87,7 @@ public sealed class SlmpParserTests
     [InlineData("LCS10", SlmpPlcProfile.QnUDV)]
     [InlineData("LZ0", SlmpPlcProfile.QnU)]
     [InlineData("RD0", SlmpPlcProfile.LCpu)]
-    [InlineData("LTN0", SlmpPlcProfile.QCpu)]
+    [InlineData("LTN0", SlmpPlcProfile.QCpuQj71E71100)]
     public void ParseDevice_MeasuredLegacyUnsupportedFamilies_Fail(string text, SlmpPlcProfile profile)
     {
         var error = Assert.Throws<NotSupportedException>(() => SlmpDeviceParser.Parse(text, profile));
@@ -80,7 +104,10 @@ public sealed class SlmpParserTests
 
         foreach (var profileProperty in profiles.EnumerateObject())
         {
-            var plcProfile = SlmpPlcProfiles.ParseKnownProfileId(profileProperty.Name);
+            var fixtureProfile = SlmpPlcProfiles.ParseKnownProfileId(profileProperty.Name);
+            var plcProfile = fixtureProfile == SlmpPlcProfile.QCpu
+                ? SlmpPlcProfile.QCpuQj71E71100
+                : fixtureProfile;
             foreach (var ruleProperty in profileProperty.Value.GetProperty("rules").EnumerateObject())
             {
                 var unsupported = ruleProperty.Value.GetProperty("kind").GetString() == "unsupported";
@@ -109,19 +136,20 @@ public sealed class SlmpParserTests
     }
 
     [Fact]
-    public void ParseDevice_HighLevelXYWithoutFamily_Fails()
+    public void ParseDevice_ProfilelessOverload_IsNotPublic()
     {
-        var error = Assert.Throws<FormatException>(() => SlmpDeviceParser.ParseForHighLevel("Y217", null));
-        Assert.Contains("explicit PlcProfile", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            typeof(SlmpDeviceParser).GetMethods(),
+            method => method.Name == nameof(SlmpDeviceParser.Parse) && method.GetParameters().Length == 1);
     }
 
     [Fact]
     public void ParseDevice_StepRelay_Succeeds()
     {
-        var device = SlmpDeviceParser.Parse("S0");
+        var device = SlmpDeviceParser.Parse("S0", SlmpPlcProfile.IqR);
         Assert.Equal(SlmpDeviceCode.S, device.Code);
         Assert.Equal((uint)0, device.Number);
-        Assert.Equal("S0", SlmpAddress.Normalize("s0"));
+        Assert.Equal("S0", SlmpAddress.Normalize("s0", SlmpPlcProfile.IqR));
     }
 
     [Theory]
@@ -131,7 +159,7 @@ public sealed class SlmpParserTests
     [InlineData("zr123", "ZR123")]
     public void SlmpAddress_Normalize_ReturnsCanonicalText(string input, string expected)
     {
-        Assert.Equal(expected, SlmpAddress.Normalize(input));
+        Assert.Equal(expected, SlmpAddress.Normalize(input, SlmpPlcProfile.IqR));
     }
 
     [Fact]
@@ -172,7 +200,7 @@ public sealed class SlmpParserTests
     [Fact]
     public void ParseQualifiedDevice_UsesExtensionSpec()
     {
-        var qualified = SlmpQualifiedDeviceParser.Parse(@"U3E0\G10");
+        var qualified = SlmpQualifiedDeviceParser.Parse(@"U3E0\G10", SlmpPlcProfile.IqR);
         Assert.Equal((ushort)0x03E0, qualified.ExtensionSpecification);
         Assert.Equal(SlmpDeviceCode.G, qualified.Device.Code);
         Assert.Equal((uint)10, qualified.Device.Number);
@@ -182,19 +210,19 @@ public sealed class SlmpParserTests
     [Fact]
     public void ParseQualifiedDevice_RejectsHgOutsideIqrCpuBufferRange()
     {
-        var qualified = SlmpQualifiedDeviceParser.Parse(@"U3E0\HG0");
+        var qualified = SlmpQualifiedDeviceParser.Parse(@"U3E0\HG0", SlmpPlcProfile.IqR);
         Assert.Equal((ushort)0x03E0, qualified.ExtensionSpecification);
         Assert.Equal(SlmpDeviceCode.HG, qualified.Device.Code);
         Assert.Equal((byte)0xFA, qualified.DirectMemorySpecification);
 
-        var ex = Assert.Throws<ArgumentException>(() => SlmpQualifiedDeviceParser.Parse(@"U1\HG0"));
+        var ex = Assert.Throws<ArgumentException>(() => SlmpQualifiedDeviceParser.Parse(@"U1\HG0", SlmpPlcProfile.IqR));
         Assert.Contains(@"HG Extended Device access is valid only for U3E0\HG through U3E3\HG", ex.Message);
     }
 
     [Fact]
     public void QueuedClient_ConstructsWithInnerClient()
     {
-        using var inner = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var inner = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         using var queued = new QueuedSlmpClient(inner);
         Assert.Same(inner, queued.InnerClient);
     }
@@ -202,10 +230,14 @@ public sealed class SlmpParserTests
     [Fact]
     public void QueuedClient_ExposesConfigurationProperties()
     {
-        using var inner = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100);
+        using var inner = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.QCpuQj71E71100,
+            1025,
+            SlmpTransportMode.Tcp,
+            new SlmpTargetAddress(0x01, 0x02, 0x03E0, 0x00));
         using var queued = new QueuedSlmpClient(inner)
         {
-            TargetAddress = new SlmpTargetAddress(0x01, 0x02, 0x03E0, 0x00),
             MonitoringTimer = 0x0020,
             Timeout = TimeSpan.FromSeconds(5),
         };
@@ -220,7 +252,7 @@ public sealed class SlmpParserTests
     [Fact]
     public void ConnectionOptions_ResolveDefaultsFromPlcProfile()
     {
-        var options = new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.IqL);
+        var options = new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.IqL, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         Assert.Equal(SlmpFrameType.Frame4E, options.ResolvedFrameType);
         Assert.Equal(SlmpCompatibilityMode.Iqr, options.ResolvedCompatibilityMode);
@@ -232,7 +264,7 @@ public sealed class SlmpParserTests
     [Fact]
     public void ConnectionOptions_ResolveUnitProfileWithIndependentFrameAndCompatibility()
     {
-        var options = new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100);
+        var options = new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         Assert.Equal(SlmpFrameType.Frame4E, options.ResolvedFrameType);
         Assert.Equal(SlmpCompatibilityMode.Legacy, options.ResolvedCompatibilityMode);
@@ -243,7 +275,7 @@ public sealed class SlmpParserTests
     [Fact]
     public void ConnectionOptions_ResolveIqRUnitProfileWithIqRAddressRules()
     {
-        var options = new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.IqRRj71En71);
+        var options = new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.IqRRj71En71, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         Assert.Equal(SlmpFrameType.Frame4E, options.ResolvedFrameType);
         Assert.Equal(SlmpCompatibilityMode.Iqr, options.ResolvedCompatibilityMode);
@@ -255,14 +287,14 @@ public sealed class SlmpParserTests
     public void ConnectionOptions_RejectsUnspecifiedPlcProfile()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.Unspecified));
+            new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.Unspecified, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation));
     }
 
     [Fact]
     public void ConnectionOptions_RejectsBaseQcpuProfile()
     {
         var error = Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.QCpu));
+            new SlmpConnectionOptions("127.0.0.1", SlmpPlcProfile.QCpu, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation));
         Assert.Contains("melsec:qcpu is a base profile", error.Message, StringComparison.Ordinal);
         Assert.Contains("melsec:qcpu:qj71e71-100", error.Message, StringComparison.Ordinal);
     }
@@ -290,7 +322,7 @@ public sealed class SlmpParserTests
     [Fact]
     public void ParseQualifiedDevice_LinkDirect_J2SW10_Succeeds()
     {
-        var q = SlmpQualifiedDeviceParser.Parse(@"J2\SW10");
+        var q = SlmpQualifiedDeviceParser.Parse(@"J2\SW10", SlmpPlcProfile.IqR);
         Assert.Equal(SlmpDeviceCode.SW, q.Device.Code);
         Assert.Equal((uint)0x10, q.Device.Number);  // SW is hex-addressed
         Assert.Equal((ushort)2, q.ExtensionSpecification);
@@ -301,9 +333,9 @@ public sealed class SlmpParserTests
     public void EncodeExtendedDeviceSpec_LinkDirect_J2SW10_MatchesPcap()
     {
         // Verified by GOT pcap: J2\SW10 -> 00 00 10 00 00 b5 00 00 02 00 f9
-        var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100);
-        var device = new SlmpDeviceAddress(SlmpDeviceCode.SW, 0x10);
-        var extension = new SlmpExtensionSpec(ExtensionSpecification: 2, DirectMemorySpecification: 0xF9);
+        var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var device = new SlmpDeviceAddress(SlmpDeviceCode.SW, 0x10, SlmpPlcProfile.IqR);
+        var extension = new SlmpExtensionSpec(2, 0, 0, 0, 0xF9);
         var spec = client.EncodeExtendedDeviceSpec(device, extension);
         Assert.Equal(new byte[] { 0x00, 0x00, 0x10, 0x00, 0x00, 0xB5, 0x00, 0x00, 0x02, 0x00, 0xF9 }, spec);
     }

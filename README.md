@@ -14,7 +14,7 @@ This library is part of the plc-comm family. See the [package matrix](https://fa
 
 The maintained profile table is in [PLC profiles](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/dotnet/PROFILES/). Choose one exact canonical PLC profile from that table.
 
-`SlmpConnectionOptions.StrictProfile` defaults to `true`. With a selected profile, operations known to be unavailable for that PLC are rejected before sending. Set `StrictProfile = false` only for deliberate verification where you want the PLC to answer directly. Point limits and read-only write policies are always enforced.
+With a selected profile, operations known to be unavailable for that PLC are rejected before sending. The normal public API does not provide a profile-check bypass.
 
 ## Supported device types
 
@@ -32,7 +32,12 @@ dotnet add package PlcComm.Slmp
 using System;
 using PlcComm.Slmp;
 
-var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR) { Port = 1025 };
+var options = new SlmpConnectionOptions(
+    "192.168.250.100",
+    SlmpPlcProfile.IqR,
+    1025,
+    SlmpTransportMode.Tcp,
+    SlmpTargetAddress.OwnStation);
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var value = await client.ReadTypedAsync("D100", "U");
 Console.WriteLine($"D100 = {value}");

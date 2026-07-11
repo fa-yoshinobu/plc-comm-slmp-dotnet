@@ -50,18 +50,18 @@ internal sealed record SlmpNamedReadPlan(
 
 /// <summary>
 /// Extension methods for <see cref="SlmpClient"/> and <see cref="QueuedSlmpClient"/>
-/// providing typed read/write helpers, chunked reads, named-device access, and polling.
+/// providing typed read/write helpers, single-request block access, named-device access, and polling.
 /// </summary>
 public static class SlmpClientExtensions
 {
     private static SlmpDeviceAddress ParseDeviceForClient(SlmpClient client, string address)
-        => SlmpDeviceParser.ParseForHighLevel(address, client.PlcProfile);
+        => SlmpDeviceParser.Parse(address, client.PlcProfile);
 
     private static SlmpDeviceAddress ParseDeviceForClient(QueuedSlmpClient client, string address)
-        => SlmpDeviceParser.ParseForHighLevel(address, client.PlcProfile);
+        => SlmpDeviceParser.Parse(address, client.PlcProfile);
 
-    private static string NormalizeDeviceForFamily(string address, SlmpPlcProfile? PlcProfile)
-        => PlcProfile is SlmpPlcProfile family ? SlmpAddress.Normalize(address, family) : SlmpAddress.Normalize(address);
+    private static string NormalizeDeviceForFamily(string address, SlmpPlcProfile plcProfile)
+        => SlmpAddress.Normalize(address, plcProfile);
 
     // -----------------------------------------------------------------------
     // Typed read / write
@@ -724,399 +724,11 @@ public static class SlmpClientExtensions
         => client.WriteDWordsSingleRequestAsync(ParseDeviceForClient(client, start), values, ct);
 
     // -----------------------------------------------------------------------
-    // Chunked reads
-    // -----------------------------------------------------------------------
-
-    /// <summary>
-    /// Reads a contiguous word range in one or more SLMP requests.
-    /// </summary>
-    /// <param name="client">Connected SLMP client.</param>
-    /// <param name="start">Starting word device address.</param>
-    /// <param name="count">Total number of words to read.</param>
-    /// <param name="maxPerRequest">Maximum words per request. The protocol limit is 960.</param>
-    /// <param name="allowSplit">When true, large reads are automatically split across multiple SLMP requests.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Flat array of word values.</returns>
-    /// <remarks>
-    /// Chunk boundaries are aligned to 2-word boundaries so that 32-bit values
-    /// are not torn across split requests.
-    /// </remarks>
-    public static async Task<ushort[]> ReadWordsAsync(
-        this SlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxPerRequest = 960,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-    {
-        int effectiveMax = (maxPerRequest / 2) * 2;
-        if (effectiveMax <= 0)
-            throw new ArgumentOutOfRangeException(nameof(maxPerRequest), "maxPerRequest must be at least 2.");
-
-        if (!allowSplit)
-        {
-            if (count > effectiveMax)
-            {
-                throw new ArgumentException(
-                    $"count {count} exceeds maxPerRequest {effectiveMax}; pass allowSplit: true to split the read across multiple requests.",
-                    nameof(count));
-            }
-
-            return await client.ReadWordsRawAsync(start, (ushort)count, ct).ConfigureAwait(false);
-        }
-
-        var result = new List<ushort>(count);
-        int remaining = count;
-        uint offset = 0;
-        while (remaining > 0)
-        {
-            int chunk = Math.Min(remaining, effectiveMax);
-            var address = new SlmpDeviceAddress(start.Code, start.Number + offset);
-            var words = await client.ReadWordsRawAsync(address, (ushort)chunk, ct).ConfigureAwait(false);
-            result.AddRange(words);
-            offset += (uint)chunk;
-            remaining -= chunk;
-        }
-
-        return [.. result];
-    }
-
-    /// <summary>
-    /// Reads word devices using a string address.
-    /// </summary>
-    /// <param name="client">Connected SLMP client.</param>
-    /// <param name="start">Word device string such as <c>D0</c>.</param>
-    /// <param name="count">Total number of words to read.</param>
-    /// <param name="maxPerRequest">Maximum words per request.</param>
-    /// <param name="allowSplit">When true, oversized reads are split across requests.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Flat array of word values.</returns>
-    public static Task<ushort[]> ReadWordsAsync(
-        this SlmpClient client,
-        string start,
-        int count,
-        int maxPerRequest = 960,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-        => client.ReadWordsAsync(ParseDeviceForClient(client, start), count, maxPerRequest, allowSplit, ct);
-
-    /// <summary>
-    /// Reads word devices through a queued client.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxPerRequest = 960,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.ReadWordsAsync(start, count, maxPerRequest, allowSplit, ct), ct);
-
-    /// <summary>
-    /// Reads word devices using a string address through a queued client.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsAsync(
-        this QueuedSlmpClient client,
-        string start,
-        int count,
-        int maxPerRequest = 960,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-        => client.ReadWordsAsync(ParseDeviceForClient(client, start), count, maxPerRequest, allowSplit, ct);
-
-    /// <summary>
-    /// Reads a contiguous range of 32-bit unsigned values.
-    /// </summary>
-    /// <param name="client">Connected SLMP client.</param>
-    /// <param name="start">Starting device address.</param>
-    /// <param name="count">Number of 32-bit values to read.</param>
-    /// <param name="maxDwordsPerRequest">Maximum DWords per request.</param>
-    /// <param name="allowSplit">When true, large reads are automatically split across multiple SLMP requests.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Array of 32-bit unsigned values.</returns>
-    /// <remarks>
-    /// Each result consumes two underlying words in low-word-first order.
-    /// </remarks>
-    public static async Task<uint[]> ReadDWordsAsync(
-        this SlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxDwordsPerRequest = 480,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-    {
-        if (IsRandomDWordAddressedDevice(start.Code))
-        {
-            return await ReadRandomDWordsAsync(client, start, count, maxDwordsPerRequest, allowSplit, ct).ConfigureAwait(false);
-        }
-
-        var words = await client.ReadWordsAsync(
-                start,
-                count * 2,
-                maxPerRequest: maxDwordsPerRequest * 2,
-                allowSplit: allowSplit,
-                ct: ct)
-            .ConfigureAwait(false);
-
-        var result = new uint[count];
-        for (int i = 0; i < count; i++)
-            result[i] = (uint)(words[i * 2] | (words[(i * 2) + 1] << 16));
-        return result;
-    }
-
-    /// <summary>
-    /// Reads DWord devices using a string address.
-    /// </summary>
-    /// <param name="client">Connected SLMP client.</param>
-    /// <param name="start">Starting word device string such as <c>D200</c>.</param>
-    /// <param name="count">Number of 32-bit values to read.</param>
-    /// <param name="maxDwordsPerRequest">Maximum DWords per request.</param>
-    /// <param name="allowSplit">When true, oversized reads are split across requests.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Array of 32-bit unsigned values.</returns>
-    public static Task<uint[]> ReadDWordsAsync(
-        this SlmpClient client,
-        string start,
-        int count,
-        int maxDwordsPerRequest = 480,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-        => client.ReadDWordsAsync(ParseDeviceForClient(client, start), count, maxDwordsPerRequest, allowSplit, ct);
-
-    /// <summary>
-    /// Reads DWord devices through a queued client.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxDwordsPerRequest = 480,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.ReadDWordsAsync(start, count, maxDwordsPerRequest, allowSplit, ct), ct);
-
-    /// <summary>
-    /// Reads DWord devices using a string address through a queued client.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsAsync(
-        this QueuedSlmpClient client,
-        string start,
-        int count,
-        int maxDwordsPerRequest = 480,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-        => client.ReadDWordsAsync(ParseDeviceForClient(client, start), count, maxDwordsPerRequest, allowSplit, ct);
-
-    /// <summary>
-    /// Reads contiguous word devices using explicit chunking.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsChunkedAsync(
-        this SlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.ReadWordsAsync(start, count, maxWordsPerRequest, allowSplit: true, ct);
-
-    /// <summary>
-    /// Reads contiguous word devices using explicit chunking.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsChunkedAsync(
-        this SlmpClient client,
-        string start,
-        int count,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.ReadWordsChunkedAsync(ParseDeviceForClient(client, start), count, maxWordsPerRequest, ct);
-
-    /// <summary>
-    /// Reads contiguous word devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.ReadWordsChunkedAsync(start, count, maxWordsPerRequest, ct), ct);
-
-    /// <summary>
-    /// Reads contiguous word devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        string start,
-        int count,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.ReadWordsChunkedAsync(ParseDeviceForClient(client, start), count, maxWordsPerRequest, ct);
-
-    /// <summary>
-    /// Reads contiguous DWord devices using explicit chunking.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsChunkedAsync(
-        this SlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.ReadDWordsAsync(start, count, maxDwordsPerRequest, allowSplit: true, ct);
-
-    /// <summary>
-    /// Reads contiguous DWord devices using explicit chunking.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsChunkedAsync(
-        this SlmpClient client,
-        string start,
-        int count,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.ReadDWordsChunkedAsync(ParseDeviceForClient(client, start), count, maxDwordsPerRequest, ct);
-
-    /// <summary>
-    /// Reads contiguous DWord devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.ReadDWordsChunkedAsync(start, count, maxDwordsPerRequest, ct), ct);
-
-    /// <summary>
-    /// Reads contiguous DWord devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        string start,
-        int count,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.ReadDWordsChunkedAsync(ParseDeviceForClient(client, start), count, maxDwordsPerRequest, ct);
-
-    /// <summary>
-    /// Writes contiguous word devices using explicit chunking.
-    /// </summary>
-    public static async Task WriteWordsChunkedAsync(
-        this SlmpClient client,
-        SlmpDeviceAddress start,
-        IReadOnlyList<ushort> values,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-    {
-        ValidateChunkedValues(values, nameof(values));
-        ValidateChunkSize(maxWordsPerRequest, nameof(maxWordsPerRequest));
-
-        int remaining = values.Count;
-        int offset = 0;
-        while (remaining > 0)
-        {
-            int chunk = Math.Min(remaining, maxWordsPerRequest);
-            var address = new SlmpDeviceAddress(start.Code, start.Number + (uint)offset);
-            await client.WriteWordsAsync(address, values.Skip(offset).Take(chunk).ToArray(), ct).ConfigureAwait(false);
-            offset += chunk;
-            remaining -= chunk;
-        }
-    }
-
-    /// <summary>
-    /// Writes contiguous word devices using explicit chunking.
-    /// </summary>
-    public static Task WriteWordsChunkedAsync(
-        this SlmpClient client,
-        string start,
-        IReadOnlyList<ushort> values,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.WriteWordsChunkedAsync(ParseDeviceForClient(client, start), values, maxWordsPerRequest, ct);
-
-    /// <summary>
-    /// Writes contiguous word devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task WriteWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        IReadOnlyList<ushort> values,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.WriteWordsChunkedAsync(start, values, maxWordsPerRequest, ct), ct);
-
-    /// <summary>
-    /// Writes contiguous word devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task WriteWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        string start,
-        IReadOnlyList<ushort> values,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.WriteWordsChunkedAsync(ParseDeviceForClient(client, start), values, maxWordsPerRequest, ct);
-
-    /// <summary>
-    /// Writes contiguous DWord devices using explicit chunking.
-    /// </summary>
-    public static async Task WriteDWordsChunkedAsync(
-        this SlmpClient client,
-        SlmpDeviceAddress start,
-        IReadOnlyList<uint> values,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-    {
-        ValidateChunkedValues(values, nameof(values));
-        ValidateChunkSize(maxDwordsPerRequest, nameof(maxDwordsPerRequest));
-
-        int remaining = values.Count;
-        int offset = 0;
-        while (remaining > 0)
-        {
-            int chunk = Math.Min(remaining, maxDwordsPerRequest);
-            var address = new SlmpDeviceAddress(start.Code, start.Number + (uint)(offset * 2));
-            await client.WriteDWordsAsync(address, values.Skip(offset).Take(chunk).ToArray(), ct).ConfigureAwait(false);
-            offset += chunk;
-            remaining -= chunk;
-        }
-    }
-
-    /// <summary>
-    /// Writes contiguous DWord devices using explicit chunking.
-    /// </summary>
-    public static Task WriteDWordsChunkedAsync(
-        this SlmpClient client,
-        string start,
-        IReadOnlyList<uint> values,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.WriteDWordsChunkedAsync(ParseDeviceForClient(client, start), values, maxDwordsPerRequest, ct);
-
-    /// <summary>
-    /// Writes contiguous DWord devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task WriteDWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        IReadOnlyList<uint> values,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.WriteDWordsChunkedAsync(start, values, maxDwordsPerRequest, ct), ct);
-
-    /// <summary>
-    /// Writes contiguous DWord devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task WriteDWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        string start,
-        IReadOnlyList<uint> values,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.WriteDWordsChunkedAsync(ParseDeviceForClient(client, start), values, maxDwordsPerRequest, ct);
-
-    // -----------------------------------------------------------------------
     // Named-device read
     // -----------------------------------------------------------------------
 
     /// <summary>
-    /// Reads a mixed logical snapshot by address string and returns a dictionary keyed by the original addresses.
+    /// Reads a mixed named value set and returns a dictionary keyed by the original addresses.
     /// </summary>
     /// <param name="client">Connected SLMP client.</param>
     /// <param name="addresses">
@@ -1125,8 +737,9 @@ public static class SlmpClientExtensions
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A dictionary whose keys match the requested address strings.</returns>
     /// <remarks>
-    /// This is the recommended high-level helper for dashboards, snapshots, and
-    /// mixed-value reads. The address list is compiled and batched internally.
+    /// The address list is compiled and compatible regular devices share one random-read
+    /// request. Different command families require separate requests, so the returned
+    /// values are not an atomic PLC snapshot.
     /// </remarks>
     public static async Task<IReadOnlyDictionary<string, object>> ReadNamedAsync(
         this SlmpClient client,
@@ -1150,7 +763,7 @@ public static class SlmpClientExtensions
     }
 
     /// <summary>
-    /// Writes a mixed logical snapshot by address string.
+    /// Writes a mixed named value set by address string.
     /// </summary>
     /// <param name="client">Connected SLMP client.</param>
     /// <param name="updates">
@@ -1158,6 +771,7 @@ public static class SlmpClientExtensions
     /// <c>"D50.3"</c>, or direct bit-device addresses such as <c>"M1000:BIT"</c>.
     /// </param>
     /// <param name="ct">Cancellation token.</param>
+    /// <remarks>Entries can require separate requests. A later failure does not roll back earlier writes.</remarks>
     public static async Task WriteNamedAsync(
         this SlmpClient client,
         IReadOnlyDictionary<string, object> updates,
@@ -1263,19 +877,6 @@ public static class SlmpClientExtensions
             throw new ArgumentOutOfRangeException(paramName, $"values.Count must be in the range 1-{maxCount}.");
     }
 
-    private static void ValidateChunkedValues<T>(IReadOnlyList<T> values, string paramName)
-    {
-        ArgumentNullException.ThrowIfNull(values);
-        if (values.Count == 0)
-            throw new ArgumentOutOfRangeException(paramName, "values.Count must be 1 or greater.");
-    }
-
-    private static void ValidateChunkSize(int chunkSize, string paramName)
-    {
-        if (chunkSize < 1)
-            throw new ArgumentOutOfRangeException(paramName, "Chunk size must be 1 or greater.");
-    }
-
     internal static (string Base, string DType, int? BitIdx) ParseAddress(string address)
     {
         address = address.Trim();
@@ -1306,27 +907,22 @@ public static class SlmpClientExtensions
             nameof(address));
     }
 
-    internal static string NormalizeNamedAddress(string address)
-    {
-        return NormalizeNamedAddress(address, null);
-    }
-
-    internal static string NormalizeNamedAddress(string address, SlmpPlcProfile? PlcProfile)
+    internal static string NormalizeNamedAddress(string address, SlmpPlcProfile plcProfile)
     {
         var trimmed = address.Trim();
         var (baseAddress, dtype, bitIdx) = ParseAddress(trimmed);
-        var canonicalBase = NormalizeDeviceForFamily(baseAddress, PlcProfile);
+        var canonicalBase = NormalizeDeviceForFamily(baseAddress, plcProfile);
         if (bitIdx is int bit)
         {
             return $"{canonicalBase}.{bit.ToString("X", CultureInfo.InvariantCulture)}";
         }
 
-        var device = SlmpDeviceParser.ParseForHighLevel(baseAddress, PlcProfile);
+        var device = SlmpDeviceParser.Parse(baseAddress, plcProfile);
         ValidateNamedDeviceDType(trimmed, device, dtype);
         return $"{canonicalBase}:{dtype}";
     }
 
-    internal static SlmpNamedReadPlan CompileReadPlan(IEnumerable<string> addresses, SlmpPlcProfile? PlcProfile = null)
+    internal static SlmpNamedReadPlan CompileReadPlan(IEnumerable<string> addresses, SlmpPlcProfile plcProfile)
     {
         var entries = new List<SlmpNamedReadEntry>();
         var wordDevices = new List<SlmpDeviceAddress>();
@@ -1337,7 +933,7 @@ public static class SlmpClientExtensions
         foreach (var address in addresses)
         {
             var (baseAddress, dtype, bitIdx) = ParseAddress(address);
-            var device = SlmpDeviceParser.ParseForHighLevel(baseAddress, PlcProfile);
+            var device = SlmpDeviceParser.Parse(baseAddress, plcProfile);
             var kind = SlmpNamedReadKind.Fallback;
             var longTimerRead = GetLongTimerReadSpec(device.Code);
 
@@ -1533,48 +1129,8 @@ public static class SlmpClientExtensions
         SlmpDeviceAddress device,
         CancellationToken ct)
     {
-        var values = await ReadRandomDWordsAsync(client, device, 1, 1, allowSplit: false, ct).ConfigureAwait(false);
-        return values[0];
-    }
-
-    private static async Task<uint[]> ReadRandomDWordsAsync(
-        SlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxDwordsPerRequest,
-        bool allowSplit,
-        CancellationToken ct)
-    {
-        if (count < 0)
-            throw new ArgumentOutOfRangeException(nameof(count), "count must be >= 0.");
-
-        var effectiveMax = Math.Min(maxDwordsPerRequest, 0xFF);
-        if (effectiveMax <= 0)
-            throw new ArgumentOutOfRangeException(nameof(maxDwordsPerRequest), "maxDwordsPerRequest must be >= 1.");
-
-        if (!allowSplit && count > effectiveMax)
-        {
-            throw new ArgumentException(
-                $"count {count} exceeds maxDwordsPerRequest {effectiveMax}; pass allowSplit: true to split the read across multiple requests.",
-                nameof(count));
-        }
-
-        var result = new uint[count];
-        var remaining = count;
-        var offset = 0;
-        while (remaining > 0)
-        {
-            var chunkCount = Math.Min(remaining, effectiveMax);
-            var devices = Enumerable.Range(0, chunkCount)
-                .Select(index => start with { Number = checked(start.Number + (uint)(offset + index)) })
-                .ToArray();
-            var (_, dwords) = await client.ReadRandomAsync([], devices, ct).ConfigureAwait(false);
-            Array.Copy(dwords, 0, result, offset, dwords.Length);
-            offset += chunkCount;
-            remaining -= chunkCount;
-        }
-
-        return result;
+        var (_, dwords) = await client.ReadRandomAsync([], [device], ct).ConfigureAwait(false);
+        return dwords[0];
     }
 
     private static async Task<(Dictionary<SlmpDeviceAddress, ushort> Words, Dictionary<SlmpDeviceAddress, uint> DWords)> ReadRandomMapsAsync(
@@ -1583,27 +1139,23 @@ public static class SlmpClientExtensions
         IReadOnlyList<SlmpDeviceAddress> dwordDevices,
         CancellationToken ct)
     {
+        if (wordDevices.Count > 0xFF || dwordDevices.Count > 0xFF)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(wordDevices),
+                "Named read must fit in one random-read request (at most 255 word and 255 DWord devices). Split intentionally in application code if multiple request times are acceptable.");
+        }
+
         var words = new Dictionary<SlmpDeviceAddress, ushort>();
         var dwords = new Dictionary<SlmpDeviceAddress, uint>();
-        var wordIndex = 0;
-        var dwordIndex = 0;
+        if (wordDevices.Count == 0 && dwordDevices.Count == 0)
+            return (words, dwords);
 
-        while (wordIndex < wordDevices.Count || dwordIndex < dwordDevices.Count)
-        {
-            var wordChunk = wordDevices.Skip(wordIndex).Take(0xFF).ToArray();
-            var dwordChunk = dwordDevices.Skip(dwordIndex).Take(0xFF).ToArray();
-            wordIndex += wordChunk.Length;
-            dwordIndex += dwordChunk.Length;
-
-            if (wordChunk.Length == 0 && dwordChunk.Length == 0)
-                break;
-
-            var random = await client.ReadRandomAsync(wordChunk, dwordChunk, ct).ConfigureAwait(false);
-            for (int i = 0; i < wordChunk.Length; i++)
-                words[wordChunk[i]] = random.WordValues[i];
-            for (int i = 0; i < dwordChunk.Length; i++)
-                dwords[dwordChunk[i]] = random.DwordValues[i];
-        }
+        var random = await client.ReadRandomAsync(wordDevices, dwordDevices, ct).ConfigureAwait(false);
+        for (int i = 0; i < wordDevices.Count; i++)
+            words[wordDevices[i]] = random.WordValues[i];
+        for (int i = 0; i < dwordDevices.Count; i++)
+            dwords[dwordDevices[i]] = random.DwordValues[i];
 
         return (words, dwords);
     }
@@ -1894,7 +1446,7 @@ public static class SlmpClientExtensions
         }
 
         bitIndex = (int)(device.Number % 16U);
-        wordDevice = new SlmpDeviceAddress(device.Code, device.Number - (uint)bitIndex);
+        wordDevice = new SlmpDeviceAddress(device.Code, device.Number - (uint)bitIndex, device.PlcProfile);
         return true;
     }
 

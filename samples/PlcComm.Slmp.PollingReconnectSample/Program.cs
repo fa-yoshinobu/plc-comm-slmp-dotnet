@@ -3,21 +3,20 @@ using System.IO;
 using System.Net.Sockets;
 using PlcComm.Slmp;
 
-if (args.Length <= 2)
+if (args.Length < 7)
 {
-    Console.Error.WriteLine("Usage: dotnet run --project samples/PlcComm.Slmp.PollingReconnectSample -- <host> <port> <plc-profile> [device] [dtype] [interval-seconds] [tcp|udp]");
-    Console.Error.WriteLine("Example: dotnet run --project samples/PlcComm.Slmp.PollingReconnectSample -- 192.168.250.100 1025 melsec:iq-r D100 U 1 tcp");
-    Console.Error.WriteLine("Example: dotnet run --project samples/PlcComm.Slmp.PollingReconnectSample -- 192.168.250.100 1035 melsec:iq-r D100 U 1 udp");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/PlcComm.Slmp.PollingReconnectSample -- <host> <port> <plc-profile> <device> <dtype> <tcp|udp> <target> [interval-seconds]");
     return;
 }
 
 var host = args[0];
 var port = int.Parse(args[1], CultureInfo.InvariantCulture);
 var plcProfile = SlmpPlcProfiles.Parse(args[2]);
-var device = args.ElementAtOrDefault(3) ?? "D100";
-var dtype = args.ElementAtOrDefault(4) ?? "U";
-var interval = TimeSpan.FromSeconds(ParseDouble(args.ElementAtOrDefault(5), 1.0));
-var transport = ParseTransport(args.ElementAtOrDefault(6));
+var device = args[3];
+var dtype = args[4];
+var transport = ParseTransport(args[5]);
+var target = SlmpTargetParser.ParseNamed(args[6]).Target;
+var interval = TimeSpan.FromSeconds(ParseDouble(args.ElementAtOrDefault(7), 1.0));
 var initialBackoff = TimeSpan.FromSeconds(1);
 var maxBackoff = TimeSpan.FromSeconds(30);
 
@@ -41,10 +40,8 @@ try
             Log("reconnecting", $"{TransportLabel(transport)} {host}:{port} profile={SlmpPlcProfiles.ToCanonicalString(plcProfile)}");
             try
             {
-                var options = new SlmpConnectionOptions(host, plcProfile)
+                var options = new SlmpConnectionOptions(host, plcProfile, port, transport, target)
                 {
-                    Port = port,
-                    Transport = transport,
                     Timeout = TimeSpan.FromSeconds(3),
                 };
                 client = await SlmpClientFactory.OpenAndConnectAsync(options, shutdown.Token);
@@ -122,9 +119,9 @@ static TimeSpan NextBackoff(TimeSpan current, TimeSpan max)
 static double ParseDouble(string? value, double fallback)
     => string.IsNullOrWhiteSpace(value) ? fallback : double.Parse(value, CultureInfo.InvariantCulture);
 
-static SlmpTransportMode ParseTransport(string? value)
+static SlmpTransportMode ParseTransport(string value)
 {
-    if (string.IsNullOrWhiteSpace(value) || value.Equals("tcp", StringComparison.OrdinalIgnoreCase))
+    if (value.Equals("tcp", StringComparison.OrdinalIgnoreCase))
     {
         return SlmpTransportMode.Tcp;
     }
