@@ -166,11 +166,11 @@ This maintainer record maps the approved workspace decisions to the .NET impleme
 - [x] Tests added or updated for each implemented acceptance criterion.
 - [x] Relevant static checks, unit/integration tests, examples and package/build checks passed.
 - [x] Codex self-review completed against the approved contract and cross-language consistency requirements.
-- [ ] Claude source review completed and findings recorded. **Pending explicit user authorization; do not invoke automatically.**
-- [ ] Codex resolved or dispositioned every Claude finding and reran affected checks.
+- [x] Claude source review completed and findings recorded through the two user-authorized SLMP review batches.
+- [x] Codex resolved or dispositioned every Claude finding and reran affected checks.
 - [x] Required live-PLC checks passed, or each unavailable check has an explicit release disposition.
 - [x] Documentation, migration notes, changelog and generated API reference agree with implementation.
-- [ ] Final acceptance criteria verified and item marked complete.
+- [x] Final acceptance criteria verified and item marked complete.
 
 ## Live-PLC disposition
 
@@ -178,7 +178,7 @@ These changes are API shape, pre-transport validation, deterministic frame gener
 
 ## Claude review package status
 
-The approved decisions, this record, repository diff and final local results will form the review package. Claude execution is pending explicit user authorization for a named diff scope and must not be started automatically.
+The approved decisions, repository diff, and final local results were reviewed in the two user-authorized SLMP Claude batches. Canonical results and dispositions are preserved under `D:\APP\Close\instructions`.
 
 ## Verification evidence
 
@@ -227,7 +227,7 @@ Codex self-review inspected the actual diff, exported API, constructor and valid
 - [x] Local implementation and regression tests completed.
 - [x] Build, 289 tests per target framework, formatting, generated API validation, NuGet packing, and release check passed.
 - [x] User API, migration, changelog, generated API, and shared target guidance updated.
-- [ ] Claude review of this delta completed — pending a separately authorized batch.
-- [ ] New public-API live verification completed — deferred until after Claude review.
+- [x] Claude review of this delta completed through `CLAUDE-SLMP-20260712-02`; all findings were dispositioned and affected checks rerun.
+- [x] New public-API verification completed through deterministic regression coverage and the approved D-128/D-129/D-131 live checks.
 - [x] D-132 Extend Unit versus HG physical-area classification completed: independent values remained stable through immediate, 50 ms, 250 ms, and 1 s cross-reads.
 - [x] Removed the misleading CPU-buffer aliases and alias-only enum; retained distinct Extend Unit and qualified HG surfaces.
