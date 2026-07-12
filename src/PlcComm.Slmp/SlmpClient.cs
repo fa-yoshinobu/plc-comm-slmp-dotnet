@@ -1122,7 +1122,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <summary>
     /// Executes one monitor cycle and returns the values of the previously registered devices (command 0x0802).
     /// </summary>
-    /// <param name="wordPoints">Number of registered word devices.</param>
+    /// <param name="wordPoints">Number of registered word devices. The combined count must be nonzero and within the active profile limit.</param>
     /// <param name="dwordPoints">Number of registered DWord devices.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<SlmpMonitorResult> RunMonitorCycleAsync(
@@ -1130,10 +1130,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         int dwordPoints,
         CancellationToken cancellationToken = default)
     {
-        if (wordPoints < 0 || dwordPoints < 0)
-            throw new ArgumentOutOfRangeException(nameof(wordPoints), "wordPoints and dwordPoints must be >= 0.");
-
         EnsureProfileFeatureAllowed(SlmpProfileFeature.Monitor);
+        ValidateRandomReadLikeCounts(
+            wordPoints,
+            dwordPoints,
+            "run_monitor_cycle",
+            limitKey: SlmpProfileLimit.MonitorRegisterWord);
         var data = await RequestCoreAsync(SlmpCommand.Monitor, 0x0000, ReadOnlyMemory<byte>.Empty, true, cancellationToken).ConfigureAwait(false);
         var expected = wordPoints * 2 + dwordPoints * 4;
         if (data.Length != expected)
@@ -1195,6 +1197,10 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         _ = await RequestCoreAsync(SlmpCommand.RemotePasswordLock, 0x0000, EncodePassword(password), true, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Sends one self-test request and returns the echo only when declared length,
+    /// actual length, and payload all match the supplied ASCII hexadecimal bytes.
+    /// </summary>
     public async Task<byte[]> SelfTestLoopbackAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
     {
         if (data.Length < 1 || data.Length > 960)
@@ -1220,17 +1226,30 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         }
 
         var responseLength = BinaryPrimitives.ReadUInt16LittleEndian(response.AsSpan(0, 2));
-        if (responseLength + 2 > response.Length)
+        var expectedEcho = payload.AsSpan(2);
+        if (responseLength != expectedEcho.Length)
         {
-            throw new SlmpError("self_test response length mismatch");
+            throw new SlmpError($"self_test response declared length mismatch: expected={expectedEcho.Length}, declared={responseLength}");
         }
 
-        return response.AsSpan(2, responseLength).ToArray();
+        if (response.Length != responseLength + 2)
+        {
+            throw new SlmpError($"self_test response size mismatch: expected={responseLength + 2}, actual={response.Length}");
+        }
+
+        var echo = response.AsSpan(2);
+        if (!echo.SequenceEqual(expectedEcho))
+        {
+            throw new SlmpError("self_test response payload mismatch");
+        }
+
+        return echo.ToArray();
     }
 
     private static bool IsSelfTestHexByte(byte value)
         => value is >= (byte)'0' and <= (byte)'9' or >= (byte)'A' and <= (byte)'F';
 
+    /// <summary>Sends the fixed Clear Error command as exactly one request.</summary>
     public async Task ClearErrorAsync(CancellationToken cancellationToken = default) => _ = await RequestCoreAsync(SlmpCommand.ClearError, 0x0000, ReadOnlyMemory<byte>.Empty, true, cancellationToken).ConfigureAwait(false);
 
     // -----------------------------------------------------------------------
@@ -1363,7 +1382,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// </summary>
     /// <param name="headAddress">Starting address in the extend unit (32-bit).</param>
     /// <param name="byteLength">Number of bytes to read.</param>
-    /// <param name="moduleNo">Extend unit module I/O number (e.g. 0x03E0 for CPU buffer).</param>
+    /// <param name="moduleNo">Configured Extend Unit module I/O number.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<byte[]> ExtendUnitReadBytesAsync(
         uint headAddress,
@@ -1471,70 +1490,6 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         BinaryPrimitives.WriteUInt32LittleEndian(data, value);
         await ExtendUnitWriteBytesAsync(headAddress, moduleNo, data, cancellationToken).ConfigureAwait(false);
     }
-
-    // -----------------------------------------------------------------------
-    // CPU buffer convenience wrappers
-    // -----------------------------------------------------------------------
-
-    public Task<ushort[]> CpuBufferReadWordsAsync(uint headAddress, ushort wordLength, SlmpCpuModule module, CancellationToken cancellationToken = default)
-    {
-        EnsureProfileFeatureAllowed(SlmpProfileFeature.HgCpuBuffer);
-        return ExtendUnitReadWordsAsync(headAddress, wordLength, ValidateCpuModule(module), cancellationToken);
-    }
-
-    /// <summary>Reads bytes from the explicitly selected CPU buffer.</summary>
-    public Task<byte[]> CpuBufferReadBytesAsync(uint headAddress, ushort byteLength, SlmpCpuModule module, CancellationToken cancellationToken = default)
-    {
-        EnsureProfileFeatureAllowed(SlmpProfileFeature.HgCpuBuffer);
-        return ExtendUnitReadBytesAsync(headAddress, byteLength, ValidateCpuModule(module), cancellationToken);
-    }
-
-    /// <summary>Reads a single word from the CPU buffer.</summary>
-    public Task<ushort> CpuBufferReadWordAsync(uint headAddress, SlmpCpuModule module, CancellationToken cancellationToken = default)
-    {
-        EnsureProfileFeatureAllowed(SlmpProfileFeature.HgCpuBuffer);
-        return ExtendUnitReadWordAsync(headAddress, ValidateCpuModule(module), cancellationToken);
-    }
-
-    /// <summary>Reads a double word from the CPU buffer.</summary>
-    public Task<uint> CpuBufferReadDWordAsync(uint headAddress, SlmpCpuModule module, CancellationToken cancellationToken = default)
-    {
-        EnsureProfileFeatureAllowed(SlmpProfileFeature.HgCpuBuffer);
-        return ExtendUnitReadDWordAsync(headAddress, ValidateCpuModule(module), cancellationToken);
-    }
-
-    /// <summary>Writes words to the explicitly selected CPU buffer.</summary>
-    public Task CpuBufferWriteWordsAsync(uint headAddress, IReadOnlyList<ushort> values, SlmpCpuModule module, CancellationToken cancellationToken = default)
-    {
-        EnsureProfileFeatureAllowed(SlmpProfileFeature.HgCpuBuffer);
-        return ExtendUnitWriteWordsAsync(headAddress, ValidateCpuModule(module), values, cancellationToken);
-    }
-
-    /// <summary>Writes bytes to the explicitly selected CPU buffer.</summary>
-    public Task CpuBufferWriteBytesAsync(uint headAddress, ReadOnlyMemory<byte> data, SlmpCpuModule module, CancellationToken cancellationToken = default)
-    {
-        EnsureProfileFeatureAllowed(SlmpProfileFeature.HgCpuBuffer);
-        return ExtendUnitWriteBytesAsync(headAddress, ValidateCpuModule(module), data, cancellationToken);
-    }
-
-    /// <summary>Writes a single word to the CPU buffer.</summary>
-    public Task CpuBufferWriteWordAsync(uint headAddress, ushort value, SlmpCpuModule module, CancellationToken cancellationToken = default)
-    {
-        EnsureProfileFeatureAllowed(SlmpProfileFeature.HgCpuBuffer);
-        return ExtendUnitWriteWordAsync(headAddress, ValidateCpuModule(module), value, cancellationToken);
-    }
-
-    /// <summary>Writes a double word to the CPU buffer.</summary>
-    public Task CpuBufferWriteDWordAsync(uint headAddress, uint value, SlmpCpuModule module, CancellationToken cancellationToken = default)
-    {
-        EnsureProfileFeatureAllowed(SlmpProfileFeature.HgCpuBuffer);
-        return ExtendUnitWriteDWordAsync(headAddress, ValidateCpuModule(module), value, cancellationToken);
-    }
-
-    private static ushort ValidateCpuModule(SlmpCpuModule module)
-        => Enum.IsDefined(module)
-            ? (ushort)module
-            : throw new ArgumentOutOfRangeException(nameof(module));
 
     // -----------------------------------------------------------------------
     // Long timer / long retentive timer reads

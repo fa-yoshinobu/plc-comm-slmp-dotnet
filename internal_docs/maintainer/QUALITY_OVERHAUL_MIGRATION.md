@@ -120,12 +120,12 @@ This maintainer record maps the approved workspace decisions to the .NET impleme
 - [x] Tests completed.
 - [x] Documentation updated.
 
-## D-031 / D-032 / D-033 — Explicit CPU and long-timer selection
+## D-031 / D-032 / D-033 — Explicit long-timer selection
 
-- Scope: CPU-buffer and long timer/retentive timer helpers.
-- Target contract: CPU-buffer calls require `SlmpCpuModule.Cpu1` through `Cpu4`; all long-family multi-point and state projection helpers require head and point count. Undefined modules, negative heads, zero counts, counts above 240 timers, and arithmetic-overflow counts fail before transport.
-- Compatibility: implicit CPU1, head zero and one-point defaults are removed.
-- Acceptance criteria: parameters are non-optional, module wire values are typed, and multi-point timer read uses one bounded request.
+- Scope: long timer/retentive timer helpers.
+- Target contract: all long-family multi-point and state projection helpers require head and point count. Negative heads, zero counts, counts above 240 timers, and arithmetic-overflow counts fail before transport.
+- Compatibility: implicit head zero and one-point defaults are removed.
+- Acceptance criteria: parameters are non-optional and multi-point timer read uses one bounded request.
 - [x] Implementation completed.
 - [x] Tests completed.
 - [x] Documentation updated.
@@ -183,7 +183,7 @@ The approved decisions, this record, repository diff and final local results wil
 ## Verification evidence
 
 - `dotnet format PlcComm.Slmp.sln --no-restore --verify-no-changes`: PASS.
-- `dotnet test PlcComm.Slmp.sln --configuration Release --no-restore`: PASS on `net8.0`, `net9.0`, and `net10.0`; 285 tests per target framework, zero failed or skipped.
+- `dotnet test PlcComm.Slmp.sln --configuration Release --no-restore`: PASS on `net8.0`, `net9.0`, and `net10.0`; 289 tests per target framework, zero failed or skipped.
 - `python scripts/test_generate_api_reference.py`: PASS, 4 tests.
 - generated API reference regeneration plus `--check`: PASS; 50 documented public types and maintainer-only raw command omitted through `EditorBrowsable(Never)`.
 - `dotnet pack ... --configuration Release --no-build`: PASS; `.nupkg` and `.snupkg` created locally for packaging validation only.
@@ -193,3 +193,41 @@ The approved decisions, this record, repository diff and final local results wil
 - `git diff --check`: PASS; line-ending conversion warnings only.
 
 Codex self-review inspected the actual diff, exported API, constructor and validation order, profile/address binding, immutable target, write overlap rules, request locking, 4E matching, TCP/UDP timeout and cancellation invalidation, fixed Remote RESET, label input validation, tests, samples, generated documentation and packaging. It found and corrected two issues during review: missing profile checks on semantic Extended Device paths and mutable target routing after construction.
+
+## 2026-07-12 D-128, D-129, D-131, and D-132 delta
+
+### D-128 — Monitor expected-count contract
+
+- Scope: direct and `QueuedSlmpClient` monitor registration/cycle APIs.
+- Target: registration and every cycle remain one request; cycle counts are explicit, nonzero, and within the active profile's monitor-registration limit, with no implicit registration, retry, split, or fallback.
+- Compatibility: zero/over-limit expected counts now fail before transport instead of accepting an impossible empty/oversized result contract.
+- Acceptance: exact registration/cycle commands, three cycles, zero/over-limit rejection, PLC NG, response-size mismatch, request counts, and queued normal/qualified device-list snapshots are covered on net8.0, net9.0, and net10.0.
+
+### D-129 — Preferred-client self-test parity
+
+- Scope: direct and `QueuedSlmpClient` self-test APIs.
+- Target: the queued wrapper exposes the same method; both require 1–960 ASCII `0-9/A-F` and compare declared length, actual length, and echo against the bytes snapshotted for transmission.
+- Compatibility: trailing, short, wrong-length, and mismatched echoes now fail.
+- Acceptance: direct malformed-response cases, direct in-flight caller mutation, queued pre-execution caller mutation, and queued exact-frame forwarding are covered on net8.0, net9.0, and net10.0.
+
+### D-131 — Preferred-client Clear Error parity
+
+- Scope: `QueuedSlmpClient.ClearErrorAsync` and the direct fixed command.
+- Target: one `0x1617/0x0000` empty-payload request under the queue gate, with normal cancellation/transport/error behavior.
+- Compatibility: callers no longer need `InnerClient` for this semantic command.
+- Acceptance: exact queued request shape and one-request boundary are covered.
+
+### D-132 — HG target ownership
+
+- Scope: qualified Extended Device HG operations, Extend Unit operations, public aliases, and immutable target behavior.
+- Target: `0x0601/0x1601` remain available only as `ExtendUnit*Async`; HG remains available only through qualified Extended Device APIs. Do not infer a target from `U3En`; do not reject cross-CPU reads, retry another CPU, or read back automatically.
+- Compatibility: `SlmpCpuModule` and all direct/queued `CpuBuffer*Async` aliases are removed. Migrate those calls to `ExtendUnit*Async`; do not mechanically translate them to an HG address because live evidence proves the physical areas differ. Create a client with the explicit CPU target when an HG write must be reflected there.
+- Acceptance: exported-surface tests reject the removed type and methods, Extend Unit and qualified HG exact-frame tests remain, `U3E1\HG` retains Own Station `0x03FF`, and only an explicitly CPU No.2 client emits `0x03E1`.
+
+- [x] Local implementation and regression tests completed.
+- [x] Build, 289 tests per target framework, formatting, generated API validation, NuGet packing, and release check passed.
+- [x] User API, migration, changelog, generated API, and shared target guidance updated.
+- [ ] Claude review of this delta completed — pending a separately authorized batch.
+- [ ] New public-API live verification completed — deferred until after Claude review.
+- [x] D-132 Extend Unit versus HG physical-area classification completed: independent values remained stable through immediate, 50 ms, 250 ms, and 1 s cross-reads.
+- [x] Removed the misleading CPU-buffer aliases and alias-only enum; retained distinct Extend Unit and qualified HG surfaces.

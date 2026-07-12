@@ -153,6 +153,17 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     public Task<SlmpCpuOperationState> ReadCpuOperationStateAsync(CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.ReadCpuOperationStateAsync(cancellationToken), cancellationToken);
 
+    /// <inheritdoc cref="SlmpClient.SelfTestLoopbackAsync"/>
+    public Task<byte[]> SelfTestLoopbackAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
+    {
+        var snapshot = data.ToArray();
+        return ExecuteAsync(client => client.SelfTestLoopbackAsync(snapshot, cancellationToken), cancellationToken);
+    }
+
+    /// <inheritdoc cref="SlmpClient.ClearErrorAsync"/>
+    public Task ClearErrorAsync(CancellationToken cancellationToken = default)
+        => ExecuteAsync(client => client.ClearErrorAsync(cancellationToken), cancellationToken);
+
     /// <inheritdoc cref="SlmpClient.ReadDeviceRangeCatalogAsync(CancellationToken)"/>
     public Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.ReadDeviceRangeCatalogAsync(cancellationToken), cancellationToken);
@@ -411,45 +422,19 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
     public Task ExtendUnitWriteDWordAsync(uint headAddress, ushort moduleNo, uint value, CancellationToken cancellationToken = default)
         => ExecuteAsync(client => client.ExtendUnitWriteDWordAsync(headAddress, moduleNo, value, cancellationToken), cancellationToken);
 
-    /// <inheritdoc cref="SlmpClient.CpuBufferReadWordsAsync"/>
-    public Task<ushort[]> CpuBufferReadWordsAsync(uint headAddress, ushort wordLength, SlmpCpuModule module, CancellationToken cancellationToken = default)
-        => ExecuteAsync(client => client.CpuBufferReadWordsAsync(headAddress, wordLength, module, cancellationToken), cancellationToken);
-
-    /// <inheritdoc cref="SlmpClient.CpuBufferReadBytesAsync"/>
-    public Task<byte[]> CpuBufferReadBytesAsync(uint headAddress, ushort byteLength, SlmpCpuModule module, CancellationToken cancellationToken = default)
-        => ExecuteAsync(client => client.CpuBufferReadBytesAsync(headAddress, byteLength, module, cancellationToken), cancellationToken);
-
-    /// <inheritdoc cref="SlmpClient.CpuBufferReadWordAsync"/>
-    public Task<ushort> CpuBufferReadWordAsync(uint headAddress, SlmpCpuModule module, CancellationToken cancellationToken = default)
-        => ExecuteAsync(client => client.CpuBufferReadWordAsync(headAddress, module, cancellationToken), cancellationToken);
-
-    /// <inheritdoc cref="SlmpClient.CpuBufferReadDWordAsync"/>
-    public Task<uint> CpuBufferReadDWordAsync(uint headAddress, SlmpCpuModule module, CancellationToken cancellationToken = default)
-        => ExecuteAsync(client => client.CpuBufferReadDWordAsync(headAddress, module, cancellationToken), cancellationToken);
-
-    /// <inheritdoc cref="SlmpClient.CpuBufferWriteWordsAsync"/>
-    public Task CpuBufferWriteWordsAsync(uint headAddress, IReadOnlyList<ushort> values, SlmpCpuModule module, CancellationToken cancellationToken = default)
-        => ExecuteAsync(client => client.CpuBufferWriteWordsAsync(headAddress, values, module, cancellationToken), cancellationToken);
-
-    /// <inheritdoc cref="SlmpClient.CpuBufferWriteBytesAsync"/>
-    public Task CpuBufferWriteBytesAsync(uint headAddress, ReadOnlyMemory<byte> data, SlmpCpuModule module, CancellationToken cancellationToken = default)
-        => ExecuteAsync(client => client.CpuBufferWriteBytesAsync(headAddress, data, module, cancellationToken), cancellationToken);
-
-    /// <inheritdoc cref="SlmpClient.CpuBufferWriteWordAsync"/>
-    public Task CpuBufferWriteWordAsync(uint headAddress, ushort value, SlmpCpuModule module, CancellationToken cancellationToken = default)
-        => ExecuteAsync(client => client.CpuBufferWriteWordAsync(headAddress, value, module, cancellationToken), cancellationToken);
-
-    /// <inheritdoc cref="SlmpClient.CpuBufferWriteDWordAsync"/>
-    public Task CpuBufferWriteDWordAsync(uint headAddress, uint value, SlmpCpuModule module, CancellationToken cancellationToken = default)
-        => ExecuteAsync(client => client.CpuBufferWriteDWordAsync(headAddress, value, module, cancellationToken), cancellationToken);
-
     /// <inheritdoc cref="SlmpClient.RegisterMonitorDevicesAsync"/>
     public Task RegisterMonitorDevicesAsync(
         IReadOnlyList<SlmpDeviceAddress> wordDevices,
         IReadOnlyList<SlmpDeviceAddress> dwordDevices,
         CancellationToken cancellationToken = default
     )
-        => ExecuteAsync(client => client.RegisterMonitorDevicesAsync(wordDevices, dwordDevices, cancellationToken), cancellationToken);
+    {
+        var wordSnapshot = wordDevices.ToArray();
+        var dwordSnapshot = dwordDevices.ToArray();
+        return ExecuteAsync(
+            client => client.RegisterMonitorDevicesAsync(wordSnapshot, dwordSnapshot, cancellationToken),
+            cancellationToken);
+    }
 
     /// <inheritdoc cref="SlmpClient.RegisterMonitorDevicesExtAsync"/>
     public Task RegisterMonitorDevicesExtAsync(
@@ -457,7 +442,13 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
         IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices,
         CancellationToken cancellationToken = default
     )
-        => ExecuteAsync(client => client.RegisterMonitorDevicesExtAsync(wordDevices, dwordDevices, cancellationToken), cancellationToken);
+    {
+        var wordSnapshot = wordDevices.ToArray();
+        var dwordSnapshot = dwordDevices.ToArray();
+        return ExecuteAsync(
+            client => client.RegisterMonitorDevicesExtAsync(wordSnapshot, dwordSnapshot, cancellationToken),
+            cancellationToken);
+    }
 
     /// <inheritdoc cref="SlmpClient.RunMonitorCycleAsync"/>
     public Task<SlmpMonitorResult> RunMonitorCycleAsync(int wordPoints, int dwordPoints, CancellationToken cancellationToken = default)

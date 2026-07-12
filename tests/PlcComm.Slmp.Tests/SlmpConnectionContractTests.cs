@@ -63,6 +63,13 @@ public sealed class SlmpConnectionContractTests
     }
 
     [Fact]
+    public void QueuedClient_ExposesFixedCommandSemanticApis()
+    {
+        Assert.NotNull(typeof(QueuedSlmpClient).GetMethod(nameof(QueuedSlmpClient.SelfTestLoopbackAsync)));
+        Assert.NotNull(typeof(QueuedSlmpClient).GetMethod(nameof(QueuedSlmpClient.ClearErrorAsync)));
+    }
+
+    [Fact]
     public async Task UdpTimeout_ClosesSocketBeforeAnotherRequestCanReuseIt()
     {
         using var sink = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));

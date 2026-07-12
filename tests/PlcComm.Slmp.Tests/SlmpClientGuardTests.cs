@@ -890,6 +890,265 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task HgQualifiedDevice_NeverChangesUserSelectedRequestTarget()
+    {
+        static async Task<byte[]> WriteOnceAsync(ushort moduleIo)
+        {
+            await using var server = new MultiShotSlmpServer([(0x0000, Array.Empty<byte>())]);
+            await server.StartAsync();
+            using var client = new SlmpClient(
+                "127.0.0.1",
+                SlmpPlcProfile.IqR,
+                server.Port,
+                SlmpTransportMode.Tcp,
+                new SlmpTargetAddress(0x00, 0xFF, moduleIo, 0x00));
+            var hg = SlmpQualifiedDeviceParser.Parse(@"U3E1\HG100", SlmpPlcProfile.IqR);
+
+            await client.WriteWordsExtendedAsync(hg, new ushort[] { 0x1234 });
+
+            return Assert.Single(server.RequestFrames);
+        }
+
+        var ownStation = await WriteOnceAsync(SlmpModuleIo.OwnStation);
+        var cpu2 = await WriteOnceAsync(SlmpModuleIo.MultipleCpu2);
+
+        Assert.Equal((ushort)0x03FF, BinaryPrimitives.ReadUInt16LittleEndian(ownStation.AsSpan(8, 2)));
+        Assert.Equal((ushort)0x03E1, BinaryPrimitives.ReadUInt16LittleEndian(cpu2.AsSpan(8, 2)));
+        Assert.Equal((ushort)0x1401, BinaryPrimitives.ReadUInt16LittleEndian(ownStation.AsSpan(15, 2)));
+        Assert.Equal((ushort)0x1401, BinaryPrimitives.ReadUInt16LittleEndian(cpu2.AsSpan(15, 2)));
+    }
+
+    [Fact]
+    public async Task MonitorSemanticApis_RegisterOnceAndReturnThreeExactCycles()
+    {
+        var cycleData = new byte[] { 0x11, 0x11, 0x78, 0x56, 0x34, 0x12 };
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, cycleData),
+            (0x0000, cycleData),
+            (0x0000, cycleData),
+        ]);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var word = new SlmpDeviceAddress(SlmpDeviceCode.D, 120, SlmpPlcProfile.IqR);
+        var dword = new SlmpDeviceAddress(SlmpDeviceCode.D, 200, SlmpPlcProfile.IqR);
+
+        await client.RegisterMonitorDevicesAsync([word], [dword]);
+        for (var cycle = 0; cycle < 3; cycle++)
+        {
+            var result = await client.RunMonitorCycleAsync(1, 1);
+            Assert.Equal(new ushort[] { 0x1111 }, result.WordValues);
+            Assert.Equal(new uint[] { 0x12345678 }, result.DwordValues);
+        }
+
+        Assert.Equal(4, server.RequestFrames.Count);
+        Assert.Equal((ushort)0x0801, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[0].AsSpan(15, 2)));
+        Assert.Equal((ushort)0x0002, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[0].AsSpan(17, 2)));
+        foreach (var frame in server.RequestFrames.Skip(1))
+        {
+            Assert.Equal((ushort)0x0802, BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(15, 2)));
+            Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(17, 2)));
+            Assert.Equal(19, frame.Length);
+        }
+    }
+
+    [Fact]
+    public async Task RunMonitorCycleAsync_RejectsInvalidCountsBeforeTransport()
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            1025,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunMonitorCycleAsync(0, 0));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunMonitorCycleAsync(97, 0));
+        Assert.False(client.IsOpen);
+    }
+
+    [Fact]
+    public async Task RunMonitorCycleAsync_PropagatesPlcErrorAndRejectsSizeMismatchWithoutFallback()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0xC051, Array.Empty<byte>()),
+            (0x0000, new byte[] { 0x11 }),
+        ]);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+
+        var plcError = await Assert.ThrowsAsync<SlmpError>(() => client.RunMonitorCycleAsync(1, 0));
+        Assert.Equal((ushort)0xC051, plcError.EndCode);
+        var mismatch = await Assert.ThrowsAsync<SlmpError>(() => client.RunMonitorCycleAsync(1, 0));
+        Assert.Contains("monitor response size mismatch", mismatch.Message);
+        Assert.Equal(2, server.RequestFrames.Count);
+    }
+
+    [Fact]
+    public async Task QueuedMonitorRegistration_SnapshotsDevicesBeforeQueueExecution()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, Array.Empty<byte>()),
+        ], pauseFirstResponse: true);
+        await server.StartAsync();
+        using var direct = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        using var queued = new QueuedSlmpClient(direct);
+        var first = queued.ClearErrorAsync();
+        await server.WaitForFirstRequestAsync();
+        var words = new[] { new SlmpDeviceAddress(SlmpDeviceCode.D, 120, SlmpPlcProfile.IqR) };
+        var dwords = new[] { new SlmpDeviceAddress(SlmpDeviceCode.D, 200, SlmpPlcProfile.IqR) };
+        var extendedWords = new[] { SlmpQualifiedDeviceParser.Parse(@"U3E0\HG100", SlmpPlcProfile.IqR) };
+
+        var pending = queued.RegisterMonitorDevicesAsync(words, dwords);
+        var pendingExtended = queued.RegisterMonitorDevicesExtAsync(extendedWords, []);
+        words[0] = new SlmpDeviceAddress(SlmpDeviceCode.D, 999, SlmpPlcProfile.IqR);
+        dwords[0] = new SlmpDeviceAddress(SlmpDeviceCode.D, 998, SlmpPlcProfile.IqR);
+        extendedWords[0] = SlmpQualifiedDeviceParser.Parse(@"U3E1\HG100", SlmpPlcProfile.IqR);
+        server.ReleaseFirstResponse();
+
+        await first;
+        await pending;
+        await pendingExtended;
+        Assert.Equal(3, server.RequestFrames.Count);
+        Assert.Equal((uint)120, BinaryPrimitives.ReadUInt32LittleEndian(server.RequestFrames[1].AsSpan(21, 4)));
+        Assert.Equal((uint)200, BinaryPrimitives.ReadUInt32LittleEndian(server.RequestFrames[1].AsSpan(27, 4)));
+        Assert.Equal((ushort)0x0082, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[2].AsSpan(17, 2)));
+        Assert.Equal((ushort)0x03E0, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[2].AsSpan(31, 2)));
+    }
+
+    [Fact]
+    public async Task SelfTestLoopbackAsync_RequiresExactDeclaredLengthSizeAndEcho()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }),
+            (0x0000, new byte[] { 0x03, 0x00, (byte)'A', (byte)'1', (byte)'B' }),
+            (0x0000, new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2', (byte)'F' }),
+            (0x0000, new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'3' }),
+        ]);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var payload = new byte[] { (byte)'A', (byte)'1', (byte)'B', (byte)'2' };
+
+        Assert.Equal(payload, await client.SelfTestLoopbackAsync(payload));
+
+        var declared = await Assert.ThrowsAsync<SlmpError>(() => client.SelfTestLoopbackAsync(payload));
+        Assert.Contains("declared length mismatch", declared.Message);
+
+        var trailing = await Assert.ThrowsAsync<SlmpError>(() => client.SelfTestLoopbackAsync(payload));
+        Assert.Contains("size mismatch", trailing.Message);
+
+        var mismatch = await Assert.ThrowsAsync<SlmpError>(() => client.SelfTestLoopbackAsync(payload));
+        Assert.Contains("payload mismatch", mismatch.Message);
+
+        Assert.Equal(4, server.RequestFrames.Count);
+    }
+
+    [Fact]
+    public async Task SelfTestLoopbackAsync_VerifiesTheTransmittedSnapshot()
+    {
+        var original = new byte[] { (byte)'A', (byte)'1', (byte)'B', (byte)'2' };
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }),
+        ], pauseFirstResponse: true);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var callerData = original.ToArray();
+
+        var pending = client.SelfTestLoopbackAsync(callerData);
+        await server.WaitForFirstRequestAsync();
+        Array.Fill(callerData, (byte)'F');
+        server.ReleaseFirstResponse();
+
+        Assert.Equal(original, await pending);
+        Assert.Equal(new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }, server.RequestFrames[0].AsSpan(19).ToArray());
+    }
+
+    [Fact]
+    public async Task QueuedSelfTestLoopbackAsync_SnapshotsBeforeQueueExecution()
+    {
+        var original = new byte[] { (byte)'A', (byte)'1', (byte)'B', (byte)'2' };
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }),
+        ], pauseFirstResponse: true);
+        await server.StartAsync();
+        using var direct = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        using var queued = new QueuedSlmpClient(direct);
+        var first = queued.ClearErrorAsync();
+        await server.WaitForFirstRequestAsync();
+        var callerData = original.ToArray();
+
+        var pending = queued.SelfTestLoopbackAsync(callerData);
+        Array.Fill(callerData, (byte)'F');
+        server.ReleaseFirstResponse();
+
+        await first;
+        Assert.Equal(original, await pending);
+        Assert.Equal(new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }, server.RequestFrames[1].AsSpan(19).ToArray());
+    }
+
+    [Fact]
+    public async Task QueuedClient_FixedSemanticApisSendOneExactRequestEach()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }),
+            (0x0000, Array.Empty<byte>()),
+        ]);
+        await server.StartAsync();
+        using var direct = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        using var queued = new QueuedSlmpClient(direct);
+        var payload = new byte[] { (byte)'A', (byte)'1', (byte)'B', (byte)'2' };
+
+        Assert.Equal(payload, await queued.SelfTestLoopbackAsync(payload));
+        await queued.ClearErrorAsync();
+
+        Assert.Equal(2, server.RequestFrames.Count);
+        Assert.Equal((ushort)0x0619, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[0].AsSpan(15, 2)));
+        Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[0].AsSpan(17, 2)));
+        Assert.Equal(new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }, server.RequestFrames[0].AsSpan(19).ToArray());
+        Assert.Equal((ushort)0x1617, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[1].AsSpan(15, 2)));
+        Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[1].AsSpan(17, 2)));
+        Assert.Equal(19, server.RequestFrames[1].Length);
+    }
+
+    [Fact]
     public async Task WriteRandomWordsAsync_RejectsLongCurrentWordEntries()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
@@ -1132,16 +1391,26 @@ public sealed class SlmpClientGuardTests
     {
         private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
         private readonly Queue<(ushort EndCode, byte[] ResponseData)> _responses;
+        private readonly bool _pauseFirstResponse;
+        private readonly TaskCompletionSource _firstRequestReceived = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _releaseFirstResponse = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task? _serverTask;
 
-        public MultiShotSlmpServer(IEnumerable<(ushort EndCode, byte[] ResponseData)> responses)
+        public MultiShotSlmpServer(
+            IEnumerable<(ushort EndCode, byte[] ResponseData)> responses,
+            bool pauseFirstResponse = false)
         {
             _responses = new Queue<(ushort EndCode, byte[] ResponseData)>(responses);
+            _pauseFirstResponse = pauseFirstResponse;
         }
 
         public int Port => ((IPEndPoint)_listener.LocalEndpoint).Port;
 
         public List<byte[]> RequestFrames { get; } = [];
+
+        public Task WaitForFirstRequestAsync() => _firstRequestReceived.Task;
+
+        public void ReleaseFirstResponse() => _releaseFirstResponse.TrySetResult();
 
         public Task StartAsync()
         {
@@ -1152,6 +1421,7 @@ public sealed class SlmpClientGuardTests
 
         public async ValueTask DisposeAsync()
         {
+            _releaseFirstResponse.TrySetResult();
             _listener.Stop();
             if (_serverTask is not null)
             {
@@ -1169,6 +1439,14 @@ public sealed class SlmpClientGuardTests
                 {
                     var request = await ReadRequestFrameAsync(stream).ConfigureAwait(false);
                     RequestFrames.Add(request);
+                    if (RequestFrames.Count == 1)
+                    {
+                        _firstRequestReceived.TrySetResult();
+                        if (_pauseFirstResponse)
+                        {
+                            await _releaseFirstResponse.Task.ConfigureAwait(false);
+                        }
+                    }
 
                     var (endCode, responseData) = _responses.Dequeue();
                     var response = BuildResponse(request, responseData, endCode);

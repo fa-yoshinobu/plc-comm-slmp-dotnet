@@ -42,15 +42,6 @@ public enum SlmpRemoteClearMode : ushort
     ClearAll = 0x0002,
 }
 
-/// <summary>Explicit CPU module selected by CPU-buffer convenience APIs.</summary>
-public enum SlmpCpuModule : ushort
-{
-    Cpu1 = 0x03E0,
-    Cpu2 = 0x03E1,
-    Cpu3 = 0x03E2,
-    Cpu4 = 0x03E3,
-}
-
 /// <summary>Canonical PLC profile used by the high-level API.</summary>
 public enum SlmpPlcProfile : byte
 {

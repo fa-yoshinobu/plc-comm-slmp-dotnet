@@ -121,6 +121,35 @@ var linkBits = SlmpQualifiedDeviceParser.Parse(@"J1\X10", client.PlcProfile);
 bool[] bits = await client.ReadBitsExtendedAsync(linkBits, 16);
 ```
 
+For iQ-R multi-CPU `U3En\HG...` access, the qualified device never changes the
+immutable SLMP request target. Create a client with the destination CPU target
+when a write must be reflected there. Cross-CPU reads remain valid. See the
+shared [iQ-R target guidance](https://fa-yoshinobu.github.io/plc-comm-docs-site/plc-setup/slmp/iq-r/#multi-cpu-cpu-buffer-target).
+
+## Monitor, self-test, and Clear Error
+
+Monitor registration and every cycle are separate one-request operations.
+Supply the registered Word and DWord counts to each cycle; the client does not
+auto-register, retry, or infer them. Calling a cycle before PLC registration
+sends one cycle request and returns the PLC response or error. The combined
+expected count must be nonzero and cannot exceed the selected profile's
+monitor-registration limit.
+
+```csharp
+await client.RegisterMonitorDevicesAsync(
+    [SlmpDeviceParser.Parse("D120", client.PlcProfile)],
+    [SlmpDeviceParser.Parse("D200", client.PlcProfile)]);
+SlmpMonitorResult cycle = await client.RunMonitorCycleAsync(1, 1);
+
+byte[] echo = await client.SelfTestLoopbackAsync("A1B2C3D4"u8.ToArray());
+await client.ClearErrorAsync();
+```
+
+These methods are also exposed directly by `QueuedSlmpClient`. Self-test
+accepts only 1–960 ASCII `0-9/A-F` bytes and requires exact declared length,
+actual length, and echo equality. Clear Error always uses the fixed empty
+payload command.
+
 ## SLMP response end codes
 
 When the PLC returns a non-zero SLMP end code, the high-level APIs throw `SlmpError`.

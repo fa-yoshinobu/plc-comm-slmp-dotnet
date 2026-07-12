@@ -8,42 +8,6 @@ namespace PlcComm.Slmp.Tests;
 public sealed class SlmpFrameVectorTests
 {
     [Theory]
-    [InlineData(SlmpCpuModule.Cpu1, 0x03E0, false)]
-    [InlineData(SlmpCpuModule.Cpu2, 0x03E1, false)]
-    [InlineData(SlmpCpuModule.Cpu3, 0x03E2, false)]
-    [InlineData(SlmpCpuModule.Cpu4, 0x03E3, false)]
-    [InlineData(SlmpCpuModule.Cpu1, 0x03E0, true)]
-    [InlineData(SlmpCpuModule.Cpu2, 0x03E1, true)]
-    [InlineData(SlmpCpuModule.Cpu3, 0x03E2, true)]
-    [InlineData(SlmpCpuModule.Cpu4, 0x03E3, true)]
-    public async Task CpuBufferHelpers_EncodeExplicitModuleForReadAndWrite(
-        SlmpCpuModule module,
-        ushort expectedModuleIo,
-        bool write)
-    {
-        await using var server = new SingleShotSlmpServer(write ? [] : [0x34, 0x12]);
-        await server.StartAsync();
-        using var client = new SlmpClient(
-            "127.0.0.1",
-            SlmpPlcProfile.IqR,
-            server.Port,
-            SlmpTransportMode.Tcp,
-            SlmpTargetAddress.OwnStation);
-
-        if (write)
-        {
-            await client.CpuBufferWriteWordAsync(0, 0x1234, module);
-        }
-        else
-        {
-            Assert.Equal((ushort)0x1234, await client.CpuBufferReadWordAsync(0, module));
-        }
-
-        await server.WaitForRequestAsync();
-        Assert.Equal(expectedModuleIo, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrame.AsSpan(25, 2)));
-    }
-
-    [Theory]
     [InlineData(false, 10u, SlmpDeviceCode.LTN)]
     [InlineData(true, 0u, SlmpDeviceCode.LSTN)]
     public async Task LongTimerHelpers_EncodeExplicitHeadFamilyAndCount(

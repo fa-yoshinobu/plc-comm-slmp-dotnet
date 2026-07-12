@@ -17,17 +17,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Library: `QueuedSlmpClient` now exposes self-test loopback and fixed Clear Error semantic APIs instead of requiring access through the inner client.
+- Library: Monitor cycle expected counts must total at least one and stay within the selected profile limit; queued monitor registration snapshots device lists when submitted.
+- Library: Self-test loopback now rejects declared-length, actual-length, trailing-data, and echo mismatches against the transmitted input snapshot.
+- Docs: Clarified explicit monitor counts and that `U3En\HG` never changes or retries the immutable user-selected request target.
 - Tests: Removed vendored cross-repository vector JSON and its dedicated runners. Cross-implementation comparison is executed independently of this library repository.
 - Library: Long-timer and long-retentive-timer helpers require explicit heads and counts and reject negative heads, zero counts, one-request-limit overflow, and arithmetic overflow before transport.
 
 ### BREAKING
+- Library: Removed `SlmpCpuModule` and all direct/queued `CpuBuffer*Async` aliases. Live R120PCPU cross-writes proved that Extend Unit `0x0601/0x1601` and qualified `U3E0\HG` access different physical areas. Use `ExtendUnit*Async` for Extend Unit commands and qualified Extended Device APIs for HG.
 - Library: Connection constructors and options now require port, transport, complete target, and concrete PLC profile; timeout defaults to 3 seconds and the SLMP monitoring timer defaults to 4 seconds.
 - Samples: The high-level sample uses the approved 3-second communication timeout instead of silently selecting 5 seconds.
 - Library: The selected target route is immutable for the lifetime of a client; create a separate client for a different route.
 - Library: Removed public profile-check bypasses, command-specific raw payload overloads, split/chunk helpers, block auto-splitting, end-code messages/language selection, and the profile override on device-range catalog reads.
 - Library: Replaced public Extended Device wire fields with qualified semantic routes and typed Z/LZ/indirect modifiers.
 - Library: Remote RUN and PAUSE now require typed mode choices, RUN requires a typed clear mode, and Remote RESET uses its fixed payload without waiting for a success response.
-- Library: CPU-buffer helpers require an explicit `SlmpCpuModule`; long timer helpers require both head and point count.
+- Library: Long timer helpers require both head and point count.
 - Library: Typed writes no longer use `Convert.*`; BIT requires `bool`, integer dtypes require integral CLR values in range, and F requires a finite numeric value representable as float32.
 - Library: A timeout/cancellation/transport failure or send-only Remote RESET invalidates the session until the caller explicitly invokes `OpenAsync`; RESET also closes the transport so a residual 3E NG response cannot satisfy the next request.
 - Library: Legacy device numbers above the 24-bit wire field, non-printable/non-ASCII passwords, timeout values below 1 ms, and LZ modifier indexes above 1 are rejected before transport.

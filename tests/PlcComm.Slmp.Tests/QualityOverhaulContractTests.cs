@@ -110,7 +110,6 @@ public sealed class QualityOverhaulContractTests
         Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLstcStatesAsync), "points"));
         Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLstsStatesAsync), "headNo"));
         Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLstsStatesAsync), "points"));
-        Assert.False(ParameterIsOptional(nameof(SlmpClient.CpuBufferReadWordAsync), "module"));
     }
 
     [Fact]
@@ -145,12 +144,19 @@ public sealed class QualityOverhaulContractTests
     }
 
     [Fact]
-    public async Task CpuBufferHelper_RejectsUndefinedModuleBeforeTransport()
+    public void CpuBufferAliasesAndEnum_AreNotPublic()
     {
-        using var client = Client();
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
-            client.CpuBufferReadWordAsync(0, (SlmpCpuModule)0x03E4));
-        Assert.False(client.IsOpen);
+        Assert.Null(typeof(SlmpClient).Assembly.GetType("PlcComm.Slmp.SlmpCpuModule"));
+        var removed = new[]
+        {
+            "CpuBufferReadWordsAsync", "CpuBufferReadBytesAsync", "CpuBufferReadWordAsync", "CpuBufferReadDWordAsync",
+            "CpuBufferWriteWordsAsync", "CpuBufferWriteBytesAsync", "CpuBufferWriteWordAsync", "CpuBufferWriteDWordAsync",
+        };
+        foreach (var type in new[] { typeof(SlmpClient), typeof(QueuedSlmpClient) })
+        {
+            foreach (var method in removed)
+                Assert.Null(type.GetMethod(method));
+        }
     }
 
     [Fact]

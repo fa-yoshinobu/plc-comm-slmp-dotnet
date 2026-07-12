@@ -131,6 +131,18 @@ public Task<SlmpTypeNameInfo> ReadTypeNameAsync(CancellationToken cancellationTo
 public Task<SlmpCpuOperationState> ReadCpuOperationStateAsync(CancellationToken cancellationToken = default)
 ```
 
+##### SelfTestLoopbackAsync
+
+```csharp
+public Task<byte[]> SelfTestLoopbackAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
+```
+
+##### ClearErrorAsync
+
+```csharp
+public Task ClearErrorAsync(CancellationToken cancellationToken = default)
+```
+
 ##### ReadDeviceRangeCatalogAsync
 
 ```csharp
@@ -447,54 +459,6 @@ public Task ExtendUnitWriteWordAsync(uint headAddress, ushort moduleNo, ushort v
 
 ```csharp
 public Task ExtendUnitWriteDWordAsync(uint headAddress, ushort moduleNo, uint value, CancellationToken cancellationToken = default)
-```
-
-##### CpuBufferReadWordsAsync
-
-```csharp
-public Task<ushort[]> CpuBufferReadWordsAsync(uint headAddress, ushort wordLength, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-##### CpuBufferReadBytesAsync
-
-```csharp
-public Task<byte[]> CpuBufferReadBytesAsync(uint headAddress, ushort byteLength, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-##### CpuBufferReadWordAsync
-
-```csharp
-public Task<ushort> CpuBufferReadWordAsync(uint headAddress, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-##### CpuBufferReadDWordAsync
-
-```csharp
-public Task<uint> CpuBufferReadDWordAsync(uint headAddress, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-##### CpuBufferWriteWordsAsync
-
-```csharp
-public Task CpuBufferWriteWordsAsync(uint headAddress, IReadOnlyList<ushort> values, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-##### CpuBufferWriteBytesAsync
-
-```csharp
-public Task CpuBufferWriteBytesAsync(uint headAddress, ReadOnlyMemory<byte> data, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-##### CpuBufferWriteWordAsync
-
-```csharp
-public Task CpuBufferWriteWordAsync(uint headAddress, ushort value, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-##### CpuBufferWriteDWordAsync
-
-```csharp
-public Task CpuBufferWriteDWordAsync(uint headAddress, uint value, SlmpCpuModule module, CancellationToken cancellationToken = default)
 ```
 
 ##### RegisterMonitorDevicesAsync
@@ -1098,7 +1062,7 @@ public Task<SlmpMonitorResult> RunMonitorCycleAsync(int wordPoints, int dwordPoi
 Executes one monitor cycle and returns the values of the previously registered devices (command 0x0802).
 
 Parameters:
-- `wordPoints`: Number of registered word devices.
+- `wordPoints`: Number of registered word devices. The combined count must be nonzero and within the active profile limit.
 - `dwordPoints`: Number of registered DWord devices.
 - `cancellationToken`: Cancellation token.
 
@@ -1152,11 +1116,15 @@ public Task RemotePasswordLockAsync(string password, CancellationToken cancellat
 public Task<byte[]> SelfTestLoopbackAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
 ```
 
+Sends one self-test request and returns the echo only when declared length, actual length, and payload all match the supplied ASCII hexadecimal bytes.
+
 ##### ClearErrorAsync
 
 ```csharp
 public Task ClearErrorAsync(CancellationToken cancellationToken = default)
 ```
+
+Sends the fixed Clear Error command as exactly one request.
 
 ##### ReadArrayLabelsAsync
 
@@ -1232,7 +1200,7 @@ Reads raw bytes from an extend unit (command 0x0601).
 Parameters:
 - `headAddress`: Starting address in the extend unit (32-bit).
 - `byteLength`: Number of bytes to read.
-- `moduleNo`: Extend unit module I/O number (e.g. 0x03E0 for CPU buffer).
+- `moduleNo`: Configured Extend Unit module I/O number.
 - `cancellationToken`: Cancellation token.
 
 ##### ExtendUnitReadWordsAsync
@@ -1308,68 +1276,6 @@ public Task ExtendUnitWriteDWordAsync(uint headAddress, ushort moduleNo, uint va
 ```
 
 Writes a double word (32-bit) to an extend unit.
-
-##### CpuBufferReadWordsAsync
-
-```csharp
-public Task<ushort[]> CpuBufferReadWordsAsync(uint headAddress, ushort wordLength, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-##### CpuBufferReadBytesAsync
-
-```csharp
-public Task<byte[]> CpuBufferReadBytesAsync(uint headAddress, ushort byteLength, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-Reads bytes from the explicitly selected CPU buffer.
-
-##### CpuBufferReadWordAsync
-
-```csharp
-public Task<ushort> CpuBufferReadWordAsync(uint headAddress, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-Reads a single word from the CPU buffer.
-
-##### CpuBufferReadDWordAsync
-
-```csharp
-public Task<uint> CpuBufferReadDWordAsync(uint headAddress, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-Reads a double word from the CPU buffer.
-
-##### CpuBufferWriteWordsAsync
-
-```csharp
-public Task CpuBufferWriteWordsAsync(uint headAddress, IReadOnlyList<ushort> values, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-Writes words to the explicitly selected CPU buffer.
-
-##### CpuBufferWriteBytesAsync
-
-```csharp
-public Task CpuBufferWriteBytesAsync(uint headAddress, ReadOnlyMemory<byte> data, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-Writes bytes to the explicitly selected CPU buffer.
-
-##### CpuBufferWriteWordAsync
-
-```csharp
-public Task CpuBufferWriteWordAsync(uint headAddress, ushort value, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-Writes a single word to the CPU buffer.
-
-##### CpuBufferWriteDWordAsync
-
-```csharp
-public Task CpuBufferWriteDWordAsync(uint headAddress, uint value, SlmpCpuModule module, CancellationToken cancellationToken = default)
-```
-
-Writes a double word to the CPU buffer.
 
 ##### ReadLongTimerAsync
 
@@ -2361,40 +2267,6 @@ public SlmpPlcProfile ResolvedRangeProfile { get; }
 ```
 
 Gets the profile used by the high-level device-range helper layer.
-
-### SlmpCpuModule
-
-```csharp
-public enum SlmpCpuModule
-```
-
-Explicit CPU module selected by CPU-buffer convenience APIs.
-
-#### Members
-
-##### Cpu1
-
-```csharp
-public const SlmpCpuModule Cpu1
-```
-
-##### Cpu2
-
-```csharp
-public const SlmpCpuModule Cpu2
-```
-
-##### Cpu3
-
-```csharp
-public const SlmpCpuModule Cpu3
-```
-
-##### Cpu4
-
-```csharp
-public const SlmpCpuModule Cpu4
-```
 
 ### SlmpCpuOperationState
 
