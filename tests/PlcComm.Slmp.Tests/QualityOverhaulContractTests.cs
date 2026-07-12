@@ -100,7 +100,48 @@ public sealed class QualityOverhaulContractTests
         Assert.False(ParameterIsOptional(nameof(SlmpClient.RemotePauseAsync), "mode"));
         Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLongTimerAsync), "headNo"));
         Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLongTimerAsync), "points"));
+        Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLongRetentiveTimerAsync), "headNo"));
+        Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLongRetentiveTimerAsync), "points"));
+        Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLtcStatesAsync), "headNo"));
+        Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLtcStatesAsync), "points"));
+        Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLtsStatesAsync), "headNo"));
+        Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLtsStatesAsync), "points"));
+        Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLstcStatesAsync), "headNo"));
+        Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLstcStatesAsync), "points"));
+        Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLstsStatesAsync), "headNo"));
+        Assert.False(ParameterIsOptional(nameof(SlmpClient.ReadLstsStatesAsync), "points"));
         Assert.False(ParameterIsOptional(nameof(SlmpClient.CpuBufferReadWordAsync), "module"));
+    }
+
+    [Fact]
+    public void PublicCancellationTokens_RemainOptionalDotNetControls()
+    {
+        var offenders = new[] { typeof(SlmpClient), typeof(QueuedSlmpClient), typeof(SlmpClientExtensions) }
+            .SelectMany(static type => type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+            .SelectMany(static method => method.GetParameters().Select(parameter => (method, parameter)))
+            .Where(static item => item.parameter.ParameterType == typeof(CancellationToken) && !item.parameter.IsOptional)
+            .Select(static item => $"{item.method.DeclaringType?.Name}.{item.method.Name}({item.parameter.Name})")
+            .Distinct()
+            .Order()
+            .ToArray();
+
+        Assert.Empty(offenders);
+    }
+
+    [Theory]
+    [InlineData(-1, 1)]
+    [InlineData(0, 0)]
+    [InlineData(0, -1)]
+    [InlineData(0, 241)]
+    [InlineData(0, int.MaxValue)]
+    public async Task LongTimerHelpers_RejectInvalidHeadAndCountBeforeTransport(int headNo, int points)
+    {
+        using var client = Client();
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ReadLongTimerAsync(headNo, points));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ReadLongRetentiveTimerAsync(headNo, points));
+
+        Assert.False(client.IsOpen);
     }
 
     [Fact]

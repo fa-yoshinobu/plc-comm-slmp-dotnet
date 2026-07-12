@@ -86,8 +86,18 @@
     {
       "id": "remote_password_unlock_secret1",
       "operation": "remote_password_unlock",
+      "plc_profile": "melsec:iq-r",
       "args": { "password": "secret1" },
       "request_hex": "54000000000000FFFF03000F00100030160000070073656372657431",
+      "response_data_hex": "",
+      "implementations": ["python", "dotnet", "cpp", "node"]
+    },
+    {
+      "id": "remote_password_unlock_1234_ql",
+      "operation": "remote_password_unlock",
+      "plc_profile": "melsec:qnu:qj71e71-100",
+      "args": { "password": "1234" },
+      "request_hex": "54000000000000FFFF03000C00100030160000040031323334",
       "response_data_hex": "",
       "implementations": ["python", "dotnet", "cpp", "node"]
     },

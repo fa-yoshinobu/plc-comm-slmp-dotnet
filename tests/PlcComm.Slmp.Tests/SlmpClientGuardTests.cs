@@ -817,9 +817,11 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
-    public async Task RemoteRunAsync_ExplicitNoClearDoesNotClearDevices()
+    public async Task RemoteRunAsync_ClearModesHaveExactWireValues()
     {
         await using var server = new MultiShotSlmpServer([
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, Array.Empty<byte>()),
             (0x0000, Array.Empty<byte>()),
         ]);
         await server.StartAsync();
@@ -829,11 +831,13 @@ public sealed class SlmpClientGuardTests
         };
 
         await client.RemoteRunAsync(SlmpRemoteMode.Normal, SlmpRemoteClearMode.NoClear);
+        await client.RemoteRunAsync(SlmpRemoteMode.Normal, SlmpRemoteClearMode.ClearExceptLatch);
+        await client.RemoteRunAsync(SlmpRemoteMode.Normal, SlmpRemoteClearMode.ClearAll);
 
-        var request = Assert.Single(server.RequestFrames);
-        Assert.Equal((ushort)0x1001, BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(15, 2)));
-        Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(17, 2)));
-        Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00 }, request.AsSpan(19, 4).ToArray());
+        Assert.Equal(3, server.RequestFrames.Count);
+        AssertCpuOperationShape(server.RequestFrames[0], 0x1001, [0x01, 0x00, 0x00, 0x00]);
+        AssertCpuOperationShape(server.RequestFrames[1], 0x1001, [0x01, 0x00, 0x01, 0x00]);
+        AssertCpuOperationShape(server.RequestFrames[2], 0x1001, [0x01, 0x00, 0x02, 0x00]);
     }
 
     [Theory]
@@ -845,6 +849,20 @@ public sealed class SlmpClientGuardTests
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.RemoteRunAsync(SlmpRemoteMode.Normal, (SlmpRemoteClearMode)clearMode));
+    }
+
+    [Theory]
+    [InlineData((ushort)0)]
+    [InlineData((ushort)2)]
+    [InlineData(ushort.MaxValue)]
+    public async Task RemoteRunAndPause_RejectInvalidMode(ushort mode)
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.RemoteRunAsync((SlmpRemoteMode)mode, SlmpRemoteClearMode.NoClear));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.RemotePauseAsync((SlmpRemoteMode)mode));
     }
 
     [Fact]
@@ -978,6 +996,31 @@ public sealed class SlmpClientGuardTests
             () => client.ReadBlockAsync([new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR), 961)], []));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.WriteBlockAsync([new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 8000, SlmpPlcProfile.IqR), new ushort[952])], []));
+    }
+
+    [Fact]
+    public async Task AggregateCollections_RejectNullOrBothEmptyBeforeTransport()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.ReadRandomAsync(null!, Array.Empty<SlmpDeviceAddress>()));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.ReadRandomAsync(Array.Empty<SlmpDeviceAddress>(), null!));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ReadRandomAsync([], []));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.ReadRandomExtAsync(null!, Array.Empty<SlmpQualifiedDeviceAddress>()));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.ReadRandomExtAsync(Array.Empty<SlmpQualifiedDeviceAddress>(), null!));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ReadRandomExtAsync([], []));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteRandomWordsAsync(null!, Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteRandomWordsAsync(Array.Empty<(SlmpDeviceAddress Device, ushort Value)>(), null!));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.WriteRandomWordsAsync([], []));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteRandomWordsExtAsync(null!, Array.Empty<(SlmpQualifiedDeviceAddress Device, uint Value)>()));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteRandomWordsExtAsync(Array.Empty<(SlmpQualifiedDeviceAddress Device, ushort Value)>(), null!));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.WriteRandomWordsExtAsync([], []));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.ReadBlockAsync(null!, Array.Empty<SlmpBlockRead>()));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.ReadBlockAsync(Array.Empty<SlmpBlockRead>(), null!));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ReadBlockAsync([], []));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteBlockAsync(null!, Array.Empty<SlmpBlockWrite>()));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteBlockAsync(Array.Empty<SlmpBlockWrite>(), null!));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.WriteBlockAsync([], []));
     }
 
     [Fact]

@@ -21,6 +21,7 @@ public sealed class SlmpFrameVectorTests
             yield return [
                 entry.GetProperty("id").GetString()!,
                 entry.GetProperty("operation").GetString()!,
+                entry.TryGetProperty("plc_profile", out var plcProfile) ? plcProfile.GetString()! : "melsec:iq-r",
                 entry.TryGetProperty("args", out var args) ? args.GetRawText() : "{}",
                 entry.GetProperty("request_hex").GetString()!,
                 entry.GetProperty("response_data_hex").GetString()!,
@@ -33,6 +34,7 @@ public sealed class SlmpFrameVectorTests
     public async Task Requests_MatchSharedGoldenFrames(
         string id,
         string operation,
+        string plcProfile,
         string argsJson,
         string expectedRequestHex,
         string responseDataHex)
@@ -41,7 +43,13 @@ public sealed class SlmpFrameVectorTests
         await using var server = new SingleShotSlmpServer(Convert.FromHexString(responseDataHex));
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
+        var profile = plcProfile switch
+        {
+            "melsec:iq-r" => SlmpPlcProfile.IqR,
+            "melsec:qnu:qj71e71-100" => SlmpPlcProfile.QnUQj71E71100,
+            _ => throw new InvalidOperationException($"Unsupported shared frame PLC profile: {plcProfile}"),
+        };
+        using var client = new SlmpClient("127.0.0.1", profile, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
             MonitoringTimer = 0x0010,
         };
@@ -62,6 +70,70 @@ public sealed class SlmpFrameVectorTests
         Assert.NotNull(capturedSend);
         Assert.Equal(expectedRequestHex, Convert.ToHexString(capturedSend));
         Assert.Equal(expectedRequestHex, Convert.ToHexString(server.RequestFrame));
+    }
+
+    [Theory]
+    [InlineData(SlmpCpuModule.Cpu1, 0x03E0, false)]
+    [InlineData(SlmpCpuModule.Cpu2, 0x03E1, false)]
+    [InlineData(SlmpCpuModule.Cpu3, 0x03E2, false)]
+    [InlineData(SlmpCpuModule.Cpu4, 0x03E3, false)]
+    [InlineData(SlmpCpuModule.Cpu1, 0x03E0, true)]
+    [InlineData(SlmpCpuModule.Cpu2, 0x03E1, true)]
+    [InlineData(SlmpCpuModule.Cpu3, 0x03E2, true)]
+    [InlineData(SlmpCpuModule.Cpu4, 0x03E3, true)]
+    public async Task CpuBufferHelpers_EncodeExplicitModuleForReadAndWrite(
+        SlmpCpuModule module,
+        ushort expectedModuleIo,
+        bool write)
+    {
+        await using var server = new SingleShotSlmpServer(write ? [] : [0x34, 0x12]);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+
+        if (write)
+        {
+            await client.CpuBufferWriteWordAsync(0, 0x1234, module);
+        }
+        else
+        {
+            Assert.Equal((ushort)0x1234, await client.CpuBufferReadWordAsync(0, module));
+        }
+
+        await server.WaitForRequestAsync();
+        Assert.Equal(expectedModuleIo, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrame.AsSpan(25, 2)));
+    }
+
+    [Theory]
+    [InlineData(false, 10u, SlmpDeviceCode.LTN)]
+    [InlineData(true, 0u, SlmpDeviceCode.LSTN)]
+    public async Task LongTimerHelpers_EncodeExplicitHeadFamilyAndCount(
+        bool retentive,
+        uint expectedHead,
+        SlmpDeviceCode expectedCode)
+    {
+        await using var server = new SingleShotSlmpServer([0x34, 0x12, 0x01, 0x00, 0x03, 0x00, 0x00, 0x00]);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+
+        var result = retentive
+            ? await client.ReadLongRetentiveTimerAsync(checked((int)expectedHead), 1)
+            : await client.ReadLongTimerAsync(checked((int)expectedHead), 1);
+
+        Assert.Single(result);
+        await server.WaitForRequestAsync();
+        Assert.Equal(expectedHead, BinaryPrimitives.ReadUInt32LittleEndian(server.RequestFrame.AsSpan(19, 4)));
+        Assert.Equal((ushort)expectedCode, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrame.AsSpan(23, 2)));
+        Assert.Equal((ushort)4, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrame.AsSpan(25, 2)));
     }
 
     private static async Task DispatchAsync(SlmpClient client, string operation, JsonElement args)

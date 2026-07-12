@@ -17,8 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Library: Long-timer and long-retentive-timer helpers require explicit heads and counts and reject negative heads, zero counts, one-request-limit overflow, and arithmetic overflow before transport.
+
 ### BREAKING
 - Library: Connection constructors and options now require port, transport, complete target, and concrete PLC profile; timeout defaults to 3 seconds and the SLMP monitoring timer defaults to 4 seconds.
+- Samples: The high-level sample uses the approved 3-second communication timeout instead of silently selecting 5 seconds.
 - Library: The selected target route is immutable for the lifetime of a client; create a separate client for a different route.
 - Library: Removed public profile-check bypasses, command-specific raw payload overloads, split/chunk helpers, block auto-splitting, end-code messages/language selection, and the profile override on device-range catalog reads.
 - Library: Replaced public Extended Device wire fields with qualified semantic routes and typed Z/LZ/indirect modifiers.
@@ -28,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Library: One client now serializes all request/response exchanges, assigns unique 4E serials, and closes TCP or UDP transport after timeout/cancellation so a delayed response cannot contaminate a later request.
 - Library: Random and block operations expose category-specific APIs, reject all-empty requests, and reject duplicate or overlapping write destinations before transport.
+- Library: Normal and Extended Device random reads and word writes now reject null category collections explicitly instead of dereferencing them; category-specific APIs omit the unused collection and return only the requested value type.
+- Library: Block reads and writes now reject null word/bit block collections explicitly; category-specific APIs omit the unused collection, read results allocate the unused category as an empty array, and overlapping write ranges remain pre-transport errors.
 - Library: Label abbreviation definitions remain optional and encode zero when omitted; malformed references, empty points, and count overflow are rejected before transport.
 - Samples: Runtime connection fields, targets, polling addresses, and dtypes are explicit; configuration files no longer infer port or transport.
 

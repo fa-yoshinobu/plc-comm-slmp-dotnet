@@ -605,6 +605,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ArgumentNullException.ThrowIfNull(wordDevices);
+        ArgumentNullException.ThrowIfNull(dwordDevices);
         if (wordDevices.Count > 0xFF || dwordDevices.Count > 0xFF)
         {
             throw new ArgumentOutOfRangeException(nameof(wordDevices), "random counts must be <= 255");
@@ -668,6 +670,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ArgumentNullException.ThrowIfNull(wordEntries);
+        ArgumentNullException.ThrowIfNull(dwordEntries);
         if (wordEntries.Count > 0xFF || dwordEntries.Count > 0xFF)
         {
             throw new ArgumentOutOfRangeException(nameof(wordEntries), "random counts must be <= 255");
@@ -754,6 +758,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ArgumentNullException.ThrowIfNull(wordDevices);
+        ArgumentNullException.ThrowIfNull(dwordDevices);
         if (wordDevices.Count > 0xFF || dwordDevices.Count > 0xFF)
         {
             throw new ArgumentOutOfRangeException(nameof(wordDevices), "random counts must be <= 255");
@@ -812,6 +818,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ArgumentNullException.ThrowIfNull(wordEntries);
+        ArgumentNullException.ThrowIfNull(dwordEntries);
         if (wordEntries.Count > 0xFF || dwordEntries.Count > 0xFF)
         {
             throw new ArgumentOutOfRangeException(nameof(wordEntries), "random counts must be <= 255");
@@ -895,6 +903,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ArgumentNullException.ThrowIfNull(wordBlocks);
+        ArgumentNullException.ThrowIfNull(bitBlocks);
         if (wordBlocks.Count > 0xFF || bitBlocks.Count > 0xFF)
         {
             throw new ArgumentOutOfRangeException(nameof(wordBlocks), "block counts must be <= 255");
@@ -966,6 +976,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ArgumentNullException.ThrowIfNull(wordBlocks);
+        ArgumentNullException.ThrowIfNull(bitBlocks);
         if (wordBlocks.Count > 0xFF || bitBlocks.Count > 0xFF)
         {
             throw new ArgumentOutOfRangeException(nameof(wordBlocks), "block counts must be <= 255");
@@ -1570,11 +1582,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         if (headNo < 0)
             throw new ArgumentOutOfRangeException(nameof(headNo), "headNo must be >= 0.");
-        if (points < 1)
-            throw new ArgumentOutOfRangeException(nameof(points), "points must be >= 1.");
-        var wordCount = checked(points * 4);
-        if (wordCount > DirectWordPointLimit)
+        if (points < 1 || points > DirectWordPointLimit / 4)
             throw new ArgumentOutOfRangeException(nameof(points), $"points must be <= {DirectWordPointLimit / 4} for one request.");
+        var wordCount = points * 4;
         return await ReadWordsRawUncheckedAsync(
             new SlmpDeviceAddress(currentValueDevice, checked((uint)headNo), PlcProfile),
             checked((ushort)wordCount),

@@ -63,7 +63,7 @@ Console.WriteLine($"[Normalize] d50 -> {normalized}");
 //   FrameType       - derived from PlcProfile
 //   CompatibilityMode - derived from PlcProfile
 // -------------------------------------------------------------------------
-client.Timeout = TimeSpan.FromSeconds(5);
+client.Timeout = TimeSpan.FromSeconds(3);
 client.MonitoringTimer = 0x0040;  // 16 s
 // -------------------------------------------------------------------------
 // 2. ReadTypedAsync / WriteTypedAsync

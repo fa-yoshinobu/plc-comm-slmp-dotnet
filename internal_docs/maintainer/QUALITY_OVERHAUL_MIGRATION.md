@@ -17,7 +17,7 @@ This maintainer record maps the approved workspace decisions to the .NET impleme
 - Scope: TCP/UDP transport and request headers.
 - Target contract: communication timeout defaults to 3 seconds, monitoring timer to `0x0010` (4 seconds), and TCP keepalive idle to 30 seconds. Non-positive timeout is rejected.
 - Compatibility: previous timing defaults change.
-- Acceptance criteria: options and client expose the approved defaults; golden frames contain `0x0010`; timeout validation happens before I/O.
+- Acceptance criteria: options, client, and maintained samples expose the approved 3-second communication default; golden frames contain `0x0010`; timeout validation happens before I/O.
 - [x] Implementation completed.
 - [x] Tests completed.
 - [x] Documentation updated.
@@ -57,7 +57,7 @@ This maintainer record maps the approved workspace decisions to the .NET impleme
 - Scope: normal and Extended Device random read/write.
 - Target contract: category-specific word/DWord methods omit the unused category; every-category-empty requests fail; duplicate or overlapping write destinations fail before transport.
 - Compatibility: callers may stop passing placeholder empty lists.
-- Acceptance criteria: specialized methods exist on base and queued clients; empty and overlap tests leave the client unopened.
+- Acceptance criteria: specialized methods exist on base and queued clients; null read/write category collections, all-empty requests, invalid values, and overlapping writes fail before transport; unused read result categories are allocated as empty arrays.
 - [x] Implementation completed.
 - [x] Tests completed.
 - [x] Generated API reference updated.
@@ -65,7 +65,7 @@ This maintainer record maps the approved workspace decisions to the .NET impleme
 ## D-021 / D-022 / D-023 / D-037 — Block request integrity
 
 - Scope: word/bit block read/write.
-- Target contract: category-specific methods omit unused lists; mixed blocks remain one request; all-empty requests and overlapping write ranges fail before transport; no split flag exists.
+- Target contract: category-specific methods omit unused lists; mixed blocks remain one request; null or all-empty collections, malformed/wrong-unit blocks, and overlapping write ranges fail before transport; unused read result categories are empty arrays; no split flag exists.
 - Compatibility: automatic split callers must issue separate requests and handle timing/partial success themselves.
 - Acceptance criteria: one mixed call creates one frame; empty and overlap tests send zero frames; public surface has no split option.
 - [x] Implementation completed.
@@ -77,7 +77,7 @@ This maintainer record maps the approved workspace decisions to the .NET impleme
 - Scope: Remote RUN and PAUSE.
 - Target contract: required `SlmpRemoteMode` selects normal/force; RUN also requires `SlmpRemoteClearMode`; undefined enum values fail before transport.
 - Compatibility: default Boolean and numeric-mode calls no longer compile.
-- Acceptance criteria: required-parameter reflection tests and frame vectors cover the defined values.
+- Acceptance criteria: required-parameter reflection tests, invalid-enum pre-transport tests, and frame vectors cover Normal/Force plus all three clear modes.
 - [x] Implementation completed.
 - [x] Tests completed.
 - [x] Generated API reference updated.
@@ -115,7 +115,7 @@ This maintainer record maps the approved workspace decisions to the .NET impleme
 ## D-031 / D-032 / D-033 — Explicit CPU and long-timer selection
 
 - Scope: CPU-buffer and long timer/retentive timer helpers.
-- Target contract: CPU-buffer calls require `SlmpCpuModule.Cpu1` through `Cpu4`; long-family multi-point helpers require head and point count. Undefined module and zero/over-limit counts fail before transport.
+- Target contract: CPU-buffer calls require `SlmpCpuModule.Cpu1` through `Cpu4`; all long-family multi-point and state projection helpers require head and point count. Undefined modules, negative heads, zero counts, counts above 240 timers, and arithmetic-overflow counts fail before transport.
 - Compatibility: implicit CPU1, head zero and one-point defaults are removed.
 - Acceptance criteria: parameters are non-optional, module wire values are typed, and multi-point timer read uses one bounded request.
 - [x] Implementation completed.
@@ -175,7 +175,7 @@ The approved decisions, this record, repository diff and final local results wil
 ## Verification evidence
 
 - `dotnet format PlcComm.Slmp.sln --no-restore --verify-no-changes`: PASS.
-- `dotnet test PlcComm.Slmp.sln --configuration Release --no-restore`: PASS on `net8.0`, `net9.0`, and `net10.0`; 281 tests per target framework, zero failed or skipped.
+- `dotnet test PlcComm.Slmp.sln --configuration Release --no-restore`: PASS on `net8.0`, `net9.0`, and `net10.0`; 285 tests per target framework, zero failed or skipped.
 - `python scripts/test_generate_api_reference.py`: PASS, 4 tests.
 - generated API reference regeneration plus `--check`: PASS; 50 documented public types and maintainer-only raw command omitted through `EditorBrowsable(Never)`.
 - `dotnet pack ... --configuration Release --no-build`: PASS; `.nupkg` and `.snupkg` created locally for packaging validation only.
