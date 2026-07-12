@@ -21,6 +21,11 @@ internal static class SlmpPayloads
     {
         if (compatibilityMode == SlmpCompatibilityMode.Legacy)
         {
+            if (device.Number > 0x00FF_FFFF)
+                throw new ArgumentOutOfRangeException(
+                    nameof(device),
+                    device.Number,
+                    "Legacy device numbers must fit the 24-bit wire field (0..16777215).");
             output[0] = (byte)(device.Number & 0xFF);
             output[1] = (byte)((device.Number >> 8) & 0xFF);
             output[2] = (byte)((device.Number >> 16) & 0xFF);

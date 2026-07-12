@@ -44,7 +44,8 @@ Console.WriteLine($"{client.FrameType} {client.CompatibilityMode}");
 Remote password lock/unlock commands are available on the underlying `SlmpClient`.
 The .NET high-level connection does not automatically unlock or lock a remote password.
 If your PLC route uses remote password protection, unlock after opening the connection
-and lock before closing it.
+and lock before closing it. Passwords must contain printable ASCII characters only;
+non-ASCII text is rejected rather than replaced during encoding.
 
 ```csharp
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
@@ -202,10 +203,20 @@ foreach (var (address, value) in snapshot)
 }
 ```
 
-Compatible word and DWord entries share one random-read request. Long-family,
-bit, or fallback routes can require additional requests, so mixed results are
-not guaranteed to represent one PLC instant. `WriteNamedAsync` can likewise
-perform multiple writes; if a later request fails, earlier writes remain applied.
+`ReadNamedAsync` emits exactly one random-read request. Every entry must fit
+that request; direct/block/long-timer fallback routes are rejected before
+transport. `WriteNamedAsync` emits one random word/DWord request or one random
+bit request and rejects mixed families and bit-in-word read-modify-write.
+
+Typed writes do not parse strings or convert Boolean and floating-point values into
+integers. `BIT` requires `bool`; U/S/D/L require integral CLR values in their exact
+ranges; F requires a finite numeric value within the float32 range.
+
+Communication timeout values must be at least 1 millisecond. After a request is sent
+and then times out, is cancelled, or loses transport ownership, the client remains
+invalidated until `OpenAsync` is called explicitly. `RemoteResetAsync` also closes and
+invalidates its send-only transport; its completion confirms transmission, not PLC
+execution. Reopen and verify PLC state before continuing.
 
 ## Block reads
 

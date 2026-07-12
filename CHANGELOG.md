@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library: Replaced public Extended Device wire fields with qualified semantic routes and typed Z/LZ/indirect modifiers.
 - Library: Remote RUN and PAUSE now require typed mode choices, RUN requires a typed clear mode, and Remote RESET uses its fixed payload without waiting for a success response.
 - Library: CPU-buffer helpers require an explicit `SlmpCpuModule`; long timer helpers require both head and point count.
+- Library: Typed writes no longer use `Convert.*`; BIT requires `bool`, integer dtypes require integral CLR values in range, and F requires a finite numeric value representable as float32.
+- Library: A timeout/cancellation/transport failure or send-only Remote RESET invalidates the session until the caller explicitly invokes `OpenAsync`; RESET also closes the transport so a residual 3E NG response cannot satisfy the next request.
+- Library: Legacy device numbers above the 24-bit wire field, non-printable/non-ASCII passwords, timeout values below 1 ms, and LZ modifier indexes above 1 are rejected before transport.
+- Library: `ReadNamedAsync`, `PollAsync`, and `WriteNamedAsync` now emit one random request per call/cycle or reject the complete operation before transport; hidden fallback reads, mixed write families, and bit-in-word read-modify-write are no longer performed.
 
 ### Changed
 - Library: One client now serializes all request/response exchanges, assigns unique 4E serials, and closes TCP or UDP transport after timeout/cancellation so a delayed response cannot contaminate a later request.

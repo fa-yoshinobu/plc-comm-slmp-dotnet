@@ -96,17 +96,11 @@ public sealed class SlmpClientExtensionsTests
     }
 
     [Fact]
-    public void CompileReadPlan_KeepsRiskyBitFamiliesOnDirectRead()
+    public void CompileReadPlan_RejectsDirectReadFallbackRoutes()
     {
-        var plan = SlmpClientExtensions.CompileReadPlan(["TS10:BIT", "TC10:BIT", "STS10:BIT", "STC10:BIT", "CS10:BIT", "CC10:BIT", "DX10:BIT", "DY10:BIT"], SlmpPlcProfile.IqR);
-
-        Assert.Empty(plan.WordDevices);
-        Assert.Empty(plan.DwordDevices);
-        Assert.All(plan.Entries, entry =>
-        {
-            Assert.Equal(SlmpNamedReadKind.Fallback, entry.Kind);
-            Assert.Equal("BIT", entry.DType);
-        });
+        var ex = Assert.Throws<ArgumentException>(() =>
+            SlmpClientExtensions.CompileReadPlan(["TS10:BIT", "DX10:BIT"], SlmpPlcProfile.IqR));
+        Assert.Contains("one random-read request", ex.Message);
     }
 
     [Fact]
@@ -121,80 +115,11 @@ public sealed class SlmpClientExtensionsTests
     }
 
     [Fact]
-    public void CompileReadPlan_UsesHelperKindsForLongTimerFamilies()
+    public void CompileReadPlan_RejectsLongTimerHelperRoutes()
     {
-        var plan = SlmpClientExtensions.CompileReadPlan(
-            ["LTN10:D", "LTS10:BIT", "LTC10:BIT", "LSTN20:D", "LSTS20:BIT", "LSTC20:BIT", "LCN30:D", "LCS30:BIT", "LCC30:BIT"],
-            SlmpPlcProfile.IqR);
-
-        Assert.Empty(plan.WordDevices);
-        Assert.Empty(plan.DwordDevices);
-
-        Assert.Collection(
-            plan.Entries,
-            entry =>
-            {
-                Assert.Equal("LTN10:D", entry.Address);
-                Assert.Equal("D", entry.DType);
-                Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
-                Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LTN, SlmpLongTimerReadKind.Current), entry.LongTimerRead);
-            },
-            entry =>
-            {
-                Assert.Equal("LTS10:BIT", entry.Address);
-                Assert.Equal("BIT", entry.DType);
-                Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
-                Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LTN, SlmpLongTimerReadKind.Contact), entry.LongTimerRead);
-            },
-            entry =>
-            {
-                Assert.Equal("LTC10:BIT", entry.Address);
-                Assert.Equal("BIT", entry.DType);
-                Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
-                Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LTN, SlmpLongTimerReadKind.Coil), entry.LongTimerRead);
-            },
-            entry =>
-            {
-                Assert.Equal("LSTN20:D", entry.Address);
-                Assert.Equal("D", entry.DType);
-                Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
-                Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LSTN, SlmpLongTimerReadKind.Current), entry.LongTimerRead);
-            },
-            entry =>
-            {
-                Assert.Equal("LSTS20:BIT", entry.Address);
-                Assert.Equal("BIT", entry.DType);
-                Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
-                Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LSTN, SlmpLongTimerReadKind.Contact), entry.LongTimerRead);
-            },
-            entry =>
-            {
-                Assert.Equal("LSTC20:BIT", entry.Address);
-                Assert.Equal("BIT", entry.DType);
-                Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
-                Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LSTN, SlmpLongTimerReadKind.Coil), entry.LongTimerRead);
-            },
-            entry =>
-            {
-                Assert.Equal("LCN30:D", entry.Address);
-                Assert.Equal("D", entry.DType);
-                Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
-                Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LCN, SlmpLongTimerReadKind.Current), entry.LongTimerRead);
-            },
-            entry =>
-            {
-                Assert.Equal("LCS30:BIT", entry.Address);
-                Assert.Equal("BIT", entry.DType);
-                Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
-                Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LCS, SlmpLongTimerReadKind.Contact), entry.LongTimerRead);
-            },
-            entry =>
-            {
-                Assert.Equal("LCC30:BIT", entry.Address);
-                Assert.Equal("BIT", entry.DType);
-                Assert.Equal(SlmpNamedReadKind.LongTimer, entry.Kind);
-                Assert.Equal(new SlmpLongTimerReadSpec(SlmpDeviceCode.LCC, SlmpLongTimerReadKind.Coil), entry.LongTimerRead);
-            });
+        var ex = Assert.Throws<ArgumentException>(() =>
+            SlmpClientExtensions.CompileReadPlan(["LTN10:D", "LTS10:BIT", "LCN30:D"], SlmpPlcProfile.IqR));
+        Assert.Contains("one random-read request", ex.Message);
     }
 
     [Fact]
@@ -301,6 +226,78 @@ public sealed class SlmpClientExtensionsTests
 
         Assert.NotNull(ex);
         Assert.IsNotType<OverflowException>(ex);
+    }
+
+    public static TheoryData<string, object> InvalidTypedWriteValues => new()
+    {
+        { "U", true },
+        { "U", 1.0 },
+        { "U", "1" },
+        { "U", -1 },
+        { "U", 65536 },
+        { "S", 32768 },
+        { "D", -1L },
+        { "D", 4_294_967_296UL },
+        { "L", 2_147_483_648L },
+        { "F", double.PositiveInfinity },
+        { "F", double.MaxValue },
+        { "BIT", 1 },
+    };
+
+    [Theory]
+    [MemberData(nameof(InvalidTypedWriteValues))]
+    public async Task WriteTypedAsync_RejectsCoercionAndOutOfRangeBeforeTransport(string dtype, object value)
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            1025,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var code = dtype == "BIT" ? SlmpDeviceCode.M : SlmpDeviceCode.D;
+
+        await Assert.ThrowsAnyAsync<ArgumentException>(
+            () => client.WriteTypedAsync(new SlmpDeviceAddress(code, 0, SlmpPlcProfile.IqR), dtype, value));
+
+        Assert.False(client.IsOpen);
+    }
+
+    [Fact]
+    public async Task WriteNamedAsync_BitInWordRequiresBooleanBeforeTransport()
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            1025,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => client.WriteNamedAsync(new Dictionary<string, object> { ["D0.1"] = 1 }));
+
+        Assert.False(client.IsOpen);
+    }
+
+    [Fact]
+    public async Task WriteNamedAsync_RejectsHiddenMultiRequestRoutesBeforeTransport()
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            1025,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteNamedAsync(new Dictionary<string, object>
+            {
+                ["D0:U"] = (ushort)1,
+                ["M0:BIT"] = true,
+            }));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteNamedAsync(new Dictionary<string, object> { ["D0.1"] = true }));
+
+        Assert.False(client.IsOpen);
     }
 
     [Theory]

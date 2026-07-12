@@ -44,6 +44,18 @@ public sealed class SlmpConnectionContractTests
     }
 
     [Fact]
+    public void Timeout_RejectsSubMillisecondAndAboveTimerMaximum()
+    {
+        using var client = CreateTcpClient();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => client.Timeout = TimeSpan.FromTicks(1));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            client.Timeout = TimeSpan.FromMilliseconds((double)int.MaxValue + 1));
+        client.Timeout = TimeSpan.FromMilliseconds(1);
+        client.Timeout = TimeSpan.FromMilliseconds(int.MaxValue);
+    }
+
+    [Fact]
     public void TargetAddress_IsReadOnlyAfterConstruction()
     {
         Assert.False(typeof(SlmpClient).GetProperty(nameof(SlmpClient.TargetAddress))!.CanWrite);
@@ -70,6 +82,48 @@ public sealed class SlmpConnectionContractTests
                 SlmpCommand.ReadTypeName,
                 0x0000,
                 ReadOnlyMemory<byte>.Empty));
+
+        Assert.False(client.IsOpen);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            client.RawCommandAsync(
+                SlmpCommand.ReadTypeName,
+                0x0000,
+                ReadOnlyMemory<byte>.Empty));
+
+        await client.OpenAsync();
+        Assert.True(client.IsOpen);
+    }
+
+    [Fact]
+    public async Task RemoteReset_ClosesTransportAndRequiresExplicitOpen()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var acceptTask = listener.AcceptTcpClientAsync();
+
+        await client.OpenAsync();
+        using var accepted = await acceptTask;
+        await client.RemoteResetAsync();
+
+        Assert.False(client.IsOpen);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => client.ClearErrorAsync());
+        listener.Stop();
+    }
+
+    [Fact]
+    public async Task RemotePassword_RejectsNonAsciiBeforeTransport()
+    {
+        using var client = CreateTcpClient();
+
+        await Assert.ThrowsAsync<ArgumentException>(() => client.RemotePasswordUnlockAsync("éééééé"));
 
         Assert.False(client.IsOpen);
     }

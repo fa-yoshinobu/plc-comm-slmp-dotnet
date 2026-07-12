@@ -56,6 +56,23 @@ public sealed class SlmpClientPayloadTests
     }
 
     [Fact]
+    public void LegacyDeviceSpec_RejectsNumberOutside24BitField()
+    {
+        var output = new byte[4];
+        var device = new SlmpRawDeviceAddress(SlmpDeviceCode.D, 0x0100_0000);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            SlmpPayloads.EncodeRawDeviceSpec(device, output, SlmpCompatibilityMode.Legacy));
+    }
+
+    [Fact]
+    public void LzModification_RejectsIndexesAboveOne()
+    {
+        Assert.Equal((byte)1, new SlmpDeviceModification.IndexLz(1).Index);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SlmpDeviceModification.IndexLz(2));
+    }
+
+    [Fact]
     public void BuildExtendedRandomReadPayload_UsesManualLayoutForRegularAndQualifiedBufferMemory()
     {
         var payload = SlmpPayloads.BuildExtendedRandomReadPayload(

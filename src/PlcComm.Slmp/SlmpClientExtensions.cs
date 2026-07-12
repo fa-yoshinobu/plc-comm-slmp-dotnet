@@ -191,7 +191,7 @@ public static class SlmpClientExtensions
         => client.ReadTypedAsync(ParseDeviceForClient(client, device), dtype, ct);
 
     /// <summary>
-    /// Writes one logical value using the requested type conversion.
+    /// Writes one logical value using strict dtype validation and encoding.
     /// </summary>
     /// <param name="client">Connected SLMP client.</param>
     /// <param name="device">Starting device address.</param>
@@ -199,11 +199,12 @@ public static class SlmpClientExtensions
     /// Type code: <c>U</c> unsigned 16-bit, <c>S</c> signed 16-bit,
     /// <c>D</c> unsigned 32-bit, <c>L</c> signed 32-bit, or <c>F</c> float32.
     /// </param>
-    /// <param name="value">Value to encode and write.</param>
+    /// <param name="value">Value to encode and write. BIT requires Boolean; integer dtypes require an integral CLR type in range; F requires a finite numeric value within float32 range.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <remarks>
-    /// Use this helper when application code wants to write typed values
-    /// without manually splitting words or packing float32 values.
+    /// Use this helper when application code wants strict typed writes without
+    /// manually splitting words or packing float32 values. Values are not parsed
+    /// from strings or converted between Boolean, floating, and integer types.
     /// </remarks>
     public static async Task WriteTypedAsync(
         this SlmpClient client,
@@ -217,50 +218,50 @@ public static class SlmpClientExtensions
         {
             case SlmpNamedWriteRoute.RandomBits:
                 await client.WriteRandomBitsAsync(
-                        [(device, Convert.ToBoolean(value, CultureInfo.InvariantCulture))],
+                        [(device, RequireBooleanWriteValue(value))],
                         ct)
                     .ConfigureAwait(false);
                 break;
             case SlmpNamedWriteRoute.ContiguousBits:
-                await client.WriteBitsAsync(device, [Convert.ToBoolean(value, CultureInfo.InvariantCulture)], ct)
+                await client.WriteBitsAsync(device, [RequireBooleanWriteValue(value)], ct)
                     .ConfigureAwait(false);
                 break;
             case SlmpNamedWriteRoute.ContiguousDWords when normalizedDType == "F":
                 await client.WriteDWordsAsync(
                         device,
-                        [unchecked((uint)BitConverter.SingleToInt32Bits(Convert.ToSingle(value, CultureInfo.InvariantCulture)))],
+                        [unchecked((uint)BitConverter.SingleToInt32Bits(RequireFloat32WriteValue(value)))],
                         ct)
                     .ConfigureAwait(false);
                 break;
             case SlmpNamedWriteRoute.RandomDWords when normalizedDType == "L":
                 await client.WriteRandomWordsAsync(
                         [],
-                        [(device, unchecked((uint)Convert.ToInt32(value, CultureInfo.InvariantCulture)))],
+                        [(device, unchecked((uint)RequireInt32WriteValue(value, "L")))],
                         ct)
                     .ConfigureAwait(false);
                 break;
             case SlmpNamedWriteRoute.RandomDWords:
                 await client.WriteRandomWordsAsync(
                         [],
-                        [(device, Convert.ToUInt32(value, CultureInfo.InvariantCulture))],
+                        [(device, RequireUInt32WriteValue(value, "D"))],
                         ct)
                     .ConfigureAwait(false);
                 break;
             case SlmpNamedWriteRoute.ContiguousDWords when normalizedDType == "L":
                 await client.WriteDWordsAsync(
                         device,
-                        [unchecked((uint)Convert.ToInt32(value, CultureInfo.InvariantCulture))],
+                        [unchecked((uint)RequireInt32WriteValue(value, "L"))],
                         ct)
                     .ConfigureAwait(false);
                 break;
             case SlmpNamedWriteRoute.ContiguousDWords:
-                await client.WriteDWordsAsync(device, [Convert.ToUInt32(value, CultureInfo.InvariantCulture)], ct)
+                await client.WriteDWordsAsync(device, [RequireUInt32WriteValue(value, "D")], ct)
                     .ConfigureAwait(false);
                 break;
             default:
                 var word = normalizedDType == "S"
-                    ? unchecked((ushort)Convert.ToInt16(value, CultureInfo.InvariantCulture))
-                    : Convert.ToUInt16(value, CultureInfo.InvariantCulture);
+                    ? unchecked((ushort)RequireInt16WriteValue(value, "S"))
+                    : RequireUInt16WriteValue(value, "U");
                 await client.WriteWordsAsync(device, [word], ct)
                     .ConfigureAwait(false);
                 break;
@@ -737,9 +738,8 @@ public static class SlmpClientExtensions
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A dictionary whose keys match the requested address strings.</returns>
     /// <remarks>
-    /// The address list is compiled and compatible regular devices share one random-read
-    /// request. Different command families require separate requests, so the returned
-    /// values are not an atomic PLC snapshot.
+    /// The complete address list is compiled into exactly one random-read request.
+    /// Entries that require another command family are rejected before transport.
     /// </remarks>
     public static async Task<IReadOnlyDictionary<string, object>> ReadNamedAsync(
         this SlmpClient client,
@@ -771,12 +771,23 @@ public static class SlmpClientExtensions
     /// <c>"D50.3"</c>, or direct bit-device addresses such as <c>"M1000:BIT"</c>.
     /// </param>
     /// <param name="ct">Cancellation token.</param>
-    /// <remarks>Entries can require separate requests. A later failure does not roll back earlier writes.</remarks>
+    /// <remarks>
+    /// The complete update set is sent as exactly one random-write request. Word and DWord
+    /// entries may share that request; bit entries use one random-bit request. Mixing those
+    /// command families or requesting bit-in-word read-modify-write is rejected before transport.
+    /// </remarks>
     public static async Task WriteNamedAsync(
         this SlmpClient client,
         IReadOnlyDictionary<string, object> updates,
         CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(updates);
+        if (updates.Count == 0)
+            throw new ArgumentException("WriteNamedAsync requires at least one update.", nameof(updates));
+
+        var wordEntries = new List<(SlmpDeviceAddress Device, ushort Value)>();
+        var dwordEntries = new List<(SlmpDeviceAddress Device, uint Value)>();
+        var bitEntries = new List<(SlmpDeviceAddress Device, bool Value)>();
         foreach (var pair in updates)
         {
             var (baseAddress, dtype, bitIdx) = ParseAddress(pair.Key);
@@ -784,16 +795,49 @@ public static class SlmpClientExtensions
             if (dtype == "BIT_IN_WORD")
             {
                 ValidateBitInWordTarget(pair.Key, device);
-                await client.WriteBitInWordAsync(device, RequireBitInWordIndex(pair.Key, bitIdx), Convert.ToBoolean(pair.Value, CultureInfo.InvariantCulture), ct)
-                    .ConfigureAwait(false);
-                continue;
+                _ = RequireBitInWordIndex(pair.Key, bitIdx);
+                _ = RequireBooleanWriteValue(pair.Value);
+                throw new ArgumentException(
+                    $"Address '{pair.Key}' requires read-modify-write and is not supported by WriteNamedAsync; call WriteBitInWordAsync explicitly.",
+                    nameof(updates));
             }
 
             var resolvedDType = ResolveDTypeForAddress(pair.Key, device, dtype, bitIdx);
             ValidateNamedDeviceDType(pair.Key, device, resolvedDType);
             ValidateLongTimerEntry(pair.Key, device, resolvedDType);
-            await client.WriteTypedAsync(device, resolvedDType, pair.Value, ct).ConfigureAwait(false);
+            _ = ResolveWriteRoute(device, resolvedDType, client.PlcProfile);
+            switch (resolvedDType)
+            {
+                case "BIT":
+                    bitEntries.Add((device, RequireBooleanWriteValue(pair.Value)));
+                    break;
+                case "U":
+                    wordEntries.Add((device, RequireUInt16WriteValue(pair.Value, resolvedDType)));
+                    break;
+                case "S":
+                    wordEntries.Add((device, unchecked((ushort)RequireInt16WriteValue(pair.Value, resolvedDType))));
+                    break;
+                case "F":
+                    dwordEntries.Add((device, unchecked((uint)BitConverter.SingleToInt32Bits(RequireFloat32WriteValue(pair.Value)))));
+                    break;
+                case "L":
+                    dwordEntries.Add((device, unchecked((uint)RequireInt32WriteValue(pair.Value, resolvedDType))));
+                    break;
+                default:
+                    dwordEntries.Add((device, RequireUInt32WriteValue(pair.Value, resolvedDType)));
+                    break;
+            }
         }
+
+        if (bitEntries.Count != 0 && (wordEntries.Count != 0 || dwordEntries.Count != 0))
+            throw new ArgumentException(
+                "WriteNamedAsync cannot mix bit and word/DWord destinations because that requires multiple protocol requests.",
+                nameof(updates));
+
+        if (bitEntries.Count != 0)
+            await client.WriteRandomBitsAsync(bitEntries, ct).ConfigureAwait(false);
+        else
+            await client.WriteRandomWordsAsync(wordEntries, dwordEntries, ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -983,6 +1027,17 @@ public static class SlmpClientExtensions
             }
 
             entries.Add(new SlmpNamedReadEntry(address, device, dtype, bitIdx, kind, longTimerRead));
+        }
+
+        var unsupported = entries
+            .Where(entry => entry.Kind is SlmpNamedReadKind.Fallback or SlmpNamedReadKind.LongTimer)
+            .Select(entry => entry.Address)
+            .ToArray();
+        if (unsupported.Length != 0)
+        {
+            throw new ArgumentException(
+                $"ReadNamedAsync accepts only addresses that fit one random-read request; use explicit read calls for {string.Join(", ", unsupported)}.",
+                nameof(addresses));
         }
 
         return new SlmpNamedReadPlan(entries, wordDevices, dwordDevices);
@@ -1466,6 +1521,80 @@ public static class SlmpClientExtensions
             or SlmpDeviceCode.R
             or SlmpDeviceCode.ZR
             or SlmpDeviceCode.RD;
+
+    private static bool RequireBooleanWriteValue(object value)
+        => value is bool result
+            ? result
+            : throw new ArgumentException("BIT value must be a Boolean.", nameof(value));
+
+    private static ushort RequireUInt16WriteValue(object value, string dtype)
+    {
+        var number = RequireIntegralWriteValue(value, dtype);
+        if (number is < ushort.MinValue or > ushort.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(value), value, $"{dtype} value must be in range 0..65535.");
+        return (ushort)number;
+    }
+
+    private static short RequireInt16WriteValue(object value, string dtype)
+    {
+        var number = RequireIntegralWriteValue(value, dtype);
+        if (number is < short.MinValue or > short.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(value), value, $"{dtype} value must be in range -32768..32767.");
+        return (short)number;
+    }
+
+    private static uint RequireUInt32WriteValue(object value, string dtype)
+    {
+        var number = RequireIntegralWriteValue(value, dtype);
+        if (number is < uint.MinValue or > uint.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(value), value, $"{dtype} value must be in range 0..4294967295.");
+        return (uint)number;
+    }
+
+    private static int RequireInt32WriteValue(object value, string dtype)
+    {
+        var number = RequireIntegralWriteValue(value, dtype);
+        if (number is < int.MinValue or > int.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(value), value, $"{dtype} value must be in range -2147483648..2147483647.");
+        return (int)number;
+    }
+
+    private static decimal RequireIntegralWriteValue(object value, string dtype)
+        => value switch
+        {
+            sbyte number => number,
+            byte number => number,
+            short number => number,
+            ushort number => number,
+            int number => number,
+            uint number => number,
+            long number => number,
+            ulong number => number,
+            _ => throw new ArgumentException($"{dtype} value must use an integer CLR type.", nameof(value)),
+        };
+
+    private static float RequireFloat32WriteValue(object value)
+    {
+        var number = value switch
+        {
+            sbyte v => (double)v,
+            byte v => v,
+            short v => v,
+            ushort v => v,
+            int v => v,
+            uint v => v,
+            long v => v,
+            ulong v => v,
+            float v => v,
+            double v => v,
+            decimal v => (double)v,
+            _ => throw new ArgumentException("F value must use a numeric CLR type.", nameof(value)),
+        };
+        var result = (float)number;
+        if (!double.IsFinite(number) || !float.IsFinite(result))
+            throw new ArgumentOutOfRangeException(nameof(value), value, "F value must be finite and within the float32 range.");
+        return result;
+    }
 
     private static short DecodeSignedWord(ushort value) => unchecked((short)value);
 

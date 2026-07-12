@@ -45,9 +45,9 @@ This maintainer record maps the approved workspace decisions to the .NET impleme
 ## D-013 / B-10 — Request ownership, serials and cancellation
 
 - Scope: base client TCP/UDP exchanges.
-- Target contract: one client permits one in-flight exchange, allocates 4E serials inside that lock, matches response serials, and closes transport after timeout/cancellation or transport failure. Maintainer trace failures cannot affect communication.
+- Target contract: one client permits one in-flight exchange, allocates 4E serials inside that lock, matches response serials, and closes transport after timeout/cancellation or transport failure. The invalidated session rejects requests until the caller explicitly invokes `OpenAsync`. Maintainer trace failures cannot affect communication.
 - Compatibility: callers cannot rely on concurrent pipelining or reuse a cancelled session.
-- Acceptance criteria: concurrent 4E calls have unique serials; mismatched serials are ignored; UDP timeout closes the socket and prevents delayed-response reuse.
+- Acceptance criteria: concurrent 4E calls have unique serials; mismatched serials are ignored; UDP timeout closes the socket, prevents delayed-response reuse, rejects implicit reopen, and permits use only after explicit `OpenAsync`.
 - [x] Implementation completed.
 - [x] Tests completed.
 - [x] Documentation updated.
@@ -85,7 +85,7 @@ This maintainer record maps the approved workspace decisions to the .NET impleme
 ## D-027 / D-028 — Fixed Remote RESET
 
 - Scope: Remote RESET.
-- Target contract: the API exposes no subcommand or response option; it sends command `0x1006`, subcommand `0x0000`, payload `0x0001`, and completes after send without treating absent success response as timeout.
+- Target contract: the API exposes no subcommand or response option; it sends command `0x1006`, subcommand `0x0000`, payload `0x0001`, closes the transport generation, and completes after send without treating absent success response as timeout. A new request requires explicit `OpenAsync`.
 - Compatibility: configurable reset callers must migrate.
 - Acceptance criteria: the shared frame vector is captured without requiring a response.
 - [x] Implementation completed.
@@ -95,12 +95,20 @@ This maintainer record maps the approved workspace decisions to the .NET impleme
 ## D-029 — Profile-derived remote password payload
 
 - Scope: remote password lock/unlock.
-- Target contract: callers provide a non-empty profile-valid password only; payload form comes from the connection profile and no series argument exists.
+- Target contract: callers provide a non-empty printable-ASCII profile-valid password only; payload form comes from the connection profile and no series argument exists. Encoding never replaces non-ASCII input with `?`.
 - Compatibility: series override calls are removed.
 - Acceptance criteria: fixed/variable length validation occurs before transport and profile vectors remain deterministic.
 - [x] Implementation completed.
 - [x] Tests completed.
 - [x] Documentation updated.
+
+## CLAUDE-SLMP-20260712-01 accepted .NET findings
+
+- Typed write values use strict CLR type and range validation before request creation.
+- Legacy direct device numbers fit the 24-bit field without truncation.
+- Send-only RESET and failed exchanges invalidate transport ownership and require explicit reopen.
+- Passwords are printable ASCII, timeout is at least 1 ms, and LZ index is 0 or 1.
+- These contracts are covered by pre-transport tests and TCP/UDP local transport tests; no live PLC result is required.
 
 ## D-030 — Optional label abbreviations with validation
 
@@ -125,9 +133,9 @@ This maintainer record maps the approved workspace decisions to the .NET impleme
 ## D-035 / D-036 — No hidden multi-request contiguous access
 
 - Scope: continuous word/DWord reads and writes and high-level named batching.
-- Target contract: one contiguous API call emits at most one request and rejects counts above the selected profile limit; no chunked helper or split option is public. Mixed named command families are explicitly documented as non-atomic and named writes as potentially partially successful.
+- Target contract: one public read/write call emits at most one request and rejects counts or named routes that cannot fit the selected command; no chunked helper, split option, or partially successful named write is public.
 - Compatibility: chunk/split callers must implement their own request and consistency policy.
-- Acceptance criteria: public-surface scan has no chunk helpers; limit tests send zero requests; docs do not describe mixed named values as one PLC instant.
+- Acceptance criteria: public-surface scan has no chunk helpers; limit and incompatible named-route tests send zero requests; named reads and writes have a one-random-request-or-reject contract.
 - [x] Implementation completed.
 - [x] Tests completed.
 - [x] Documentation updated.

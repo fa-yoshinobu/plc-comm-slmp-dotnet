@@ -22,7 +22,17 @@ public abstract record SlmpDeviceModification
     private SlmpDeviceModification() { }
 
     public sealed record IndexZ(byte Index) : SlmpDeviceModification;
-    public sealed record IndexLz(byte Index) : SlmpDeviceModification;
+    public sealed record IndexLz : SlmpDeviceModification
+    {
+        public IndexLz(byte index)
+        {
+            if (index > 1)
+                throw new ArgumentOutOfRangeException(nameof(index), "LZ index must be 0 or 1.");
+            Index = index;
+        }
+
+        public byte Index { get; }
+    }
     public sealed record Indirect : SlmpDeviceModification;
 }
 

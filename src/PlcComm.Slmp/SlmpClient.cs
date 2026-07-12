@@ -43,6 +43,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     private TimeSpan _timeout = TimeSpan.FromSeconds(3);
     private readonly SemaphoreSlim _requestGate = new(1, 1);
     private readonly SemaphoreSlim _openGate = new(1, 1);
+    private bool _requiresExplicitOpen;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SlmpClient"/> class.
@@ -83,14 +84,14 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     public SlmpTargetAddress TargetAddress => _targetAddress;
     /// <summary>Gets or sets the monitoring timer value (multiples of 250ms). Default is 0x0010 (4s).</summary>
     public ushort MonitoringTimer { get; set; } = 0x0010;
-    /// <summary>Gets or sets the communication timeout.</summary>
+    /// <summary>Gets or sets the communication timeout. Values must be from 1 millisecond through <see cref="int.MaxValue"/> milliseconds.</summary>
     public TimeSpan Timeout
     {
         get => _timeout;
         set
         {
-            if (value <= TimeSpan.Zero || value > TimeSpan.FromMilliseconds(int.MaxValue))
-                throw new ArgumentOutOfRangeException(nameof(value), "Timeout must be greater than zero and within the supported timer range.");
+            if (value < TimeSpan.FromMilliseconds(1) || value > TimeSpan.FromMilliseconds(int.MaxValue))
+                throw new ArgumentOutOfRangeException(nameof(value), "Timeout must be at least 1 millisecond and within the supported timer range.");
             _timeout = value;
         }
     }
@@ -111,7 +112,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         await _openGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (IsOpen) return;
+            if (IsOpen)
+            {
+                _requiresExplicitOpen = false;
+                return;
+            }
             if (_transportMode == SlmpTransportMode.Tcp)
             {
                 var tcp = new TcpClient();
@@ -127,6 +132,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                     tcp.SendTimeout = (int)Timeout.TotalMilliseconds;
                     _tcp = tcp;
                     _tcpStream = tcp.GetStream();
+                    _requiresExplicitOpen = false;
                 }
                 catch
                 {
@@ -143,6 +149,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 udp.Client.SendTimeout = (int)Timeout.TotalMilliseconds;
                 udp.Connect(_host, _port);
                 _udp = udp;
+                _requiresExplicitOpen = false;
             }
             catch
             {
@@ -181,6 +188,20 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         _tcp = null;
         _udp?.Dispose();
         _udp = null;
+    }
+
+    private void InvalidateTransport()
+    {
+        _openGate.Wait();
+        try
+        {
+            CloseTransport();
+            _requiresExplicitOpen = true;
+        }
+        finally
+        {
+            _openGate.Release();
+        }
     }
 
     /// <summary>Closes the connection to the PLC asynchronously.</summary>
@@ -1154,6 +1175,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task RemoteLatchClearAsync(CancellationToken cancellationToken = default) => _ = await RequestCoreAsync(SlmpCommand.RemoteLatchClear, 0x0000, new byte[] { 0x01, 0x00 }, true, cancellationToken).ConfigureAwait(false);
 
+    /// <summary>
+    /// Sends the fixed Remote RESET frame without waiting for a success response,
+    /// then invalidates the transport. Call <see cref="OpenAsync(CancellationToken)"/>
+    /// explicitly before another request and verify the PLC state.
+    /// </summary>
     public async Task RemoteResetAsync(CancellationToken cancellationToken = default)
     {
         _ = await RequestCoreAsync(SlmpCommand.RemoteReset, 0x0000, new byte[] { 0x01, 0x00 }, false, cancellationToken).ConfigureAwait(false);
@@ -1630,6 +1656,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         await _requestGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            if (_requiresExplicitOpen)
+                throw new InvalidOperationException("The previous exchange invalidated the transport. Call OpenAsync explicitly before another request.");
             if (!IsOpen) await OpenAsync(cancellationToken).ConfigureAwait(false);
             var frame = BuildRequestFrame(command, subcommand, payload.Span);
             ushort? expectedSerial = FrameType == SlmpFrameType.Frame4E
@@ -1648,6 +1676,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                     if (!expectResponse)
                     {
                         LastResponseFrame = [];
+                        InvalidateTransport();
                         return [];
                     }
 
@@ -1671,7 +1700,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 }
                 catch
                 {
-                    Close();
+                    InvalidateTransport();
                     throw;
                 }
             }
@@ -1685,6 +1714,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 if (!expectResponse)
                 {
                     LastResponseFrame = [];
+                    InvalidateTransport();
                     return [];
                 }
 
@@ -1706,7 +1736,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             }
             catch
             {
-                Close();
+                InvalidateTransport();
                 throw;
             }
         }
@@ -2571,6 +2601,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     private byte[] EncodePassword(string password)
     {
         ArgumentNullException.ThrowIfNull(password);
+
+        if (password.Any(character => character is < ' ' or > '~'))
+            throw new ArgumentException("Password must contain printable ASCII characters only.", nameof(password));
 
         var raw = Encoding.ASCII.GetBytes(password);
 

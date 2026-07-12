@@ -17,13 +17,13 @@ public sealed class IndexLz
 ##### IndexLz
 
 ```csharp
-public IndexLz(byte Index)
+public IndexLz(byte index)
 ```
 
 ##### Index
 
 ```csharp
-public byte Index { get; set; }
+public byte Index { get; }
 ```
 
 ### IndexZ
@@ -1132,6 +1132,8 @@ public Task RemoteLatchClearAsync(CancellationToken cancellationToken = default)
 public Task RemoteResetAsync(CancellationToken cancellationToken = default)
 ```
 
+Sends the fixed Remote RESET frame without waiting for a success response, then invalidates the transport. Call `OpenAsync` explicitly before another request and verify the PLC state.
+
 ##### RemotePasswordUnlockAsync
 
 ```csharp
@@ -1473,7 +1475,7 @@ Gets or sets the monitoring timer value (multiples of 250ms). Default is 0x0010 
 public TimeSpan Timeout { get; set; }
 ```
 
-Gets or sets the communication timeout.
+Gets or sets the communication timeout. Values must be from 1 millisecond through `MaxValue` milliseconds.
 
 ##### IsOpen
 
@@ -1565,15 +1567,15 @@ Parameters:
 public static Task WriteTypedAsync(SlmpClient client, SlmpDeviceAddress device, string dtype, object value, CancellationToken ct = default)
 ```
 
-Writes one logical value using the requested type conversion.
+Writes one logical value using strict dtype validation and encoding.
 
-Remarks: Use this helper when application code wants to write typed values without manually splitting words or packing float32 values.
+Remarks: Use this helper when application code wants strict typed writes without manually splitting words or packing float32 values. Values are not parsed from strings or converted between Boolean, floating, and integer types.
 
 Parameters:
 - `client`: Connected SLMP client.
 - `device`: Starting device address.
 - `dtype`: Type code: `U` unsigned 16-bit, `S` signed 16-bit, `D` unsigned 32-bit, `L` signed 32-bit, or `F` float32.
-- `value`: Value to encode and write.
+- `value`: Value to encode and write. BIT requires Boolean; integer dtypes require an integral CLR type in range; F requires a finite numeric value within float32 range.
 - `ct`: Cancellation token.
 
 ##### WriteTypedAsync
@@ -1946,7 +1948,7 @@ public static Task<IReadOnlyDictionary<string, object>> ReadNamedAsync(SlmpClien
 
 Reads a mixed named value set and returns a dictionary keyed by the original addresses.
 
-Remarks: The address list is compiled and compatible regular devices share one random-read request. Different command families require separate requests, so the returned values are not an atomic PLC snapshot.
+Remarks: The complete address list is compiled into exactly one random-read request. Entries that require another command family are rejected before transport.
 
 Returns: A dictionary whose keys match the requested address strings.
 
@@ -1971,7 +1973,7 @@ public static Task WriteNamedAsync(SlmpClient client, IReadOnlyDictionary<string
 
 Writes a mixed named value set by address string.
 
-Remarks: Entries can require separate requests. A later failure does not roll back earlier writes.
+Remarks: The complete update set is sent as exactly one random-write request. Word and DWord entries may share that request; bit entries use one random-bit request. Mixing those command families or requesting bit-in-word read-modify-write is rejected before transport.
 
 Parameters:
 - `client`: Connected SLMP client.
