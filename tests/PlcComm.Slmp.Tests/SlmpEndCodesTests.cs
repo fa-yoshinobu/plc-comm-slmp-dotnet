@@ -18,20 +18,11 @@ public sealed class SlmpEndCodesTests
     }
 
     [Fact]
-    public void GetMessage_ReturnsNullBecauseMessagesAreNotEmbedded()
-    {
-        Assert.Null(SlmpEndCodes.GetMessage(0xC201));
-        Assert.Null(SlmpEndCodes.GetMessage(0xC201, SlmpEndCodeLanguage.Japanese));
-        Assert.Null(SlmpEndCodes.GetMessage(0xDEAD));
-    }
-
-    [Fact]
     public void SlmpError_ExposesEndCodeHelpers()
     {
         var error = new SlmpError("raw", 0xC201, SlmpCommand.DeviceRead, 0x0000);
 
         Assert.Equal("slmp_end_code_c201", error.EndCodeName);
-        Assert.Null(error.EndCodeMessage);
         Assert.True(error.IsRemotePasswordError);
     }
 

@@ -60,20 +60,50 @@ public static class SlmpModuleIo
 /// <param name="Station">Station number (0xFF for the connected station).</param>
 /// <param name="ModuleIo">Module I/O number (0x03FF for own station).</param>
 /// <param name="Multidrop">Multidrop station number (0x00 for no multidrop).</param>
-public readonly record struct SlmpTargetAddress(byte Network = 0x00, byte Station = 0xFF, ushort ModuleIo = 0x03FF, byte Multidrop = 0x00);
+public readonly record struct SlmpTargetAddress(byte Network, byte Station, ushort ModuleIo, byte Multidrop)
+{
+    /// <summary>An explicit directly connected own-station route.</summary>
+    public static SlmpTargetAddress OwnStation { get; } = new(0x00, 0xFF, SlmpModuleIo.OwnStation, 0x00);
+}
 
 /// <summary>
 /// Represents a specific PLC device and its numeric address.
 /// </summary>
-/// <param name="Code">The device type code (e.g., D, M, X, Y).</param>
-/// <param name="Number">The numeric address of the device.</param>
-public readonly record struct SlmpDeviceAddress(SlmpDeviceCode Code, uint Number)
+public readonly record struct SlmpDeviceAddress
 {
+    /// <summary>Initializes and validates a profile-bound semantic device address.</summary>
+    public SlmpDeviceAddress(SlmpDeviceCode code, uint number, SlmpPlcProfile plcProfile)
+    {
+        Code = code;
+        Number = number;
+        PlcProfile = SlmpPlcProfiles.ValidateConnectionProfile(plcProfile);
+        if (SlmpPlcProfiles.IsDeviceCodeUnsupported(code, PlcProfile))
+        {
+            throw new NotSupportedException(
+                $"SLMP device code '{code}' is not supported for PlcProfile '{SlmpPlcProfiles.ToCanonicalString(PlcProfile)}'.");
+        }
+    }
+
+    /// <summary>Gets the device code.</summary>
+    public SlmpDeviceCode Code { get; }
+
+    /// <summary>Gets the wire-level numeric address.</summary>
+    public uint Number { get; }
+
+    /// <summary>Gets the canonical PLC profile bound to this address.</summary>
+    public SlmpPlcProfile PlcProfile { get; }
+
     /// <summary>
     /// Returns the string representation of the device address (e.g., "D100").
     /// </summary>
-    public override string ToString() => $"{Code}{Number}";
+    public override string ToString() => SlmpAddress.Format(this);
 }
+
+/// <summary>
+/// Profile-independent wire address for internal frame vectors and maintainer diagnostics.
+/// It is intentionally not accepted by the semantic client APIs.
+/// </summary>
+internal readonly record struct SlmpRawDeviceAddress(SlmpDeviceCode Code, uint Number);
 
 /// <summary>
 /// Information about the PLC model and type name.
@@ -105,15 +135,9 @@ public sealed record SlmpBlockRead(SlmpDeviceAddress Device, ushort Points);
 public sealed record SlmpBlockWrite(SlmpDeviceAddress Device, IReadOnlyList<ushort> Values);
 
 /// <summary>
-/// Configuration for block write operations.
+/// A raw frame captured by the internal maintainer trace hook.
 /// </summary>
-/// <param name="SplitMixedBlocks">When true, send separate word-only and bit-only block writes.</param>
-public sealed record SlmpBlockWriteOptions(bool SplitMixedBlocks = false);
-
-/// <summary>
-/// A raw frame captured by <see cref="SlmpClient.TraceHook"/>.
-/// </summary>
-public record SlmpTraceFrame(SlmpTraceDirection Direction, byte[] Data, DateTime Timestamp);
+internal sealed record SlmpTraceFrame(SlmpTraceDirection Direction, byte[] Data, DateTime Timestamp);
 
 /// <summary>
 /// Result returned by <c>RunMonitorCycleAsync</c>.
@@ -221,41 +245,18 @@ public static class SlmpDeviceParser
     /// Parses a device string (e.g., "D100", "X1F") into a <see cref="SlmpDeviceAddress"/>.
     /// </summary>
     /// <param name="text">The device string to parse.</param>
+    /// <param name="plcProfile">The canonical PLC profile that defines address interpretation.</param>
     /// <returns>A parsed device address object.</returns>
     /// <exception cref="ArgumentException">Thrown when text is null or whitespace.</exception>
     /// <exception cref="FormatException">Thrown when the device format is invalid.</exception>
-    public static SlmpDeviceAddress Parse(string text)
-        => Parse(text, null);
-
-    /// <summary>
-    /// Parses a device string using one explicit PLC profile.
-    /// </summary>
-    public static SlmpDeviceAddress Parse(string text, SlmpPlcProfile PlcProfile)
-        => Parse(text, (SlmpPlcProfile?)PlcProfile);
-
-    internal static SlmpDeviceAddress ParseForHighLevel(string text, SlmpPlcProfile? PlcProfile)
-    {
-        var device = Parse(text, PlcProfile);
-        if (PlcProfile is null && device.Code is SlmpDeviceCode.X or SlmpDeviceCode.Y)
-        {
-            throw new FormatException(
-                "X/Y string addresses require explicit PlcProfile. Use IqF for FX/iQ-F targets, choose an explicit non-iQ-F profile, or pass a numeric SlmpDeviceAddress.");
-        }
-
-        return device;
-    }
-
-    private static SlmpDeviceAddress Parse(string text, SlmpPlcProfile? PlcProfile)
+    public static SlmpDeviceAddress Parse(string text, SlmpPlcProfile plcProfile)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
             throw new ArgumentException("Device text is required.", nameof(text));
         }
 
-        if (PlcProfile is SlmpPlcProfile profile)
-        {
-            _ = SlmpPlcProfiles.Resolve(profile);
-        }
+        plcProfile = SlmpPlcProfiles.ValidateConnectionProfile(plcProfile);
 
         var token = text.Trim().ToUpperInvariant();
         foreach (var (prefix, code, hexAddress) in Prefixes)
@@ -266,10 +267,10 @@ public static class SlmpDeviceParser
             }
 
             var numberPart = token[prefix.Length..];
-            ThrowIfDeviceCodeUnsupportedForProfile(prefix, code, PlcProfile);
-            if (TryParseDeviceNumber(numberPart, code, hexAddress, PlcProfile, out var number))
+            ThrowIfDeviceCodeUnsupportedForProfile(prefix, code, plcProfile);
+            if (TryParseDeviceNumber(numberPart, code, hexAddress, plcProfile, out var number))
             {
-                return new SlmpDeviceAddress(code, number);
+                return new SlmpDeviceAddress(code, number, plcProfile);
             }
 
             throw new FormatException(
@@ -285,12 +286,11 @@ public static class SlmpDeviceParser
     private static void ThrowIfDeviceCodeUnsupportedForProfile(
         string prefix,
         SlmpDeviceCode code,
-        SlmpPlcProfile? PlcProfile)
+        SlmpPlcProfile plcProfile)
     {
-        if (PlcProfile is SlmpPlcProfile profile &&
-            SlmpPlcProfiles.IsDeviceCodeUnsupported(code, profile))
+        if (SlmpPlcProfiles.IsDeviceCodeUnsupported(code, plcProfile))
         {
-            var profileId = SlmpPlcProfiles.ToCanonicalString(profile);
+            var profileId = SlmpPlcProfiles.ToCanonicalString(plcProfile);
             throw new NotSupportedException(
                 $"SLMP device code '{prefix}' is not supported for PlcProfile '{profileId}'.");
         }
@@ -300,11 +300,10 @@ public static class SlmpDeviceParser
         string text,
         SlmpDeviceCode code,
         bool hexAddress,
-        SlmpPlcProfile? PlcProfile,
+        SlmpPlcProfile plcProfile,
         out uint number)
     {
-        if (PlcProfile is SlmpPlcProfile profile &&
-            SlmpPlcProfiles.UsesIqFXyOctal(profile) &&
+        if (SlmpPlcProfiles.UsesIqFXyOctal(plcProfile) &&
             code is SlmpDeviceCode.X or SlmpDeviceCode.Y)
         {
             return TryConvertFromOctal(text, out number);

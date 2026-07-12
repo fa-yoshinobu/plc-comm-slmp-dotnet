@@ -12,9 +12,20 @@ internal static class SlmpPayloads
         SlmpDeviceAddress device,
         Span<byte> output,
         SlmpCompatibilityMode compatibilityMode)
+        => EncodeRawDeviceSpec(new SlmpRawDeviceAddress(device.Code, device.Number), output, compatibilityMode);
+
+    internal static int EncodeRawDeviceSpec(
+        SlmpRawDeviceAddress device,
+        Span<byte> output,
+        SlmpCompatibilityMode compatibilityMode)
     {
         if (compatibilityMode == SlmpCompatibilityMode.Legacy)
         {
+            if (device.Number > 0x00FF_FFFF)
+                throw new ArgumentOutOfRangeException(
+                    nameof(device),
+                    device.Number,
+                    "Legacy device numbers must fit the 24-bit wire field (0..16777215).");
             output[0] = (byte)(device.Number & 0xFF);
             output[1] = (byte)((device.Number >> 8) & 0xFF);
             output[2] = (byte)((device.Number >> 16) & 0xFF);
@@ -27,13 +38,36 @@ internal static class SlmpPayloads
         return 6;
     }
 
-    internal static SlmpExtensionSpec ResolveEffectiveExtension(SlmpQualifiedDeviceAddress device, SlmpExtensionSpec extension)
+    internal static SlmpExtensionSpec ResolveEffectiveExtension(
+        SlmpQualifiedDeviceAddress device,
+        SlmpPlcProfile plcProfile)
     {
-        var result = extension;
-        if (device.ExtensionSpecification is not null && device.ExtensionSpecification.Value != result.ExtensionSpecification)
-            result = result with { ExtensionSpecification = device.ExtensionSpecification.Value };
-        if (device.DirectMemorySpecification is not null && device.DirectMemorySpecification.Value != result.DirectMemorySpecification)
-            result = result with { DirectMemorySpecification = device.DirectMemorySpecification.Value };
+        var result = new SlmpExtensionSpec(
+            device.ExtensionSpecification ?? 0,
+            0,
+            0,
+            0,
+            device.DirectMemorySpecification ?? 0);
+        if (device.DirectMemorySpecification == 0xF9 && device.Modification is not null)
+            throw new ArgumentException("J-qualified link-direct devices do not support Z, LZ, or indirect modification.", nameof(device));
+        result = device.Modification switch
+        {
+            null => result,
+            SlmpDeviceModification.IndexZ index => result with
+            {
+                DeviceModificationIndex = index.Index,
+                DeviceModificationFlags = 0x40,
+            },
+            SlmpDeviceModification.IndexLz index when SlmpPlcProfiles.UsesIqrProtocol(plcProfile) => result with
+            {
+                DeviceModificationIndex = index.Index,
+                DeviceModificationFlags = 0x80,
+            },
+            SlmpDeviceModification.IndexLz => throw new NotSupportedException(
+                $"LZ index modification is not supported for PlcProfile '{SlmpPlcProfiles.ToCanonicalString(plcProfile)}'."),
+            SlmpDeviceModification.Indirect => result with { DeviceModificationFlags = 0x08 },
+            _ => throw new ArgumentOutOfRangeException(nameof(device)),
+        };
 
         switch (device.Device.Code)
         {
@@ -110,9 +144,10 @@ internal static class SlmpPayloads
     }
 
     internal static byte[] BuildExtendedRandomReadPayload(
-        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)> wordDevices,
-        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)> dwordDevices,
-        SlmpCompatibilityMode compatibilityMode
+        IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices,
+        IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices,
+        SlmpCompatibilityMode compatibilityMode,
+        SlmpPlcProfile plcProfile
     )
     {
         var encodedWords = new byte[wordDevices.Count][];
@@ -120,16 +155,16 @@ internal static class SlmpPayloads
         var size = 2;
         for (var i = 0; i < wordDevices.Count; i++)
         {
-            var (device, extension) = wordDevices[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension), compatibilityMode);
+            var device = wordDevices[i];
+            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
             encodedWords[i] = spec;
             size += spec.Length;
         }
 
         for (var i = 0; i < dwordDevices.Count; i++)
         {
-            var (device, extension) = dwordDevices[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension), compatibilityMode);
+            var device = dwordDevices[i];
+            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
             encodedDwords[i] = spec;
             size += spec.Length;
         }
@@ -152,9 +187,10 @@ internal static class SlmpPayloads
     }
 
     internal static byte[] BuildExtendedRandomWordWritePayload(
-        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, ushort Value, SlmpExtensionSpec Extension)> wordEntries,
-        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, uint Value, SlmpExtensionSpec Extension)> dwordEntries,
-        SlmpCompatibilityMode compatibilityMode
+        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, ushort Value)> wordEntries,
+        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, uint Value)> dwordEntries,
+        SlmpCompatibilityMode compatibilityMode,
+        SlmpPlcProfile plcProfile
     )
     {
         var encodedWords = new byte[wordEntries.Count][];
@@ -162,16 +198,16 @@ internal static class SlmpPayloads
         var size = 2 + (wordEntries.Count * 2) + (dwordEntries.Count * 4);
         for (var i = 0; i < wordEntries.Count; i++)
         {
-            var (device, _, extension) = wordEntries[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension), compatibilityMode);
+            var (device, _) = wordEntries[i];
+            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
             encodedWords[i] = spec;
             size += spec.Length;
         }
 
         for (var i = 0; i < dwordEntries.Count; i++)
         {
-            var (device, _, extension) = dwordEntries[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension), compatibilityMode);
+            var (device, _) = dwordEntries[i];
+            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
             encodedDwords[i] = spec;
             size += spec.Length;
         }
@@ -202,8 +238,9 @@ internal static class SlmpPayloads
     }
 
     internal static byte[] BuildExtendedRandomBitWritePayload(
-        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, bool Value, SlmpExtensionSpec Extension)> bitEntries,
-        SlmpCompatibilityMode compatibilityMode
+        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, bool Value)> bitEntries,
+        SlmpCompatibilityMode compatibilityMode,
+        SlmpPlcProfile plcProfile
     )
     {
         var valueSize = compatibilityMode == SlmpCompatibilityMode.Legacy ? 1 : 2;
@@ -211,8 +248,8 @@ internal static class SlmpPayloads
         var size = 1 + (bitEntries.Count * valueSize);
         for (var i = 0; i < bitEntries.Count; i++)
         {
-            var (device, _, extension) = bitEntries[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension), compatibilityMode);
+            var (device, _) = bitEntries[i];
+            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
             encodedSpecs[i] = spec;
             size += spec.Length;
         }
@@ -240,9 +277,10 @@ internal static class SlmpPayloads
     }
 
     internal static byte[] BuildExtendedMonitorRegisterPayload(
-        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)> wordDevices,
-        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)> dwordDevices,
-        SlmpCompatibilityMode compatibilityMode
+        IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices,
+        IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices,
+        SlmpCompatibilityMode compatibilityMode,
+        SlmpPlcProfile plcProfile
     )
     {
         var encodedWords = new byte[wordDevices.Count][];
@@ -250,16 +288,16 @@ internal static class SlmpPayloads
         var size = 2;
         for (var i = 0; i < wordDevices.Count; i++)
         {
-            var (device, extension) = wordDevices[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension), compatibilityMode);
+            var device = wordDevices[i];
+            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
             encodedWords[i] = spec;
             size += spec.Length;
         }
 
         for (var i = 0; i < dwordDevices.Count; i++)
         {
-            var (device, extension) = dwordDevices[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, extension), compatibilityMode);
+            var device = dwordDevices[i];
+            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
             encodedDwords[i] = spec;
             size += spec.Length;
         }
@@ -308,6 +346,13 @@ internal static class SlmpPayloads
 
     internal static byte[] BuildLabelArrayReadPayload(IReadOnlyList<SlmpLabelArrayReadPoint> points, IReadOnlyList<string> abbreviationLabels)
     {
+        ValidateLabelCounts(points, abbreviationLabels);
+        foreach (var point in points)
+        {
+            ValidateAbbreviationReferences(point.Label, abbreviationLabels.Count);
+            if (point.ArrayDataLength == 0)
+                throw new ArgumentOutOfRangeException(nameof(points), "Array label read length must be greater than zero.");
+        }
         var size = 4;
         foreach (var name in abbreviationLabels)
             size += GetEncodedLabelNameSize(name);
@@ -334,6 +379,13 @@ internal static class SlmpPayloads
 
     internal static byte[] BuildLabelArrayWritePayload(IReadOnlyList<SlmpLabelArrayWritePoint> points, IReadOnlyList<string> abbreviationLabels)
     {
+        ValidateLabelCounts(points, abbreviationLabels);
+        foreach (var point in points)
+        {
+            ValidateAbbreviationReferences(point.Label, abbreviationLabels.Count);
+            if (point.ArrayDataLength == 0 || point.Data.Length == 0)
+                throw new ArgumentOutOfRangeException(nameof(points), "Array label write length and data must not be empty.");
+        }
         var size = 4;
         foreach (var name in abbreviationLabels)
             size += GetEncodedLabelNameSize(name);
@@ -362,6 +414,9 @@ internal static class SlmpPayloads
 
     internal static byte[] BuildLabelRandomReadPayload(IReadOnlyList<string> labels, IReadOnlyList<string> abbreviationLabels)
     {
+        ValidateLabelCounts(labels, abbreviationLabels);
+        foreach (var label in labels)
+            ValidateAbbreviationReferences(label, abbreviationLabels.Count);
         var size = 4;
         foreach (var name in abbreviationLabels)
             size += GetEncodedLabelNameSize(name);
@@ -381,6 +436,13 @@ internal static class SlmpPayloads
 
     internal static byte[] BuildLabelRandomWritePayload(IReadOnlyList<SlmpLabelRandomWritePoint> points, IReadOnlyList<string> abbreviationLabels)
     {
+        ValidateLabelCounts(points, abbreviationLabels);
+        foreach (var point in points)
+        {
+            ValidateAbbreviationReferences(point.Label, abbreviationLabels.Count);
+            if (point.Data.Length == 0)
+                throw new ArgumentOutOfRangeException(nameof(points), "Random label write data must not be empty.");
+        }
         var size = 4;
         foreach (var name in abbreviationLabels)
             size += GetEncodedLabelNameSize(name);
@@ -442,19 +504,57 @@ internal static class SlmpPayloads
 
     private static int GetEncodedLabelNameSize(string label)
     {
-        if (string.IsNullOrEmpty(label))
+        if (string.IsNullOrWhiteSpace(label))
             throw new ArgumentException("Label name must not be empty.", nameof(label));
-        return 2 + Encoding.Unicode.GetByteCount(label);
+        var byteCount = Encoding.Unicode.GetByteCount(label);
+        if (byteCount / 2 > ushort.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(label), "Label name is too long.");
+        return 2 + byteCount;
     }
 
     private static int WriteLabelName(Span<byte> buffer, string label)
     {
-        if (string.IsNullOrEmpty(label))
+        if (string.IsNullOrWhiteSpace(label))
             throw new ArgumentException("Label name must not be empty.", nameof(label));
         var byteCount = Encoding.Unicode.GetByteCount(label);
         BinaryPrimitives.WriteUInt16LittleEndian(buffer[..2], checked((ushort)(byteCount / 2)));
         _ = Encoding.Unicode.GetBytes(label.AsSpan(), buffer.Slice(2, byteCount));
         return 2 + byteCount;
+    }
+
+    private static void ValidateLabelCounts<T>(IReadOnlyList<T> points, IReadOnlyList<string> abbreviationLabels)
+    {
+        ArgumentNullException.ThrowIfNull(points);
+        ArgumentNullException.ThrowIfNull(abbreviationLabels);
+        if (points.Count is < 1 or > ushort.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(points), "Label point count must be in the range 1..65535.");
+        if (abbreviationLabels.Count > ushort.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(abbreviationLabels), "Abbreviation label count must be at most 65535.");
+        foreach (var label in abbreviationLabels)
+            _ = GetEncodedLabelNameSize(label);
+    }
+
+    private static void ValidateAbbreviationReferences(string label, int abbreviationCount)
+    {
+        _ = GetEncodedLabelNameSize(label);
+        for (var index = 0; index < label.Length; index++)
+        {
+            if (label[index] != '%')
+                continue;
+            var digitStart = index + 1;
+            var digitEnd = digitStart;
+            while (digitEnd < label.Length && char.IsAsciiDigit(label[digitEnd]))
+                digitEnd++;
+            if (digitEnd == digitStart ||
+                !int.TryParse(label.AsSpan(digitStart, digitEnd - digitStart), out var reference) ||
+                reference < 1 || reference > abbreviationCount)
+            {
+                throw new ArgumentException(
+                    $"Label '{label}' contains an invalid abbreviation reference; use %1 through %{abbreviationCount}.",
+                    nameof(label));
+            }
+            index = digitEnd - 1;
+        }
     }
 
     private static byte[] EncodeLinkDirectDeviceSpec(SlmpDeviceAddress device, SlmpExtensionSpec extension)

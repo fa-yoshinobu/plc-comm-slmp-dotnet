@@ -420,7 +420,7 @@ internal static class SlmpDeviceRangeResolver
         }
 
         var values = await client.ReadWordsRawAsync(
-            new SlmpDeviceAddress(SlmpDeviceCode.SD, checked((uint)profile.RegisterStart)),
+            new SlmpDeviceAddress(SlmpDeviceCode.SD, checked((uint)profile.RegisterStart), client.PlcProfile),
             checked((ushort)profile.RegisterCount),
             cancellationToken).ConfigureAwait(false);
 

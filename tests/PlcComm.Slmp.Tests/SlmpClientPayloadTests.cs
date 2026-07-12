@@ -5,36 +5,31 @@ namespace PlcComm.Slmp.Tests;
 public sealed class SlmpClientPayloadTests
 {
     private static SlmpQualifiedDeviceAddress Qualified(SlmpDeviceCode code, uint number)
-        => new(new SlmpDeviceAddress(code, number), null);
+        => new(new SlmpDeviceAddress(code, number, SlmpPlcProfile.IqR), null);
 
-    private static SlmpExtensionSpec Extension(
+    private static SlmpQualifiedDeviceAddress Extended(
+        SlmpDeviceCode code,
+        uint number,
         ushort extensionSpecification,
-        byte extensionSpecificationModification = 0x00,
-        byte deviceModificationIndex = 0x00,
-        byte deviceModificationFlags = 0x00,
-        byte directMemorySpecification = 0x00)
+        byte? directMemorySpecification = null,
+        SlmpDeviceModification? modification = null)
         => new(
+            new SlmpDeviceAddress(code, number, SlmpPlcProfile.IqR),
             extensionSpecification,
-            extensionSpecificationModification,
-            deviceModificationIndex,
-            deviceModificationFlags,
-            directMemorySpecification);
+            directMemorySpecification,
+            modification);
 
     [Fact]
     public void BuildExtendedRandomReadPayload_UsesExactAssembly()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
-        var word = (
-            new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), null),
-            new SlmpExtensionSpec(ExtensionSpecification: 0x0001));
-        var dword = (
-            new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, 200), null),
-            new SlmpExtensionSpec(ExtensionSpecification: 0x0002));
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var word = Extended(SlmpDeviceCode.D, 100, 0x0001);
+        var dword = Extended(SlmpDeviceCode.D, 200, 0x0002);
 
         var payload = client.BuildExtendedRandomReadPayload([word], [dword]);
 
-        var expectedWord = client.EncodeExtendedDeviceSpec(word.Item1.Device, word.Item2);
-        var expectedDword = client.EncodeExtendedDeviceSpec(dword.Item1.Device, dword.Item2);
+        var expectedWord = client.EncodeExtendedDeviceSpec(word.Device, SlmpPayloads.ResolveEffectiveExtension(word, SlmpPlcProfile.IqR));
+        var expectedDword = client.EncodeExtendedDeviceSpec(dword.Device, SlmpPayloads.ResolveEffectiveExtension(dword, SlmpPlcProfile.IqR));
         var expected = new byte[2 + expectedWord.Length + expectedDword.Length];
         expected[0] = 0x01;
         expected[1] = 0x01;
@@ -47,29 +42,47 @@ public sealed class SlmpClientPayloadTests
     [Fact]
     public void EncodeExtendedDeviceSpec_RegularDevice_UsesManualExtendedLayout()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100);
-        var device = new SlmpDeviceAddress(SlmpDeviceCode.D, 100);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var device = new SlmpDeviceAddress(SlmpDeviceCode.D, 100, SlmpPlcProfile.IqR);
 
         Assert.Equal(
             Convert.FromHexString("0000640000A80000000000"),
-            client.EncodeExtendedDeviceSpec(device, new SlmpExtensionSpec()));
+            client.EncodeExtendedDeviceSpec(device, new SlmpExtensionSpec(0, 0, 0, 0, 0)));
         Assert.Equal(
             Convert.FromHexString("0440640000A80000000000"),
             client.EncodeExtendedDeviceSpec(
                 device,
-                new SlmpExtensionSpec(DeviceModificationIndex: 0x04, DeviceModificationFlags: 0x40)));
+                new SlmpExtensionSpec(0, 0, 0x04, 0x40, 0)));
+    }
+
+    [Fact]
+    public void LegacyDeviceSpec_RejectsNumberOutside24BitField()
+    {
+        var output = new byte[4];
+        var device = new SlmpRawDeviceAddress(SlmpDeviceCode.D, 0x0100_0000);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            SlmpPayloads.EncodeRawDeviceSpec(device, output, SlmpCompatibilityMode.Legacy));
+    }
+
+    [Fact]
+    public void LzModification_RejectsIndexesAboveOne()
+    {
+        Assert.Equal((byte)1, new SlmpDeviceModification.IndexLz(1).Index);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SlmpDeviceModification.IndexLz(2));
     }
 
     [Fact]
     public void BuildExtendedRandomReadPayload_UsesManualLayoutForRegularAndQualifiedBufferMemory()
     {
         var payload = SlmpPayloads.BuildExtendedRandomReadPayload(
-            [(Qualified(SlmpDeviceCode.D, 100), Extension(0x0102, 0x03, 0x04, 0x05, 0x06))],
-            [(SlmpQualifiedDeviceParser.Parse("U01\\G10"), Extension(0x9999, 0x07, 0x08, 0x09))],
-            SlmpCompatibilityMode.Iqr);
+            [Extended(SlmpDeviceCode.D, 100, 0x0102, 0x06, new SlmpDeviceModification.IndexZ(0x04))],
+            [SlmpQualifiedDeviceParser.Parse("U01\\G10", SlmpPlcProfile.IqR)],
+            SlmpCompatibilityMode.Iqr,
+            SlmpPlcProfile.IqR);
 
         Assert.Equal(
-            Convert.FromHexString("0101040564000000A800030002010608090A000000AB0007000100F8"),
+            Convert.FromHexString("0101044064000000A800000002010600000A000000AB0000000100F8"),
             payload);
     }
 
@@ -77,9 +90,10 @@ public sealed class SlmpClientPayloadTests
     public void BuildExtendedRandomWordWritePayload_UsesManualLayout()
     {
         var payload = SlmpPayloads.BuildExtendedRandomWordWritePayload(
-            [(Qualified(SlmpDeviceCode.D, 10), (ushort)0x1234, Extension(0x0001))],
-            [(Qualified(SlmpDeviceCode.W, 0x20), 0x89ABCDEFu, Extension(0x0002))],
-            SlmpCompatibilityMode.Iqr);
+            [(Extended(SlmpDeviceCode.D, 10, 0x0001), (ushort)0x1234)],
+            [(Extended(SlmpDeviceCode.W, 0x20, 0x0002), 0x89ABCDEFu)],
+            SlmpCompatibilityMode.Iqr,
+            SlmpPlcProfile.IqR);
 
         Assert.Equal(
             Convert.FromHexString("010100000A000000A80000000100003412000020000000B4000000020000EFCDAB89"),
@@ -89,27 +103,28 @@ public sealed class SlmpClientPayloadTests
     [Fact]
     public void BuildExtendedRandomBitWritePayload_UsesCompatibilitySpecificValueWidth()
     {
-        (SlmpQualifiedDeviceAddress Device, bool Value, SlmpExtensionSpec Extension)[] entries =
+        (SlmpQualifiedDeviceAddress Device, bool Value)[] entries =
         [
-            (Qualified(SlmpDeviceCode.M, 7), true, Extension(0x0003)),
-            (Qualified(SlmpDeviceCode.M, 8), false, Extension(0x0004)),
+            (Extended(SlmpDeviceCode.M, 7, 0x0003), true),
+            (Extended(SlmpDeviceCode.M, 8, 0x0004), false),
         ];
 
         Assert.Equal(
             Convert.FromHexString("02000007000000900000000300000100000008000000900000000400000000"),
-            SlmpPayloads.BuildExtendedRandomBitWritePayload(entries, SlmpCompatibilityMode.Iqr));
+            SlmpPayloads.BuildExtendedRandomBitWritePayload(entries, SlmpCompatibilityMode.Iqr, SlmpPlcProfile.IqR));
         Assert.Equal(
             Convert.FromHexString("02000007000090000003000001000008000090000004000000"),
-            SlmpPayloads.BuildExtendedRandomBitWritePayload(entries, SlmpCompatibilityMode.Legacy));
+            SlmpPayloads.BuildExtendedRandomBitWritePayload(entries, SlmpCompatibilityMode.Legacy, SlmpPlcProfile.IqR));
     }
 
     [Fact]
     public void BuildExtendedMonitorRegisterPayload_MatchesCurrentEncodingForLinkDirect()
     {
         var payload = SlmpPayloads.BuildExtendedMonitorRegisterPayload(
-            [(SlmpQualifiedDeviceParser.Parse("J2\\SW10"), Extension(0xFFFF))],
-            [(Qualified(SlmpDeviceCode.D, 200), Extension(0x0005))],
-            SlmpCompatibilityMode.Iqr);
+            [SlmpQualifiedDeviceParser.Parse("J2\\SW10", SlmpPlcProfile.IqR)],
+            [Extended(SlmpDeviceCode.D, 200, 0x0005)],
+            SlmpCompatibilityMode.Iqr,
+            SlmpPlcProfile.IqR);
 
         Assert.Equal(
             Convert.FromHexString("01010000100000B500000200F90000C8000000A8000000050000"),
@@ -119,12 +134,14 @@ public sealed class SlmpClientPayloadTests
     [Fact]
     public async Task SelfTestLoopbackAsync_RejectsManualInvalidPayloadsBeforeTransport()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         await Assert.ThrowsAsync<ArgumentException>(
             () => client.SelfTestLoopbackAsync(new byte[] { (byte)'H', (byte)'E', (byte)'L', (byte)'L', (byte)'O' }));
         await Assert.ThrowsAsync<ArgumentException>(
             () => client.SelfTestLoopbackAsync(new byte[] { 0x00, 0xFF }));
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => client.SelfTestLoopbackAsync("ab12"u8.ToArray()));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.SelfTestLoopbackAsync(Array.Empty<byte>()));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(

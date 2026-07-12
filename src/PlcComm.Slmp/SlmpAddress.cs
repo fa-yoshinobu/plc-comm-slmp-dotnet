@@ -12,38 +12,15 @@ namespace PlcComm.Slmp;
 /// </remarks>
 public static class SlmpAddress
 {
-    /// <summary>Parses one SLMP device string.</summary>
-    /// <param name="text">Device text such as <c>D100</c>, <c>X1A</c>, or <c>ZR200</c>.</param>
-    /// <returns>The parsed device address.</returns>
-    public static SlmpDeviceAddress Parse(string text) => SlmpDeviceParser.Parse(text);
-
     /// <summary>Parses one SLMP device string using the explicit PLC profile.</summary>
-    public static SlmpDeviceAddress Parse(string text, SlmpPlcProfile PlcProfile) => SlmpDeviceParser.Parse(text, PlcProfile);
-
-    /// <summary>Attempts to parse one SLMP device string.</summary>
-    /// <param name="text">Device text to parse.</param>
-    /// <param name="address">When this method returns <see langword="true"/>, receives the parsed address.</param>
-    /// <returns><see langword="true"/> when parsing succeeds; otherwise <see langword="false"/>.</returns>
-    public static bool TryParse(string text, out SlmpDeviceAddress address)
-    {
-        try
-        {
-            address = Parse(text);
-            return true;
-        }
-        catch (Exception ex) when (ex is FormatException or ArgumentException or NotSupportedException)
-        {
-            address = default;
-            return false;
-        }
-    }
+    public static SlmpDeviceAddress Parse(string text, SlmpPlcProfile plcProfile) => SlmpDeviceParser.Parse(text, plcProfile);
 
     /// <summary>Attempts to parse one SLMP device string using the explicit PLC profile.</summary>
-    public static bool TryParse(string text, SlmpPlcProfile PlcProfile, out SlmpDeviceAddress address)
+    public static bool TryParse(string text, SlmpPlcProfile plcProfile, out SlmpDeviceAddress address)
     {
         try
         {
-            address = Parse(text, PlcProfile);
+            address = Parse(text, plcProfile);
             return true;
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException or NotSupportedException)
@@ -62,29 +39,16 @@ public static class SlmpAddress
     /// </remarks>
     public static string Format(SlmpDeviceAddress address)
     {
-        string number = FormatNumber(address, null);
+        string number = FormatNumber(address, address.PlcProfile);
         return $"{address.Code}{number}";
     }
 
-    /// <summary>Formats one parsed device address using the explicit PLC profile.</summary>
-    public static string Format(SlmpDeviceAddress address, SlmpPlcProfile PlcProfile)
-    {
-        _ = SlmpPlcProfiles.Resolve(PlcProfile);
-        ThrowIfDeviceCodeUnsupportedForProfile(address.Code, PlcProfile);
-        return $"{address.Code}{FormatNumber(address, PlcProfile)}";
-    }
-
-    /// <summary>Normalizes one SLMP device string to canonical text.</summary>
-    /// <param name="text">Input device text in any supported spelling.</param>
-    /// <returns>The canonical uppercase representation returned by <see cref="Format(SlmpDeviceAddress)"/>.</returns>
-    public static string Normalize(string text) => Format(Parse(text));
-
     /// <summary>Normalizes one SLMP device string using the explicit PLC profile.</summary>
-    public static string Normalize(string text, SlmpPlcProfile PlcProfile) => Format(Parse(text, PlcProfile), PlcProfile);
+    public static string Normalize(string text, SlmpPlcProfile plcProfile) => Format(Parse(text, plcProfile));
 
-    private static string FormatNumber(SlmpDeviceAddress address, SlmpPlcProfile? PlcProfile)
+    private static string FormatNumber(SlmpDeviceAddress address, SlmpPlcProfile plcProfile)
     {
-        if (PlcProfile is SlmpPlcProfile profile && SlmpPlcProfiles.UsesIqFXyOctal(profile) &&
+        if (SlmpPlcProfiles.UsesIqFXyOctal(plcProfile) &&
             address.Code is SlmpDeviceCode.X or SlmpDeviceCode.Y)
         {
             return Convert.ToString(address.Number, 8)!.ToUpperInvariant();

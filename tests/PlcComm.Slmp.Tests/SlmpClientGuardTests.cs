@@ -10,29 +10,20 @@ public sealed class SlmpClientGuardTests
     private static readonly bool[] SingleTrue = [true];
 
     [Fact]
-    public async Task RemoteResetAsync_RejectsNonZeroSubcommand()
-    {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
-        var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => client.RemoteResetAsync(0x0001));
-        Assert.Contains("remote reset subcommand must be 0x0000", ex.Message);
-    }
-
-    [Fact]
     public async Task ReadWordsRawAsync_RejectsNonBlockLongTimerCurrentReads()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.LTN, 0), 2));
+            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.LTN, 0, SlmpPlcProfile.IqR), 2));
         Assert.Contains("requires 4-word blocks", ex.Message);
     }
 
     [Fact]
     public async Task ReadWordsRawAsync_RejectsDirectLongCounterCurrentReads()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 0), 4));
+            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 0, SlmpPlcProfile.IqR), 4));
         Assert.Contains("Direct word read is not supported for LCN", ex.Message);
     }
 
@@ -42,18 +33,18 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.LZ)]
     public async Task ReadDWordsRawAsync_RejectsDirectLongCurrentAndLzReads(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.ReadDWordsRawAsync(new SlmpDeviceAddress(code, 0), 1));
+            () => client.ReadDWordsRawAsync(new SlmpDeviceAddress(code, 0, SlmpPlcProfile.IqR), 1));
         Assert.Contains($"Direct DWord read is not supported for {code}", ex.Message);
     }
 
     [Fact]
     public async Task ReadWordsRawAsync_RejectsDirectLzWordReads()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0), 1));
+            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0, SlmpPlcProfile.IqR), 1));
         Assert.Contains("Direct word read is not supported for LZ", ex.Message);
     }
 
@@ -62,9 +53,9 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.HG)]
     public async Task ReadWordsRawAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(code, 10), 1));
+            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), 1));
         Assert.Contains($"{code} cannot be accessed as a standalone device", ex.Message);
     }
 
@@ -73,36 +64,36 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.HG)]
     public async Task ReadDWordsRawAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.ReadDWordsRawAsync(new SlmpDeviceAddress(code, 10), 1));
+            () => client.ReadDWordsRawAsync(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), 1));
         Assert.Contains($"{code} cannot be accessed as a standalone device", ex.Message);
     }
 
     [Fact]
     public async Task WriteWordsAsync_RejectsLongCurrentValueDevices()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LTN, 0), new ushort[] { 1 }));
+            () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LTN, 0, SlmpPlcProfile.IqR), new ushort[] { 1 }));
         Assert.Contains("Direct word write is not supported for LTN", ex.Message);
     }
 
     [Fact]
     public async Task WriteDWordsAsync_RejectsDirectLongCurrentWrites()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.WriteDWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 0), new uint[] { 1 }));
+            () => client.WriteDWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 0, SlmpPlcProfile.IqR), new uint[] { 1 }));
         Assert.Contains("Direct DWord write is not supported for LCN", ex.Message);
     }
 
     [Fact]
     public async Task WriteWordsAsync_RejectsLzWordWrites()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0), new ushort[] { 1 }));
+            () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0, SlmpPlcProfile.IqR), new ushort[] { 1 }));
         Assert.Contains("Direct word write is not supported for LZ", ex.Message);
     }
 
@@ -111,14 +102,14 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.HG)]
     public async Task DirectWrites_RejectStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         var wordEx = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.WriteWordsAsync(new SlmpDeviceAddress(code, 10), new ushort[] { 1 }));
+            () => client.WriteWordsAsync(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), new ushort[] { 1 }));
         Assert.Contains($"{code} cannot be accessed as a standalone device", wordEx.Message);
 
         var dwordEx = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.WriteDWordsAsync(new SlmpDeviceAddress(code, 10), new uint[] { 1 }));
+            () => client.WriteDWordsAsync(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), new uint[] { 1 }));
         Assert.Contains($"{code} cannot be accessed as a standalone device", dwordEx.Message);
     }
 
@@ -131,9 +122,9 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.LCC)]
     public async Task ReadBitsAsync_RejectsDirectLongFamilyStateReads(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.ReadBitsAsync(new SlmpDeviceAddress(code, 10), 1));
+            () => client.ReadBitsAsync(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), 1));
         Assert.Contains($"Direct bit read is not supported for {code}", ex.Message);
     }
 
@@ -145,12 +136,12 @@ public sealed class SlmpClientGuardTests
         await using var server = new MultiShotSlmpServer([(0, new byte[] { 0x10 })]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
             MonitoringTimer = 0x0010,
         };
 
-        var value = await client.ReadTypedAsync(new SlmpDeviceAddress(code, 10), "BIT");
+        var value = await client.ReadTypedAsync(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), "BIT");
 
         Assert.True(Assert.IsType<bool>(value));
         var request = Assert.Single(server.RequestFrames);
@@ -165,9 +156,9 @@ public sealed class SlmpClientGuardTests
             matchingResponseData: BuildWordPayload(0x2222));
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
-        var words = await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), 1);
+        var words = await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR), 1);
 
         Assert.Equal(new ushort[] { 0x2222 }, words);
         Assert.Single(server.RequestFrames);
@@ -179,13 +170,17 @@ public sealed class SlmpClientGuardTests
         await using var server = new MultiShotSlmpServer([(0, BuildWordPayload(0x1234))]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            new SlmpTargetAddress(0x00, 0xFF, SlmpModuleIo.MultipleCpu2, 0x00))
         {
-            TargetAddress = new SlmpTargetAddress(ModuleIo: SlmpModuleIo.MultipleCpu2),
             MonitoringTimer = 0x0010,
         };
 
-        var words = await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), 1);
+        var words = await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR), 1);
 
         Assert.Equal(new ushort[] { 0x1234 }, words);
         var request = Assert.Single(server.RequestFrames);
@@ -197,63 +192,63 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.LCC)]
     public async Task WriteBitsAsync_RejectsDirectLongFamilyStateWrites(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.WriteBitsAsync(new SlmpDeviceAddress(code, 10), SingleTrue));
+            () => client.WriteBitsAsync(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), SingleTrue));
         Assert.Contains($"Direct bit write is not supported for {code}", ex.Message);
     }
 
     [Fact]
     public async Task WriteBitsAsync_RejectsStepRelayWrites()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), SingleTrue));
+            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 10, SlmpPlcProfile.IqR), SingleTrue));
         Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
     [Fact]
     public async Task WriteWordsAsync_RejectsStepRelayWrites()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), new ushort[] { 1 }));
+            () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 10, SlmpPlcProfile.IqR), new ushort[] { 1 }));
         Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
     [Fact]
     public async Task DirectAccess_RejectsManualPointLimitOverruns()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), 961));
+            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR), 961));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), new ushort[961]));
+            () => client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR), new ushort[961]));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), 7169));
+            () => client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0, SlmpPlcProfile.IqR), 7169));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), new bool[7169]));
+            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0, SlmpPlcProfile.IqR), new bool[7169]));
     }
 
     [Fact]
     public async Task DirectAccess_IqFRejectsFxBitPointLimitOverruns()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         var readError = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), 3585));
+            () => client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0, SlmpPlcProfile.IqR), 3585));
         var writeError = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0), new bool[3585]));
+            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.M, 0, SlmpPlcProfile.IqR), new bool[3585]));
 
         Assert.Contains("1..3584", readError.Message);
         Assert.Contains("1..3584", writeError.Message);
     }
 
     [Fact]
-    public async Task ReadTypeNameAsync_QnUDVStrictProfileRejectsBeforeTransport()
+    public async Task ReadTypeNameAsync_QnUDVProfileRejectsBeforeTransport()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnUDV);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnUDV, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
             () => client.ReadTypeNameAsync());
@@ -262,17 +257,17 @@ public sealed class SlmpClientGuardTests
         Assert.Equal("type_name", ex.FeatureKey);
         Assert.Equal("blocked", ex.State);
         Assert.Contains("C059", ex.Message);
-        Assert.Contains("StrictProfile=false", ex.Message);
+        Assert.DoesNotContain("StrictProfile", ex.Message);
     }
 
     [Fact]
-    public async Task ReadBlockAsync_QnUDVStrictProfileRejectsBeforeTransport()
+    public async Task ReadBlockAsync_QnUDVProfileRejectsBeforeTransport()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnUDV);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnUDV, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
             () => client.ReadBlockAsync(
-                [new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 1)],
+                [new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 100, SlmpPlcProfile.IqR), 1)],
                 []));
 
         Assert.Equal("block", ex.FeatureKey);
@@ -281,37 +276,13 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
-    public async Task ReadBlockAsync_QnUDVStrictProfileFalseSendsRequest()
+    public async Task RegisterMonitorDevicesAsync_IqFProfileRejectsBlockedMonitor()
     {
-        await using var server = new MultiShotSlmpServer([(0, new byte[] { 0x34, 0x12 })]);
-        await server.StartAsync();
-
-        using var client = new SlmpClient(
-            "127.0.0.1",
-            SlmpPlcProfile.QnUDV,
-            server.Port,
-            SlmpTransportMode.Tcp,
-            strictProfile: false);
-        await client.OpenAsync();
-
-        var result = await client.ReadBlockAsync(
-            [new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 1)],
-            []);
-
-        Assert.Equal(new ushort[] { 0x1234 }, result.WordValues);
-        var request = Assert.Single(server.RequestFrames);
-        Assert.Equal(0x50, request[0]);
-        Assert.Equal(0x00, request[1]);
-    }
-
-    [Fact]
-    public async Task RegisterMonitorDevicesAsync_IqFStrictProfileRejectsBlockedMonitor()
-    {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
             () => client.RegisterMonitorDevicesAsync(
-                [new SlmpDeviceAddress(SlmpDeviceCode.D, 0)],
+                [new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR)],
                 []));
 
         Assert.Equal("monitor", ex.FeatureKey);
@@ -319,26 +290,26 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
-    public async Task ReadWordsExtendedAsync_IqFStrictProfileRejectsBlockedLinkDirect()
+    public async Task ReadWordsExtendedAsync_IqFProfileRejectsBlockedLinkDirect()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF);
-        var device = SlmpQualifiedDeviceParser.Parse(@"J2\SW10");
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var device = SlmpQualifiedDeviceParser.Parse(@"J2\SW10", SlmpPlcProfile.IqF);
 
         var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
-            () => client.ReadWordsExtendedAsync(device, 1, new SlmpExtensionSpec()));
+            () => client.ReadWordsExtendedAsync(device, 1));
 
         Assert.Equal("ext_link_direct", ex.FeatureKey);
         Assert.Equal("blocked", ex.State);
     }
 
     [Fact]
-    public async Task ReadWordsExtendedAsync_IqLStrictProfileRejectsCpuBufferHg()
+    public async Task ReadWordsExtendedAsync_IqLProfileRejectsCpuBufferHg()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqL);
-        var device = SlmpQualifiedDeviceParser.Parse(@"U3E0\HG20");
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqL, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var device = SlmpQualifiedDeviceParser.Parse(@"U3E0\HG20", SlmpPlcProfile.IqL);
 
         var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
-            () => client.ReadWordsExtendedAsync(device, 1, new SlmpExtensionSpec()));
+            () => client.ReadWordsExtendedAsync(device, 1));
 
         Assert.Equal("hg_cpu_buffer", ex.FeatureKey);
         Assert.Equal("blocked", ex.State);
@@ -350,13 +321,12 @@ public sealed class SlmpClientGuardTests
         await using var server = new MultiShotSlmpServer([(0, new byte[] { 0x78, 0x56 })]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF, server.Port);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         await client.OpenAsync();
 
         var values = await client.ReadWordsExtendedAsync(
-            SlmpQualifiedDeviceParser.Parse(@"U1\G0"),
-            1,
-            new SlmpExtensionSpec());
+            SlmpQualifiedDeviceParser.Parse(@"U1\G0", SlmpPlcProfile.IqF),
+            1);
 
         Assert.Equal(new ushort[] { 0x5678 }, values);
         Assert.Single(server.RequestFrames);
@@ -365,10 +335,10 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task WriteBitsAsync_IqRRejectsStepRelayByWritePolicy()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, strictProfile: false);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 0), SingleTrue));
+            () => client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 0, SlmpPlcProfile.IqR), SingleTrue));
 
         Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
@@ -379,12 +349,12 @@ public sealed class SlmpClientGuardTests
         await using var server = new MultiShotSlmpServer([(0, Array.Empty<byte>())]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
             MonitoringTimer = 0x0010,
         };
 
-        await client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 0), SingleTrue);
+        await client.WriteBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.S, 0, SlmpPlcProfile.IqF), SingleTrue);
 
         Assert.Single(server.RequestFrames);
     }
@@ -398,15 +368,15 @@ public sealed class SlmpClientGuardTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
             MonitoringTimer = 0x0010,
         };
 
-        var values = await client.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 999_999), 1);
+        var values = await client.ReadWordsSingleRequestAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 999_999, SlmpPlcProfile.IqR), 1);
         Assert.Equal(new ushort[] { 0x1234 }, values);
 
-        await client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 999_999), [0x5678]);
+        await client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 999_999, SlmpPlcProfile.IqR), [0x5678]);
         Assert.Equal(2, server.RequestFrames.Count);
     }
 
@@ -415,36 +385,33 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.LCS)]
     public async Task WriteBitsExtendedAsync_RejectsDirectLongFamilyStateWrites(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteBitsExtendedAsync(
-                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(code, 10), null),
-                SingleTrue,
-                new SlmpExtensionSpec()));
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), null),
+                SingleTrue));
         Assert.Contains($"Direct bit write is not supported for {code}", ex.Message);
     }
 
     [Fact]
     public async Task WriteBitsExtendedAsync_RejectsStepRelayWrites()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteBitsExtendedAsync(
-                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), null),
-                SingleTrue,
-                new SlmpExtensionSpec()));
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.S, 10, SlmpPlcProfile.IqR), null),
+                SingleTrue));
         Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
     [Fact]
     public async Task ReadWordsExtendedAsync_RejectsDirectLongCounterCurrentReads()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadWordsExtendedAsync(
-                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 10), null),
-                4,
-                new SlmpExtensionSpec()));
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 10, SlmpPlcProfile.IqR), null),
+                4));
         Assert.Contains("Direct word read is not supported for LCN", ex.Message);
     }
 
@@ -453,32 +420,29 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.LZ)]
     public async Task WriteWordsExtendedAsync_RejectsLongCurrentAndLzDevices(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteWordsExtendedAsync(
-                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(code, 10), null),
-                new ushort[] { 1 },
-                new SlmpExtensionSpec()));
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), null),
+                new ushort[] { 1 }));
         Assert.Contains($"Direct word write is not supported for {code}", ex.Message);
     }
 
     [Fact]
     public async Task ReadWordsExtendedAsync_RejectsUnqualifiedGAndHg()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         var g = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadWordsExtendedAsync(
-                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.G, 0), null),
-                1,
-                new SlmpExtensionSpec()));
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.G, 0, SlmpPlcProfile.IqR), null),
+                1));
         Assert.Contains("G Extended Device access requires U-qualified", g.Message);
 
         var hg = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadWordsExtendedAsync(
-                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.HG, 0), null),
-                1,
-                new SlmpExtensionSpec()));
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.HG, 0, SlmpPlcProfile.IqR), null),
+                1));
         Assert.Contains("HG Extended Device access requires U-qualified", hg.Message);
     }
 
@@ -491,16 +455,14 @@ public sealed class SlmpClientGuardTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         var g = await client.ReadWordsExtendedAsync(
-            SlmpQualifiedDeviceParser.Parse(@"U4\G10"),
-            1,
-            new SlmpExtensionSpec());
+            SlmpQualifiedDeviceParser.Parse(@"U4\G10", SlmpPlcProfile.IqR),
+            1);
         var hg = await client.ReadWordsExtendedAsync(
-            SlmpQualifiedDeviceParser.Parse(@"U3E0\HG0"),
-            1,
-            new SlmpExtensionSpec());
+            SlmpQualifiedDeviceParser.Parse(@"U3E0\HG0", SlmpPlcProfile.IqR),
+            1);
 
         Assert.Equal(new ushort[] { 0x1A0A }, g);
         Assert.Equal(new ushort[] { 0x1234 }, hg);
@@ -510,10 +472,10 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task ReadRandomAsync_RejectsLongCounterContacts()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadRandomAsync(
-                new[] { new SlmpDeviceAddress(SlmpDeviceCode.LCS, 10) },
+                new[] { new SlmpDeviceAddress(SlmpDeviceCode.LCS, 10, SlmpPlcProfile.IqR) },
                 Array.Empty<SlmpDeviceAddress>()));
         Assert.Contains("Read Random (0x0403) does not support LCS/LCC", ex.Message);
     }
@@ -521,10 +483,10 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task ReadRandomAsync_RejectsLongTimerStateDevices()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadRandomAsync(
-                new[] { new SlmpDeviceAddress(SlmpDeviceCode.LTC, 10) },
+                new[] { new SlmpDeviceAddress(SlmpDeviceCode.LTC, 10, SlmpPlcProfile.IqR) },
                 Array.Empty<SlmpDeviceAddress>()));
         Assert.Contains("Read Random (0x0403) does not support LTS/LTC/LSTS/LSTC", ex.Message);
     }
@@ -534,10 +496,10 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.LZ)]
     public async Task ReadRandomAsync_RejectsLongCurrentAndLzWordEntries(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadRandomAsync(
-                new[] { new SlmpDeviceAddress(code, 10) },
+                new[] { new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR) },
                 Array.Empty<SlmpDeviceAddress>()));
         Assert.Contains("does not support LTN/LSTN/LCN/LZ as word entries", ex.Message);
     }
@@ -547,10 +509,10 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.HG)]
     public async Task ReadRandomAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadRandomAsync(
-                new[] { new SlmpDeviceAddress(code, 10) },
+                new[] { new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR) },
                 Array.Empty<SlmpDeviceAddress>()));
         Assert.Contains("does not support standalone G/HG", ex.Message);
     }
@@ -558,21 +520,21 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task WriteRandomWordsAsync_IqLRejectsWeightedLimitOverrun()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqL);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqL, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var words = Enumerable.Range(0, 40)
-            .Select(index => (new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8100 + index)), (ushort)0))
+            .Select(index => (new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8100 + index), SlmpPlcProfile.IqR), (ushort)0))
             .ToArray();
         var dwords = Enumerable.Range(0, 40)
-            .Select(index => (new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8200 + (index * 2))), (uint)0))
+            .Select(index => (new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8200 + (index * 2)), SlmpPlcProfile.IqR), (uint)0))
             .ToArray();
 
         var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.WriteRandomWordsAsync(words, dwords));
         Assert.Contains("limit=960", ex.Message);
 
-        using var iqf = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF);
+        using var iqf = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqF, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var iqfDwords = Enumerable.Range(0, 138)
-            .Select(index => (new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(9000 + (index * 2))), (uint)0))
+            .Select(index => (new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(9000 + (index * 2)), SlmpPlcProfile.IqR), (uint)0))
             .ToArray();
 
         ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
@@ -585,56 +547,54 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task ReadRandomExtAsync_RejectsLongCurrentWordEntries()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadRandomExtAsync(
-                new[] { (new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 10), null), new SlmpExtensionSpec()) },
-                Array.Empty<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)>()));
+                [new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 10, SlmpPlcProfile.IqR), null)],
+                Array.Empty<SlmpQualifiedDeviceAddress>()));
         Assert.Contains("does not support LTN/LSTN/LCN/LZ as word entries", ex.Message);
     }
 
     [Fact]
     public async Task ReadRandomExtAsync_RejectsLongCounterContacts()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadRandomExtAsync(
-                Array.Empty<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)>(),
-                new[] { (new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.LCS, 10), null), new SlmpExtensionSpec()) }));
+                Array.Empty<SlmpQualifiedDeviceAddress>(),
+                [new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.LCS, 10, SlmpPlcProfile.IqR), null)]));
         Assert.Contains("Read Random (0x0403) does not support LCS/LCC", ex.Message);
     }
 
     [Fact]
     public async Task ReadRandomExtAsync_UsesProfileExtendedPointLimit()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var devices = Enumerable.Range(0, 193)
-            .Select(index => (
-                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index), null),
-                new SlmpExtensionSpec()))
+            .Select(index => new SlmpQualifiedDeviceAddress(
+                new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index, SlmpPlcProfile.IqR), null))
             .ToArray();
 
         var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.ReadRandomExtAsync(
                 devices,
-                Array.Empty<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)>()));
+                Array.Empty<SlmpQualifiedDeviceAddress>()));
         Assert.Contains("(1..192)", ex.Message);
     }
 
     [Fact]
     public async Task WriteRandomWordsExtAsync_UsesProfileExtendedWeightedLimit()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var dwordEntries = Enumerable.Range(0, 138)
             .Select(index => (
-                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(200 + (index * 2))), null),
-                (uint)index,
-                new SlmpExtensionSpec()))
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(200 + (index * 2)), SlmpPlcProfile.IqR), null),
+                (uint)index))
             .ToArray();
 
         var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.WriteRandomWordsExtAsync(
-                Array.Empty<(SlmpQualifiedDeviceAddress Device, ushort Value, SlmpExtensionSpec Extension)>(),
+                Array.Empty<(SlmpQualifiedDeviceAddress Device, ushort Value)>(),
                 dwordEntries));
         Assert.Contains("limit=1920", ex.Message);
     }
@@ -642,12 +602,11 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task WriteRandomBitsExtAsync_UsesProfileExtendedBitLimit()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var entries = Enumerable.Range(0, 189)
             .Select(index => (
-                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.M, (uint)index), null),
-                true,
-                new SlmpExtensionSpec()))
+                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.M, (uint)index, SlmpPlcProfile.IqR), null),
+                true))
             .ToArray();
 
         var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
@@ -658,28 +617,27 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task RegisterMonitorDevicesExtAsync_UsesProfileExtendedPointLimit()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QnU, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var devices = Enumerable.Range(0, 193)
-            .Select(index => (
-                new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index), null),
-                new SlmpExtensionSpec()))
+            .Select(index => new SlmpQualifiedDeviceAddress(
+                new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index, SlmpPlcProfile.IqR), null))
             .ToArray();
 
         var ex = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.RegisterMonitorDevicesExtAsync(
                 devices,
-                Array.Empty<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)>()));
+                Array.Empty<SlmpQualifiedDeviceAddress>()));
         Assert.Contains("(1..192)", ex.Message);
     }
 
     [Fact]
     public async Task ReadBlockAsync_RejectsLongCounterContacts()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadBlockAsync(
                 Array.Empty<SlmpBlockRead>(),
-                new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.LCS, 10), 1) }));
+                new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.LCS, 10, SlmpPlcProfile.IqR), 1) }));
         Assert.Contains("Read Block (0x0406) does not support LCS/LCC", ex.Message);
     }
 
@@ -688,11 +646,11 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpPlcProfile.QnU, "melsec:qnu")]
     public async Task ReadBlockAsync_RejectsQSeriesProfiles(SlmpPlcProfile profile, string profileText)
     {
-        using var client = new SlmpClient("127.0.0.1", profile);
+        using var client = new SlmpClient("127.0.0.1", profile, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
             () => client.ReadBlockAsync(
-                new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), 1) },
-                new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.M, 100), 1) }));
+                new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 100, SlmpPlcProfile.IqR), 1) },
+                new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.M, 100, SlmpPlcProfile.IqR), 1) }));
         Assert.Equal(profileText, ex.ProfileId);
         Assert.Equal("block", ex.FeatureKey);
         Assert.Equal("blocked", ex.State);
@@ -701,16 +659,16 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task ReadBlockAsync_RejectsLongCounterCurrentAndLzBlocks()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadBlockAsync(
-                new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 10), 4) },
+                new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.LCN, 10, SlmpPlcProfile.IqR), 4) },
                 Array.Empty<SlmpBlockRead>()));
         Assert.Contains("does not support LCN/LZ", ex.Message);
 
         ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadBlockAsync(
-                new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0), 2) },
+                new[] { new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0, SlmpPlcProfile.IqR), 2) },
                 Array.Empty<SlmpBlockRead>()));
         Assert.Contains("does not support LCN/LZ", ex.Message);
     }
@@ -720,10 +678,10 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.HG)]
     public async Task ReadBlockAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.ReadBlockAsync(
-                new[] { new SlmpBlockRead(new SlmpDeviceAddress(code, 10), 1) },
+                new[] { new SlmpBlockRead(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), 1) },
                 Array.Empty<SlmpBlockRead>()));
         Assert.Contains("does not support standalone G/HG", ex.Message);
     }
@@ -731,11 +689,11 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task WriteBlockAsync_RejectsLongCounterContacts()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteBlockAsync(
                 Array.Empty<SlmpBlockWrite>(),
-                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.LCC, 10), new ushort[] { 1 }) }));
+                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.LCC, 10, SlmpPlcProfile.IqR), new ushort[] { 1 }) }));
         Assert.Contains("Write Block (0x1406) does not support LCS/LCC", ex.Message);
     }
 
@@ -744,11 +702,11 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpPlcProfile.QnU, "melsec:qnu")]
     public async Task WriteBlockAsync_RejectsQSeriesProfiles(SlmpPlcProfile profile, string profileText)
     {
-        using var client = new SlmpClient("127.0.0.1", profile);
+        using var client = new SlmpClient("127.0.0.1", profile, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<SlmpProfileFeatureException>(
             () => client.WriteBlockAsync(
-                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), new ushort[] { 1 }) },
-                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.M, 100), new ushort[] { 1 }) }));
+                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 100, SlmpPlcProfile.IqR), new ushort[] { 1 }) },
+                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.M, 100, SlmpPlcProfile.IqR), new ushort[] { 1 }) }));
         Assert.Equal(profileText, ex.ProfileId);
         Assert.Equal("block", ex.FeatureKey);
         Assert.Equal("blocked", ex.State);
@@ -759,10 +717,10 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.LZ)]
     public async Task WriteBlockAsync_RejectsLongCurrentAndLzBlocks(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteBlockAsync(
-                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(code, 10), new ushort[] { 1 }) },
+                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), new ushort[] { 1 }) },
                 Array.Empty<SlmpBlockWrite>()));
         Assert.Contains("does not support LTN/LSTN/LCN/LZ", ex.Message);
     }
@@ -772,10 +730,10 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.HG)]
     public async Task WriteBlockAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteBlockAsync(
-                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(code, 10), new ushort[] { 1 }) },
+                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), new ushort[] { 1 }) },
                 Array.Empty<SlmpBlockWrite>()));
         Assert.Contains("does not support standalone G/HG", ex.Message);
     }
@@ -788,14 +746,13 @@ public sealed class SlmpClientGuardTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
         };
 
         var ex = await Assert.ThrowsAsync<SlmpError>(() => client.WriteBlockAsync(
-            [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), [0x1234])],
-            [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.M, 200), [0x0005])],
-            new SlmpBlockWriteOptions(SplitMixedBlocks: false)));
+            [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 100, SlmpPlcProfile.IqR), [0x1234])],
+            [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.M, 200, SlmpPlcProfile.IqR), [0x0005])]));
         Assert.Equal((ushort)0xC05B, ex.EndCode);
 
         Assert.Single(server.RequestFrames);
@@ -819,14 +776,13 @@ public sealed class SlmpClientGuardTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
         };
 
         var ex = await Assert.ThrowsAsync<SlmpError>(() => client.WriteBlockAsync(
-            [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 100), [0x1234])],
-            [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.M, 200), [0x0005])],
-            new SlmpBlockWriteOptions(SplitMixedBlocks: false)));
+            [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 100, SlmpPlcProfile.IqR), [0x1234])],
+            [new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.M, 200, SlmpPlcProfile.IqR), [0x0005])]));
         Assert.Equal((ushort)0xC056, ex.EndCode);
 
         var request = Assert.Single(server.RequestFrames);
@@ -842,12 +798,12 @@ public sealed class SlmpClientGuardTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
         };
 
         var ex = await Assert.ThrowsAsync<SlmpError>(
-            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), 1));
+            () => client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR), 1));
 
         Assert.Equal((ushort)0xC051, ex.EndCode);
         Assert.NotNull(ex.ErrorInfo);
@@ -861,23 +817,27 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
-    public async Task RemoteRunAsync_DefaultClearModeDoesNotClearDevices()
+    public async Task RemoteRunAsync_ClearModesHaveExactWireValues()
     {
         await using var server = new MultiShotSlmpServer([
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, Array.Empty<byte>()),
             (0x0000, Array.Empty<byte>()),
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
         };
 
-        await client.RemoteRunAsync();
+        await client.RemoteRunAsync(SlmpRemoteMode.Normal, SlmpRemoteClearMode.NoClear);
+        await client.RemoteRunAsync(SlmpRemoteMode.Normal, SlmpRemoteClearMode.ClearExceptLatch);
+        await client.RemoteRunAsync(SlmpRemoteMode.Normal, SlmpRemoteClearMode.ClearAll);
 
-        var request = Assert.Single(server.RequestFrames);
-        Assert.Equal((ushort)0x1001, BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(15, 2)));
-        Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(17, 2)));
-        Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00 }, request.AsSpan(19, 4).ToArray());
+        Assert.Equal(3, server.RequestFrames.Count);
+        AssertCpuOperationShape(server.RequestFrames[0], 0x1001, [0x01, 0x00, 0x00, 0x00]);
+        AssertCpuOperationShape(server.RequestFrames[1], 0x1001, [0x01, 0x00, 0x01, 0x00]);
+        AssertCpuOperationShape(server.RequestFrames[2], 0x1001, [0x01, 0x00, 0x02, 0x00]);
     }
 
     [Theory]
@@ -885,10 +845,24 @@ public sealed class SlmpClientGuardTests
     [InlineData(ushort.MaxValue)]
     public async Task RemoteRunAsync_RejectsInvalidClearMode(ushort clearMode)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => client.RemoteRunAsync(clearMode: clearMode));
+            () => client.RemoteRunAsync(SlmpRemoteMode.Normal, (SlmpRemoteClearMode)clearMode));
+    }
+
+    [Theory]
+    [InlineData((ushort)0)]
+    [InlineData((ushort)2)]
+    [InlineData(ushort.MaxValue)]
+    public async Task RemoteRunAndPause_RejectInvalidMode(ushort mode)
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.RemoteRunAsync((SlmpRemoteMode)mode, SlmpRemoteClearMode.NoClear));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => client.RemotePauseAsync((SlmpRemoteMode)mode));
     }
 
     [Fact]
@@ -901,13 +875,13 @@ public sealed class SlmpClientGuardTests
         ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port)
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
         {
         };
 
-        await client.RemoteRunAsync(force: true);
+        await client.RemoteRunAsync(SlmpRemoteMode.Force, SlmpRemoteClearMode.NoClear);
         await client.RemoteStopAsync();
-        await client.RemotePauseAsync(force: true);
+        await client.RemotePauseAsync(SlmpRemoteMode.Force);
 
         Assert.Equal(3, server.RequestFrames.Count);
         AssertCpuOperationShape(server.RequestFrames[0], 0x1001, [0x03, 0x00, 0x00, 0x00]);
@@ -916,12 +890,277 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task HgQualifiedDevice_NeverChangesUserSelectedRequestTarget()
+    {
+        static async Task<byte[]> WriteOnceAsync(ushort moduleIo)
+        {
+            await using var server = new MultiShotSlmpServer([(0x0000, Array.Empty<byte>())]);
+            await server.StartAsync();
+            using var client = new SlmpClient(
+                "127.0.0.1",
+                SlmpPlcProfile.IqR,
+                server.Port,
+                SlmpTransportMode.Tcp,
+                new SlmpTargetAddress(0x00, 0xFF, moduleIo, 0x00));
+            var hg = SlmpQualifiedDeviceParser.Parse(@"U3E1\HG100", SlmpPlcProfile.IqR);
+
+            await client.WriteWordsExtendedAsync(hg, new ushort[] { 0x1234 });
+
+            return Assert.Single(server.RequestFrames);
+        }
+
+        var ownStation = await WriteOnceAsync(SlmpModuleIo.OwnStation);
+        var cpu2 = await WriteOnceAsync(SlmpModuleIo.MultipleCpu2);
+
+        Assert.Equal((ushort)0x03FF, BinaryPrimitives.ReadUInt16LittleEndian(ownStation.AsSpan(8, 2)));
+        Assert.Equal((ushort)0x03E1, BinaryPrimitives.ReadUInt16LittleEndian(cpu2.AsSpan(8, 2)));
+        Assert.Equal((ushort)0x1401, BinaryPrimitives.ReadUInt16LittleEndian(ownStation.AsSpan(15, 2)));
+        Assert.Equal((ushort)0x1401, BinaryPrimitives.ReadUInt16LittleEndian(cpu2.AsSpan(15, 2)));
+    }
+
+    [Fact]
+    public async Task MonitorSemanticApis_RegisterOnceAndReturnThreeExactCycles()
+    {
+        var cycleData = new byte[] { 0x11, 0x11, 0x78, 0x56, 0x34, 0x12 };
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, cycleData),
+            (0x0000, cycleData),
+            (0x0000, cycleData),
+        ]);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var word = new SlmpDeviceAddress(SlmpDeviceCode.D, 120, SlmpPlcProfile.IqR);
+        var dword = new SlmpDeviceAddress(SlmpDeviceCode.D, 200, SlmpPlcProfile.IqR);
+
+        await client.RegisterMonitorDevicesAsync([word], [dword]);
+        for (var cycle = 0; cycle < 3; cycle++)
+        {
+            var result = await client.RunMonitorCycleAsync(1, 1);
+            Assert.Equal(new ushort[] { 0x1111 }, result.WordValues);
+            Assert.Equal(new uint[] { 0x12345678 }, result.DwordValues);
+        }
+
+        Assert.Equal(4, server.RequestFrames.Count);
+        Assert.Equal((ushort)0x0801, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[0].AsSpan(15, 2)));
+        Assert.Equal((ushort)0x0002, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[0].AsSpan(17, 2)));
+        foreach (var frame in server.RequestFrames.Skip(1))
+        {
+            Assert.Equal((ushort)0x0802, BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(15, 2)));
+            Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(17, 2)));
+            Assert.Equal(19, frame.Length);
+        }
+    }
+
+    [Fact]
+    public async Task RunMonitorCycleAsync_RejectsInvalidCountsBeforeTransport()
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            1025,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunMonitorCycleAsync(0, 0));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunMonitorCycleAsync(97, 0));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunMonitorCycleAsync(-1, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunMonitorCycleAsync(2, -1));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunMonitorCycleAsync(int.MaxValue, int.MaxValue));
+        using var queued = new QueuedSlmpClient(client);
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => queued.RunMonitorCycleAsync(-1, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => queued.RunMonitorCycleAsync(2, -1));
+        Assert.False(client.IsOpen);
+    }
+
+    [Fact]
+    public async Task RunMonitorCycleAsync_PropagatesPlcErrorAndRejectsSizeMismatchWithoutFallback()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0xC051, Array.Empty<byte>()),
+            (0x0000, new byte[] { 0x11 }),
+        ]);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+
+        var plcError = await Assert.ThrowsAsync<SlmpError>(() => client.RunMonitorCycleAsync(1, 0));
+        Assert.Equal((ushort)0xC051, plcError.EndCode);
+        var mismatch = await Assert.ThrowsAsync<SlmpError>(() => client.RunMonitorCycleAsync(1, 0));
+        Assert.Contains("monitor response size mismatch", mismatch.Message);
+        Assert.Equal(2, server.RequestFrames.Count);
+    }
+
+    [Fact]
+    public async Task QueuedMonitorRegistration_SnapshotsDevicesBeforeQueueExecution()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, Array.Empty<byte>()),
+        ], pauseFirstResponse: true);
+        await server.StartAsync();
+        using var direct = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        using var queued = new QueuedSlmpClient(direct);
+        var first = queued.ClearErrorAsync();
+        await server.WaitForFirstRequestAsync();
+        var words = new[] { new SlmpDeviceAddress(SlmpDeviceCode.D, 120, SlmpPlcProfile.IqR) };
+        var dwords = new[] { new SlmpDeviceAddress(SlmpDeviceCode.D, 200, SlmpPlcProfile.IqR) };
+        var extendedWords = new[] { SlmpQualifiedDeviceParser.Parse(@"U3E0\HG100", SlmpPlcProfile.IqR) };
+
+        var pending = queued.RegisterMonitorDevicesAsync(words, dwords);
+        var pendingExtended = queued.RegisterMonitorDevicesExtAsync(extendedWords, []);
+        words[0] = new SlmpDeviceAddress(SlmpDeviceCode.D, 999, SlmpPlcProfile.IqR);
+        dwords[0] = new SlmpDeviceAddress(SlmpDeviceCode.D, 998, SlmpPlcProfile.IqR);
+        extendedWords[0] = SlmpQualifiedDeviceParser.Parse(@"U3E1\HG100", SlmpPlcProfile.IqR);
+        server.ReleaseFirstResponse();
+
+        await first;
+        await pending;
+        await pendingExtended;
+        Assert.Equal(3, server.RequestFrames.Count);
+        Assert.Equal((uint)120, BinaryPrimitives.ReadUInt32LittleEndian(server.RequestFrames[1].AsSpan(21, 4)));
+        Assert.Equal((uint)200, BinaryPrimitives.ReadUInt32LittleEndian(server.RequestFrames[1].AsSpan(27, 4)));
+        Assert.Equal((ushort)0x0082, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[2].AsSpan(17, 2)));
+        Assert.Equal((ushort)0x03E0, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[2].AsSpan(31, 2)));
+    }
+
+    [Fact]
+    public async Task SelfTestLoopbackAsync_RequiresExactDeclaredLengthSizeAndEcho()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }),
+            (0x0000, new byte[] { 0x03, 0x00, (byte)'A', (byte)'1', (byte)'B' }),
+            (0x0000, new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2', (byte)'F' }),
+            (0x0000, new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'3' }),
+        ]);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var payload = new byte[] { (byte)'A', (byte)'1', (byte)'B', (byte)'2' };
+
+        Assert.Equal(payload, await client.SelfTestLoopbackAsync(payload));
+
+        var declared = await Assert.ThrowsAsync<SlmpError>(() => client.SelfTestLoopbackAsync(payload));
+        Assert.Contains("declared length mismatch", declared.Message);
+
+        var trailing = await Assert.ThrowsAsync<SlmpError>(() => client.SelfTestLoopbackAsync(payload));
+        Assert.Contains("size mismatch", trailing.Message);
+
+        var mismatch = await Assert.ThrowsAsync<SlmpError>(() => client.SelfTestLoopbackAsync(payload));
+        Assert.Contains("payload mismatch", mismatch.Message);
+
+        Assert.Equal(4, server.RequestFrames.Count);
+    }
+
+    [Fact]
+    public async Task SelfTestLoopbackAsync_VerifiesTheTransmittedSnapshot()
+    {
+        var original = new byte[] { (byte)'A', (byte)'1', (byte)'B', (byte)'2' };
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }),
+        ], pauseFirstResponse: true);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var callerData = original.ToArray();
+
+        var pending = client.SelfTestLoopbackAsync(callerData);
+        await server.WaitForFirstRequestAsync();
+        Array.Fill(callerData, (byte)'F');
+        server.ReleaseFirstResponse();
+
+        Assert.Equal(original, await pending);
+        Assert.Equal(new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }, server.RequestFrames[0].AsSpan(19).ToArray());
+    }
+
+    [Fact]
+    public async Task QueuedSelfTestLoopbackAsync_SnapshotsBeforeQueueExecution()
+    {
+        var original = new byte[] { (byte)'A', (byte)'1', (byte)'B', (byte)'2' };
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }),
+        ], pauseFirstResponse: true);
+        await server.StartAsync();
+        using var direct = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        using var queued = new QueuedSlmpClient(direct);
+        var first = queued.ClearErrorAsync();
+        await server.WaitForFirstRequestAsync();
+        var callerData = original.ToArray();
+
+        var pending = queued.SelfTestLoopbackAsync(callerData);
+        Array.Fill(callerData, (byte)'F');
+        server.ReleaseFirstResponse();
+
+        await first;
+        Assert.Equal(original, await pending);
+        Assert.Equal(new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }, server.RequestFrames[1].AsSpan(19).ToArray());
+    }
+
+    [Fact]
+    public async Task QueuedClient_FixedSemanticApisSendOneExactRequestEach()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }),
+            (0x0000, Array.Empty<byte>()),
+        ]);
+        await server.StartAsync();
+        using var direct = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        using var queued = new QueuedSlmpClient(direct);
+        var payload = new byte[] { (byte)'A', (byte)'1', (byte)'B', (byte)'2' };
+
+        Assert.Equal(payload, await queued.SelfTestLoopbackAsync(payload));
+        await queued.ClearErrorAsync();
+
+        Assert.Equal(2, server.RequestFrames.Count);
+        Assert.Equal((ushort)0x0619, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[0].AsSpan(15, 2)));
+        Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[0].AsSpan(17, 2)));
+        Assert.Equal(new byte[] { 0x04, 0x00, (byte)'A', (byte)'1', (byte)'B', (byte)'2' }, server.RequestFrames[0].AsSpan(19).ToArray());
+        Assert.Equal((ushort)0x1617, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[1].AsSpan(15, 2)));
+        Assert.Equal((ushort)0x0000, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[1].AsSpan(17, 2)));
+        Assert.Equal(19, server.RequestFrames[1].Length);
+    }
+
+    [Fact]
     public async Task WriteRandomWordsAsync_RejectsLongCurrentWordEntries()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteRandomWordsAsync(
-                new[] { (new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10), (ushort)1) },
+                new[] { (new SlmpDeviceAddress(SlmpDeviceCode.LTN, 10, SlmpPlcProfile.IqR), (ushort)1) },
                 Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
         Assert.Contains("does not support LTN/LSTN/LCN/LZ as word entries", ex.Message);
     }
@@ -929,10 +1168,10 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task WriteRandomWordsAsync_RejectsStepRelayWrites()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteRandomWordsAsync(
-                new[] { (new SlmpDeviceAddress(SlmpDeviceCode.S, 10), (ushort)1) },
+                new[] { (new SlmpDeviceAddress(SlmpDeviceCode.S, 10, SlmpPlcProfile.IqR), (ushort)1) },
                 Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
         Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
@@ -942,10 +1181,10 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.HG)]
     public async Task WriteRandomWordsAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteRandomWordsAsync(
-                new[] { (new SlmpDeviceAddress(code, 10), (ushort)1) },
+                new[] { (new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), (ushort)1) },
                 Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
         Assert.Contains("does not support standalone G/HG", ex.Message);
     }
@@ -953,10 +1192,10 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task WriteRandomBitsAsync_RejectsStepRelayWrites()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteRandomBitsAsync(
-                new[] { (new SlmpDeviceAddress(SlmpDeviceCode.S, 10), true) }));
+                new[] { (new SlmpDeviceAddress(SlmpDeviceCode.S, 10, SlmpPlcProfile.IqR), true) }));
         Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
@@ -965,20 +1204,20 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.HG)]
     public async Task WriteRandomBitsAsync_RejectsQualifiedOnlyDevices(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteRandomBitsAsync(
-                new[] { (new SlmpDeviceAddress(code, 10), true) }));
+                new[] { (new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), true) }));
         Assert.Contains("does not support G/HG devices", ex.Message);
     }
 
     [Fact]
     public async Task WriteRandomBitsExtAsync_RejectsStepRelayWrites()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteRandomBitsExtAsync(
-                new[] { (new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), null), true, new SlmpExtensionSpec()) }));
+                [(new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.S, 10, SlmpPlcProfile.IqR), null), true)]));
         Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
@@ -987,28 +1226,28 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.HG)]
     public async Task WriteRandomBitsExtAsync_RejectsQualifiedOnlyDevices(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteRandomBitsExtAsync(
-                new[] { (new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(code, 10), null), true, new SlmpExtensionSpec()) }));
+                [(new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR), null), true)]));
         Assert.Contains("does not support G/HG devices", ex.Message);
     }
 
     [Fact]
     public async Task WriteBlockAsync_RejectsStepRelayWrites()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteBlockAsync(
                 Array.Empty<SlmpBlockWrite>(),
-                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.S, 10), new ushort[] { 1 }) }));
+                new[] { new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.S, 10, SlmpPlcProfile.IqR), new ushort[] { 1 }) }));
         Assert.Contains("S is read-only for PLC profile", ex.Message);
     }
 
     [Fact]
     public async Task RandomAndBlockAccess_RejectManualPointLimitOverruns()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.ReadRandomAsync(RandomWordDevices(97), Array.Empty<SlmpDeviceAddress>()));
@@ -1019,15 +1258,40 @@ public sealed class SlmpClientGuardTests
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.WriteRandomBitsAsync(RandomBitEntries(95)));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => client.ReadBlockAsync([new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 0), 961)], []));
+            () => client.ReadBlockAsync([new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR), 961)], []));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => client.WriteBlockAsync([new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 8000), new ushort[952])], []));
+            () => client.WriteBlockAsync([new SlmpBlockWrite(new SlmpDeviceAddress(SlmpDeviceCode.D, 8000, SlmpPlcProfile.IqR), new ushort[952])], []));
+    }
+
+    [Fact]
+    public async Task AggregateCollections_RejectNullOrBothEmptyBeforeTransport()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.ReadRandomAsync(null!, Array.Empty<SlmpDeviceAddress>()));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.ReadRandomAsync(Array.Empty<SlmpDeviceAddress>(), null!));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ReadRandomAsync([], []));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.ReadRandomExtAsync(null!, Array.Empty<SlmpQualifiedDeviceAddress>()));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.ReadRandomExtAsync(Array.Empty<SlmpQualifiedDeviceAddress>(), null!));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ReadRandomExtAsync([], []));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteRandomWordsAsync(null!, Array.Empty<(SlmpDeviceAddress Device, uint Value)>()));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteRandomWordsAsync(Array.Empty<(SlmpDeviceAddress Device, ushort Value)>(), null!));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.WriteRandomWordsAsync([], []));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteRandomWordsExtAsync(null!, Array.Empty<(SlmpQualifiedDeviceAddress Device, uint Value)>()));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteRandomWordsExtAsync(Array.Empty<(SlmpQualifiedDeviceAddress Device, ushort Value)>(), null!));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.WriteRandomWordsExtAsync([], []));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.ReadBlockAsync(null!, Array.Empty<SlmpBlockRead>()));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.ReadBlockAsync(Array.Empty<SlmpBlockRead>(), null!));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ReadBlockAsync([], []));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteBlockAsync(null!, Array.Empty<SlmpBlockWrite>()));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteBlockAsync(Array.Empty<SlmpBlockWrite>(), null!));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.WriteBlockAsync([], []));
     }
 
     [Fact]
     public async Task MemoryAndExtendUnit_RejectManualPointLimitOverruns()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.MemoryReadWordsAsync(0, 481));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.MemoryWriteWordsAsync(0, new ushort[481]));
@@ -1076,6 +1340,36 @@ public sealed class SlmpClientGuardTests
         Assert.Equal(points, BinaryPrimitives.ReadUInt16LittleEndian(payload[6..8]));
     }
 
+    [Fact]
+    public async Task BaseClient_SerializesConcurrentRequestsAndUsesUnique4ESerials()
+    {
+        const int requestCount = 16;
+        await using var server = new MultiShotSlmpServer(
+            Enumerable.Range(0, requestCount)
+                .Select(index => (EndCode: (ushort)0, ResponseData: BuildWordPayload((ushort)index))));
+        await server.StartAsync();
+
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+
+        var tasks = Enumerable.Range(0, requestCount)
+            .Select(index => client.ReadWordsRawAsync(
+                new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)index, SlmpPlcProfile.IqR),
+                1))
+            .ToArray();
+        await Task.WhenAll(tasks);
+
+        Assert.Equal(requestCount, server.RequestFrames.Count);
+        var serials = server.RequestFrames
+            .Select(frame => BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(2, 2)))
+            .ToArray();
+        Assert.Equal(requestCount, serials.Distinct().Count());
+    }
+
     private static byte[] BuildWordPayload(params ushort[] values)
     {
         var payload = new byte[values.Length * 2];
@@ -1088,31 +1382,41 @@ public sealed class SlmpClientGuardTests
     }
 
     private static SlmpDeviceAddress[] RandomWordDevices(int count)
-        => Enumerable.Range(0, count).Select(i => new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8000 + i))).ToArray();
+        => Enumerable.Range(0, count).Select(i => new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8000 + i), SlmpPlcProfile.IqR)).ToArray();
 
     private static (SlmpDeviceAddress Device, ushort Value)[] RandomWordEntries(int count)
-        => Enumerable.Range(0, count).Select(i => (new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8000 + i)), (ushort)0)).ToArray();
+        => Enumerable.Range(0, count).Select(i => (new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8000 + i), SlmpPlcProfile.IqR), (ushort)0)).ToArray();
 
     private static (SlmpDeviceAddress Device, uint Value)[] RandomDwordEntries(int count)
-        => Enumerable.Range(0, count).Select(i => (new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8000 + (i * 2))), 0u)).ToArray();
+        => Enumerable.Range(0, count).Select(i => (new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8000 + (i * 2)), SlmpPlcProfile.IqR), 0u)).ToArray();
 
     private static (SlmpDeviceAddress Device, bool Value)[] RandomBitEntries(int count)
-        => Enumerable.Range(0, count).Select(i => (new SlmpDeviceAddress(SlmpDeviceCode.M, (uint)(4000 + i)), false)).ToArray();
+        => Enumerable.Range(0, count).Select(i => (new SlmpDeviceAddress(SlmpDeviceCode.M, (uint)(4000 + i), SlmpPlcProfile.IqR), false)).ToArray();
 
     private sealed class MultiShotSlmpServer : IAsyncDisposable
     {
         private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
         private readonly Queue<(ushort EndCode, byte[] ResponseData)> _responses;
+        private readonly bool _pauseFirstResponse;
+        private readonly TaskCompletionSource _firstRequestReceived = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _releaseFirstResponse = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task? _serverTask;
 
-        public MultiShotSlmpServer(IEnumerable<(ushort EndCode, byte[] ResponseData)> responses)
+        public MultiShotSlmpServer(
+            IEnumerable<(ushort EndCode, byte[] ResponseData)> responses,
+            bool pauseFirstResponse = false)
         {
             _responses = new Queue<(ushort EndCode, byte[] ResponseData)>(responses);
+            _pauseFirstResponse = pauseFirstResponse;
         }
 
         public int Port => ((IPEndPoint)_listener.LocalEndpoint).Port;
 
         public List<byte[]> RequestFrames { get; } = [];
+
+        public Task WaitForFirstRequestAsync() => _firstRequestReceived.Task;
+
+        public void ReleaseFirstResponse() => _releaseFirstResponse.TrySetResult();
 
         public Task StartAsync()
         {
@@ -1123,6 +1427,7 @@ public sealed class SlmpClientGuardTests
 
         public async ValueTask DisposeAsync()
         {
+            _releaseFirstResponse.TrySetResult();
             _listener.Stop();
             if (_serverTask is not null)
             {
@@ -1140,6 +1445,14 @@ public sealed class SlmpClientGuardTests
                 {
                     var request = await ReadRequestFrameAsync(stream).ConfigureAwait(false);
                     RequestFrames.Add(request);
+                    if (RequestFrames.Count == 1)
+                    {
+                        _firstRequestReceived.TrySetResult();
+                        if (_pauseFirstResponse)
+                        {
+                            await _releaseFirstResponse.Task.ConfigureAwait(false);
+                        }
+                    }
 
                     var (endCode, responseData) = _responses.Dequeue();
                     var response = BuildResponse(request, responseData, endCode);
@@ -1335,21 +1648,21 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task WriteRandomWordsExtAsync_RejectsLongCurrentWordEntries()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.WriteRandomWordsExtAsync(
-                new[] { (new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 1), null), (ushort)1, new SlmpExtensionSpec()) },
-                Array.Empty<(SlmpQualifiedDeviceAddress Device, uint Value, SlmpExtensionSpec Extension)>()));
+                [(new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.LZ, 1, SlmpPlcProfile.IqR), null), (ushort)1)],
+                Array.Empty<(SlmpQualifiedDeviceAddress Device, uint Value)>()));
         Assert.Contains("does not support LTN/LSTN/LCN/LZ as word entries", ex.Message);
     }
 
     [Fact]
     public async Task RegisterMonitorDevicesAsync_RejectsLongCounterContacts()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.RegisterMonitorDevicesAsync(
-                new[] { new SlmpDeviceAddress(SlmpDeviceCode.LCS, 10) },
+                new[] { new SlmpDeviceAddress(SlmpDeviceCode.LCS, 10, SlmpPlcProfile.IqR) },
                 Array.Empty<SlmpDeviceAddress>()));
         Assert.Contains("Entry Monitor Device (0x0801) does not support LCS/LCC", ex.Message);
     }
@@ -1359,10 +1672,10 @@ public sealed class SlmpClientGuardTests
     [InlineData(SlmpDeviceCode.HG)]
     public async Task RegisterMonitorDevicesAsync_RejectsStandaloneQualifiedOnlyDevices(SlmpDeviceCode code)
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.RegisterMonitorDevicesAsync(
-                new[] { new SlmpDeviceAddress(code, 10) },
+                new[] { new SlmpDeviceAddress(code, 10, SlmpPlcProfile.IqR) },
                 Array.Empty<SlmpDeviceAddress>()));
         Assert.Contains("does not support standalone G/HG", ex.Message);
     }
@@ -1370,11 +1683,11 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task RegisterMonitorDevicesExtAsync_RejectsLongCounterContacts()
     {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR);
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
         var ex = await Assert.ThrowsAsync<ArgumentException>(
             () => client.RegisterMonitorDevicesExtAsync(
-                new[] { (new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.LCS, 10), null), new SlmpExtensionSpec()) },
-                Array.Empty<(SlmpQualifiedDeviceAddress Device, SlmpExtensionSpec Extension)>()));
+                [new SlmpQualifiedDeviceAddress(new SlmpDeviceAddress(SlmpDeviceCode.LCS, 10, SlmpPlcProfile.IqR), null)],
+                Array.Empty<SlmpQualifiedDeviceAddress>()));
         Assert.Contains("Entry Monitor Device (0x0801) does not support LCS/LCC", ex.Message);
     }
 }

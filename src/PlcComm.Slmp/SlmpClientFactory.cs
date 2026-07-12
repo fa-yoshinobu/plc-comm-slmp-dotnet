@@ -32,11 +32,14 @@ public static class SlmpClientFactory
             throw new ArgumentException("Host must not be empty.", nameof(options));
         if (options.Port is < 1 or > 65535)
             throw new ArgumentOutOfRangeException(nameof(options), "Port must be in the range 1-65535.");
+        if (!Enum.IsDefined(options.Transport))
+            throw new ArgumentOutOfRangeException(nameof(options), "Transport must be TCP or UDP.");
+        if (options.Timeout <= TimeSpan.Zero || options.Timeout > TimeSpan.FromMilliseconds(int.MaxValue))
+            throw new ArgumentOutOfRangeException(nameof(options), "Timeout must be greater than zero and within the supported timer range.");
 
-        var inner = new SlmpClient(options.Host, options.PlcProfile, options.Port, options.Transport, options.StrictProfile)
+        var inner = new SlmpClient(options.Host, options.PlcProfile, options.Port, options.Transport, options.Target)
         {
             Timeout = options.Timeout,
-            TargetAddress = options.Target,
             MonitoringTimer = options.MonitoringTimer,
         };
 

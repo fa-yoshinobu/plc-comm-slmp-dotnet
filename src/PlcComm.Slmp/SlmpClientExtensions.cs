@@ -50,18 +50,18 @@ internal sealed record SlmpNamedReadPlan(
 
 /// <summary>
 /// Extension methods for <see cref="SlmpClient"/> and <see cref="QueuedSlmpClient"/>
-/// providing typed read/write helpers, chunked reads, named-device access, and polling.
+/// providing typed read/write helpers, single-request block access, named-device access, and polling.
 /// </summary>
 public static class SlmpClientExtensions
 {
     private static SlmpDeviceAddress ParseDeviceForClient(SlmpClient client, string address)
-        => SlmpDeviceParser.ParseForHighLevel(address, client.PlcProfile);
+        => SlmpDeviceParser.Parse(address, client.PlcProfile);
 
     private static SlmpDeviceAddress ParseDeviceForClient(QueuedSlmpClient client, string address)
-        => SlmpDeviceParser.ParseForHighLevel(address, client.PlcProfile);
+        => SlmpDeviceParser.Parse(address, client.PlcProfile);
 
-    private static string NormalizeDeviceForFamily(string address, SlmpPlcProfile? PlcProfile)
-        => PlcProfile is SlmpPlcProfile family ? SlmpAddress.Normalize(address, family) : SlmpAddress.Normalize(address);
+    private static string NormalizeDeviceForFamily(string address, SlmpPlcProfile plcProfile)
+        => SlmpAddress.Normalize(address, plcProfile);
 
     // -----------------------------------------------------------------------
     // Typed read / write
@@ -191,7 +191,7 @@ public static class SlmpClientExtensions
         => client.ReadTypedAsync(ParseDeviceForClient(client, device), dtype, ct);
 
     /// <summary>
-    /// Writes one logical value using the requested type conversion.
+    /// Writes one logical value using strict dtype validation and encoding.
     /// </summary>
     /// <param name="client">Connected SLMP client.</param>
     /// <param name="device">Starting device address.</param>
@@ -199,11 +199,12 @@ public static class SlmpClientExtensions
     /// Type code: <c>U</c> unsigned 16-bit, <c>S</c> signed 16-bit,
     /// <c>D</c> unsigned 32-bit, <c>L</c> signed 32-bit, or <c>F</c> float32.
     /// </param>
-    /// <param name="value">Value to encode and write.</param>
+    /// <param name="value">Value to encode and write. BIT requires Boolean; integer dtypes require an integral CLR type in range; F requires a finite numeric value within float32 range.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <remarks>
-    /// Use this helper when application code wants to write typed values
-    /// without manually splitting words or packing float32 values.
+    /// Use this helper when application code wants strict typed writes without
+    /// manually splitting words or packing float32 values. Values are not parsed
+    /// from strings or converted between Boolean, floating, and integer types.
     /// </remarks>
     public static async Task WriteTypedAsync(
         this SlmpClient client,
@@ -217,50 +218,50 @@ public static class SlmpClientExtensions
         {
             case SlmpNamedWriteRoute.RandomBits:
                 await client.WriteRandomBitsAsync(
-                        [(device, Convert.ToBoolean(value, CultureInfo.InvariantCulture))],
+                        [(device, RequireBooleanWriteValue(value))],
                         ct)
                     .ConfigureAwait(false);
                 break;
             case SlmpNamedWriteRoute.ContiguousBits:
-                await client.WriteBitsAsync(device, [Convert.ToBoolean(value, CultureInfo.InvariantCulture)], ct)
+                await client.WriteBitsAsync(device, [RequireBooleanWriteValue(value)], ct)
                     .ConfigureAwait(false);
                 break;
             case SlmpNamedWriteRoute.ContiguousDWords when normalizedDType == "F":
                 await client.WriteDWordsAsync(
                         device,
-                        [unchecked((uint)BitConverter.SingleToInt32Bits(Convert.ToSingle(value, CultureInfo.InvariantCulture)))],
+                        [unchecked((uint)BitConverter.SingleToInt32Bits(RequireFloat32WriteValue(value)))],
                         ct)
                     .ConfigureAwait(false);
                 break;
             case SlmpNamedWriteRoute.RandomDWords when normalizedDType == "L":
                 await client.WriteRandomWordsAsync(
                         [],
-                        [(device, unchecked((uint)Convert.ToInt32(value, CultureInfo.InvariantCulture)))],
+                        [(device, unchecked((uint)RequireInt32WriteValue(value, "L")))],
                         ct)
                     .ConfigureAwait(false);
                 break;
             case SlmpNamedWriteRoute.RandomDWords:
                 await client.WriteRandomWordsAsync(
                         [],
-                        [(device, Convert.ToUInt32(value, CultureInfo.InvariantCulture))],
+                        [(device, RequireUInt32WriteValue(value, "D"))],
                         ct)
                     .ConfigureAwait(false);
                 break;
             case SlmpNamedWriteRoute.ContiguousDWords when normalizedDType == "L":
                 await client.WriteDWordsAsync(
                         device,
-                        [unchecked((uint)Convert.ToInt32(value, CultureInfo.InvariantCulture))],
+                        [unchecked((uint)RequireInt32WriteValue(value, "L"))],
                         ct)
                     .ConfigureAwait(false);
                 break;
             case SlmpNamedWriteRoute.ContiguousDWords:
-                await client.WriteDWordsAsync(device, [Convert.ToUInt32(value, CultureInfo.InvariantCulture)], ct)
+                await client.WriteDWordsAsync(device, [RequireUInt32WriteValue(value, "D")], ct)
                     .ConfigureAwait(false);
                 break;
             default:
                 var word = normalizedDType == "S"
-                    ? unchecked((ushort)Convert.ToInt16(value, CultureInfo.InvariantCulture))
-                    : Convert.ToUInt16(value, CultureInfo.InvariantCulture);
+                    ? unchecked((ushort)RequireInt16WriteValue(value, "S"))
+                    : RequireUInt16WriteValue(value, "U");
                 await client.WriteWordsAsync(device, [word], ct)
                     .ConfigureAwait(false);
                 break;
@@ -724,399 +725,11 @@ public static class SlmpClientExtensions
         => client.WriteDWordsSingleRequestAsync(ParseDeviceForClient(client, start), values, ct);
 
     // -----------------------------------------------------------------------
-    // Chunked reads
-    // -----------------------------------------------------------------------
-
-    /// <summary>
-    /// Reads a contiguous word range in one or more SLMP requests.
-    /// </summary>
-    /// <param name="client">Connected SLMP client.</param>
-    /// <param name="start">Starting word device address.</param>
-    /// <param name="count">Total number of words to read.</param>
-    /// <param name="maxPerRequest">Maximum words per request. The protocol limit is 960.</param>
-    /// <param name="allowSplit">When true, large reads are automatically split across multiple SLMP requests.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Flat array of word values.</returns>
-    /// <remarks>
-    /// Chunk boundaries are aligned to 2-word boundaries so that 32-bit values
-    /// are not torn across split requests.
-    /// </remarks>
-    public static async Task<ushort[]> ReadWordsAsync(
-        this SlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxPerRequest = 960,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-    {
-        int effectiveMax = (maxPerRequest / 2) * 2;
-        if (effectiveMax <= 0)
-            throw new ArgumentOutOfRangeException(nameof(maxPerRequest), "maxPerRequest must be at least 2.");
-
-        if (!allowSplit)
-        {
-            if (count > effectiveMax)
-            {
-                throw new ArgumentException(
-                    $"count {count} exceeds maxPerRequest {effectiveMax}; pass allowSplit: true to split the read across multiple requests.",
-                    nameof(count));
-            }
-
-            return await client.ReadWordsRawAsync(start, (ushort)count, ct).ConfigureAwait(false);
-        }
-
-        var result = new List<ushort>(count);
-        int remaining = count;
-        uint offset = 0;
-        while (remaining > 0)
-        {
-            int chunk = Math.Min(remaining, effectiveMax);
-            var address = new SlmpDeviceAddress(start.Code, start.Number + offset);
-            var words = await client.ReadWordsRawAsync(address, (ushort)chunk, ct).ConfigureAwait(false);
-            result.AddRange(words);
-            offset += (uint)chunk;
-            remaining -= chunk;
-        }
-
-        return [.. result];
-    }
-
-    /// <summary>
-    /// Reads word devices using a string address.
-    /// </summary>
-    /// <param name="client">Connected SLMP client.</param>
-    /// <param name="start">Word device string such as <c>D0</c>.</param>
-    /// <param name="count">Total number of words to read.</param>
-    /// <param name="maxPerRequest">Maximum words per request.</param>
-    /// <param name="allowSplit">When true, oversized reads are split across requests.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Flat array of word values.</returns>
-    public static Task<ushort[]> ReadWordsAsync(
-        this SlmpClient client,
-        string start,
-        int count,
-        int maxPerRequest = 960,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-        => client.ReadWordsAsync(ParseDeviceForClient(client, start), count, maxPerRequest, allowSplit, ct);
-
-    /// <summary>
-    /// Reads word devices through a queued client.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxPerRequest = 960,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.ReadWordsAsync(start, count, maxPerRequest, allowSplit, ct), ct);
-
-    /// <summary>
-    /// Reads word devices using a string address through a queued client.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsAsync(
-        this QueuedSlmpClient client,
-        string start,
-        int count,
-        int maxPerRequest = 960,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-        => client.ReadWordsAsync(ParseDeviceForClient(client, start), count, maxPerRequest, allowSplit, ct);
-
-    /// <summary>
-    /// Reads a contiguous range of 32-bit unsigned values.
-    /// </summary>
-    /// <param name="client">Connected SLMP client.</param>
-    /// <param name="start">Starting device address.</param>
-    /// <param name="count">Number of 32-bit values to read.</param>
-    /// <param name="maxDwordsPerRequest">Maximum DWords per request.</param>
-    /// <param name="allowSplit">When true, large reads are automatically split across multiple SLMP requests.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Array of 32-bit unsigned values.</returns>
-    /// <remarks>
-    /// Each result consumes two underlying words in low-word-first order.
-    /// </remarks>
-    public static async Task<uint[]> ReadDWordsAsync(
-        this SlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxDwordsPerRequest = 480,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-    {
-        if (IsRandomDWordAddressedDevice(start.Code))
-        {
-            return await ReadRandomDWordsAsync(client, start, count, maxDwordsPerRequest, allowSplit, ct).ConfigureAwait(false);
-        }
-
-        var words = await client.ReadWordsAsync(
-                start,
-                count * 2,
-                maxPerRequest: maxDwordsPerRequest * 2,
-                allowSplit: allowSplit,
-                ct: ct)
-            .ConfigureAwait(false);
-
-        var result = new uint[count];
-        for (int i = 0; i < count; i++)
-            result[i] = (uint)(words[i * 2] | (words[(i * 2) + 1] << 16));
-        return result;
-    }
-
-    /// <summary>
-    /// Reads DWord devices using a string address.
-    /// </summary>
-    /// <param name="client">Connected SLMP client.</param>
-    /// <param name="start">Starting word device string such as <c>D200</c>.</param>
-    /// <param name="count">Number of 32-bit values to read.</param>
-    /// <param name="maxDwordsPerRequest">Maximum DWords per request.</param>
-    /// <param name="allowSplit">When true, oversized reads are split across requests.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Array of 32-bit unsigned values.</returns>
-    public static Task<uint[]> ReadDWordsAsync(
-        this SlmpClient client,
-        string start,
-        int count,
-        int maxDwordsPerRequest = 480,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-        => client.ReadDWordsAsync(ParseDeviceForClient(client, start), count, maxDwordsPerRequest, allowSplit, ct);
-
-    /// <summary>
-    /// Reads DWord devices through a queued client.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxDwordsPerRequest = 480,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.ReadDWordsAsync(start, count, maxDwordsPerRequest, allowSplit, ct), ct);
-
-    /// <summary>
-    /// Reads DWord devices using a string address through a queued client.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsAsync(
-        this QueuedSlmpClient client,
-        string start,
-        int count,
-        int maxDwordsPerRequest = 480,
-        bool allowSplit = false,
-        CancellationToken ct = default)
-        => client.ReadDWordsAsync(ParseDeviceForClient(client, start), count, maxDwordsPerRequest, allowSplit, ct);
-
-    /// <summary>
-    /// Reads contiguous word devices using explicit chunking.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsChunkedAsync(
-        this SlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.ReadWordsAsync(start, count, maxWordsPerRequest, allowSplit: true, ct);
-
-    /// <summary>
-    /// Reads contiguous word devices using explicit chunking.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsChunkedAsync(
-        this SlmpClient client,
-        string start,
-        int count,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.ReadWordsChunkedAsync(ParseDeviceForClient(client, start), count, maxWordsPerRequest, ct);
-
-    /// <summary>
-    /// Reads contiguous word devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.ReadWordsChunkedAsync(start, count, maxWordsPerRequest, ct), ct);
-
-    /// <summary>
-    /// Reads contiguous word devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        string start,
-        int count,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.ReadWordsChunkedAsync(ParseDeviceForClient(client, start), count, maxWordsPerRequest, ct);
-
-    /// <summary>
-    /// Reads contiguous DWord devices using explicit chunking.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsChunkedAsync(
-        this SlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.ReadDWordsAsync(start, count, maxDwordsPerRequest, allowSplit: true, ct);
-
-    /// <summary>
-    /// Reads contiguous DWord devices using explicit chunking.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsChunkedAsync(
-        this SlmpClient client,
-        string start,
-        int count,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.ReadDWordsChunkedAsync(ParseDeviceForClient(client, start), count, maxDwordsPerRequest, ct);
-
-    /// <summary>
-    /// Reads contiguous DWord devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.ReadDWordsChunkedAsync(start, count, maxDwordsPerRequest, ct), ct);
-
-    /// <summary>
-    /// Reads contiguous DWord devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        string start,
-        int count,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.ReadDWordsChunkedAsync(ParseDeviceForClient(client, start), count, maxDwordsPerRequest, ct);
-
-    /// <summary>
-    /// Writes contiguous word devices using explicit chunking.
-    /// </summary>
-    public static async Task WriteWordsChunkedAsync(
-        this SlmpClient client,
-        SlmpDeviceAddress start,
-        IReadOnlyList<ushort> values,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-    {
-        ValidateChunkedValues(values, nameof(values));
-        ValidateChunkSize(maxWordsPerRequest, nameof(maxWordsPerRequest));
-
-        int remaining = values.Count;
-        int offset = 0;
-        while (remaining > 0)
-        {
-            int chunk = Math.Min(remaining, maxWordsPerRequest);
-            var address = new SlmpDeviceAddress(start.Code, start.Number + (uint)offset);
-            await client.WriteWordsAsync(address, values.Skip(offset).Take(chunk).ToArray(), ct).ConfigureAwait(false);
-            offset += chunk;
-            remaining -= chunk;
-        }
-    }
-
-    /// <summary>
-    /// Writes contiguous word devices using explicit chunking.
-    /// </summary>
-    public static Task WriteWordsChunkedAsync(
-        this SlmpClient client,
-        string start,
-        IReadOnlyList<ushort> values,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.WriteWordsChunkedAsync(ParseDeviceForClient(client, start), values, maxWordsPerRequest, ct);
-
-    /// <summary>
-    /// Writes contiguous word devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task WriteWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        IReadOnlyList<ushort> values,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.WriteWordsChunkedAsync(start, values, maxWordsPerRequest, ct), ct);
-
-    /// <summary>
-    /// Writes contiguous word devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task WriteWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        string start,
-        IReadOnlyList<ushort> values,
-        int maxWordsPerRequest,
-        CancellationToken ct = default)
-        => client.WriteWordsChunkedAsync(ParseDeviceForClient(client, start), values, maxWordsPerRequest, ct);
-
-    /// <summary>
-    /// Writes contiguous DWord devices using explicit chunking.
-    /// </summary>
-    public static async Task WriteDWordsChunkedAsync(
-        this SlmpClient client,
-        SlmpDeviceAddress start,
-        IReadOnlyList<uint> values,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-    {
-        ValidateChunkedValues(values, nameof(values));
-        ValidateChunkSize(maxDwordsPerRequest, nameof(maxDwordsPerRequest));
-
-        int remaining = values.Count;
-        int offset = 0;
-        while (remaining > 0)
-        {
-            int chunk = Math.Min(remaining, maxDwordsPerRequest);
-            var address = new SlmpDeviceAddress(start.Code, start.Number + (uint)(offset * 2));
-            await client.WriteDWordsAsync(address, values.Skip(offset).Take(chunk).ToArray(), ct).ConfigureAwait(false);
-            offset += chunk;
-            remaining -= chunk;
-        }
-    }
-
-    /// <summary>
-    /// Writes contiguous DWord devices using explicit chunking.
-    /// </summary>
-    public static Task WriteDWordsChunkedAsync(
-        this SlmpClient client,
-        string start,
-        IReadOnlyList<uint> values,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.WriteDWordsChunkedAsync(ParseDeviceForClient(client, start), values, maxDwordsPerRequest, ct);
-
-    /// <summary>
-    /// Writes contiguous DWord devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task WriteDWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        IReadOnlyList<uint> values,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.WriteDWordsChunkedAsync(start, values, maxDwordsPerRequest, ct), ct);
-
-    /// <summary>
-    /// Writes contiguous DWord devices using explicit chunking through a queued client.
-    /// </summary>
-    public static Task WriteDWordsChunkedAsync(
-        this QueuedSlmpClient client,
-        string start,
-        IReadOnlyList<uint> values,
-        int maxDwordsPerRequest,
-        CancellationToken ct = default)
-        => client.WriteDWordsChunkedAsync(ParseDeviceForClient(client, start), values, maxDwordsPerRequest, ct);
-
-    // -----------------------------------------------------------------------
     // Named-device read
     // -----------------------------------------------------------------------
 
     /// <summary>
-    /// Reads a mixed logical snapshot by address string and returns a dictionary keyed by the original addresses.
+    /// Reads a mixed named value set and returns a dictionary keyed by the original addresses.
     /// </summary>
     /// <param name="client">Connected SLMP client.</param>
     /// <param name="addresses">
@@ -1125,8 +738,8 @@ public static class SlmpClientExtensions
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A dictionary whose keys match the requested address strings.</returns>
     /// <remarks>
-    /// This is the recommended high-level helper for dashboards, snapshots, and
-    /// mixed-value reads. The address list is compiled and batched internally.
+    /// The complete address list is compiled into exactly one random-read request.
+    /// Entries that require another command family are rejected before transport.
     /// </remarks>
     public static async Task<IReadOnlyDictionary<string, object>> ReadNamedAsync(
         this SlmpClient client,
@@ -1150,7 +763,7 @@ public static class SlmpClientExtensions
     }
 
     /// <summary>
-    /// Writes a mixed logical snapshot by address string.
+    /// Writes a mixed named value set by address string.
     /// </summary>
     /// <param name="client">Connected SLMP client.</param>
     /// <param name="updates">
@@ -1158,11 +771,23 @@ public static class SlmpClientExtensions
     /// <c>"D50.3"</c>, or direct bit-device addresses such as <c>"M1000:BIT"</c>.
     /// </param>
     /// <param name="ct">Cancellation token.</param>
+    /// <remarks>
+    /// The complete update set is sent as exactly one random-write request. Word and DWord
+    /// entries may share that request; bit entries use one random-bit request. Mixing those
+    /// command families or requesting bit-in-word read-modify-write is rejected before transport.
+    /// </remarks>
     public static async Task WriteNamedAsync(
         this SlmpClient client,
         IReadOnlyDictionary<string, object> updates,
         CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(updates);
+        if (updates.Count == 0)
+            throw new ArgumentException("WriteNamedAsync requires at least one update.", nameof(updates));
+
+        var wordEntries = new List<(SlmpDeviceAddress Device, ushort Value)>();
+        var dwordEntries = new List<(SlmpDeviceAddress Device, uint Value)>();
+        var bitEntries = new List<(SlmpDeviceAddress Device, bool Value)>();
         foreach (var pair in updates)
         {
             var (baseAddress, dtype, bitIdx) = ParseAddress(pair.Key);
@@ -1170,16 +795,49 @@ public static class SlmpClientExtensions
             if (dtype == "BIT_IN_WORD")
             {
                 ValidateBitInWordTarget(pair.Key, device);
-                await client.WriteBitInWordAsync(device, RequireBitInWordIndex(pair.Key, bitIdx), Convert.ToBoolean(pair.Value, CultureInfo.InvariantCulture), ct)
-                    .ConfigureAwait(false);
-                continue;
+                _ = RequireBitInWordIndex(pair.Key, bitIdx);
+                _ = RequireBooleanWriteValue(pair.Value);
+                throw new ArgumentException(
+                    $"Address '{pair.Key}' requires read-modify-write and is not supported by WriteNamedAsync; call WriteBitInWordAsync explicitly.",
+                    nameof(updates));
             }
 
             var resolvedDType = ResolveDTypeForAddress(pair.Key, device, dtype, bitIdx);
             ValidateNamedDeviceDType(pair.Key, device, resolvedDType);
             ValidateLongTimerEntry(pair.Key, device, resolvedDType);
-            await client.WriteTypedAsync(device, resolvedDType, pair.Value, ct).ConfigureAwait(false);
+            _ = ResolveWriteRoute(device, resolvedDType, client.PlcProfile);
+            switch (resolvedDType)
+            {
+                case "BIT":
+                    bitEntries.Add((device, RequireBooleanWriteValue(pair.Value)));
+                    break;
+                case "U":
+                    wordEntries.Add((device, RequireUInt16WriteValue(pair.Value, resolvedDType)));
+                    break;
+                case "S":
+                    wordEntries.Add((device, unchecked((ushort)RequireInt16WriteValue(pair.Value, resolvedDType))));
+                    break;
+                case "F":
+                    dwordEntries.Add((device, unchecked((uint)BitConverter.SingleToInt32Bits(RequireFloat32WriteValue(pair.Value)))));
+                    break;
+                case "L":
+                    dwordEntries.Add((device, unchecked((uint)RequireInt32WriteValue(pair.Value, resolvedDType))));
+                    break;
+                default:
+                    dwordEntries.Add((device, RequireUInt32WriteValue(pair.Value, resolvedDType)));
+                    break;
+            }
         }
+
+        if (bitEntries.Count != 0 && (wordEntries.Count != 0 || dwordEntries.Count != 0))
+            throw new ArgumentException(
+                "WriteNamedAsync cannot mix bit and word/DWord destinations because that requires multiple protocol requests.",
+                nameof(updates));
+
+        if (bitEntries.Count != 0)
+            await client.WriteRandomBitsAsync(bitEntries, ct).ConfigureAwait(false);
+        else
+            await client.WriteRandomWordsAsync(wordEntries, dwordEntries, ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1263,19 +921,6 @@ public static class SlmpClientExtensions
             throw new ArgumentOutOfRangeException(paramName, $"values.Count must be in the range 1-{maxCount}.");
     }
 
-    private static void ValidateChunkedValues<T>(IReadOnlyList<T> values, string paramName)
-    {
-        ArgumentNullException.ThrowIfNull(values);
-        if (values.Count == 0)
-            throw new ArgumentOutOfRangeException(paramName, "values.Count must be 1 or greater.");
-    }
-
-    private static void ValidateChunkSize(int chunkSize, string paramName)
-    {
-        if (chunkSize < 1)
-            throw new ArgumentOutOfRangeException(paramName, "Chunk size must be 1 or greater.");
-    }
-
     internal static (string Base, string DType, int? BitIdx) ParseAddress(string address)
     {
         address = address.Trim();
@@ -1306,27 +951,22 @@ public static class SlmpClientExtensions
             nameof(address));
     }
 
-    internal static string NormalizeNamedAddress(string address)
-    {
-        return NormalizeNamedAddress(address, null);
-    }
-
-    internal static string NormalizeNamedAddress(string address, SlmpPlcProfile? PlcProfile)
+    internal static string NormalizeNamedAddress(string address, SlmpPlcProfile plcProfile)
     {
         var trimmed = address.Trim();
         var (baseAddress, dtype, bitIdx) = ParseAddress(trimmed);
-        var canonicalBase = NormalizeDeviceForFamily(baseAddress, PlcProfile);
+        var canonicalBase = NormalizeDeviceForFamily(baseAddress, plcProfile);
         if (bitIdx is int bit)
         {
             return $"{canonicalBase}.{bit.ToString("X", CultureInfo.InvariantCulture)}";
         }
 
-        var device = SlmpDeviceParser.ParseForHighLevel(baseAddress, PlcProfile);
+        var device = SlmpDeviceParser.Parse(baseAddress, plcProfile);
         ValidateNamedDeviceDType(trimmed, device, dtype);
         return $"{canonicalBase}:{dtype}";
     }
 
-    internal static SlmpNamedReadPlan CompileReadPlan(IEnumerable<string> addresses, SlmpPlcProfile? PlcProfile = null)
+    internal static SlmpNamedReadPlan CompileReadPlan(IEnumerable<string> addresses, SlmpPlcProfile plcProfile)
     {
         var entries = new List<SlmpNamedReadEntry>();
         var wordDevices = new List<SlmpDeviceAddress>();
@@ -1337,7 +977,7 @@ public static class SlmpClientExtensions
         foreach (var address in addresses)
         {
             var (baseAddress, dtype, bitIdx) = ParseAddress(address);
-            var device = SlmpDeviceParser.ParseForHighLevel(baseAddress, PlcProfile);
+            var device = SlmpDeviceParser.Parse(baseAddress, plcProfile);
             var kind = SlmpNamedReadKind.Fallback;
             var longTimerRead = GetLongTimerReadSpec(device.Code);
 
@@ -1387,6 +1027,17 @@ public static class SlmpClientExtensions
             }
 
             entries.Add(new SlmpNamedReadEntry(address, device, dtype, bitIdx, kind, longTimerRead));
+        }
+
+        var unsupported = entries
+            .Where(entry => entry.Kind is SlmpNamedReadKind.Fallback or SlmpNamedReadKind.LongTimer)
+            .Select(entry => entry.Address)
+            .ToArray();
+        if (unsupported.Length != 0)
+        {
+            throw new ArgumentException(
+                $"ReadNamedAsync accepts only addresses that fit one random-read request; use explicit read calls for {string.Join(", ", unsupported)}.",
+                nameof(addresses));
         }
 
         return new SlmpNamedReadPlan(entries, wordDevices, dwordDevices);
@@ -1533,48 +1184,8 @@ public static class SlmpClientExtensions
         SlmpDeviceAddress device,
         CancellationToken ct)
     {
-        var values = await ReadRandomDWordsAsync(client, device, 1, 1, allowSplit: false, ct).ConfigureAwait(false);
-        return values[0];
-    }
-
-    private static async Task<uint[]> ReadRandomDWordsAsync(
-        SlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        int maxDwordsPerRequest,
-        bool allowSplit,
-        CancellationToken ct)
-    {
-        if (count < 0)
-            throw new ArgumentOutOfRangeException(nameof(count), "count must be >= 0.");
-
-        var effectiveMax = Math.Min(maxDwordsPerRequest, 0xFF);
-        if (effectiveMax <= 0)
-            throw new ArgumentOutOfRangeException(nameof(maxDwordsPerRequest), "maxDwordsPerRequest must be >= 1.");
-
-        if (!allowSplit && count > effectiveMax)
-        {
-            throw new ArgumentException(
-                $"count {count} exceeds maxDwordsPerRequest {effectiveMax}; pass allowSplit: true to split the read across multiple requests.",
-                nameof(count));
-        }
-
-        var result = new uint[count];
-        var remaining = count;
-        var offset = 0;
-        while (remaining > 0)
-        {
-            var chunkCount = Math.Min(remaining, effectiveMax);
-            var devices = Enumerable.Range(0, chunkCount)
-                .Select(index => start with { Number = checked(start.Number + (uint)(offset + index)) })
-                .ToArray();
-            var (_, dwords) = await client.ReadRandomAsync([], devices, ct).ConfigureAwait(false);
-            Array.Copy(dwords, 0, result, offset, dwords.Length);
-            offset += chunkCount;
-            remaining -= chunkCount;
-        }
-
-        return result;
+        var (_, dwords) = await client.ReadRandomAsync([], [device], ct).ConfigureAwait(false);
+        return dwords[0];
     }
 
     private static async Task<(Dictionary<SlmpDeviceAddress, ushort> Words, Dictionary<SlmpDeviceAddress, uint> DWords)> ReadRandomMapsAsync(
@@ -1583,27 +1194,23 @@ public static class SlmpClientExtensions
         IReadOnlyList<SlmpDeviceAddress> dwordDevices,
         CancellationToken ct)
     {
+        if (wordDevices.Count > 0xFF || dwordDevices.Count > 0xFF)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(wordDevices),
+                "Named read must fit in one random-read request (at most 255 word and 255 DWord devices). Split intentionally in application code if multiple request times are acceptable.");
+        }
+
         var words = new Dictionary<SlmpDeviceAddress, ushort>();
         var dwords = new Dictionary<SlmpDeviceAddress, uint>();
-        var wordIndex = 0;
-        var dwordIndex = 0;
+        if (wordDevices.Count == 0 && dwordDevices.Count == 0)
+            return (words, dwords);
 
-        while (wordIndex < wordDevices.Count || dwordIndex < dwordDevices.Count)
-        {
-            var wordChunk = wordDevices.Skip(wordIndex).Take(0xFF).ToArray();
-            var dwordChunk = dwordDevices.Skip(dwordIndex).Take(0xFF).ToArray();
-            wordIndex += wordChunk.Length;
-            dwordIndex += dwordChunk.Length;
-
-            if (wordChunk.Length == 0 && dwordChunk.Length == 0)
-                break;
-
-            var random = await client.ReadRandomAsync(wordChunk, dwordChunk, ct).ConfigureAwait(false);
-            for (int i = 0; i < wordChunk.Length; i++)
-                words[wordChunk[i]] = random.WordValues[i];
-            for (int i = 0; i < dwordChunk.Length; i++)
-                dwords[dwordChunk[i]] = random.DwordValues[i];
-        }
+        var random = await client.ReadRandomAsync(wordDevices, dwordDevices, ct).ConfigureAwait(false);
+        for (int i = 0; i < wordDevices.Count; i++)
+            words[wordDevices[i]] = random.WordValues[i];
+        for (int i = 0; i < dwordDevices.Count; i++)
+            dwords[dwordDevices[i]] = random.DwordValues[i];
 
         return (words, dwords);
     }
@@ -1894,7 +1501,7 @@ public static class SlmpClientExtensions
         }
 
         bitIndex = (int)(device.Number % 16U);
-        wordDevice = new SlmpDeviceAddress(device.Code, device.Number - (uint)bitIndex);
+        wordDevice = new SlmpDeviceAddress(device.Code, device.Number - (uint)bitIndex, device.PlcProfile);
         return true;
     }
 
@@ -1914,6 +1521,80 @@ public static class SlmpClientExtensions
             or SlmpDeviceCode.R
             or SlmpDeviceCode.ZR
             or SlmpDeviceCode.RD;
+
+    private static bool RequireBooleanWriteValue(object value)
+        => value is bool result
+            ? result
+            : throw new ArgumentException("BIT value must be a Boolean.", nameof(value));
+
+    private static ushort RequireUInt16WriteValue(object value, string dtype)
+    {
+        var number = RequireIntegralWriteValue(value, dtype);
+        if (number is < ushort.MinValue or > ushort.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(value), value, $"{dtype} value must be in range 0..65535.");
+        return (ushort)number;
+    }
+
+    private static short RequireInt16WriteValue(object value, string dtype)
+    {
+        var number = RequireIntegralWriteValue(value, dtype);
+        if (number is < short.MinValue or > short.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(value), value, $"{dtype} value must be in range -32768..32767.");
+        return (short)number;
+    }
+
+    private static uint RequireUInt32WriteValue(object value, string dtype)
+    {
+        var number = RequireIntegralWriteValue(value, dtype);
+        if (number is < uint.MinValue or > uint.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(value), value, $"{dtype} value must be in range 0..4294967295.");
+        return (uint)number;
+    }
+
+    private static int RequireInt32WriteValue(object value, string dtype)
+    {
+        var number = RequireIntegralWriteValue(value, dtype);
+        if (number is < int.MinValue or > int.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(value), value, $"{dtype} value must be in range -2147483648..2147483647.");
+        return (int)number;
+    }
+
+    private static decimal RequireIntegralWriteValue(object value, string dtype)
+        => value switch
+        {
+            sbyte number => number,
+            byte number => number,
+            short number => number,
+            ushort number => number,
+            int number => number,
+            uint number => number,
+            long number => number,
+            ulong number => number,
+            _ => throw new ArgumentException($"{dtype} value must use an integer CLR type.", nameof(value)),
+        };
+
+    private static float RequireFloat32WriteValue(object value)
+    {
+        var number = value switch
+        {
+            sbyte v => (double)v,
+            byte v => v,
+            short v => v,
+            ushort v => v,
+            int v => v,
+            uint v => v,
+            long v => v,
+            ulong v => v,
+            float v => v,
+            double v => v,
+            decimal v => (double)v,
+            _ => throw new ArgumentException("F value must use a numeric CLR type.", nameof(value)),
+        };
+        var result = (float)number;
+        if (!double.IsFinite(number) || !float.IsFinite(result))
+            throw new ArgumentOutOfRangeException(nameof(value), value, "F value must be finite and within the float32 range.");
+        return result;
+    }
 
     private static short DecodeSignedWord(ushort value) => unchecked((short)value);
 

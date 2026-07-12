@@ -134,11 +134,8 @@ internal sealed record PollingPlan(
 
         var defaults = root.TryGetProperty("defaults", out var defaultsElement) ? RequireObject(defaultsElement, "defaults") : default;
         var output = root.TryGetProperty("output", out var outputElement) ? RequireObject(outputElement, "output") : default;
-        var defaultTransport = GetString(defaults, "transport", "tcp");
-        var defaultPort = GetOptionalInt(defaults, "port") ?? 1025;
         var defaultTimeout = TimeSpan.FromSeconds(GetPositiveDouble(defaults, "timeout", 3));
         var defaultInterval = TimeSpan.FromSeconds(GetPositiveDouble(defaults, "interval", 1));
-        var defaultProfile = GetOptionalString(defaults, "plc_profile");
 
         if (!root.TryGetProperty("plcs", out var plcsElement) || plcsElement.ValueKind != JsonValueKind.Array)
             throw new ArgumentException("plcs must be a list.");
@@ -151,14 +148,18 @@ internal sealed record PollingPlan(
             var plc = RequireObject(plcElement, $"plcs[{index}]");
             var name = GetRequiredString(plc, "name", $"plcs[{index}].name");
             var host = GetRequiredString(plc, "host", $"plcs[{index}].host");
-            var profileText = GetOptionalString(plc, "plc_profile") ?? defaultProfile
-                ?? throw new ArgumentException($"plcs[{index}].plc_profile is required.");
+            var profileText = GetRequiredString(plc, "plc_profile", $"plcs[{index}].plc_profile");
+            var port = GetOptionalInt(plc, "port")
+                ?? throw new ArgumentException($"plcs[{index}].port is required.");
+            var transport = GetRequiredString(plc, "transport", $"plcs[{index}].transport");
+            var target = GetRequiredString(plc, "target", $"plcs[{index}].target");
             var endpoint = new PlcEndpoint(
                 name,
                 host,
                 SlmpPlcProfiles.Parse(profileText),
-                GetOptionalInt(plc, "port") ?? defaultPort,
-                OperationalCommon.ParseTransport(GetString(plc, "transport", defaultTransport)),
+                port,
+                OperationalCommon.ParseTransport(transport),
+                SlmpTargetParser.ParseNamed(target).Target,
                 TimeSpan.FromSeconds(GetPositiveDouble(plc, "timeout", defaultTimeout.TotalSeconds)),
                 TimeSpan.FromSeconds(GetPositiveDouble(plc, "interval", defaultInterval.TotalSeconds)));
             endpoints.Add(endpoint);

@@ -19,6 +19,14 @@ string GetOption(IReadOnlyList<string> args, string name, string defaultValue)
     return idx >= 0 && idx + 1 < args.Count ? args[idx + 1] : defaultValue;
 }
 
+string GetRequiredOption(IReadOnlyList<string> args, string name)
+{
+    var value = GetOption(args, name, string.Empty);
+    if (string.IsNullOrWhiteSpace(value))
+        throw new ArgumentException($"{name} is required.", name);
+    return value;
+}
+
 SlmpPlcProfile GetPlcProfileOption(IReadOnlyList<string> args)
 {
     return SlmpPlcProfiles.Parse(GetOption(args, "--plc-profile", string.Empty));
@@ -72,12 +80,15 @@ string GetRemotePassword(IReadOnlyList<string> args)
 
 async Task<SlmpClient> CreateClientAsync(IReadOnlyList<string> args, SlmpTargetAddress target)
 {
-    var host = GetOption(args, "--host", "192.168.250.100");
-    var port = int.Parse(GetOption(args, "--port", "1025"), CultureInfo.InvariantCulture);
-    var transport = GetOption(args, "--transport", "tcp").Equals("udp", StringComparison.OrdinalIgnoreCase) ? SlmpTransportMode.Udp : SlmpTransportMode.Tcp;
+    var host = GetRequiredOption(args, "--host");
+    var port = int.Parse(GetRequiredOption(args, "--port"), CultureInfo.InvariantCulture);
+    var transportText = GetRequiredOption(args, "--transport");
+    var transport = transportText.Equals("tcp", StringComparison.OrdinalIgnoreCase) ? SlmpTransportMode.Tcp
+        : transportText.Equals("udp", StringComparison.OrdinalIgnoreCase) ? SlmpTransportMode.Udp
+        : throw new ArgumentException("--transport must be tcp or udp.");
     var profile = GetPlcProfileOption(args);
 
-    var client = new SlmpClient(host, profile, port, transport) { TargetAddress = target };
+    var client = new SlmpClient(host, profile, port, transport, target);
 
     await client.OpenAsync().ConfigureAwait(false);
     return client;
@@ -102,9 +113,9 @@ IReadOnlyList<SlmpNamedTarget> ParseTargets(IReadOnlyList<string> args)
             throw new ArgumentException("Use either --target or --network/--station, not both.");
         }
 
-        if (networks.Count == 0 || stations.Count == 0)
+        if (networks.Count == 0 || stations.Count == 0 || moduleIos.Count == 0 || multidrops.Count == 0)
         {
-            throw new ArgumentException("--network and --station must be specified together.");
+            throw new ArgumentException("--network, --station, --module-io, and --multidrop must all be specified.");
         }
 
         if (networks.Count != stations.Count)
@@ -115,16 +126,12 @@ IReadOnlyList<SlmpNamedTarget> ParseTargets(IReadOnlyList<string> args)
         return networks.Select((networkText, index) =>
         {
             var stationText = stations[index];
-            var moduleIoText = moduleIos.Count == 0
-                ? "0x03FF"
-                : moduleIos.Count == 1
+            var moduleIoText = moduleIos.Count == 1
                     ? moduleIos[0]
                     : moduleIos.Count == networks.Count
                         ? moduleIos[index]
                         : throw new ArgumentException("--module-io count must be 1 or match --network/--station count.");
-            var multidropText = multidrops.Count == 0
-                ? "0x00"
-                : multidrops.Count == 1
+            var multidropText = multidrops.Count == 1
                     ? multidrops[0]
                     : multidrops.Count == networks.Count
                         ? multidrops[index]
@@ -142,7 +149,7 @@ IReadOnlyList<SlmpNamedTarget> ParseTargets(IReadOnlyList<string> args)
 
     if (targetInputs.Count == 0)
     {
-        targetInputs.Add("SELF");
+        throw new ArgumentException("--target is required when explicit route fields are not used.");
     }
     return SlmpTargetParser.ParseMany(targetInputs);
 }
@@ -151,7 +158,7 @@ async Task<int> RunConnectionCheckAsync(IReadOnlyList<string> args)
 {
     var target = ParseTargets(args)[0];
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
-    var values = await client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400), 1).ConfigureAwait(false);
+    var values = await client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400, client.PlcProfile), 1).ConfigureAwait(false);
     Console.WriteLine($"[OK] Read SM400 values=[{values[0]}]");
     return 0;
 }
@@ -192,7 +199,7 @@ async Task<int> RunOtherStationCheckAsync(IReadOnlyList<string> args)
         try
         {
             using var client = await CreateClientAsync(args, namedTarget.Target).ConfigureAwait(false);
-            var value = await client.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000), 1).ConfigureAwait(false);
+            var value = await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000, client.PlcProfile), 1).ConfigureAwait(false);
             string typeInfo;
             try
             {
@@ -223,9 +230,9 @@ async Task<int> RunRandomCheckAsync(IReadOnlyList<string> args)
     var target = ParseTargets(args)[0];
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
     var writeCheck = HasFlag(args, "--write-check");
-    var wordDevice = SlmpDeviceParser.Parse(GetOption(args, "--word-device", "D100"));
-    var dwordDevice = SlmpDeviceParser.Parse(GetOption(args, "--dword-device", "D200"));
-    var bitDevice = SlmpDeviceParser.Parse(GetOption(args, "--bit-device", "M100"));
+    var wordDevice = SlmpDeviceParser.Parse(GetRequiredOption(args, "--word-device"), client.PlcProfile);
+    var dwordDevice = SlmpDeviceParser.Parse(GetRequiredOption(args, "--dword-device"), client.PlcProfile);
+    var bitDevice = SlmpDeviceParser.Parse(GetRequiredOption(args, "--bit-device"), client.PlcProfile);
 
     var read = await client.ReadRandomAsync([wordDevice], [dwordDevice]).ConfigureAwait(false);
     Console.WriteLine($"[OK] random-read words=[{string.Join(", ", read.WordValues)}] dwords=[{string.Join(", ", read.DwordValues)}]");
@@ -247,10 +254,10 @@ async Task<int> RunBlockCheckAsync(IReadOnlyList<string> args)
     var target = ParseTargets(args)[0];
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
     var writeCheck = HasFlag(args, "--write-check");
-    var wordDevice = SlmpDeviceParser.Parse(GetOption(args, "--word-device", "D300"));
-    var bitDevice = SlmpDeviceParser.Parse(GetOption(args, "--bit-device", "M200"));
-    var wordPoints = ushort.Parse(GetOption(args, "--word-points", "2"));
-    var bitPoints = ushort.Parse(GetOption(args, "--bit-points", "1"));
+    var wordDevice = SlmpDeviceParser.Parse(GetRequiredOption(args, "--word-device"), client.PlcProfile);
+    var bitDevice = SlmpDeviceParser.Parse(GetRequiredOption(args, "--bit-device"), client.PlcProfile);
+    var wordPoints = ushort.Parse(GetRequiredOption(args, "--word-points"), CultureInfo.InvariantCulture);
+    var bitPoints = ushort.Parse(GetRequiredOption(args, "--bit-points"), CultureInfo.InvariantCulture);
 
     var read = await client.ReadBlockAsync(
         [new SlmpBlockRead(wordDevice, wordPoints)],
@@ -268,8 +275,7 @@ async Task<int> RunBlockCheckAsync(IReadOnlyList<string> args)
     var bitWordValues = Enumerable.Range(0, bitPoints).Select(i => (ushort)(0x0001 << (i % 15))).ToArray();
     await client.WriteBlockAsync(
         [new SlmpBlockWrite(wordDevice, wordValues)],
-        [new SlmpBlockWrite(bitDevice, bitWordValues)],
-        new SlmpBlockWriteOptions(SplitMixedBlocks: false)
+        [new SlmpBlockWrite(bitDevice, bitWordValues)]
     ).ConfigureAwait(false);
     Console.WriteLine("[OK] block-write completed");
     return 0;
@@ -306,29 +312,35 @@ static string FormatBits(IEnumerable<bool> values)
 static string FormatWords(IEnumerable<ushort> values)
     => string.Join(", ", values.Select(x => $"0x{x:X4}"));
 
+static byte SemanticDirectMemory(string deviceText, SlmpQualifiedDeviceAddress qualified)
+    => deviceText.TrimStart().StartsWith("J", StringComparison.OrdinalIgnoreCase)
+        ? (byte)0xF9
+        : qualified.Device.Code switch
+        {
+            SlmpDeviceCode.G => (byte)0xF8,
+            SlmpDeviceCode.HG => (byte)0xFA,
+            _ => (byte)0x00,
+        };
+
 async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
 {
     var targets = ParseTargets(args);
     var transports = GetOptions(args, "--transport");
-    if (transports.Count == 0) transports.Add("tcp");
+    if (transports.Count == 0) throw new ArgumentException("--transport is required and may be repeated.");
     var deviceTexts = GetOptions(args, "--device");
-    if (deviceTexts.Count == 0) deviceTexts.Add(@"U3E0\G10");
+    if (deviceTexts.Count == 0) throw new ArgumentException("--device is required and may be repeated.");
     var pointsTexts = GetOptions(args, "--points");
-    if (pointsTexts.Count == 0) pointsTexts.Add("1");
+    if (pointsTexts.Count == 0) throw new ArgumentException("--points is required and may be repeated.");
     var pointList = pointsTexts.Select(x => checked((ushort)SlmpTargetParser.ParseAutoNumber(x))).ToArray();
-    var directTexts = GetOptions(args, "--direct-memory");
-    if (directTexts.Count == 0) directTexts.Add("0xF8");
-    var directMemories = directTexts.Select(x => checked((byte)SlmpTargetParser.ParseAutoNumber(x))).ToArray();
     var writeCheck = HasFlag(args, "--write-check");
     var remotePassword = GetRemotePassword(args);
     var rows = new List<CoverageRow>();
 
     Console.WriteLine("=== Extended Device Coverage Sweep ===");
-    Console.WriteLine($"Host={GetOption(args, "--host", "192.168.250.100")}, Port={GetOption(args, "--port", "1025")}, Transports=[{string.Join(", ", transports)}], PlcProfile={GetPlcProfileOption(args)}");
+    Console.WriteLine($"Host={GetRequiredOption(args, "--host")}, Port={GetRequiredOption(args, "--port")}, Transports=[{string.Join(", ", transports)}], PlcProfile={GetPlcProfileOption(args)}");
     Console.WriteLine($"[INFO] Targets=[{string.Join(", ", targets.Select(x => x.Name))}]");
     Console.WriteLine($"[INFO] Devices=[{string.Join(", ", deviceTexts)}]");
     Console.WriteLine($"[INFO] Points=[{string.Join(", ", pointList)}]");
-    Console.WriteLine($"[INFO] Direct memory=[{string.Join(", ", directMemories.Select(x => $"0x{x:X2}"))}]");
 
     foreach (var transport in transports)
     {
@@ -364,19 +376,18 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
 
                 foreach (var deviceText in deviceTexts)
                 {
-                    var qualified = SlmpQualifiedDeviceParser.Parse(deviceText);
+                    var qualified = SlmpQualifiedDeviceParser.Parse(deviceText, client.PlcProfile);
                     var unit = IsBitExtendedDevice(qualified.Device.Code) ? "bit" : "word";
-                    foreach (var directMemory in directMemories)
+                    // Direct-memory bytes are derived from the semantic qualified route.
                     {
-                        var ext = new SlmpExtensionSpec(DirectMemorySpecification: directMemory);
-                        var effectiveDirectMemory = qualified.DirectMemorySpecification ?? directMemory;
+                        var effectiveDirectMemory = SemanticDirectMemory(deviceText, qualified);
                         foreach (var points in pointList)
                         {
                             try
                             {
                                 if (unit == "bit")
                                 {
-                                    var before = await client.ReadBitsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+                                    var before = await client.ReadBitsExtendedAsync(qualified, points).ConfigureAwait(false);
                                     if (!writeCheck)
                                     {
                                         var detail = $"device={deviceText}, points={points}, before=[{FormatBits(before)}], mode=read_only";
@@ -386,12 +397,12 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
                                     }
 
                                     var write = Enumerable.Range(0, points).Select(i => i % 2 == 0).ToArray();
-                                    await client.WriteBitsExtendedAsync(qualified, write, ext).ConfigureAwait(false);
-                                    var readback = await client.ReadBitsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+                                    await client.WriteBitsExtendedAsync(qualified, write).ConfigureAwait(false);
+                                    var readback = await client.ReadBitsExtendedAsync(qualified, points).ConfigureAwait(false);
                                     var restoredState = "ok";
                                     try
                                     {
-                                        await client.WriteBitsExtendedAsync(qualified, before, ext).ConfigureAwait(false);
+                                        await client.WriteBitsExtendedAsync(qualified, before).ConfigureAwait(false);
                                     }
                                     catch
                                     {
@@ -408,7 +419,7 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
                                 }
                                 else
                                 {
-                                    var before = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+                                    var before = await client.ReadWordsExtendedAsync(qualified, points).ConfigureAwait(false);
                                     if (!writeCheck)
                                     {
                                         var detail = $"device={deviceText}, points={points}, before=[{FormatWords(before)}], mode=read_only";
@@ -418,12 +429,12 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
                                     }
 
                                     var write = Enumerable.Range(0, points).Select(i => (ushort)(0x001E + i)).ToArray();
-                                    await client.WriteWordsExtendedAsync(qualified, write, ext).ConfigureAwait(false);
-                                    var readback = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+                                    await client.WriteWordsExtendedAsync(qualified, write).ConfigureAwait(false);
+                                    var readback = await client.ReadWordsExtendedAsync(qualified, points).ConfigureAwait(false);
                                     var restoredState = "ok";
                                     try
                                     {
-                                        await client.WriteWordsExtendedAsync(qualified, before, ext).ConfigureAwait(false);
+                                        await client.WriteWordsExtendedAsync(qualified, before).ConfigureAwait(false);
                                     }
                                     catch
                                     {
@@ -474,8 +485,8 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
     report.AppendLine("# Extended Device Coverage Latest");
     report.AppendLine();
     report.AppendLine($"- Timestamp: {GetTimestamp()}");
-    report.AppendLine($"- Host: {GetOption(args, "--host", "192.168.250.100")}");
-    report.AppendLine($"- Port: {GetOption(args, "--port", "1025")}");
+    report.AppendLine($"- Host: {GetRequiredOption(args, "--host")}");
+    report.AppendLine($"- Port: {GetRequiredOption(args, "--port")}");
     report.AppendLine($"- Write check: {(writeCheck ? "enabled" : "disabled")}");
     report.AppendLine();
     report.AppendLine("| Target | Transport | Device | Points | Unit | Direct | Status | Detail |");
@@ -492,22 +503,20 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
 async Task<int> RunExtendedDeviceDeviceRecheckAsync(IReadOnlyList<string> args)
 {
     var target = ParseTargets(args)[0];
-    var deviceText = GetOption(args, "--device", @"U3E0\G10");
-    var points = checked((ushort)SlmpTargetParser.ParseAutoNumber(GetOption(args, "--points", "1")));
-    var directMemory = checked((byte)SlmpTargetParser.ParseAutoNumber(GetOption(args, "--direct-memory", "0xF8")));
+    var deviceText = GetRequiredOption(args, "--device");
+    var points = checked((ushort)SlmpTargetParser.ParseAutoNumber(GetRequiredOption(args, "--points")));
     var writeCheck = HasFlag(args, "--write-check");
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
-    var qualified = SlmpQualifiedDeviceParser.Parse(deviceText);
-    var ext = new SlmpExtensionSpec(DirectMemorySpecification: directMemory);
-    var before = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
+    var qualified = SlmpQualifiedDeviceParser.Parse(deviceText, client.PlcProfile);
+    var before = await client.ReadWordsExtendedAsync(qualified, points).ConfigureAwait(false);
     var status = "OK";
     var detail = $"device={deviceText}, points={points}, before=[{string.Join(", ", before.Select(x => $"0x{x:X4}"))}], mode=read_only";
     if (writeCheck)
     {
         var write = Enumerable.Range(0, points).Select(i => (ushort)(0x001E + i)).ToArray();
-        await client.WriteWordsExtendedAsync(qualified, write, ext).ConfigureAwait(false);
-        var readback = await client.ReadWordsExtendedAsync(qualified, points, ext).ConfigureAwait(false);
-        await client.WriteWordsExtendedAsync(qualified, before, ext).ConfigureAwait(false);
+        await client.WriteWordsExtendedAsync(qualified, write).ConfigureAwait(false);
+        var readback = await client.ReadWordsExtendedAsync(qualified, points).ConfigureAwait(false);
+        await client.WriteWordsExtendedAsync(qualified, before).ConfigureAwait(false);
         var mismatch = !readback.SequenceEqual(write);
         status = mismatch ? "NG" : "OK";
         detail = $"device={deviceText}, points={points}, before=[{string.Join(", ", before.Select(x => $"0x{x:X4}"))}], write=[{string.Join(", ", write.Select(x => $"0x{x:X4}"))}], readback=[{string.Join(", ", readback.Select(x => $"0x{x:X4}"))}]";
@@ -521,7 +530,7 @@ async Task<int> RunExtendedDeviceDeviceRecheckAsync(IReadOnlyList<string> args)
     report.AppendLine();
     report.AppendLine($"- Timestamp: {GetTimestamp()}");
     report.AppendLine($"- Target: {target.Name}");
-    report.AppendLine($"- Transport: {GetOption(args, "--transport", "tcp")}");
+    report.AppendLine($"- Transport: {GetRequiredOption(args, "--transport")}");
     report.AppendLine($"- Result: {status}");
     report.AppendLine();
     report.AppendLine(detail);
@@ -535,10 +544,10 @@ async Task<int> RunReadSoakAsync(IReadOnlyList<string> args)
 {
     var target = ParseTargets(args)[0];
     var iterations = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--iterations", "100"));
-    var device = SlmpDeviceParser.Parse(GetOption(args, "--device", "D1000"));
-    var points = checked((ushort)SlmpTargetParser.ParseAutoNumber(GetOption(args, "--points", "1")));
+    var points = checked((ushort)SlmpTargetParser.ParseAutoNumber(GetRequiredOption(args, "--points")));
     var intervalMs = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--interval-ms", "0"));
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
+    var device = SlmpDeviceParser.Parse(GetRequiredOption(args, "--device"), client.PlcProfile);
     var failures = 0;
     var latencies = new List<long>(iterations);
     for (var i = 0; i < iterations; i++)
@@ -546,7 +555,7 @@ async Task<int> RunReadSoakAsync(IReadOnlyList<string> args)
         var started = DateTimeOffset.UtcNow;
         try
         {
-            _ = await client.ReadWordsAsync(device, points).ConfigureAwait(false);
+            _ = await client.ReadWordsRawAsync(device, points).ConfigureAwait(false);
         }
         catch
         {
@@ -582,9 +591,9 @@ async Task<int> RunMixedReadLoadAsync(IReadOnlyList<string> args)
     {
         try
         {
-            _ = await client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400), 1).ConfigureAwait(false);
-            _ = await client.ReadRandomAsync([new SlmpDeviceAddress(SlmpDeviceCode.D, 100)], [new SlmpDeviceAddress(SlmpDeviceCode.D, 200)]).ConfigureAwait(false);
-            _ = await client.ReadBlockAsync([new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 300), 2)], [new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.M, 200), 1)]).ConfigureAwait(false);
+            _ = await client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400, client.PlcProfile), 1).ConfigureAwait(false);
+            _ = await client.ReadRandomAsync([new SlmpDeviceAddress(SlmpDeviceCode.D, 100, client.PlcProfile)], [new SlmpDeviceAddress(SlmpDeviceCode.D, 200, client.PlcProfile)]).ConfigureAwait(false);
+            _ = await client.ReadBlockAsync([new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.D, 300, client.PlcProfile), 2)], [new SlmpBlockRead(new SlmpDeviceAddress(SlmpDeviceCode.M, 200, client.PlcProfile), 1)]).ConfigureAwait(false);
         }
         catch
         {
@@ -641,8 +650,8 @@ async Task<int> RunTcpConcurrencyAsync(IReadOnlyList<string> args)
             {
                 try
                 {
-                    _ = await client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400), 1).ConfigureAwait(false);
-                    _ = await client.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000), 1).ConfigureAwait(false);
+                    _ = await client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400, client.PlcProfile), 1).ConfigureAwait(false);
+                    _ = await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000, client.PlcProfile), 1).ConfigureAwait(false);
                 }
                 catch
                 {
@@ -695,8 +704,8 @@ async Task<int> RunSingleConnectionLoadAsync(IReadOnlyList<string> args)
         {
             try
             {
-                _ = await queuedClient.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400), 1).ConfigureAwait(false);
-                _ = await queuedClient.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000), 1).ConfigureAwait(false);
+                _ = await queuedClient.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400, client.PlcProfile), 1).ConfigureAwait(false);
+                _ = await queuedClient.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000, client.PlcProfile), 1).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -729,17 +738,18 @@ if (args.Length == 0 || HasFlag(args, "--help") || HasFlag(args, "-h"))
 {
     Console.WriteLine("SLMP .NET CLI");
     const string profiles = "melsec:iq-r|melsec:iq-r:rj71en71|melsec:iq-l|melsec:mx-f|melsec:mx-r|melsec:iq-f|melsec:qcpu:qj71e71-100|melsec:lcpu|melsec:lcpu:lj71e71-100|melsec:qnu|melsec:qnu:qj71e71-100|melsec:qnudv|melsec:qnudv:qj71e71-100";
-    Console.WriteLine($"  connection-check --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target SELF|SELF-MULTIPLE-CPU-1|name,0x00,0xFF,0x03FF,0x00 --network ... --station ... --quiet]");
-    Console.WriteLine($"  device-range-catalog --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --quiet]");
-    Console.WriteLine($"  other-station-check --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --network ... --station ... (repeatable) --quiet]");
-    Console.WriteLine($"  random-check --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target ... --network ... --station ... --write-check --quiet]");
-    Console.WriteLine($"  block-check --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target ... --network ... --station ... --write-check --quiet]");
-    Console.WriteLine($@"  ExtendedDevice-device-recheck --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --device U3E0\G10 --points 1 --direct-memory 0xF8 --write-check --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine($@"  extendeddevice-coverage --plc-profile {profiles} [--host ... --port ... --transport tcp|udp (repeatable) --network ... --station ... (repeatable) --device U3E0\G10 (repeatable) --points 1 (repeatable) --direct-memory 0xF8 (repeatable) --write-check --remote-password ... --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine($"  read-soak --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --device D1000 --points 1 --iterations 100 --interval-ms 0 --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine($"  mixed-read-load --plc-profile {profiles} [--host ... --port ... --transport tcp|udp --target SELF --network ... --station ... --iterations 100 --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine($"  tcp-concurrency --plc-profile {profiles} [--host ... --port ... --transport tcp --target SELF --network ... --station ... --clients 4 --iterations 50 --stagger-ms 50 --report-dir internal_docs/validation/reports --quiet]");
-    Console.WriteLine($"  single-connection-load --plc-profile {profiles} [--host ... --port ... --transport tcp --target SELF --network ... --station ... --workers 4 --iterations 200 --report-dir internal_docs/validation/reports --quiet]");
+    Console.WriteLine("  Every command requires --host, --port, --transport, --plc-profile, and either --target or all of --network/--station/--module-io/--multidrop.");
+    Console.WriteLine($"  connection-check --host HOST --port PORT --transport tcp|udp --plc-profile {profiles} --target SELF [--quiet]");
+    Console.WriteLine($"  device-range-catalog --host HOST --port PORT --transport tcp|udp --plc-profile {profiles} --target SELF [--quiet]");
+    Console.WriteLine($"  other-station-check --host HOST --port PORT --transport tcp|udp --plc-profile {profiles} --network N --station S --module-io IO --multidrop M [route fields may repeat]");
+    Console.WriteLine($"  random-check --host HOST --port PORT --transport tcp|udp --plc-profile {profiles} --target SELF --word-device D100 --dword-device D200 --bit-device M100 [--write-check]");
+    Console.WriteLine($"  block-check --host HOST --port PORT --transport tcp|udp --plc-profile {profiles} --target SELF --word-device D300 --word-points 2 --bit-device M200 --bit-points 1 [--write-check]");
+    Console.WriteLine($@"  extendeddevice-device-recheck --host HOST --port PORT --transport tcp|udp --plc-profile {profiles} --target SELF --device U3E0\G10 --points 1 [--write-check]");
+    Console.WriteLine($@"  extendeddevice-coverage --host HOST --port PORT --transport tcp|udp --plc-profile {profiles} --target SELF --device U3E0\G10 --points 1 [repeat transport/device/points as needed]");
+    Console.WriteLine($"  read-soak --host HOST --port PORT --transport tcp|udp --plc-profile {profiles} --target SELF --device D1000 --points 1 [--iterations 100 --interval-ms 0]");
+    Console.WriteLine($"  mixed-read-load --host HOST --port PORT --transport tcp|udp --plc-profile {profiles} --target SELF [--iterations 100]");
+    Console.WriteLine($"  tcp-concurrency --host HOST --port PORT --transport tcp --plc-profile {profiles} --target SELF [--clients 4 --iterations 50 --stagger-ms 50]");
+    Console.WriteLine($"  single-connection-load --host HOST --port PORT --transport tcp --plc-profile {profiles} --target SELF [--workers 4 --iterations 200]");
     return;
 }
 

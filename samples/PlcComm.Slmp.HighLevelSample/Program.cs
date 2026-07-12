@@ -2,12 +2,12 @@
 // ============================
 // Demonstrates all high-level SLMP APIs:
 //   SlmpClientFactory.OpenAndConnectAsync, ReadWordsSingleRequestAsync,
-//   ReadDWordsSingleRequestAsync, ReadWordsChunkedAsync,
+//   ReadDWordsSingleRequestAsync,
 //   ReadTypedAsync, WriteTypedAsync, WriteBitInWordAsync,
 //   ReadNamedAsync, PollAsync, and SlmpAddress.Normalize.
 //
 // Usage:
-//   dotnet run --project samples/PlcComm.Slmp.HighLevelSample -- [host] [port] <plc-profile>
+//   dotnet run --project samples/PlcComm.Slmp.HighLevelSample -- <host> <port> <plc-profile> <tcp|udp> <target>
 //
 // Common SLMP port values:
 //   1025  iQ-R / iQ-F built-in Ethernet SLMP
@@ -16,16 +16,18 @@
 
 using PlcComm.Slmp;
 
-var host = args.Length > 0 ? args[0] : "192.168.250.100";
-var port = args.Length > 1 ? int.Parse(args[1]) : 1025;
-if (args.Length <= 2)
+if (args.Length < 5)
 {
-    Console.Error.WriteLine("PLC profile is required. Usage: dotnet run --project samples/PlcComm.Slmp.HighLevelSample -- [host] [port] <plc-profile>");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/PlcComm.Slmp.HighLevelSample -- <host> <port> <plc-profile> <tcp|udp> <target>");
     Environment.ExitCode = 2;
     return;
 }
+var host = args[0];
+var port = int.Parse(args[1], System.Globalization.CultureInfo.InvariantCulture);
 var plcProfileArg = args[2];
 var plcProfile = SlmpPlcProfiles.Parse(plcProfileArg);
+var transport = OperationalTransport(args[3]);
+var target = SlmpTargetParser.ParseNamed(args[4]).Target;
 
 // -------------------------------------------------------------------------
 // 1. OpenAndConnectAsync  (recommended entry point)
@@ -37,19 +39,16 @@ var plcProfile = SlmpPlcProfiles.Parse(plcProfileArg);
 // be called directly on the queued client.
 //
 // port options:
-//   1025  iQ-R / iQ-F Ethernet module SLMP port (default)
+//   1025  iQ-R / iQ-F Ethernet module SLMP port
 //   5000  GX Works3 / GX Works2 simulation port
 //   5007  Q/L series Ethernet module SLMP port
 // -------------------------------------------------------------------------
 Console.WriteLine($"Connecting to {host}:{port} with plc_profile={SlmpPlcProfiles.ToCanonicalString(plcProfile)} ...");
-var options = new SlmpConnectionOptions(host, plcProfile)
-{
-    Port = port,
-};
+var options = new SlmpConnectionOptions(host, plcProfile, port, transport, target);
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 Console.WriteLine($"[OpenAndConnectAsync] plc_profile={SlmpPlcProfiles.ToCanonicalString(plcProfile)} frame={client.FrameType} compatibility={client.CompatibilityMode}");
 
-string normalized = SlmpAddress.Normalize("d50");
+string normalized = SlmpAddress.Normalize("d50", plcProfile);
 Console.WriteLine($"[Normalize] d50 -> {normalized}");
 
 // -------------------------------------------------------------------------
@@ -60,17 +59,12 @@ Console.WriteLine($"[Normalize] d50 -> {normalized}");
 //                     in units of 250 ms (default 0x0010 = 4 s)
 //   TargetAddress   - routing info for multi-network topologies
 //                     (Network, Station, ModuleIo, Multidrop)
-//   TraceHook       - optional Action<SlmpTraceFrame> for raw-frame logging;
-//                     set to a lambda to capture every send/receive byte
 //   PlcProfile       - the selected canonical high-level profile
 //   FrameType       - derived from PlcProfile
 //   CompatibilityMode - derived from PlcProfile
 // -------------------------------------------------------------------------
-client.Timeout = TimeSpan.FromSeconds(5);
+client.Timeout = TimeSpan.FromSeconds(3);
 client.MonitoringTimer = 0x0040;  // 16 s
-// client.TraceHook = frame =>
-//     Console.WriteLine($"[TRACE] {frame.Direction} {frame.Data.Length} B");
-
 // -------------------------------------------------------------------------
 // 2. ReadTypedAsync / WriteTypedAsync
 //
@@ -113,21 +107,17 @@ ushort[] words10 = await client.ReadWordsSingleRequestAsync("D0", 10);
 Console.WriteLine($"[ReadWordsSingleRequestAsync] D0-D9 = [{string.Join(", ", words10)}]");
 
 // -------------------------------------------------------------------------
-// 4. ReadDWordsSingleRequestAsync / ReadWordsChunkedAsync / ReadDWordsChunkedAsync
+// 4. ReadDWordsSingleRequestAsync
 //
 // Reads contiguous DWord (32-bit unsigned) values.
 // Each DWord occupies two consecutive word registers (low-word first).
 //
-// Use case: choosing explicitly between one-request reads and multi-request
-//           chunked reads.
+// Use case: one atomic protocol request. If an application intentionally
+//           needs several requests, it must define the split and consistency
+//           handling itself.
 // -------------------------------------------------------------------------
 uint[] dwords = await client.ReadDWordsSingleRequestAsync("D0", 4);
 Console.WriteLine($"[ReadDWordsSingleRequestAsync] D0-D7 as uint32[4] = [{string.Join(", ", dwords)}]");
-
-ushort[] largeWords = await client.ReadWordsChunkedAsync("D0", 1000, maxWordsPerRequest: 480);
-uint[] largeDwords = await client.ReadDWordsChunkedAsync("D200", 120, maxDwordsPerRequest: 240);
-Console.WriteLine($"[ReadWordsChunkedAsync] D0-D999: {largeWords.Length} words read");
-Console.WriteLine($"[ReadDWordsChunkedAsync] D200-D439: {largeDwords.Length} dwords read");
 
 // -------------------------------------------------------------------------
 // 5. WriteBitInWordAsync
@@ -197,3 +187,8 @@ await foreach (var snap in client.PollAsync(
 }
 
 Console.WriteLine("Done.");
+
+static SlmpTransportMode OperationalTransport(string text)
+    => text.Equals("tcp", StringComparison.OrdinalIgnoreCase) ? SlmpTransportMode.Tcp
+        : text.Equals("udp", StringComparison.OrdinalIgnoreCase) ? SlmpTransportMode.Udp
+        : throw new ArgumentException("transport must be tcp or udp", nameof(text));
