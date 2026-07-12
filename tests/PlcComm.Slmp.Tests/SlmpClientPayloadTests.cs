@@ -140,6 +140,8 @@ public sealed class SlmpClientPayloadTests
             () => client.SelfTestLoopbackAsync(new byte[] { (byte)'H', (byte)'E', (byte)'L', (byte)'L', (byte)'O' }));
         await Assert.ThrowsAsync<ArgumentException>(
             () => client.SelfTestLoopbackAsync(new byte[] { 0x00, 0xFF }));
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => client.SelfTestLoopbackAsync("ab12"u8.ToArray()));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => client.SelfTestLoopbackAsync(Array.Empty<byte>()));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(

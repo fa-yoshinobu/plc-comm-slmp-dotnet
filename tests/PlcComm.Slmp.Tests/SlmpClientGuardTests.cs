@@ -969,6 +969,12 @@ public sealed class SlmpClientGuardTests
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunMonitorCycleAsync(0, 0));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunMonitorCycleAsync(97, 0));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunMonitorCycleAsync(-1, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunMonitorCycleAsync(2, -1));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.RunMonitorCycleAsync(int.MaxValue, int.MaxValue));
+        using var queued = new QueuedSlmpClient(client);
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => queued.RunMonitorCycleAsync(-1, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => queued.RunMonitorCycleAsync(2, -1));
         Assert.False(client.IsOpen);
     }
 

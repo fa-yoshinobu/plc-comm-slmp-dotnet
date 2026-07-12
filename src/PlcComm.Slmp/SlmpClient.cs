@@ -1208,7 +1208,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             throw new ArgumentOutOfRangeException(nameof(data), "loopback payload size out of range (1..960 bytes)");
         }
 
-        foreach (var value in data.Span)
+        var snapshot = data.ToArray();
+        foreach (var value in snapshot)
         {
             if (!IsSelfTestHexByte(value))
             {
@@ -1216,9 +1217,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             }
         }
 
-        var payload = new byte[2 + data.Length];
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(0, 2), checked((ushort)data.Length));
-        data.Span.CopyTo(payload.AsSpan(2));
+        var payload = new byte[2 + snapshot.Length];
+        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(0, 2), checked((ushort)snapshot.Length));
+        snapshot.CopyTo(payload.AsSpan(2));
         var response = await RequestCoreAsync(SlmpCommand.SelfTest, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
         if (response.Length < 2)
         {
@@ -1897,7 +1898,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         bool extended = false,
         SlmpProfileLimit limitKey = SlmpProfileLimit.RandomReadWord)
     {
-        var total = wordPoints + dwordPoints;
+        if (wordPoints < 0)
+            throw new ArgumentOutOfRangeException(nameof(wordPoints), $"{name} word access points must be non-negative: {wordPoints}");
+        if (dwordPoints < 0)
+            throw new ArgumentOutOfRangeException(nameof(dwordPoints), $"{name} dword access points must be non-negative: {dwordPoints}");
+        var total = (long)wordPoints + dwordPoints;
         var fallbackLimit = extended || CompatibilityMode != SlmpCompatibilityMode.Legacy ? 96 : 192;
         var limit = fallbackLimit;
         if (SlmpCapabilityProfiles.TryGetLimit(PlcProfile, extended ? ExtendedLimitKey(limitKey) : limitKey, out var profileLimit))

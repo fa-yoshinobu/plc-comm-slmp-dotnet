@@ -123,7 +123,9 @@ bool[] bits = await client.ReadBitsExtendedAsync(linkBits, 16);
 
 For iQ-R multi-CPU `U3En\HG...` access, the qualified device never changes the
 immutable SLMP request target. Create a client with the destination CPU target
-when a write must be reflected there. Cross-CPU reads remain valid. See the
+when a write must be reflected there. A write can return a normal end code
+without changing the intended CPU buffer when the selected request target
+identifies a different CPU or Own Station. Cross-CPU reads remain valid. See the
 shared [iQ-R target guidance](https://fa-yoshinobu.github.io/plc-comm-docs-site/plc-setup/slmp/iq-r/#multi-cpu-cpu-buffer-target).
 
 ## Monitor, self-test, and Clear Error
