@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-07-13
+
 - Library: `QueuedSlmpClient` now exposes self-test loopback and fixed Clear Error semantic APIs instead of requiring access through the inner client.
 - Library: Monitor cycle expected counts must total at least one and stay within the selected profile limit; queued monitor registration snapshots device lists when submitted.
 - Library: Self-test loopback now rejects declared-length, actual-length, trailing-data, and echo mismatches against the transmitted input snapshot.
@@ -38,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library: Legacy device numbers above the 24-bit wire field, non-printable/non-ASCII passwords, timeout values below 1 ms, and LZ modifier indexes above 1 are rejected before transport.
 - Library: `ReadNamedAsync`, `PollAsync`, and `WriteNamedAsync` now emit one random request per call/cycle or reject the complete operation before transport; hidden fallback reads, mixed write families, and bit-in-word read-modify-write are no longer performed.
 
+### Added
+- Library: Added `SlmpPlcProfileDescriptor` and `SlmpPlcProfiles.GetProfileDescriptors()` for canonical SLMP profile metadata.
+
 ### Changed
 - Library: One client now serializes all request/response exchanges, assigns unique 4E serials, and closes TCP or UDP transport after timeout/cancellation so a delayed response cannot contaminate a later request.
 - Library: Random and block operations expose category-specific APIs, reject all-empty requests, and reject duplicate or overlapping write destinations before transport.
@@ -46,26 +51,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library: Label abbreviation definitions remain optional and encode zero when omitted; malformed references, empty points, and count overflow are rejected before transport.
 - Samples: Runtime connection fields, targets, polling addresses, and dtypes are explicit; configuration files no longer infer port or transport.
 
-### Fixed
-- Library: Long timer multi-point reads use one bounded request instead of issuing one request per point.
-- Library: Direct connection options validate host, port, transport, profile, and timeout at construction.
-
-### Tests
-- Tests: Added cross-contract tests for aggregate empty input, overlapping writes, Extended Device public surface, required state-changing arguments, CPU selection, label abbreviation validation, concurrent 4E serial assignment, and UDP cancellation isolation.
-
-## [3.1.0] - 2026-07-10
-
-### Added
-- Library: Added `SlmpPlcProfileDescriptor` and `SlmpPlcProfiles.GetProfileDescriptors()` for canonical SLMP profile metadata.
-
-### Changed
 - Release: Bumped .NET package metadata to `3.1.0`.
 - Tooling: Pinned canonical SLMP profile imports to published profile tag `v2.0.0`.
 
 ### Fixed
+- Library: Long timer multi-point reads use one bounded request instead of issuing one request per point.
+- Library: Direct connection options validate host, port, transport, profile, and timeout at construction.
+
 - CI: Required an existing exact release tag checkout and verified tag, manifest, runtime assembly, `.nupkg`, and `.snupkg` versions before GitHub Release upload.
 - Docs: Fixed XML `cref` labels in the generated API reference by excluding method parameter lists and added generator regression tests.
 - Docs: Removed hand-maintained page navigation from `GETTING_STARTED.md`.
+
+### Tests
+- Tests: Added cross-contract tests for aggregate empty input, overlapping writes, Extended Device public surface, required state-changing arguments, CPU selection, label abbreviation validation, concurrent 4E serial assignment, and UDP cancellation isolation.
 
 ## [3.0.0] - 2026-07-10
 
