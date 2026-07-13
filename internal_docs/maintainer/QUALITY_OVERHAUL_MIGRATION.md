@@ -231,3 +231,21 @@ Codex self-review inspected the actual diff, exported API, constructor and valid
 - [x] New public-API verification completed through deterministic regression coverage and the approved D-128/D-129/D-131 live checks.
 - [x] D-132 Extend Unit versus HG physical-area classification completed: independent values remained stable through immediate, 50 ms, 250 ms, and 1 s cross-reads.
 - [x] Removed the misleading CPU-buffer aliases and alias-only enum; retained distinct Extend Unit and qualified HG surfaces.
+
+## NR-006: Lifetime traffic statistics
+
+Scope: `SlmpClient.TrafficStats` and `QueuedSlmpClient.TrafficStats`, next release.
+
+Target contract: the property returns a client-lifetime immutable snapshot. A request and its full
+frame bytes count only after a complete transport send succeeds. A complete received frame/datagram
+TCP response counts after assembly in the selected frame format; a UDP datagram counts on receipt.
+Both count before serial, end-code, or payload validation. Unrecognized TCP subheaders, partial
+sends/receives, and pre-send failures do not count. Close/reconnect does not reset counters.
+
+Acceptance criteria:
+
+- [x] Implementation and deterministic boundary tests completed.
+- [x] API reference, usage guide, and Unreleased changelog agree.
+- [x] Live PLC verification is unnecessary because deterministic transports observe every boundary.
+- [ ] Claude source review completed and findings recorded for the next release batch.
+- [ ] Final next-release package and cross-language API comparison completed.

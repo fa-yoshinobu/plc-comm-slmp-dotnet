@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Library: Added immutable lifetime traffic counters through `SlmpClient.TrafficStats` and `QueuedSlmpClient.TrafficStats`.
+
 ## [3.1.0] - 2026-07-13
 
 - Library: `QueuedSlmpClient` now exposes self-test loopback and fixed Clear Error semantic APIs instead of requiring access through the inner client.

@@ -44,6 +44,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     private readonly SemaphoreSlim _requestGate = new(1, 1);
     private readonly SemaphoreSlim _openGate = new(1, 1);
     private bool _requiresExplicitOpen;
+    private long _requestCount;
+    private long _txBytes;
+    private long _rxBytes;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SlmpClient"/> class.
@@ -82,6 +85,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     public SlmpPlcProfile PlcProfile { get; }
     /// <summary>Gets the immutable destination routing information selected at construction.</summary>
     public SlmpTargetAddress TargetAddress => _targetAddress;
+    /// <summary>Gets a read-only snapshot of cumulative traffic for this client lifetime.</summary>
+    public SlmpTrafficStats TrafficStats => new(
+        unchecked((ulong)Interlocked.Read(ref _requestCount)),
+        unchecked((ulong)Interlocked.Read(ref _txBytes)),
+        unchecked((ulong)Interlocked.Read(ref _rxBytes)));
     /// <summary>Gets or sets the monitoring timer value (multiples of 250ms). Default is 0x0010 (4s).</summary>
     public ushort MonitoringTimer { get; set; } = 0x0010;
     /// <summary>Gets or sets the communication timeout. Values must be from 1 millisecond through <see cref="int.MaxValue"/> milliseconds.</summary>
@@ -1629,6 +1637,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 try
                 {
                     await _tcpStream.WriteAsync(frame, tcpTimeout.Token).ConfigureAwait(false);
+                    RecordSend(frame.Length);
                     if (!expectResponse)
                     {
                         LastResponseFrame = [];
@@ -1639,6 +1648,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                     while (true)
                     {
                         var response = await ReceiveTcpFrameAsync(_tcpStream, FrameType, tcpTimeout.Token).ConfigureAwait(false);
+                        RecordReceive(response.Length);
                         LastResponseFrame = response;
                         FireTrace(SlmpTraceDirection.Receive, response);
                         if (!HasExpectedResponseFrameType(response, FrameType))
@@ -1667,6 +1677,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             try
             {
                 await _udp.SendAsync(frame, udpTimeout.Token).ConfigureAwait(false);
+                RecordSend(frame.Length);
                 if (!expectResponse)
                 {
                     LastResponseFrame = [];
@@ -1677,6 +1688,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 while (true)
                 {
                     var datagram = await _udp.ReceiveAsync(udpTimeout.Token).ConfigureAwait(false);
+                    RecordReceive(datagram.Buffer.Length);
                     LastResponseFrame = datagram.Buffer;
                     FireTrace(SlmpTraceDirection.Receive, datagram.Buffer);
                     if (!HasExpectedResponseFrameType(datagram.Buffer, FrameType))
@@ -1701,6 +1713,14 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             _requestGate.Release();
         }
     }
+
+    private void RecordSend(int frameLength)
+    {
+        Interlocked.Increment(ref _requestCount);
+        Interlocked.Add(ref _txBytes, frameLength);
+    }
+
+    private void RecordReceive(int frameLength) => Interlocked.Add(ref _rxBytes, frameLength);
 
     private byte[] BuildRequestFrame(SlmpCommand command, ushort subcommand, ReadOnlySpan<byte> payload)
     {

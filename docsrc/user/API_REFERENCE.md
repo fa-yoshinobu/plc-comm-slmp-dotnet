@@ -537,6 +537,14 @@ public SlmpTargetAddress TargetAddress { get; }
 
 Gets the immutable destination routing information.
 
+##### TrafficStats
+
+```csharp
+public SlmpTrafficStats TrafficStats { get; }
+```
+
+Gets a read-only snapshot of cumulative traffic for the underlying client lifetime.
+
 ##### MonitoringTimer
 
 ```csharp
@@ -1366,6 +1374,14 @@ public SlmpTargetAddress TargetAddress { get; }
 ```
 
 Gets the immutable destination routing information selected at construction.
+
+##### TrafficStats
+
+```csharp
+public SlmpTrafficStats TrafficStats { get; }
+```
+
+Gets a read-only snapshot of cumulative traffic for this client lifetime.
 
 ##### MonitoringTimer
 
@@ -4212,6 +4228,53 @@ public static int ParseAutoNumber(string text)
 ```
 
 Parses a number string, supporting both decimal and "0x" hexadecimal notation.
+
+### SlmpTrafficStats
+
+```csharp
+public struct SlmpTrafficStats
+```
+
+Immutable lifetime traffic-counter snapshot for one SLMP client.
+
+#### Members
+
+##### SlmpTrafficStats
+
+```csharp
+public SlmpTrafficStats(ulong RequestCount, ulong TxBytes, ulong RxBytes)
+```
+
+Immutable lifetime traffic-counter snapshot for one SLMP client.
+
+Parameters:
+- `RequestCount`: Number of complete request frames accepted by the transport.
+- `TxBytes`: Total bytes in complete request frames accepted by the transport.
+- `RxBytes`: Total bytes in complete response frames or datagrams received.
+
+##### RequestCount
+
+```csharp
+public ulong RequestCount { get; set; }
+```
+
+Number of complete request frames accepted by the transport.
+
+##### TxBytes
+
+```csharp
+public ulong TxBytes { get; set; }
+```
+
+Total bytes in complete request frames accepted by the transport.
+
+##### RxBytes
+
+```csharp
+public ulong RxBytes { get; set; }
+```
+
+Total bytes in complete response frames or datagrams received.
 
 ### SlmpTransportMode
 

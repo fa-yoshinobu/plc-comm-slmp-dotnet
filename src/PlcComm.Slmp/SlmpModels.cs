@@ -2,6 +2,12 @@ using System.Globalization;
 
 namespace PlcComm.Slmp;
 
+/// <summary>Immutable lifetime traffic-counter snapshot for one SLMP client.</summary>
+/// <param name="RequestCount">Number of complete request frames accepted by the transport.</param>
+/// <param name="TxBytes">Total bytes in complete request frames accepted by the transport.</param>
+/// <param name="RxBytes">Total bytes in complete response frames or datagrams received.</param>
+public readonly record struct SlmpTrafficStats(ulong RequestCount, ulong TxBytes, ulong RxBytes);
+
 /// <summary>
 /// Named SLMP request-header module I/O numbers for CPU routing.
 /// </summary>

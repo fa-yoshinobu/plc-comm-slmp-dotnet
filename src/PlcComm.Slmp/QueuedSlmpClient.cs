@@ -69,6 +69,9 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
         get => _client.TargetAddress;
     }
 
+    /// <summary>Gets a read-only snapshot of cumulative traffic for the underlying client lifetime.</summary>
+    public SlmpTrafficStats TrafficStats => _client.TrafficStats;
+
     /// <summary>Gets or sets the monitoring timer value (multiples of 250ms).</summary>
     public ushort MonitoringTimer
     {
