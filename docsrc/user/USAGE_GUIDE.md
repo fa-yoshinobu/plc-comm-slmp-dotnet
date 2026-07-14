@@ -385,3 +385,8 @@ Console.WriteLine($"LCN0:D = {snapshot["LCN0:D"]}");
 | `.n` | `D50.3` | Bit `n` inside one word, where `n` is hexadecimal `0` to `F`. |
 
 Named addresses used with `ReadNamedAsync`, `WriteNamedAsync`, and `PollAsync` must include the intended type, for example `D100:U` or `M1000:BIT`.
+## Traffic statistics
+
+Read `client.TrafficStats` (or the queued client's equivalent property) for a client-lifetime
+snapshot of `RequestCount`, `TxBytes`, and `RxBytes`. Complete sends and complete received frames
+are counted; close and reconnect do not reset the snapshot.

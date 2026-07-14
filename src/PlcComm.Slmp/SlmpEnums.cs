@@ -53,6 +53,7 @@ public enum SlmpPlcProfile : byte
     IqL = 3,
     MxF = 4,
     MxR = 5,
+    MxRRj71En71 = 15,
     QCpu = 6,
     LCpu = 7,
     QnU = 8,

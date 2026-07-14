@@ -231,3 +231,111 @@ Codex self-review inspected the actual diff, exported API, constructor and valid
 - [x] New public-API verification completed through deterministic regression coverage and the approved D-128/D-129/D-131 live checks.
 - [x] D-132 Extend Unit versus HG physical-area classification completed: independent values remained stable through immediate, 50 ms, 250 ms, and 1 s cross-reads.
 - [x] Removed the misleading CPU-buffer aliases and alias-only enum; retained distinct Extend Unit and qualified HG surfaces.
+
+## NR-006: Lifetime traffic statistics
+
+Scope: `SlmpClient.TrafficStats` and `QueuedSlmpClient.TrafficStats`, next release.
+
+Target contract: the property returns a client-lifetime immutable snapshot. A request and its full
+frame bytes count only after a complete transport send succeeds. A complete received frame/datagram
+TCP response counts after assembly in the selected frame format; a UDP datagram counts on receipt.
+Both count before serial, end-code, or payload validation. Unrecognized TCP subheaders, partial
+sends/receives, and pre-send failures do not count. Close/reconnect does not reset counters.
+
+Acceptance criteria:
+
+- [x] Implementation and deterministic boundary tests completed.
+- [x] API reference, usage guide, and Unreleased changelog agree.
+- [x] Live PLC verification is unnecessary because deterministic transports observe every boundary.
+- [ ] Final next-release package and cross-language API comparison completed.
+
+## QREV-20260714-002: Response target-route correlation
+
+Implementation scope: `SlmpClient` TCP and UDP receive paths for 3E and 4E responses.
+
+Target contract: after complete-frame structural validation, a response is eligible for the active
+request only when its network, station, module I/O, and multidrop fields exactly match the immutable
+request target. A structurally valid foreign-route response is discarded while the same linked
+request deadline remains active. A malformed response is a protocol error and invalidates the
+transport generation.
+
+Compatibility impact: a gateway or peer that returns route fields different from the requested
+target no longer has its payload or PLC end code accepted; the request waits for a matching response
+and otherwise times out at its original deadline.
+
+Acceptance criteria:
+
+1. TCP and UDP, in both 3E and 4E, discard a response that differs in each individual route field and accept a subsequent exact match.
+2. A continuous foreign-route response stream cannot extend the request deadline.
+3. Recognized but structurally malformed responses raise `SlmpError`, close the transport, and require an explicit `OpenAsync` before reuse.
+4. Received-frame statistics and trace boundaries remain before correlation filtering.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added for every acceptance criterion on net8.0, net9.0, and net10.0.
+- [x] Full build, static checks, 344 tests per target framework, NuGet package checks, and generated-document checks passed.
+- [x] Codex source self-review completed against the target contract and cross-language field mapping.
+- [x] Claude source review completed in the user-authorized 2026-07-14 batch; findings are recorded in `D:\APP\claude_review_findings_20260714.md`.
+- [x] Codex dispositioned every applicable Claude finding and reran affected checks; details are recorded below.
+- [x] Live-PLC verification is not required because every correlation and invalidation boundary is deterministically observable with local TCP/UDP peers.
+- [x] Changelog and maintainer contract agree with the implementation; no public API reference changed.
+- [x] Final acceptance verified and the item marked complete after family-wide comparison.
+
+## QREV-20260714-003: One absolute 4E response-correlation deadline
+
+Implementation scope: `SlmpClient` TCP and UDP 4E receive loops.
+
+Target contract: the linked cancellation source created once for an exchange remains the only
+communication deadline while wrong-serial and foreign-route responses are discarded. No discarded
+response may restart, replace, or extend that deadline.
+
+Compatibility impact: none; this records and regression-locks the existing absolute-deadline
+behavior while extending it to route correlation.
+
+Acceptance criteria:
+
+1. Continuous wrong-serial responses cannot extend the configured TCP or UDP timeout.
+2. A matching serial and route received before the deadline completes normally.
+3. Route filtering uses the same linked cancellation source and has the same deadline behavior.
+
+- [x] Implementation behavior verified in this repository.
+- [x] Deterministic TCP and UDP deadline regression tests added on all target frameworks.
+- [x] Full build, static checks, 344 tests per target framework, NuGet package checks, and generated-document checks passed.
+- [x] Codex source self-review confirmed one linked cancellation source per exchange.
+- [x] Claude source review completed in the user-authorized 2026-07-14 batch; findings are recorded in `D:\APP\claude_review_findings_20260714.md`.
+- [x] Codex dispositioned every applicable Claude finding and reran affected checks; details are recorded below.
+- [x] Live-PLC verification is not required because the deadline is a local transport state-machine contract.
+- [x] Changelog and maintainer contract agree; no public API or migration action changed.
+- [x] Final acceptance verified and the item marked complete after family-wide comparison.
+
+### 2026-07-14 Claude finding disposition and re-verification
+
+| Finding | Disposition and evidence |
+|---|---|
+| F-X1 | Accepted. The default profile import ref is `v2.1.0`; the root-only drift check downloaded that tag and reported both fixtures unchanged. |
+| F-X2 | Accepted. `PROFILES.md` lists `melsec:mx-r:rj71en71`. |
+| F-X5 / D-10 | Accepted. The changelog classifies the public profile as a `Library` addition. |
+| D-1 | Accepted. Device-range catalogs use `MX-R via RJ71EN71`, locked by a direct catalog test. |
+| D-2 | Duplicate of F-X2 and resolved by the profile table row. |
+| D-3 | Accepted. The generated API reference contains `MxRRj71En71`; Debug and Release drift checks passed. |
+| D-4 | Accepted. TCP tests cover successful split assembly and a header/body sequence whose individual waits are below 100 ms but cumulative delay exceeds the single deadline. |
+| D-5 | Accepted. The 120 ms flood regressions require at least 105 ms elapsed. |
+| D-6 | Accepted. The foreign response carries `0xAA`; only the matching response's `0xBB` is returned. |
+| D-7 | Accepted. 3E and 4E UDP tests prove timeout closure, rejection before explicit reopen, and a clean successful exchange after `OpenAsync`. |
+| D-8 | Accepted. Direct tests cover canonical ID parsing, client construction/defaults, and device-range catalog identity/label. |
+| D-9 | Accepted. Parity now compares feature sources plus limit source and over-end-code. It exposed and corrected older iQ-R Ethernet-unit/MX-F source drift and swapped iQ-F direct word/bit over-end-codes. |
+| D-11 | Accepted. The MX-R/RJ71EN71 one-off range special case was removed; the general range/address-profile fallback supplies the MX-R rules and the catalog wrapper preserves unit identity. |
+| D-12 | Accepted. Short recognized UDP datagrams are reported as malformed and invalidate the transport. |
+| D-13 | Accepted as the defined lifecycle. Connection establishment has its own timeout; the one absolute request deadline begins after a session is open and covers send plus response correlation. |
+| D-14 | Accepted as an inherent untagged-3E limitation. No automatic write retry or target switching was introduced; 4E remains the correlated choice where delayed-duplicate discrimination is required. |
+
+Additional Codex self-review added explicit cancellation checks around each discard iteration and rejects non-zero 4E reserved response bytes as malformed on TCP and UDP.
+
+Post-disposition evidence:
+
+- `scripts/update_slmp_profile_jsons.ps1 -FailIfChanged`: both fixtures unchanged at `v2.1.0`.
+- `run_ci.bat`: Debug build, release-version/generator checks, API drift, format, and 344 tests on each of net8.0, net9.0, and net10.0 passed.
+- Release build and 344 tests on each target framework passed with zero warnings/errors; Release API drift passed.
+- Ten focused deadline/split/reopen cases passed in five consecutive net8.0 runs.
+- NuGet and symbol packages built successfully, package contents and version `3.1.0` passed integrity checks.
+- `scripts/check_no_auto_publish.ps1` and `git diff --check`: passed.
+- No live PLC communication was required or performed; every changed boundary is deterministic in local TCP/UDP tests.

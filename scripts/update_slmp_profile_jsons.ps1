@@ -7,7 +7,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 if ([string]::IsNullOrWhiteSpace($Ref)) {
-    $Ref = "v2.0.0"
+    $Ref = "v2.1.0"
 }
 
 $RawBase = "https://raw.githubusercontent.com/fa-yoshinobu/plc-comm-slmp-profiles/$Ref"

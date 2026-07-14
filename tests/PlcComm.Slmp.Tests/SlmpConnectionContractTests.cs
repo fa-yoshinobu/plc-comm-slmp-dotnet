@@ -90,6 +90,10 @@ public sealed class SlmpConnectionContractTests
                 0x0000,
                 ReadOnlyMemory<byte>.Empty));
 
+        Assert.Equal<ulong>(1, client.TrafficStats.RequestCount);
+        Assert.Equal((ulong)client.LastRequestFrame.Length, client.TrafficStats.TxBytes);
+        Assert.Equal<ulong>(0, client.TrafficStats.RxBytes);
+
         Assert.False(client.IsOpen);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -120,6 +124,8 @@ public sealed class SlmpConnectionContractTests
         using var accepted = await acceptTask;
         await client.RemoteResetAsync();
 
+        Assert.Equal<ulong>(1, client.TrafficStats.RequestCount);
+
         Assert.False(client.IsOpen);
         await Assert.ThrowsAsync<InvalidOperationException>(() => client.ClearErrorAsync());
         listener.Stop();
@@ -146,6 +152,39 @@ public sealed class SlmpConnectionContractTests
 
         Assert.Contains("does not match client PlcProfile", error.Message, StringComparison.Ordinal);
         Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+    }
+
+    [Fact]
+    public async Task TrafficStats_CountCompleteResponseAndPersistAcrossClose()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var server = Task.Run(async () =>
+        {
+            using var accepted = await listener.AcceptTcpClientAsync();
+            var stream = accepted.GetStream();
+            var request = new byte[256];
+            var count = await stream.ReadAsync(request);
+            var serial = request.AsSpan(2, 2).ToArray();
+            byte[] response = [0xD4, 0x00, serial[0], serial[1], 0x00, 0x00,
+                0x00, 0xFF, 0xFF, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00];
+            await stream.WriteAsync(response);
+            return (count, response.Length);
+        });
+        await using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+
+        await client.RawCommandAsync(SlmpCommand.ClearError, 0, ReadOnlyMemory<byte>.Empty);
+        var expected = await server;
+        var stats = client.TrafficStats;
+        Assert.Equal<ulong>(1, stats.RequestCount);
+        Assert.Equal((ulong)expected.count, stats.TxBytes);
+        Assert.Equal((ulong)expected.Length, stats.RxBytes);
+        await client.CloseAsync();
+        Assert.Equal(stats, client.TrafficStats);
+        listener.Stop();
     }
 
     private static SlmpClient CreateTcpClient()

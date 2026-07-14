@@ -20,6 +20,7 @@ For cross-profile capability and device-range details, see the [SLMP Profile Ref
 | `melsec:iq-l` | MELSEC iQ-L (built-in) | `SlmpPlcProfile.IqL` | `Frame4E` | `Iqr` | Use for MELSEC iQ-L targets. |
 | `melsec:mx-f` | MELSEC MX-F (built-in) | `SlmpPlcProfile.MxF` | `Frame4E` | `Iqr` | MX-F profile. |
 | `melsec:mx-r` | MELSEC MX-R (built-in) | `SlmpPlcProfile.MxR` | `Frame4E` | `Iqr` | MX-R profile. |
+| `melsec:mx-r:rj71en71` | MELSEC MX-R (RJ71EN71) | `SlmpPlcProfile.MxRRj71En71` | `Frame4E` | `Iqr` | Ethernet-unit profile based on `melsec:mx-r`. |
 | `melsec:lcpu` | MELSEC-L (built-in) | `SlmpPlcProfile.LCpu` | `Frame3E` | `Legacy` | Legacy 3E profile. |
 | `melsec:lcpu:lj71e71-100` | MELSEC-L (LJ71E71-100) | `SlmpPlcProfile.LCpuLj71E71100` | `Frame4E` | `Legacy` | Ethernet-unit profile. |
 | `melsec:qnu` | MELSEC QnU (built-in) | `SlmpPlcProfile.QnU` | `Frame3E` | `Legacy` | Legacy 3E profile. Use direct or random device commands for normal access. |

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "date": "2026-07-05",
+  "date": "2026-07-14",
   "ordered_items": [
     "X",
     "Y",
@@ -1103,6 +1103,114 @@
           "fixed_value": 4496
         }
       }
+    },
+    "melsec:mx-r:rj71en71": {
+      "register_start": 260,
+      "register_count": 50,
+      "rules": {
+        "X": {
+          "kind": "dword-register",
+          "register": 260
+        },
+        "Y": {
+          "kind": "dword-register",
+          "register": 262
+        },
+        "M": {
+          "kind": "dword-register",
+          "register": 264
+        },
+        "B": {
+          "kind": "dword-register",
+          "register": 266
+        },
+        "SB": {
+          "kind": "dword-register",
+          "register": 268
+        },
+        "F": {
+          "kind": "dword-register",
+          "register": 270
+        },
+        "V": {
+          "kind": "dword-register",
+          "register": 272
+        },
+        "L": {
+          "kind": "dword-register",
+          "register": 274
+        },
+        "S": {
+          "kind": "dword-register",
+          "register": 276
+        },
+        "D": {
+          "kind": "dword-register",
+          "register": 280
+        },
+        "W": {
+          "kind": "dword-register",
+          "register": 282
+        },
+        "SW": {
+          "kind": "dword-register",
+          "register": 284
+        },
+        "R": {
+          "kind": "dword-register-clipped",
+          "clip_value": 32768,
+          "register": 306
+        },
+        "T": {
+          "kind": "dword-register",
+          "register": 288
+        },
+        "ST": {
+          "kind": "dword-register",
+          "register": 290
+        },
+        "C": {
+          "kind": "dword-register",
+          "register": 292
+        },
+        "LT": {
+          "kind": "dword-register",
+          "register": 294
+        },
+        "LST": {
+          "kind": "dword-register",
+          "register": 296
+        },
+        "LC": {
+          "kind": "dword-register",
+          "register": 298
+        },
+        "Z": {
+          "kind": "word-register",
+          "register": 300
+        },
+        "LZ": {
+          "kind": "word-register",
+          "register": 302
+        },
+        "ZR": {
+          "kind": "dword-register",
+          "register": 306
+        },
+        "RD": {
+          "kind": "dword-register",
+          "register": 308
+        },
+        "SM": {
+          "kind": "fixed",
+          "fixed_value": 4496
+        },
+        "SD": {
+          "kind": "fixed",
+          "fixed_value": 4496
+        }
+      },
+      "base_profile": "melsec:mx-r"
     },
     "melsec:iq-f": {
       "register_start": 260,
