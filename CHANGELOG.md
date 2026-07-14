@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Library: Added immutable lifetime traffic counters through `SlmpClient.TrafficStats` and `QueuedSlmpClient.TrafficStats`.
+- Library: TCP and UDP responses now require an exact network, station, module I/O, and multidrop match with the immutable request target. Structurally valid foreign-route responses are discarded within the original request deadline; malformed responses invalidate the transport.
+- Tests: Added deterministic TCP/UDP and 3E/4E response-correlation coverage, including every route field, foreign-route-only timeout, wrong-serial flooding, matching responses within the deadline, and malformed responses.
+- Library: Added the public `melsec:mx-r:rj71en71` profile (`SlmpPlcProfile.MxRRj71En71`) with canonical capability and device-range behavior.
+- Library: Capability evidence sources and iQ-F point-limit end-code metadata now exactly match the pinned canonical profile data.
+- Tooling: Refreshed canonical SLMP profile fixtures for 2026-07-14 and pinned imports to profile tag `v2.1.0`.
 
 ## [3.1.0] - 2026-07-13
 

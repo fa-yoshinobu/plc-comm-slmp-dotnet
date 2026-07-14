@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "date": "2026-07-06",
+  "date": "2026-07-14",
   "scope": "slmp-ethernet-port",
   "description": "Canonical PLC model and Ethernet-unit profile definitions for the SLMP library family. Generated from evidence/profile-definitions.",
   "policy": {
@@ -18,6 +18,7 @@
     "melsec:iq-r:rj71en71": "evidence/profile-definitions/iq-r_rj71en71_profile_definition.md",
     "melsec:iq-l": "evidence/profile-definitions/iq-l_profile_definition.md",
     "melsec:mx-r": "evidence/profile-definitions/mx-r_profile_definition.md",
+    "melsec:mx-r:rj71en71": "evidence/profile-definitions/mx-r_rj71en71_profile_definition.md",
     "melsec:mx-f": "evidence/profile-definitions/mx-f_profile_definition.md",
     "melsec:iq-f": "evidence/profile-definitions/iq-f_profile_definition.md",
     "melsec:qcpu": "evidence/profile-definitions/qcpu_profile_definition.md",
@@ -414,36 +415,36 @@
         "ext_bit": "0083"
       },
       "verified_models": [
-        "Unconfirmed"
+        "MXR300-32(built-in Ethernet)"
       ],
       "features": {
         "type_name": {
           "state": "supported",
-          "source": "policy"
+          "source": "live"
         },
         "direct": {
           "state": "supported",
-          "source": "policy"
+          "source": "live"
         },
         "random": {
           "state": "supported",
-          "source": "policy"
+          "source": "live"
         },
         "block": {
           "state": "supported",
-          "source": "policy"
+          "source": "live"
         },
         "monitor": {
           "state": "supported",
-          "source": "policy"
+          "source": "live"
         },
         "ext_module_access": {
           "state": "config-dependent",
-          "source": "policy"
+          "source": "live"
         },
         "ext_link_direct": {
           "state": "config-dependent",
-          "source": "policy"
+          "source": "live"
         },
         "hg_cpu_buffer": {
           "state": "blocked",
@@ -451,73 +452,73 @@
         },
         "long_device_path": {
           "state": "supported",
-          "source": "policy"
+          "source": "live"
         },
         "lz_32bit_path": {
           "state": "supported",
-          "source": "policy"
+          "source": "live"
         }
       },
       "limits": {
         "direct_word_read": {
-          "source": "inferred",
+          "source": "live",
           "max": 960,
           "over_end_code": "C051"
         },
         "direct_word_write": {
-          "source": "inferred",
+          "source": "live",
           "max": 960,
           "over_end_code": "C051"
         },
         "direct_bit_read": {
-          "source": "inferred",
+          "source": "live",
           "max": 7168,
           "over_end_code": "C052"
         },
         "direct_bit_write": {
-          "source": "inferred",
+          "source": "live",
           "max": 7168,
           "over_end_code": "C052"
         },
         "random_read_word": {
-          "source": "inferred",
+          "source": "live",
           "max": 96,
           "over_end_code": "C054"
         },
         "random_write_word": {
-          "source": "inferred",
+          "source": "live",
           "max": 80,
           "weighted_max": 960,
           "over_end_code": "C054"
         },
         "random_write_bit": {
-          "source": "inferred",
+          "source": "live",
           "max": 94,
           "over_end_code": "C053"
         },
         "monitor_register_word": {
-          "source": "inferred",
+          "source": "live",
           "max": 96,
           "over_end_code": "C054"
         },
         "random_read_word_ext": {
-          "source": "inferred",
+          "source": "live",
           "max": 96,
           "over_end_code": "C054"
         },
         "random_write_word_ext": {
-          "source": "inferred",
+          "source": "live",
           "max": 80,
           "weighted_max": 960,
           "over_end_code": "C054"
         },
         "random_write_bit_ext": {
-          "source": "inferred",
+          "source": "live",
           "max": 94,
           "over_end_code": "C053"
         },
         "monitor_register_word_ext": {
-          "source": "inferred",
+          "source": "live",
           "max": 96,
           "over_end_code": "C054"
         }
@@ -525,9 +526,134 @@
       "write_policy": {
         "S": "read-only"
       },
+      "base_profile": "melsec:iq-r",
       "scope": "builtin-ethernet-port",
-      "display_name": "MELSEC MX-R (built-in)",
-      "base_profile": "melsec:iq-r"
+      "display_name": "MELSEC MX-R (built-in)"
+    },
+    "melsec:mx-r:rj71en71": {
+      "frame": "4E",
+      "compat": "iQ-R",
+      "subcommands": {
+        "word": "0002",
+        "bit": "0003",
+        "ext_word": "0082",
+        "ext_bit": "0083"
+      },
+      "verified_models": [
+        "MXR300-32 via RJ71EN71"
+      ],
+      "features": {
+        "type_name": {
+          "state": "supported",
+          "source": "live"
+        },
+        "direct": {
+          "state": "supported",
+          "source": "live"
+        },
+        "random": {
+          "state": "supported",
+          "source": "live"
+        },
+        "block": {
+          "state": "supported",
+          "source": "live"
+        },
+        "monitor": {
+          "state": "supported",
+          "source": "live"
+        },
+        "ext_module_access": {
+          "state": "config-dependent",
+          "source": "live"
+        },
+        "ext_link_direct": {
+          "state": "config-dependent",
+          "source": "live"
+        },
+        "hg_cpu_buffer": {
+          "state": "blocked",
+          "source": "spec"
+        },
+        "long_device_path": {
+          "state": "supported",
+          "source": "live"
+        },
+        "lz_32bit_path": {
+          "state": "supported",
+          "source": "live"
+        }
+      },
+      "limits": {
+        "direct_word_read": {
+          "source": "live",
+          "max": 960,
+          "over_end_code": "C051"
+        },
+        "direct_word_write": {
+          "source": "live",
+          "max": 960,
+          "over_end_code": "C051"
+        },
+        "direct_bit_read": {
+          "source": "live",
+          "max": 7168,
+          "over_end_code": "C052"
+        },
+        "direct_bit_write": {
+          "source": "live",
+          "max": 7168,
+          "over_end_code": "C052"
+        },
+        "random_read_word": {
+          "source": "live",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_write_word": {
+          "source": "live",
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054"
+        },
+        "random_write_bit": {
+          "source": "live",
+          "max": 94,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word": {
+          "source": "live",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_read_word_ext": {
+          "source": "live",
+          "max": 96,
+          "over_end_code": "C054"
+        },
+        "random_write_word_ext": {
+          "source": "live",
+          "max": 80,
+          "weighted_max": 960,
+          "over_end_code": "C054"
+        },
+        "random_write_bit_ext": {
+          "source": "live",
+          "max": 94,
+          "over_end_code": "C053"
+        },
+        "monitor_register_word_ext": {
+          "source": "live",
+          "max": 96,
+          "over_end_code": "C054"
+        }
+      },
+      "write_policy": {
+        "S": "read-only"
+      },
+      "base_profile": "melsec:mx-r",
+      "scope": "ethernet-unit",
+      "display_name": "MELSEC MX-R (RJ71EN71)"
     },
     "melsec:mx-f": {
       "frame": "4E",

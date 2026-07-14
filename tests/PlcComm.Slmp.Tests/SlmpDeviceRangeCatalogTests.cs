@@ -10,6 +10,20 @@ namespace PlcComm.Slmp.Tests;
 public sealed class SlmpDeviceRangeCatalogTests
 {
     [Fact]
+    public void BuildCatalog_MxRRj71En71UsesMxRRulesAndUnitLabel()
+    {
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.MxRRj71En71);
+        var registers = CreateRegisterSnapshot(profile);
+        registers[260] = 321;
+
+        var catalog = SlmpDeviceRangeResolver.BuildCatalog(SlmpPlcProfile.MxRRj71En71, registers);
+
+        Assert.Equal(SlmpPlcProfile.MxRRj71En71, catalog.PlcProfile);
+        Assert.Equal("MX-R via RJ71EN71", catalog.Model);
+        Assert.Equal(321u, GetEntry(catalog, "X").PointCount);
+    }
+
+    [Fact]
     public void BuildCatalog_QCpuClipsAndLeavesConditionalBoundsOpen()
     {
         var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.QCpu);

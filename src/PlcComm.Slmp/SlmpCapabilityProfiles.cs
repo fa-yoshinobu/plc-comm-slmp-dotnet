@@ -73,7 +73,7 @@ internal static class SlmpCapabilityProfiles
                 "melsec:iq-r",
                 "4E",
                 "iQ-R",
-                CommonIqrFeatures(SlmpProfileFeatureState.Supported),
+                CommonIqrFeatures(SlmpProfileFeatureState.Supported, "live", "live"),
                 IqrLimits(),
                 WritePolicy("S")),
             [SlmpPlcProfile.IqRRj71En71] = Profile(
@@ -81,15 +81,15 @@ internal static class SlmpCapabilityProfiles
                 "melsec:iq-r:rj71en71",
                 "4E",
                 "iQ-R",
-                CommonIqrFeatures(SlmpProfileFeatureState.Supported),
-                IqrLimits(),
+                CommonIqrFeatures(SlmpProfileFeatureState.Supported, "policy", "policy"),
+                IqrLimits("inferred"),
                 WritePolicy("S")),
             [SlmpPlcProfile.IqL] = Profile(
                 SlmpPlcProfile.IqL,
                 "melsec:iq-l",
                 "4E",
                 "iQ-R",
-                CommonIqrFeatures(SlmpProfileFeatureState.Blocked),
+                CommonIqrFeatures(SlmpProfileFeatureState.Blocked, "live", "spec"),
                 IqlMxLimits(),
                 WritePolicy("S")),
             [SlmpPlcProfile.MxR] = Profile(
@@ -97,7 +97,15 @@ internal static class SlmpCapabilityProfiles
                 "melsec:mx-r",
                 "4E",
                 "iQ-R",
-                CommonIqrFeatures(SlmpProfileFeatureState.Blocked),
+                CommonIqrFeatures(SlmpProfileFeatureState.Blocked, "live", "spec"),
+                IqrLimits(),
+                WritePolicy("S")),
+            [SlmpPlcProfile.MxRRj71En71] = Profile(
+                SlmpPlcProfile.MxRRj71En71,
+                "melsec:mx-r:rj71en71",
+                "4E",
+                "iQ-R",
+                CommonIqrFeatures(SlmpProfileFeatureState.Blocked, "live", "spec"),
                 IqrLimits(),
                 WritePolicy("S")),
             [SlmpPlcProfile.MxF] = Profile(
@@ -105,8 +113,8 @@ internal static class SlmpCapabilityProfiles
                 "melsec:mx-f",
                 "4E",
                 "iQ-R",
-                CommonIqrFeatures(SlmpProfileFeatureState.Blocked),
-                IqrLimits(),
+                CommonIqrFeatures(SlmpProfileFeatureState.Blocked, "policy", "spec"),
+                IqrLimits("inferred"),
                 WritePolicy("S")),
             [SlmpPlcProfile.IqF] = Profile(
                 SlmpPlcProfile.IqF,
@@ -288,18 +296,20 @@ internal static class SlmpCapabilityProfiles
         => new(profile, profileId, frame, compat, features, limits, writePolicy);
 
     private static Dictionary<SlmpProfileFeature, SlmpCapabilityFeature> CommonIqrFeatures(
-        SlmpProfileFeatureState hgState)
+        SlmpProfileFeatureState hgState,
+        string commonSource,
+        string hgSource)
         => Features(
-            (SlmpProfileFeature.TypeName, SlmpProfileFeatureState.Supported, "live", null),
-            (SlmpProfileFeature.Direct, SlmpProfileFeatureState.Supported, "live", null),
-            (SlmpProfileFeature.Random, SlmpProfileFeatureState.Supported, "live", null),
-            (SlmpProfileFeature.Block, SlmpProfileFeatureState.Supported, "live", null),
-            (SlmpProfileFeature.Monitor, SlmpProfileFeatureState.Supported, "live", null),
-            (SlmpProfileFeature.ExtModuleAccess, SlmpProfileFeatureState.ConfigDependent, "live", "Module access depends on the installed special module."),
-            (SlmpProfileFeature.ExtLinkDirect, SlmpProfileFeatureState.ConfigDependent, "policy", "Link-direct access depends on the network/module configuration."),
-            (SlmpProfileFeature.HgCpuBuffer, hgState, hgState == SlmpProfileFeatureState.Supported ? "live" : "manual", hgState == SlmpProfileFeatureState.Supported ? "U3E0\\HG direct/random/monitor succeeded." : "CPU-buffer HG is an iQ-R-only path."),
-            (SlmpProfileFeature.LongDevicePath, SlmpProfileFeatureState.Supported, "live", null),
-            (SlmpProfileFeature.Lz32BitPath, SlmpProfileFeatureState.Supported, "live", null));
+            (SlmpProfileFeature.TypeName, SlmpProfileFeatureState.Supported, commonSource, null),
+            (SlmpProfileFeature.Direct, SlmpProfileFeatureState.Supported, commonSource, null),
+            (SlmpProfileFeature.Random, SlmpProfileFeatureState.Supported, commonSource, null),
+            (SlmpProfileFeature.Block, SlmpProfileFeatureState.Supported, commonSource, null),
+            (SlmpProfileFeature.Monitor, SlmpProfileFeatureState.Supported, commonSource, null),
+            (SlmpProfileFeature.ExtModuleAccess, SlmpProfileFeatureState.ConfigDependent, commonSource, "Module access depends on the installed special module."),
+            (SlmpProfileFeature.ExtLinkDirect, SlmpProfileFeatureState.ConfigDependent, commonSource, "Link-direct access depends on the network/module configuration."),
+            (SlmpProfileFeature.HgCpuBuffer, hgState, hgSource, hgState == SlmpProfileFeatureState.Supported ? "U3E0\\HG direct/random/monitor succeeded." : "CPU-buffer HG is an iQ-R-only path."),
+            (SlmpProfileFeature.LongDevicePath, SlmpProfileFeatureState.Supported, commonSource, null),
+            (SlmpProfileFeature.Lz32BitPath, SlmpProfileFeatureState.Supported, commonSource, null));
 
     private static Dictionary<SlmpProfileFeature, SlmpCapabilityFeature> QlMeasuredFeatures(string source)
         => Features(
@@ -333,20 +343,20 @@ internal static class SlmpCapabilityProfiles
             static entry => entry.Feature,
             static entry => new SlmpCapabilityFeature(entry.State, entry.Source, entry.Note));
 
-    private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> IqrLimits()
+    private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> IqrLimits(string source = "live")
         => Limits(
-            (SlmpProfileLimit.DirectWordRead, 960, "C051", "live", null, null),
-            (SlmpProfileLimit.DirectWordWrite, 960, "C051", "live", null, null),
-            (SlmpProfileLimit.DirectBitRead, 7168, "C052", "live", null, null),
-            (SlmpProfileLimit.DirectBitWrite, 7168, "C052", "live", null, null),
-            (SlmpProfileLimit.RandomReadWord, 96, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomWriteWord, 80, "C054", "live", 960, null),
-            (SlmpProfileLimit.RandomWriteBit, 94, "C053", "live", null, null),
-            (SlmpProfileLimit.MonitorRegisterWord, 96, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomReadWordExt, 96, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomWriteWordExt, 80, "C054", "live", 960, null),
-            (SlmpProfileLimit.RandomWriteBitExt, 94, "C053", "live", null, null),
-            (SlmpProfileLimit.MonitorRegisterWordExt, 96, "C054", "live", null, null));
+            (SlmpProfileLimit.DirectWordRead, 960, "C051", source, null, null),
+            (SlmpProfileLimit.DirectWordWrite, 960, "C051", source, null, null),
+            (SlmpProfileLimit.DirectBitRead, 7168, "C052", source, null, null),
+            (SlmpProfileLimit.DirectBitWrite, 7168, "C052", source, null, null),
+            (SlmpProfileLimit.RandomReadWord, 96, "C054", source, null, null),
+            (SlmpProfileLimit.RandomWriteWord, 80, "C054", source, 960, null),
+            (SlmpProfileLimit.RandomWriteBit, 94, "C053", source, null, null),
+            (SlmpProfileLimit.MonitorRegisterWord, 96, "C054", source, null, null),
+            (SlmpProfileLimit.RandomReadWordExt, 96, "C054", source, null, null),
+            (SlmpProfileLimit.RandomWriteWordExt, 80, "C054", source, 960, null),
+            (SlmpProfileLimit.RandomWriteBitExt, 94, "C053", source, null, null),
+            (SlmpProfileLimit.MonitorRegisterWordExt, 96, "C054", source, null, null));
 
     private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> IqlMxLimits()
         => Limits(
@@ -365,10 +375,10 @@ internal static class SlmpCapabilityProfiles
 
     private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> IqFLimits()
         => Limits(
-            (SlmpProfileLimit.DirectWordRead, 960, "C051", "live", null, null),
-            (SlmpProfileLimit.DirectWordWrite, 960, "C051", "live", null, null),
-            (SlmpProfileLimit.DirectBitRead, 3584, "C052", "live", null, null),
-            (SlmpProfileLimit.DirectBitWrite, 3584, "C052", "live", null, null),
+            (SlmpProfileLimit.DirectWordRead, 960, "C052", "live", null, null),
+            (SlmpProfileLimit.DirectWordWrite, 960, "C052", "live", null, null),
+            (SlmpProfileLimit.DirectBitRead, 3584, "C051", "live", null, null),
+            (SlmpProfileLimit.DirectBitWrite, 3584, "C051", "live", null, null),
             (SlmpProfileLimit.RandomReadWord, 192, "C054", "live", null, null),
             (SlmpProfileLimit.RandomWriteWord, 160, "C054", "live", 1920, null),
             (SlmpProfileLimit.RandomWriteBit, 188, "C053", "live", null, null),

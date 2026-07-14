@@ -1647,13 +1647,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
                     while (true)
                     {
+                        tcpTimeout.Token.ThrowIfCancellationRequested();
                         var response = await ReceiveTcpFrameAsync(_tcpStream, FrameType, tcpTimeout.Token).ConfigureAwait(false);
                         RecordReceive(response.Length);
                         LastResponseFrame = response;
                         FireTrace(SlmpTraceDirection.Receive, response);
-                        if (!HasExpectedResponseFrameType(response, FrameType))
-                            throw new SlmpError("unexpected response frame type");
+                        ValidateResponseEnvelope(response, FrameType);
                         if (!HasExpectedResponseSerial(response, expectedSerial))
+                            continue;
+                        if (!HasExpectedResponseRoute(response, FrameType, TargetAddress))
                             continue;
                         return ParseResponse(command, subcommand, response);
                     }
@@ -1687,13 +1689,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
                 while (true)
                 {
+                    udpTimeout.Token.ThrowIfCancellationRequested();
                     var datagram = await _udp.ReceiveAsync(udpTimeout.Token).ConfigureAwait(false);
                     RecordReceive(datagram.Buffer.Length);
                     LastResponseFrame = datagram.Buffer;
                     FireTrace(SlmpTraceDirection.Receive, datagram.Buffer);
-                    if (!HasExpectedResponseFrameType(datagram.Buffer, FrameType))
-                        throw new SlmpError("unexpected response frame type");
+                    ValidateResponseEnvelope(datagram.Buffer, FrameType);
                     if (!HasExpectedResponseSerial(datagram.Buffer, expectedSerial))
+                        continue;
+                    if (!HasExpectedResponseRoute(datagram.Buffer, FrameType, TargetAddress))
                         continue;
                     return ParseResponse(command, subcommand, datagram.Buffer);
                 }
@@ -1824,10 +1828,41 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         return BinaryPrimitives.ReadUInt16LittleEndian(response.AsSpan(2, 2)) == expectedSerial.Value;
     }
 
-    private static bool HasExpectedResponseFrameType(byte[] response, SlmpFrameType expectedFrameType)
-        => expectedFrameType == SlmpFrameType.Frame4E
-            ? response.Length >= 2 && response[0] == 0xD4 && response[1] == 0x00
-            : response.Length >= 2 && response[0] == 0xD0 && response[1] == 0x00;
+    private static bool HasExpectedResponseRoute(
+        byte[] response,
+        SlmpFrameType frameType,
+        SlmpTargetAddress expectedTarget)
+    {
+        var routeOffset = frameType == SlmpFrameType.Frame4E ? 6 : 2;
+        return response[routeOffset] == expectedTarget.Network
+            && response[routeOffset + 1] == expectedTarget.Station
+            && BinaryPrimitives.ReadUInt16LittleEndian(response.AsSpan(routeOffset + 2, 2)) == expectedTarget.ModuleIo
+            && response[routeOffset + 4] == expectedTarget.Multidrop;
+    }
+
+    private static void ValidateResponseEnvelope(byte[] response, SlmpFrameType expectedFrameType)
+    {
+        var headerSize = expectedFrameType == SlmpFrameType.Frame4E ? 13 : 9;
+        var expectedSubheader = expectedFrameType == SlmpFrameType.Frame4E ? (ushort)0x00D4 : (ushort)0x00D0;
+        if (response.Length < headerSize)
+        {
+            throw new SlmpError("malformed response");
+        }
+        if (BinaryPrimitives.ReadUInt16LittleEndian(response.AsSpan(0, 2)) != expectedSubheader)
+        {
+            throw new SlmpError("unexpected response frame type");
+        }
+        if (expectedFrameType == SlmpFrameType.Frame4E && (response[4] != 0 || response[5] != 0))
+        {
+            throw new SlmpError("malformed response");
+        }
+
+        var dataLength = BinaryPrimitives.ReadUInt16LittleEndian(response.AsSpan(headerSize - 2, 2));
+        if (dataLength < 2 || response.Length != headerSize + dataLength)
+        {
+            throw new SlmpError("malformed response");
+        }
+    }
 
     private static async Task ReadExactAsync(NetworkStream stream, Memory<byte> buffer, CancellationToken cancellationToken)
     {

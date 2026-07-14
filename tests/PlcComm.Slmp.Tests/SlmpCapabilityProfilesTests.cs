@@ -40,6 +40,7 @@ public sealed class SlmpCapabilityProfilesTests
                 Assert.Equal(
                     expectedFeatureProperty.Value.GetProperty("state").GetString(),
                     SlmpCapabilityProfiles.ToCanonicalState(feature.Value.State));
+                Assert.Equal(expectedFeatureProperty.Value.GetProperty("source").GetString(), feature.Value.Source);
             }
 
             var expectedLimits = expectedProfile.GetProperty("limits");
@@ -52,6 +53,14 @@ public sealed class SlmpCapabilityProfilesTests
                 var limit = actualProfile.Limits.Single(entry =>
                     SlmpCapabilityProfiles.ToCanonicalLimitKey(entry.Key) == expectedLimitProperty.Name).Value;
                 Assert.Equal(expectedLimitProperty.Value.GetProperty("max").GetInt32(), limit.Max);
+                var expectedOverEndCode = OptionalString(expectedLimitProperty.Value, "over_end_code");
+                Assert.True(
+                    string.Equals(expectedOverEndCode, limit.OverEndCode, StringComparison.Ordinal),
+                    $"{expectedProfileProperty.Name}/{expectedLimitProperty.Name}: expected over_end_code '{expectedOverEndCode}', actual '{limit.OverEndCode}'.");
+                var expectedSource = expectedLimitProperty.Value.GetProperty("source").GetString();
+                Assert.True(
+                    string.Equals(expectedSource, limit.Source, StringComparison.Ordinal),
+                    $"{expectedProfileProperty.Name}/{expectedLimitProperty.Name}: expected source '{expectedSource}', actual '{limit.Source}'.");
                 if (expectedLimitProperty.Value.TryGetProperty("weighted_max", out var weightedMax))
                     Assert.Equal(weightedMax.GetInt32(), limit.WeightedMax);
                 else
@@ -91,4 +100,25 @@ public sealed class SlmpCapabilityProfilesTests
                 descriptor.BaseProfile);
         }
     }
+
+    [Fact]
+    public void MxRRj71En71_ProfileIdAndClientDefaultsAreDirectlyUsable()
+    {
+        var profile = SlmpPlcProfiles.ParseKnownProfileId("melsec:mx-r:rj71en71");
+
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            profile,
+            1025,
+            SlmpTransportMode.Udp,
+            SlmpTargetAddress.OwnStation);
+
+        Assert.Equal(SlmpPlcProfile.MxRRj71En71, profile);
+        Assert.Equal(SlmpPlcProfile.MxRRj71En71, client.PlcProfile);
+        Assert.Equal(SlmpFrameType.Frame4E, client.FrameType);
+        Assert.Equal(SlmpCompatibilityMode.Iqr, client.CompatibilityMode);
+    }
+
+    private static string? OptionalString(JsonElement element, string propertyName)
+        => element.TryGetProperty(propertyName, out var value) ? value.GetString() : null;
 }

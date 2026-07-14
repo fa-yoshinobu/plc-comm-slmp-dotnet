@@ -3757,6 +3757,12 @@ public const SlmpPlcProfile MxF
 public const SlmpPlcProfile MxR
 ```
 
+##### MxRRj71En71
+
+```csharp
+public const SlmpPlcProfile MxRRj71En71
+```
+
 ##### QCpu
 
 ```csharp
