@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-07-17
+
+- Release: Bumped .NET package metadata to `4.0.0`.
+
 - Library: Added immutable lifetime traffic counters through `SlmpClient.TrafficStats` and `QueuedSlmpClient.TrafficStats`.
 - Library: TCP and UDP responses now require an exact network, station, module I/O, and multidrop match with the immutable request target. Structurally valid foreign-route responses are discarded within the original request deadline; malformed responses invalidate the transport.
 - Tests: Added deterministic TCP/UDP and 3E/4E response-correlation coverage, including every route field, foreign-route-only timeout, wrong-serial flooding, matching responses within the deadline, and malformed responses.
