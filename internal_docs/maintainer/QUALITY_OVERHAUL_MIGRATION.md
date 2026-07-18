@@ -178,7 +178,7 @@ These changes are API shape, pre-transport validation, deterministic frame gener
 
 ## Claude review package status
 
-The approved decisions, repository diff, and final local results were reviewed in the two user-authorized SLMP Claude batches. Canonical results and dispositions are preserved under `D:\APP\Close\instructions`.
+The approved decisions, repository diff, and final local results were reviewed in the two user-authorized SLMP Claude batches. Canonical results and dispositions are preserved in the archived workspace instruction records.
 
 ## Verification evidence
 
@@ -277,7 +277,7 @@ Acceptance criteria:
 - [x] Tests added for every acceptance criterion on net8.0, net9.0, and net10.0.
 - [x] Full build, static checks, 344 tests per target framework, NuGet package checks, and generated-document checks passed.
 - [x] Codex source self-review completed against the target contract and cross-language field mapping.
-- [x] Claude source review completed in the user-authorized 2026-07-14 batch; findings are recorded in `D:\APP\claude_review_findings_20260714.md`.
+- [x] Claude source review completed in the user-authorized 2026-07-14 batch; findings are preserved in the archived workspace record `claude_review_findings_20260714.md`.
 - [x] Codex dispositioned every applicable Claude finding and reran affected checks; details are recorded below.
 - [x] Live-PLC verification is not required because every correlation and invalidation boundary is deterministically observable with local TCP/UDP peers.
 - [x] Changelog and maintainer contract agree with the implementation; no public API reference changed.
@@ -304,7 +304,7 @@ Acceptance criteria:
 - [x] Deterministic TCP and UDP deadline regression tests added on all target frameworks.
 - [x] Full build, static checks, 344 tests per target framework, NuGet package checks, and generated-document checks passed.
 - [x] Codex source self-review confirmed one linked cancellation source per exchange.
-- [x] Claude source review completed in the user-authorized 2026-07-14 batch; findings are recorded in `D:\APP\claude_review_findings_20260714.md`.
+- [x] Claude source review completed in the user-authorized 2026-07-14 batch; findings are preserved in the archived workspace record `claude_review_findings_20260714.md`.
 - [x] Codex dispositioned every applicable Claude finding and reran affected checks; details are recorded below.
 - [x] Live-PLC verification is not required because the deadline is a local transport state-machine contract.
 - [x] Changelog and maintainer contract agree; no public API or migration action changed.
