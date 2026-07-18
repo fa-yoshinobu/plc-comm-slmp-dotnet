@@ -247,7 +247,10 @@ Acceptance criteria:
 - [x] Implementation and deterministic boundary tests completed.
 - [x] API reference, usage guide, and Unreleased changelog agree.
 - [x] Live PLC verification is unnecessary because deterministic transports observe every boundary.
-- [ ] Final next-release package and cross-language API comparison completed.
+- [x] Final next-release package and cross-language API comparison completed. Evidence: the `v4.0.0`
+  tag equals repository HEAD, the GitHub Release and NuGet `PlcComm.Slmp` `4.0.0` package are public,
+  tag-commit checks passed, and the final five-implementation source/API comparison was completed
+  on 2026-07-18.
 
 ## QREV-20260714-002: Response target-route correlation
 
