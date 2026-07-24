@@ -1001,6 +1001,64 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task LinkDirectRandomAndMonitorExtendedApisUseQlSubcommands()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, new byte[] { 0x34, 0x12 }),
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, Array.Empty<byte>()),
+            (0x0000, Array.Empty<byte>()),
+        ]);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var word = SlmpQualifiedDeviceParser.Parse(@"J2\SW10", SlmpPlcProfile.IqR);
+        var bit = SlmpQualifiedDeviceParser.Parse(@"J2\B10", SlmpPlcProfile.IqR);
+
+        _ = await client.ReadRandomExtAsync([word], []);
+        await client.WriteRandomWordsExtAsync([(word, (ushort)1)], []);
+        await client.WriteRandomBitsExtAsync([(bit, true)]);
+        await client.RegisterMonitorDevicesExtAsync([word], []);
+
+        Assert.Equal(4, server.RequestFrames.Count);
+        Assert.Equal((ushort)0x0080, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[0].AsSpan(17, 2)));
+        Assert.Equal((ushort)0x0080, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[1].AsSpan(17, 2)));
+        Assert.Equal((ushort)0x0081, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[2].AsSpan(17, 2)));
+        Assert.Equal((ushort)0x0080, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[3].AsSpan(17, 2)));
+    }
+
+    [Fact]
+    public async Task LinkDirectExtendedApisRejectMixedQlAndIqrEntryLayoutsBeforeTransport()
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            1,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var linkWord = SlmpQualifiedDeviceParser.Parse(@"J2\SW10", SlmpPlcProfile.IqR);
+        var iqrWord = new SlmpQualifiedDeviceAddress(
+            new SlmpDeviceAddress(SlmpDeviceCode.D, 10, SlmpPlcProfile.IqR),
+            1);
+        var linkBit = SlmpQualifiedDeviceParser.Parse(@"J2\B10", SlmpPlcProfile.IqR);
+        var iqrBit = new SlmpQualifiedDeviceAddress(
+            new SlmpDeviceAddress(SlmpDeviceCode.M, 10, SlmpPlcProfile.IqR),
+            1);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => client.ReadRandomExtAsync([linkWord, iqrWord], []));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteRandomWordsExtAsync([(linkWord, (ushort)1), (iqrWord, (ushort)2)], []));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteRandomBitsExtAsync([(linkBit, true), (iqrBit, false)]));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.RegisterMonitorDevicesExtAsync([linkWord, iqrWord], []));
+    }
+
+    [Fact]
     public async Task QueuedMonitorRegistration_SnapshotsDevicesBeforeQueueExecution()
     {
         await using var server = new MultiShotSlmpServer([

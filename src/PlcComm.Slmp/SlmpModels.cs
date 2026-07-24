@@ -325,6 +325,10 @@ public static class SlmpDeviceParser
     private static bool TryConvertFromOctal(string text, out uint number)
     {
         number = 0;
+        if (text.Length == 0)
+        {
+            return false;
+        }
         foreach (var ch in text)
         {
             if (ch is < '0' or > '7')

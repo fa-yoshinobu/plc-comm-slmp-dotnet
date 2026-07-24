@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using PlcComm.Slmp;
 
 namespace PlcComm.Slmp.Tests;
@@ -65,6 +66,25 @@ public sealed class SlmpClientPayloadTests
             SlmpPayloads.EncodeRawDeviceSpec(device, output, SlmpCompatibilityMode.Legacy));
     }
 
+    [Theory]
+    [InlineData(SlmpCompatibilityMode.Legacy, 4)]
+    [InlineData(SlmpCompatibilityMode.Iqr, 6)]
+    public void DeviceSpec_AllowsRAboveProfileCatalogBound(
+        SlmpCompatibilityMode compatibilityMode,
+        int size)
+    {
+        var output = new byte[size];
+
+        SlmpPayloads.EncodeRawDeviceSpec(
+            new SlmpRawDeviceAddress(SlmpDeviceCode.R, 32768),
+            output,
+            compatibilityMode);
+
+        Assert.Equal(32768u, compatibilityMode == SlmpCompatibilityMode.Legacy
+            ? (uint)(output[0] | (output[1] << 8) | (output[2] << 16))
+            : BinaryPrimitives.ReadUInt32LittleEndian(output));
+    }
+
     [Fact]
     public void LzModification_RejectsIndexesAboveOne()
     {
@@ -115,6 +135,19 @@ public sealed class SlmpClientPayloadTests
         Assert.Equal(
             Convert.FromHexString("02000007000090000003000001000008000090000004000000"),
             SlmpPayloads.BuildExtendedRandomBitWritePayload(entries, SlmpCompatibilityMode.Legacy, SlmpPlcProfile.IqR));
+    }
+
+    [Fact]
+    public void BuildExtendedRandomBitWritePayload_UsesQlValueWidthForLinkDirect()
+    {
+        var entry = SlmpQualifiedDeviceParser.Parse(@"J2\B10", SlmpPlcProfile.IqR);
+
+        Assert.Equal(
+            Convert.FromHexString("010000100000A000000200F901"),
+            SlmpPayloads.BuildExtendedRandomBitWritePayload(
+                [(entry, true)],
+                SlmpCompatibilityMode.Iqr,
+                SlmpPlcProfile.IqR));
     }
 
     [Fact]
