@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Library: J link-direct extended random read/write and monitor registration now use the Q/L subcommands, including the one-byte Q/L bit-value representation; requests that mix 11-byte J and 13-byte iQ-R entry layouts are rejected before transport.
+- Library: Empty iQ-F octal X/Y addresses and link-direct addresses wider than the 24-bit wire field are rejected before transport instead of being accepted or truncated.
+- Library: Decimal and hexadecimal device parsers reject signs and embedded whitespace, and J-direct network numbers use the stable decimal `0..255` contract.
+- Library: Extended random-bit writes report null input as `ArgumentNullException`, and long-timer helpers apply device-family and selected wire-width validation before transport.
+- Library: Profile device-range upper bounds are not used as transport send guards; protocol representation and command limits remain validated.
+- Tests: Added exact subcommand, payload-vector, empty-address, and wire-width regression coverage.
+
 ## [4.0.0] - 2026-07-17
 
 - Release: Bumped .NET package metadata to `4.0.0`.

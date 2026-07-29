@@ -19,6 +19,9 @@ internal static class SlmpPayloads
         Span<byte> output,
         SlmpCompatibilityMode compatibilityMode)
     {
+        // PROFILE_RANGE_NOT_A_TRANSPORT_GUARD: PLC profile device ranges are
+        // application metadata. Transport validation is limited to syntax,
+        // supported device families, and the selected wire representation.
         if (compatibilityMode == SlmpCompatibilityMode.Legacy)
         {
             if (device.Number > 0x00FF_FFFF)
@@ -243,15 +246,18 @@ internal static class SlmpPayloads
         SlmpPlcProfile plcProfile
     )
     {
-        var valueSize = compatibilityMode == SlmpCompatibilityMode.Legacy ? 1 : 2;
         var encodedSpecs = new byte[bitEntries.Count][];
-        var size = 1 + (bitEntries.Count * valueSize);
+        var qlValueEncoding = new bool[bitEntries.Count];
+        var size = 1;
         for (var i = 0; i < bitEntries.Count; i++)
         {
             var (device, _) = bitEntries[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
+            var extension = ResolveEffectiveExtension(device, plcProfile);
+            var spec = EncodeExtendedDeviceSpec(device.Device, extension, compatibilityMode);
             encodedSpecs[i] = spec;
-            size += spec.Length;
+            qlValueEncoding[i] = compatibilityMode == SlmpCompatibilityMode.Legacy ||
+                extension.DirectMemorySpecification == 0xF9;
+            size += spec.Length + (qlValueEncoding[i] ? 1 : 2);
         }
 
         var payload = new byte[size];
@@ -262,7 +268,7 @@ internal static class SlmpPayloads
             var spec = encodedSpecs[i];
             spec.AsSpan().CopyTo(payload.AsSpan(offset));
             offset += spec.Length;
-            if (compatibilityMode == SlmpCompatibilityMode.Legacy)
+            if (qlValueEncoding[i])
             {
                 payload[offset++] = bitEntries[i].Value ? (byte)1 : (byte)0;
             }
@@ -559,6 +565,11 @@ internal static class SlmpPayloads
 
     private static byte[] EncodeLinkDirectDeviceSpec(SlmpDeviceAddress device, SlmpExtensionSpec extension)
     {
+        if (device.Number > 0x00FF_FFFF)
+            throw new ArgumentOutOfRangeException(
+                nameof(device),
+                device.Number,
+                "Link-direct device numbers must fit the 24-bit Q/L wire field (0..16777215).");
         // Format verified by GOT pcap (J2\SW10):
         // reserved(2) + dev_no(3 LE) + dev_code(1) + reserved(2) + j_net(1) + reserved(1) + 0xF9
         var jNet = (byte)(extension.ExtensionSpecification & 0xFF);

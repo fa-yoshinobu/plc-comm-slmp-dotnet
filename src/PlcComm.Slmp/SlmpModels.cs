@@ -315,9 +315,37 @@ public static class SlmpDeviceParser
             return TryConvertFromOctal(text, out number);
         }
 
+        if (text.Length == 0)
+        {
+            number = 0;
+            return false;
+        }
+
+        if (hexAddress)
+        {
+            if (text.Any(static ch => ch is not (>= '0' and <= '9')
+                and not (>= 'A' and <= 'F')))
+            {
+                number = 0;
+                return false;
+            }
+
+            return uint.TryParse(
+                text,
+                NumberStyles.AllowHexSpecifier,
+                CultureInfo.InvariantCulture,
+                out number);
+        }
+
+        if (text.Any(static ch => ch is < '0' or > '9'))
+        {
+            number = 0;
+            return false;
+        }
+
         return uint.TryParse(
             text,
-            hexAddress ? NumberStyles.HexNumber : NumberStyles.Integer,
+            NumberStyles.None,
             CultureInfo.InvariantCulture,
             out number);
     }
@@ -325,6 +353,10 @@ public static class SlmpDeviceParser
     private static bool TryConvertFromOctal(string text, out uint number)
     {
         number = 0;
+        if (text.Length == 0)
+        {
+            return false;
+        }
         foreach (var ch in text)
         {
             if (ch is < '0' or > '7')

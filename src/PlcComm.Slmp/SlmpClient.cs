@@ -804,7 +804,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         foreach (var entry in dwordDevices)
             EnsureExtendedProfileFeatureAllowed(entry, SlmpPayloads.ResolveEffectiveExtension(entry, PlcProfile));
 
-        var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
+        var linkDirect = SelectExtendedQlLayout(wordDevices.Concat(dwordDevices), "read_random_ext");
+        var sub = linkDirect || CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
         var payload = SlmpPayloads.BuildExtendedRandomReadPayload(wordDevices, dwordDevices, CompatibilityMode, PlcProfile);
         var data = await RequestCoreAsync(SlmpCommand.DeviceReadRandom, sub, payload, true, cancellationToken).ConfigureAwait(false);
         var expected = (wordDevices.Count * 2) + (dwordDevices.Count * 4);
@@ -865,7 +866,10 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         foreach (var entry in dwordEntries)
             EnsureExtendedProfileFeatureAllowed(entry.Device, SlmpPayloads.ResolveEffectiveExtension(entry.Device, PlcProfile));
 
-        var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
+        var linkDirect = SelectExtendedQlLayout(
+            wordEntries.Select(static entry => entry.Device).Concat(dwordEntries.Select(static entry => entry.Device)),
+            "write_random_words_ext");
+        var sub = linkDirect || CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
         var payload = SlmpPayloads.BuildExtendedRandomWordWritePayload(wordEntries, dwordEntries, CompatibilityMode, PlcProfile);
         _ = await RequestCoreAsync(SlmpCommand.DeviceWriteRandom, sub, payload, true, cancellationToken).ConfigureAwait(false);
     }
@@ -887,6 +891,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ArgumentNullException.ThrowIfNull(bitEntries);
         if (bitEntries.Count > 0xFF)
         {
             throw new ArgumentOutOfRangeException(nameof(bitEntries), "random bit count must be <= 255");
@@ -898,7 +903,10 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         foreach (var entry in bitEntries)
             EnsureExtendedProfileFeatureAllowed(entry.Device, SlmpPayloads.ResolveEffectiveExtension(entry.Device, PlcProfile));
 
-        var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0081 : (ushort)0x0083;
+        var linkDirect = SelectExtendedQlLayout(
+            bitEntries.Select(static entry => entry.Device),
+            "write_random_bits_ext");
+        var sub = linkDirect || CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0081 : (ushort)0x0083;
         var payload = SlmpPayloads.BuildExtendedRandomBitWritePayload(bitEntries, CompatibilityMode, PlcProfile);
         _ = await RequestCoreAsync(SlmpCommand.DeviceWriteRandom, sub, payload, true, cancellationToken).ConfigureAwait(false);
     }
@@ -1122,7 +1130,10 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         foreach (var entry in dwordDevices)
             EnsureExtendedProfileFeatureAllowed(entry, SlmpPayloads.ResolveEffectiveExtension(entry, PlcProfile));
 
-        var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
+        var linkDirect = SelectExtendedQlLayout(
+            wordDevices.Concat(dwordDevices),
+            "register_monitor_devices_ext");
+        var sub = linkDirect || CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
         var payload = SlmpPayloads.BuildExtendedMonitorRegisterPayload(wordDevices, dwordDevices, CompatibilityMode, PlcProfile);
         _ = await RequestCoreAsync(SlmpCommand.MonitorRegister, sub, payload, true, cancellationToken).ConfigureAwait(false);
     }
@@ -1575,10 +1586,26 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (points < 1 || points > DirectWordPointLimit / 4)
             throw new ArgumentOutOfRangeException(nameof(points), $"points must be <= {DirectWordPointLimit / 4} for one request.");
         var wordCount = points * 4;
+        var device = new SlmpDeviceAddress(currentValueDevice, checked((uint)headNo), PlcProfile);
+        EnsureDeviceProfile(device);
+        ValidateLongTimerDeviceForWireMode(device, CompatibilityMode, nameof(headNo));
         return await ReadWordsRawUncheckedAsync(
-            new SlmpDeviceAddress(currentValueDevice, checked((uint)headNo), PlcProfile),
+            device,
             checked((ushort)wordCount),
             cancellationToken).ConfigureAwait(false);
+    }
+
+    internal static void ValidateLongTimerDeviceForWireMode(
+        SlmpDeviceAddress device,
+        SlmpCompatibilityMode compatibilityMode,
+        string parameterName)
+    {
+        if (compatibilityMode == SlmpCompatibilityMode.Legacy && device.Number > 0x00FF_FFFF)
+        {
+            throw new ArgumentOutOfRangeException(
+                parameterName,
+                "Legacy device numbers must fit the 24-bit wire field (0..16777215).");
+        }
     }
 
     private static SlmpLongTimerResult[] ParseLongTimerWords(ushort[] words, int headNo, string prefix, int points)
@@ -1926,6 +1953,28 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         {
             EnsureProfileFeatureAllowed(SlmpProfileFeature.ExtModuleAccess);
         }
+    }
+
+    private bool SelectExtendedQlLayout(
+        IEnumerable<SlmpQualifiedDeviceAddress> devices,
+        string operation)
+    {
+        var hasLinkDirect = false;
+        var hasIqrLayout = false;
+        foreach (var device in devices)
+        {
+            if (SlmpPayloads.ResolveEffectiveExtension(device, PlcProfile).DirectMemorySpecification == 0xF9)
+                hasLinkDirect = true;
+            else
+                hasIqrLayout = true;
+        }
+
+        if (CompatibilityMode != SlmpCompatibilityMode.Legacy && hasLinkDirect && hasIqrLayout)
+        {
+            throw new ArgumentException(
+                $"{operation} cannot mix J link-direct Q/L entries with 13-byte iQ-R extended entries in one request.");
+        }
+        return hasLinkDirect;
     }
 
     private int DirectPointLimit(bool bitUnit, SlmpProfileLimit limitKey)

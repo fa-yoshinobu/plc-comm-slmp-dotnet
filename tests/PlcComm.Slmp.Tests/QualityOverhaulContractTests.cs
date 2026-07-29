@@ -144,6 +144,24 @@ public sealed class QualityOverhaulContractTests
     }
 
     [Fact]
+    public async Task LongTimerHelpers_ApplyFamilyAndWireWidthGuardsBeforeTransport()
+    {
+        var device = new SlmpDeviceAddress(SlmpDeviceCode.LTN, 0x0100_0000, SlmpPlcProfile.IqR);
+        var wireError = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            SlmpClient.ValidateLongTimerDeviceForWireMode(
+                device,
+                SlmpCompatibilityMode.Legacy,
+                "headNo"));
+        Assert.Equal("headNo", wireError.ParamName);
+
+        using var unsupported = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqF, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        await Assert.ThrowsAsync<NotSupportedException>(() => unsupported.ReadLongTimerAsync(0, 1));
+        await Assert.ThrowsAsync<NotSupportedException>(() => unsupported.ReadLongRetentiveTimerAsync(0, 1));
+        Assert.False(unsupported.IsOpen);
+    }
+
+    [Fact]
     public void CpuBufferAliasesAndEnum_AreNotPublic()
     {
         Assert.Null(typeof(SlmpClient).Assembly.GetType("PlcComm.Slmp.SlmpCpuModule"));

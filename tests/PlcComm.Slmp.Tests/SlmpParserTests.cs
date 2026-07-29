@@ -329,6 +329,32 @@ public sealed class SlmpParserTests
         Assert.Equal((byte)0xF9, q.DirectMemorySpecification);
     }
 
+    [Theory]
+    [InlineData("D+5")]
+    [InlineData("D 5")]
+    [InlineData("W 1F")]
+    public void ParseDevice_RejectsNonDigitCharactersInNumber(string text)
+    {
+        Assert.Throws<FormatException>(() => SlmpDeviceParser.Parse(text, SlmpPlcProfile.IqR));
+    }
+
+    [Fact]
+    public void ParseQualifiedDevice_RejectsJNetworkBeyondByteField()
+    {
+        var error = Assert.Throws<FormatException>(() =>
+            SlmpQualifiedDeviceParser.Parse(@"J256\SW10", SlmpPlcProfile.IqR));
+
+        Assert.Equal("Invalid J-direct network; expected decimal 0..255.", error.Message);
+    }
+
+    [Theory]
+    [InlineData("X")]
+    [InlineData("Y")]
+    public void ParseDevice_IqFRejectsMissingOctalNumber(string text)
+    {
+        Assert.Throws<FormatException>(() => SlmpDeviceParser.Parse(text, SlmpPlcProfile.IqF));
+    }
+
     [Fact]
     public void EncodeExtendedDeviceSpec_LinkDirect_J2SW10_MatchesPcap()
     {
@@ -338,6 +364,16 @@ public sealed class SlmpParserTests
         var extension = new SlmpExtensionSpec(2, 0, 0, 0, 0xF9);
         var spec = client.EncodeExtendedDeviceSpec(device, extension);
         Assert.Equal(new byte[] { 0x00, 0x00, 0x10, 0x00, 0x00, 0xB5, 0x00, 0x00, 0x02, 0x00, 0xF9 }, spec);
+    }
+
+    [Fact]
+    public void EncodeExtendedDeviceSpec_LinkDirectRejectsNumberBeyondWireWidth()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var device = new SlmpDeviceAddress(SlmpDeviceCode.SW, 0x0100_0000, SlmpPlcProfile.IqR);
+        var extension = new SlmpExtensionSpec(2, 0, 0, 0, 0xF9);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => client.EncodeExtendedDeviceSpec(device, extension));
     }
 
     private static JsonDocument LoadCanonicalDeviceRangeRules()
