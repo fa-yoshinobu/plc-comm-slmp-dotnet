@@ -342,3 +342,28 @@ Post-disposition evidence:
 - NuGet and symbol packages built successfully, package contents and version `3.1.0` passed integrity checks.
 - `scripts/check_no_auto_publish.ps1` and `git diff --check`: passed.
 - No live PLC communication was required or performed; every changed boundary is deterministic in local TCP/UDP tests.
+
+## BH-LIVE-SLMP-20260729 — Supplemental bug-hunt live verification
+
+Scope: commit `cb1670d3726682041177e3327877bdd5fbf33c06`, profile `melsec:iq-r`, TCP
+`192.168.250.100:1025`.
+
+Target contract: the library sends profile-catalog range exceedances that fit the wire format, uses
+the Q/L layout for J link-direct extended random and monitor operations, and leaves every test
+device in its documented final state.
+
+Acceptance evidence:
+
+- [x] `D100` one-word read succeeded with value `0`.
+- [x] `R32768` reached the PLC and surfaced `SlmpError` end code `0x4031` for command `0x0401`,
+  subcommand `0x0002`; no pre-send profile-range rejection occurred.
+- [x] Extended random read of `J1\W10` succeeded with value `0`.
+- [x] Extended random word write changed `J1\W10` from `0` to `0x6B2D`, read back `0x6B2D`,
+  restored `0`, and confirmed the restoration.
+- [x] Extended random bit write changed `J1\B10` to ON, read ON, reset it to OFF, and confirmed OFF.
+- [x] Extended monitor registration for `J1\W10` and one monitor cycle succeeded with value `0`;
+  the TCP session was then closed.
+- [x] The repository working tree was clean after the live probes.
+
+Disposition: all supplemental live checks passed. The `R32768` result is PLC-side address evidence,
+not authority to add a communication-library profile-range guard.
