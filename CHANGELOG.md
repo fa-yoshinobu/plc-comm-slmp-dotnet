@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.1] - 2026-07-29
+
+- Release: Bumped .NET package metadata to `4.0.1`.
+- Release: GitHub Release drafts now prepend this version's changelog section to generated notes and repair a missing section on workflow reruns.
+
 ### Fixed
 
 - Library: J link-direct extended random read/write and monitor registration now use the Q/L subcommands, including the one-byte Q/L bit-value representation; requests that mix 11-byte J and 13-byte iQ-R entry layouts are rejected before transport.
