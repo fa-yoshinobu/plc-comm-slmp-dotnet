@@ -10,24 +10,8 @@ source for selectors; store `CanonicalName`, not `DisplayName`.
 
 For cross-profile capability and device-range details, see the [SLMP Profile Reference](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/).
 
-## Verified hardware available for validation
-
-The maintainer owns the hardware listed below. Communication has been verified
-on this hardware, and it is available for focused reproduction and validation
-when a problem is reported.
-
-"Verified" does not mean that every library feature has been tested on every
-listed PLC or module. Exhaustively testing every combination would require a prohibitive
-amount of work.
-
-| PLC family | Hardware owned by the maintainer |
-| --- | --- |
-| MELSEC iQ-R | `R120PCPU`, `R08PCPU`, `R16CPU`, `R08CPU`, `R00CPU`, `RJ71EN71` |
-| MELSEC MX controller | `MXR300-32` |
-| MELSEC iQ-L | `L16HCPU` |
-| MELSEC iQ-F | `FX5U-32MR/DS`, `FX5UC-32MT/D` |
-| MELSEC-L | `L02SCPU`, `L26CPU-BT`, `LJ71E71-100` |
-| MELSEC-Q | `Q06UDVCPU`, `Q26UDEHCPU`, `Q12HCPU`, `QJ71E71-100` |
+Verified hardware available for focused validation is maintained once in the
+shared [MELSEC SLMP profile catalog](https://github.com/fa-yoshinobu/plc-comm-slmp-profiles#verified-hardware-available-for-validation).
 
 ## Profiles
 
