@@ -81,7 +81,7 @@ public readonly record struct SlmpQualifiedDeviceAddress
 public static class SlmpQualifiedDeviceParser
 {
     private static readonly Regex QualifiedPattern = new(@"^U([0-9A-F]+)[\\/](.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    private static readonly Regex LinkDirectPattern = new(@"^J(\d+)[\\/](.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex LinkDirectPattern = new(@"^J([0-9]+)[\\/](.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     /// <summary>
     /// Parses a qualified device string into a <see cref="SlmpQualifiedDeviceAddress"/>.
@@ -99,7 +99,14 @@ public static class SlmpQualifiedDeviceParser
         var jMatch = LinkDirectPattern.Match(token);
         if (jMatch.Success)
         {
-            var jNetwork = byte.Parse(jMatch.Groups[1].Value, CultureInfo.InvariantCulture);
+            if (!byte.TryParse(
+                    jMatch.Groups[1].Value,
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out var jNetwork))
+            {
+                throw new FormatException("Invalid J-direct network; expected decimal 0..255.");
+            }
             var device = SlmpDeviceParser.Parse(jMatch.Groups[2].Value, plcProfile);
             return new SlmpQualifiedDeviceAddress(device, jNetwork, 0xF9);
         }

@@ -330,6 +330,24 @@ public sealed class SlmpParserTests
     }
 
     [Theory]
+    [InlineData("D+5")]
+    [InlineData("D 5")]
+    [InlineData("W 1F")]
+    public void ParseDevice_RejectsNonDigitCharactersInNumber(string text)
+    {
+        Assert.Throws<FormatException>(() => SlmpDeviceParser.Parse(text, SlmpPlcProfile.IqR));
+    }
+
+    [Fact]
+    public void ParseQualifiedDevice_RejectsJNetworkBeyondByteField()
+    {
+        var error = Assert.Throws<FormatException>(() =>
+            SlmpQualifiedDeviceParser.Parse(@"J256\SW10", SlmpPlcProfile.IqR));
+
+        Assert.Equal("Invalid J-direct network; expected decimal 0..255.", error.Message);
+    }
+
+    [Theory]
     [InlineData("X")]
     [InlineData("Y")]
     public void ParseDevice_IqFRejectsMissingOctalNumber(string text)

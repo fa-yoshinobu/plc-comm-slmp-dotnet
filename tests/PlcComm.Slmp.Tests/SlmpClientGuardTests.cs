@@ -10,6 +10,18 @@ public sealed class SlmpClientGuardTests
     private static readonly bool[] SingleTrue = [true];
 
     [Fact]
+    public async Task WriteRandomBitsExtAsync_NullEntriesUseStableArgumentError()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+
+        var error = await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            client.WriteRandomBitsExtAsync(null!));
+
+        Assert.Equal("bitEntries", error.ParamName);
+        Assert.False(client.IsOpen);
+    }
+
+    [Fact]
     public async Task ReadWordsRawAsync_RejectsNonBlockLongTimerCurrentReads()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);

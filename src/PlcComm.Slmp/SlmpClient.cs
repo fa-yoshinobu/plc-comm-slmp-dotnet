@@ -891,6 +891,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ArgumentNullException.ThrowIfNull(bitEntries);
         if (bitEntries.Count > 0xFF)
         {
             throw new ArgumentOutOfRangeException(nameof(bitEntries), "random bit count must be <= 255");
@@ -1585,10 +1586,26 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (points < 1 || points > DirectWordPointLimit / 4)
             throw new ArgumentOutOfRangeException(nameof(points), $"points must be <= {DirectWordPointLimit / 4} for one request.");
         var wordCount = points * 4;
+        var device = new SlmpDeviceAddress(currentValueDevice, checked((uint)headNo), PlcProfile);
+        EnsureDeviceProfile(device);
+        ValidateLongTimerDeviceForWireMode(device, CompatibilityMode, nameof(headNo));
         return await ReadWordsRawUncheckedAsync(
-            new SlmpDeviceAddress(currentValueDevice, checked((uint)headNo), PlcProfile),
+            device,
             checked((ushort)wordCount),
             cancellationToken).ConfigureAwait(false);
+    }
+
+    internal static void ValidateLongTimerDeviceForWireMode(
+        SlmpDeviceAddress device,
+        SlmpCompatibilityMode compatibilityMode,
+        string parameterName)
+    {
+        if (compatibilityMode == SlmpCompatibilityMode.Legacy && device.Number > 0x00FF_FFFF)
+        {
+            throw new ArgumentOutOfRangeException(
+                parameterName,
+                "Legacy device numbers must fit the 24-bit wire field (0..16777215).");
+        }
     }
 
     private static SlmpLongTimerResult[] ParseLongTimerWords(ushort[] words, int headNo, string prefix, int points)
