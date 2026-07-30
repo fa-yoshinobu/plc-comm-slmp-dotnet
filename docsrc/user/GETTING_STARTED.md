@@ -94,4 +94,4 @@ finally
 | Reads work but writes fail | Confirm RUN-time write permission in the PLC setup guide and the selected profile write policy. |
 | First register read fails | Start with `D` word reads. Do not start with `G`, `HG`, `LTN`, or `LCN`. |
 | Several callers share one connection | `SlmpClient` serializes individual exchanges. Use `QueuedSlmpClient`, returned by `SlmpClientFactory.OpenAndConnectAsync`, when a multi-step helper must remain under one application-level gate. |
-| Long timer or long counter values look wrong | See [Gotchas](GOTCHAS.md) before reading `LTN`, `LSTN`, `LCN`, or `LZ`. |
+| Long timer or long counter values look wrong | See [Long device families](USAGE_GUIDE.md#long-device-families) before reading `LTN`, `LSTN`, `LCN`, or `LZ`. |
