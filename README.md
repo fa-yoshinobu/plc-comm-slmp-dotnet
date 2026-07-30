@@ -53,7 +53,12 @@ Console.WriteLine($"D100 = {value}");
 | [API reference](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/dotnet/API_REFERENCE/) | Browse generated public .NET signatures and XML documentation comments. |
 | [SLMP profile reference](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/) | Check profile parameters, device families, address syntax, and numbering rules. |
 | [PLC profiles](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/dotnet/PROFILES/) | Choose the canonical MELSEC profile and frame behavior. |
+| [Gotchas](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/dotnet/GOTCHAS/) | Check whether this library has any current library-specific caveats. |
+| [Performance](https://fa-yoshinobu.github.io/plc-comm-docs-site/performance/) | See measured latency, throughput, and long-run soak results from real PLC hardware. |
+| [Choosing a Language](https://fa-yoshinobu.github.io/plc-comm-docs-site/choosing-a-language/) | Compare the .NET, Python, Rust, C++, and Node-RED implementations before you pick one. |
 | [Examples](https://github.com/fa-yoshinobu/plc-comm-slmp-dotnet/blob/main/samples/README.md) | Run maintained .NET samples. |
+
+For a zero-code connectivity check, see [PLC Scope](https://github.com/fa-yoshinobu/plc-scope-dotnet) (Windows).
 
 ## License and registry
 
