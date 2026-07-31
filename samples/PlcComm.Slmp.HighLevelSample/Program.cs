@@ -32,11 +32,9 @@ var target = SlmpTargetParser.ParseNamed(args[4]).Target;
 // -------------------------------------------------------------------------
 // 1. OpenAndConnectAsync  (recommended entry point)
 //
-// OpenAndConnectAsync opens a QueuedSlmpClient with one explicit PLC profile.
-// QueuedSlmpClient is a thread-safe wrapper that serializes all requests
-// through a SemaphoreSlim, so multiple concurrent Tasks can share one TCP
-// connection without interleaving protocol frames. High-level helpers can
-// be called directly on the queued client.
+// OpenAndConnectAsync opens an ordinary SlmpClient with one explicit PLC profile.
+// SlmpClient serializes complete operations through its built-in FIFO queue, so
+// concurrent Tasks can share one connection without interleaving protocol frames.
 //
 // port options:
 //   1025  iQ-R / iQ-F Ethernet module SLMP port
@@ -52,7 +50,7 @@ string normalized = SlmpAddress.Normalize("d50", plcProfile);
 Console.WriteLine($"[Normalize] d50 -> {normalized}");
 
 // -------------------------------------------------------------------------
-// QueuedSlmpClient properties you can adjust after connection:
+// SlmpClient properties you can adjust after connection:
 //
 //   Timeout         - communication timeout (default 3 s)
 //   MonitoringTimer - how long the PLC waits before aborting a request,

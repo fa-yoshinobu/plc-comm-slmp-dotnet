@@ -161,7 +161,7 @@ public static class SlmpTargetParser
             throw new ArgumentException("target text is required", nameof(text));
         }
 
-        var parts = text.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var parts = text.Split(',', StringSplitOptions.TrimEntries);
         if (parts.Length == 1)
         {
             return ParseSingle(parts[0]);
@@ -170,6 +170,11 @@ public static class SlmpTargetParser
         if (parts.Length != 5)
         {
             throw new ArgumentException("target must be SELF, SELF-MULTIPLE-CPU-1..4, or NAME,NETWORK,STATION,MODULE_IO,MULTIDROP");
+        }
+
+        if (parts.Any(string.IsNullOrWhiteSpace))
+        {
+            throw new ArgumentException("target fields NAME, NETWORK, STATION, MODULE_IO, and MULTIDROP must not be empty", nameof(text));
         }
 
         var name = parts[0];

@@ -27,7 +27,7 @@ Console.CancelKeyPress += (_, eventArgs) =>
     shutdown.Cancel();
 };
 
-QueuedSlmpClient? client = null;
+SlmpClient? client = null;
 var backoff = initialBackoff;
 var connectedOnce = false;
 
@@ -94,7 +94,7 @@ static bool IsRetryable(Exception ex)
 static string Describe(Exception ex)
     => ex is SlmpError { EndCode: { } endCode } ? $"{ex.Message} (end_code=0x{endCode:X4})" : ex.Message;
 
-static async Task DisposeClientAsync(QueuedSlmpClient? client)
+static async Task DisposeClientAsync(SlmpClient? client)
 {
     if (client is not null)
     {

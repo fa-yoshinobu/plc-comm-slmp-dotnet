@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
@@ -13,20 +14,24 @@ namespace PlcComm.Slmp;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Requests on one client are serialized so one connection has at most one
-/// in-flight exchange and 4E serial numbers remain associated with their responses.
-/// <see cref="QueuedSlmpClient"/> additionally keeps multi-step helper operations
-/// under one application-level gate.
+/// Public operations on one client enter one arrival-order FIFO queue, so one
+/// connection has at most one active wire transaction and 4E serial numbers remain
+/// associated with their responses. Queue waiting does not consume the transaction
+/// timeout. A waiting caller can cancel without sending.
+/// </para>
+/// <para>
+/// Unless a method explicitly documents a multi-step semantic operation, each
+/// request method emits exactly one SLMP request and never splits an oversized
+/// operation. Effective limits are validated before serial allocation or transport.
 /// </para>
 /// <para>
 /// The factory <see cref="SlmpClientFactory.OpenAndConnectAsync(SlmpConnectionOptions, CancellationToken)"/>
-/// returns a ready-to-use <see cref="QueuedSlmpClient"/> and is the recommended
-/// entry point for most use cases.
+/// returns a ready-to-use <see cref="SlmpClient"/> and is the recommended entry
+/// point for most use cases.
 /// </para>
 /// </remarks>
 public sealed class SlmpClient : IDisposable, IAsyncDisposable
 {
-    private const uint MaxRuntimeRangeProbeCount = 1_048_576;
     private const int DirectWordPointLimit = 960;
     private const int DirectBitPointLimit = 7168;
     private const int DirectIqFBitPointLimit = 3584;
@@ -40,19 +45,49 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     private UdpClient? _udp;
     private ushort _serial;
     private readonly SlmpTargetAddress _targetAddress;
-    private TimeSpan _timeout = TimeSpan.FromSeconds(3);
-    private readonly SemaphoreSlim _requestGate = new(1, 1);
+    private long _timeoutTicks = TimeSpan.FromSeconds(3).Ticks;
+    private int _monitoringTimer = 0x0010;
     private readonly SemaphoreSlim _openGate = new(1, 1);
+    private readonly object _operationSync = new();
+    private readonly LinkedList<OperationWaiter> _operationWaiters = new();
+    private readonly AsyncLocal<OperationContext?> _operationContext = new();
+    private OperationGeneration _operationGeneration = new();
+    private bool _operationActive;
+    private int _lifecycleTransitions;
     private int _disposed;
     private bool _requiresExplicitOpen;
     private long _requestCount;
     private long _txBytes;
     private long _rxBytes;
 
+    private sealed class OperationGeneration
+    {
+        internal CancellationTokenSource Cancellation { get; } = new();
+        internal bool Disposed { get; set; }
+        internal bool IsRetired => Cancellation.IsCancellationRequested;
+
+        internal Exception CreateFailure(object client)
+            => Disposed
+                ? new ObjectDisposedException(client.GetType().FullName)
+                : new SlmpConnectionClosedException();
+    }
+
+    private sealed class OperationWaiter(OperationGeneration generation)
+    {
+        internal OperationGeneration Generation { get; } = generation;
+        internal TaskCompletionSource<OperationLease> Completion { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal LinkedListNode<OperationWaiter>? Node { get; set; }
+        internal CancellationTokenRegistration CancellationRegistration { get; set; }
+    }
+
+    private readonly record struct OperationLease(OperationGeneration Generation, bool OwnsTurn);
+    private sealed record OperationContext(SlmpClient Client, OperationGeneration Generation);
+
     /// <summary>
     /// Initializes a new instance of the <see cref="SlmpClient"/> class.
     /// </summary>
-    /// <param name="host">The IP address or hostname of the PLC.</param>
+    /// <param name="host">The IPv4 address or hostname that resolves to IPv4 for the PLC. IPv6 is not supported.</param>
     /// <param name="plcProfile">The PLC profile. This selection derives frame type and compatibility mode.</param>
     /// <param name="port">The required port number.</param>
     /// <param name="transportMode">The transport protocol (TCP or UDP).</param>
@@ -64,8 +99,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         SlmpTransportMode transportMode,
         SlmpTargetAddress targetAddress)
     {
-        ArgumentNullException.ThrowIfNull(host);
-        if (string.IsNullOrWhiteSpace(host)) throw new ArgumentException("Host must not be empty.", nameof(host));
+        host = SlmpValidation.ValidateIpv4Host(host, nameof(host));
         if (port is < 1 or > 65535) throw new ArgumentOutOfRangeException(nameof(port));
         if (!Enum.IsDefined(transportMode)) throw new ArgumentOutOfRangeException(nameof(transportMode));
         plcProfile = SlmpPlcProfiles.ValidateConnectionProfile(plcProfile);
@@ -93,12 +127,18 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         unchecked((ulong)Interlocked.Read(ref _txBytes)),
         unchecked((ulong)Interlocked.Read(ref _rxBytes)));
     /// <summary>Gets or sets the monitoring timer value (multiples of 250ms). Default is 0x0010 (4s).</summary>
-    public ushort MonitoringTimer { get; set; } = 0x0010;
+    public ushort MonitoringTimer
+    {
+        get => checked((ushort)Volatile.Read(ref _monitoringTimer));
+        set => Volatile.Write(ref _monitoringTimer, value);
+    }
     /// <summary>Gets or sets the communication timeout. Values must be from 1 millisecond through <c>int.MaxValue</c> milliseconds.</summary>
     public TimeSpan Timeout
     {
-        get => _timeout;
-        set => _timeout = SlmpValidation.ValidateTimeout(value, nameof(value));
+        get => TimeSpan.FromTicks(Interlocked.Read(ref _timeoutTicks));
+        set => Interlocked.Exchange(
+            ref _timeoutTicks,
+            SlmpValidation.ValidateTimeout(value, nameof(value)).Ticks);
     }
     internal byte[] LastRequestFrame { get; private set; } = [];
     internal byte[] LastResponseFrame { get; private set; } = [];
@@ -107,12 +147,229 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <summary>Gets a value indicating whether the client is currently connected.</summary>
     public bool IsOpen => _transportMode == SlmpTransportMode.Tcp ? _tcp?.Connected == true : _udp is not null;
 
+    private ValueTask<OperationLease> EnterOperationAsync(CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        var nested = _operationContext.Value;
+        if (nested is not null && ReferenceEquals(nested.Client, this))
+        {
+            if (nested.Generation.IsRetired)
+                throw nested.Generation.CreateFailure(this);
+            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.FromResult(new OperationLease(nested.Generation, OwnsTurn: false));
+        }
+
+        lock (_operationSync)
+        {
+            ThrowIfDisposed();
+            cancellationToken.ThrowIfCancellationRequested();
+            var generation = _operationGeneration;
+            if (!_operationActive && _lifecycleTransitions == 0)
+            {
+                _operationActive = true;
+                return ValueTask.FromResult(new OperationLease(generation, OwnsTurn: true));
+            }
+
+            var waiter = new OperationWaiter(generation);
+            waiter.Node = _operationWaiters.AddLast(waiter);
+            if (cancellationToken.CanBeCanceled)
+            {
+                waiter.CancellationRegistration = cancellationToken.UnsafeRegister(
+                    static state =>
+                    {
+                        var (client, queued, token) = ((SlmpClient, OperationWaiter, CancellationToken))state!;
+                        lock (client._operationSync)
+                        {
+                            if (queued.Node is null)
+                                return;
+                            client._operationWaiters.Remove(queued.Node);
+                            queued.Node = null;
+                            queued.Completion.TrySetCanceled(token);
+                        }
+                    },
+                    (this, waiter, cancellationToken));
+            }
+            return new ValueTask<OperationLease>(waiter.Completion.Task);
+        }
+    }
+
+    private void ExitOperation(OperationLease lease)
+    {
+        if (!lease.OwnsTurn)
+            return;
+
+        OperationWaiter? next = null;
+        lock (_operationSync)
+        {
+            if (_lifecycleTransitions != 0)
+            {
+                _operationActive = false;
+            }
+            else if (_operationWaiters.First is { } first)
+            {
+                next = first.Value;
+                _operationWaiters.RemoveFirst();
+                next.Node = null;
+            }
+            else
+            {
+                _operationActive = false;
+            }
+        }
+
+        if (next is not null)
+        {
+            next.CancellationRegistration.Dispose();
+            next.Completion.TrySetResult(new OperationLease(next.Generation, OwnsTurn: true));
+        }
+    }
+
+    private void RetireOperationGeneration(bool disposed)
+    {
+        OperationGeneration retired;
+        OperationWaiter[] rejected;
+        lock (_operationSync)
+        {
+            retired = _operationGeneration;
+            retired.Disposed |= disposed;
+            _operationGeneration = new OperationGeneration();
+            _lifecycleTransitions++;
+            rejected = _operationWaiters
+                .Where(waiter => ReferenceEquals(waiter.Generation, retired))
+                .ToArray();
+            foreach (var waiter in rejected)
+            {
+                if (waiter.Node is not null)
+                {
+                    _operationWaiters.Remove(waiter.Node);
+                    waiter.Node = null;
+                }
+            }
+        }
+
+        retired.Cancellation.Cancel();
+        foreach (var waiter in rejected)
+        {
+            waiter.CancellationRegistration.Dispose();
+            waiter.Completion.TrySetException(retired.CreateFailure(this));
+        }
+    }
+
+    private void CompleteLifecycleTransition()
+    {
+        OperationWaiter? next = null;
+        lock (_operationSync)
+        {
+            _lifecycleTransitions--;
+            if (_lifecycleTransitions < 0)
+                throw new InvalidOperationException("Unbalanced SLMP lifecycle transition.");
+            if (_lifecycleTransitions == 0 && !_operationActive && _operationWaiters.First is { } first)
+            {
+                next = first.Value;
+                _operationWaiters.RemoveFirst();
+                next.Node = null;
+                _operationActive = true;
+            }
+        }
+
+        if (next is not null)
+        {
+            next.CancellationRegistration.Dispose();
+            next.Completion.TrySetResult(new OperationLease(next.Generation, OwnsTurn: true));
+        }
+    }
+
+    internal async Task<T> ExecuteExclusiveAsync<T>(
+        Func<CancellationToken, Task<T>> operation,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(operation);
+        var lease = await EnterOperationAsync(cancellationToken).ConfigureAwait(false);
+        var priorContext = _operationContext.Value;
+        if (lease.OwnsTurn)
+            _operationContext.Value = new OperationContext(this, lease.Generation);
+
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            lease.Generation.Cancellation.Token);
+        try
+        {
+            var result = await operation(linked.Token).ConfigureAwait(false);
+            if (lease.Generation.IsRetired)
+                throw lease.Generation.CreateFailure(this);
+            return result;
+        }
+        catch (SlmpOperationOutcomeUnknownException)
+        {
+            throw;
+        }
+        catch when (lease.Generation.IsRetired)
+        {
+            throw lease.Generation.CreateFailure(this);
+        }
+        finally
+        {
+            if (lease.OwnsTurn)
+                _operationContext.Value = priorContext;
+            ExitOperation(lease);
+        }
+    }
+
+    internal async Task ExecuteExclusiveAsync(
+        Func<CancellationToken, Task> operation,
+        CancellationToken cancellationToken = default)
+    {
+        await ExecuteExclusiveAsync(
+            async token =>
+            {
+                await operation(token).ConfigureAwait(false);
+                return true;
+            },
+            cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>
     /// Opens the connection to the PLC asynchronously.
     /// </summary>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task OpenAsync(CancellationToken cancellationToken = default)
+    public Task OpenAsync(CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+        var timeoutSnapshot = Timeout;
+        return ExecuteExclusiveAsync(
+            token => OpenWithTimeoutCoreAsync(timeoutSnapshot, token),
+            cancellationToken);
+    }
+
+    private async Task OpenWithTimeoutCoreAsync(
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        using var deadlineCancellation = new CancellationTokenSource();
+        deadlineCancellation.CancelAfter(timeout);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            deadlineCancellation.Token);
+        try
+        {
+            await OpenCoreAsync(timeout, linked.Token).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (
+            deadlineCancellation.IsCancellationRequested &&
+            !cancellationToken.IsCancellationRequested)
+        {
+            CloseTransport();
+            throw new SlmpTimeoutException("The SLMP connection deadline expired.", exception);
+        }
+        catch (Exception exception) when (IsNativeTransportFailure(exception))
+        {
+            CloseTransport();
+            throw new SlmpTransportException("The SLMP connection attempt failed.", exception);
+        }
+    }
+
+    private async Task OpenCoreAsync(TimeSpan effectiveTimeout, CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
         await _openGate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -124,19 +381,18 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 _requiresExplicitOpen = false;
                 return;
             }
+            var remoteAddress = await SlmpValidation.ResolveIpv4AddressAsync(_host, cancellationToken).ConfigureAwait(false);
             if (_transportMode == SlmpTransportMode.Tcp)
             {
-                var tcp = new TcpClient();
-                using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                linked.CancelAfter(Timeout);
+                var tcp = new TcpClient(AddressFamily.InterNetwork);
                 try
                 {
-                    await tcp.ConnectAsync(_host, _port, linked.Token).ConfigureAwait(false);
+                    await tcp.ConnectAsync(remoteAddress, _port, cancellationToken).ConfigureAwait(false);
                     tcp.NoDelay = true;
                     tcp.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
                     tcp.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 30);
-                    tcp.ReceiveTimeout = (int)Timeout.TotalMilliseconds;
-                    tcp.SendTimeout = (int)Timeout.TotalMilliseconds;
+                    tcp.ReceiveTimeout = (int)effectiveTimeout.TotalMilliseconds;
+                    tcp.SendTimeout = (int)effectiveTimeout.TotalMilliseconds;
                     _tcp = tcp;
                     _tcpStream = tcp.GetStream();
                     _requiresExplicitOpen = false;
@@ -149,12 +405,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 return;
             }
 
-            var udp = new UdpClient();
+            var udp = new UdpClient(AddressFamily.InterNetwork);
             try
             {
-                udp.Client.ReceiveTimeout = (int)Timeout.TotalMilliseconds;
-                udp.Client.SendTimeout = (int)Timeout.TotalMilliseconds;
-                udp.Connect(_host, _port);
+                udp.Client.ReceiveTimeout = (int)effectiveTimeout.TotalMilliseconds;
+                udp.Client.SendTimeout = (int)effectiveTimeout.TotalMilliseconds;
+                udp.Connect(new IPEndPoint(remoteAddress, _port));
                 _udp = udp;
                 _requiresExplicitOpen = false;
             }
@@ -173,17 +429,25 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <summary>Opens the connection to the PLC synchronously.</summary>
     public void Open() => OpenAsync().GetAwaiter().GetResult();
 
-    /// <summary>Closes the connection to the PLC.</summary>
+    /// <summary>Closes the connection and rejects the active and queued operations for this transport generation.</summary>
     public void Close()
     {
-        _openGate.Wait();
+        RetireOperationGeneration(disposed: false);
         try
         {
-            CloseTransport();
+            _openGate.Wait();
+            try
+            {
+                CloseTransport();
+            }
+            finally
+            {
+                _openGate.Release();
+            }
         }
         finally
         {
-            _openGate.Release();
+            CompleteLifecycleTransition();
         }
     }
 
@@ -228,7 +492,23 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
             return;
 
-        Close();
+        RetireOperationGeneration(disposed: true);
+        try
+        {
+            _openGate.Wait();
+            try
+            {
+                CloseTransport();
+            }
+            finally
+            {
+                _openGate.Release();
+            }
+        }
+        finally
+        {
+            CompleteLifecycleTransition();
+        }
     }
 
     /// <summary>Asynchronously disposes the client and permanently closes the connection.</summary>
@@ -241,14 +521,22 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
             return;
 
-        await _openGate.WaitAsync().ConfigureAwait(false);
+        RetireOperationGeneration(disposed: true);
         try
         {
-            CloseTransport();
+            await _openGate.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                CloseTransport();
+            }
+            finally
+            {
+                _openGate.Release();
+            }
         }
         finally
         {
-            _openGate.Release();
+            CompleteLifecycleTransition();
         }
     }
 
@@ -272,7 +560,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    /// Opens a connection with explicit stable settings and returns a connected <see cref="QueuedSlmpClient"/>.
+    /// Opens a connection with explicit stable settings and returns a connected <see cref="SlmpClient"/>.
     /// </summary>
     /// <param name="host">PLC IP address or hostname.</param>
     /// <param name="port">SLMP port number such as 1025 for iQ-R/iQ-F or 5007 for Q/L.</param>
@@ -281,15 +569,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <param name="targetAddress">Required complete destination route.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>
-    /// A connected queued client ready for high-level helpers such as
+    /// A connected client ready for high-level helpers such as
     /// <c>ReadTypedAsync</c>, <c>ReadNamedAsync</c>, and <c>PollAsync</c>.
     /// </returns>
     /// <remarks>
     /// This is the recommended entry point for application code because it
-    /// combines one explicit PLC profile with a queued wrapper that is safe
-    /// to share across multiple tasks.
+    /// combines one explicit PLC profile with the ordinary client's FIFO admission
+    /// queue, which is safe to share across multiple tasks.
     /// </remarks>
-    public static async Task<QueuedSlmpClient> OpenAndConnectAsync(
+    public static async Task<SlmpClient> OpenAndConnectAsync(
         string host,
         int port,
         SlmpPlcProfile plcProfile,
@@ -330,110 +618,17 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    /// Reads the configured profile-specific device upper-bound catalog.
+    /// Reads the configured profile-specific device upper-bound catalog from one canonical SD-register window.
     /// </summary>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A catalog containing the configured profile and device upper-bound entries.</returns>
+    /// <remarks>No address probe or error-derived boundary inference is performed. Acquisition errors propagate to the caller.</remarks>
     public async Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
     {
         var rangeProfile = SlmpPlcProfiles.Resolve(PlcProfile).RangeProfile;
         var deviceRangeProfile = SlmpDeviceRangeResolver.ResolveProfile(rangeProfile);
         var registers = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, deviceRangeProfile, cancellationToken).ConfigureAwait(false);
-        var catalog = SlmpDeviceRangeResolver.BuildCatalog(rangeProfile, registers);
-        return await ResolveDeviceRangeCatalogRuntimeLimitsAsync(catalog, cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task<SlmpDeviceRangeCatalog> ResolveDeviceRangeCatalogRuntimeLimitsAsync(
-        SlmpDeviceRangeCatalog catalog,
-        CancellationToken cancellationToken)
-    {
-        var addressProfile = SlmpPlcProfiles.Resolve(catalog.PlcProfile).AddressProfile;
-        if (addressProfile is not (SlmpPlcProfile.QCpu or SlmpPlcProfile.LCpu or SlmpPlcProfile.QnU or SlmpPlcProfile.QnUDV))
-            return catalog;
-
-        if (addressProfile == SlmpPlcProfile.QCpu)
-        {
-            var zCount = await CanReadWordAddressAsync(SlmpDeviceCode.Z, 15, cancellationToken).ConfigureAwait(false)
-                ? 16u
-                : 10u;
-            catalog = SlmpDeviceRangeResolver.ReplaceFixedPointCount(
-                catalog,
-                "Z",
-                zCount,
-                "Runtime access check",
-                "QCPU Z register count is selected by probing Z15.");
-        }
-
-        var zrCount = await ResolveReadablePointCountAsync(SlmpDeviceCode.ZR, cancellationToken).ConfigureAwait(false);
-        catalog = SlmpDeviceRangeResolver.ReplaceFixedPointCount(
-            catalog,
-            "ZR",
-            zrCount,
-            "Runtime access check",
-            "ZR register count is selected by probing readable ZR addresses.");
-        return SlmpDeviceRangeResolver.ReplaceFixedPointCount(
-            catalog,
-            "R",
-            Math.Min(zrCount, 32_768u),
-            "Runtime access check",
-            "R register count follows the probed ZR count and is capped at R32767.");
-    }
-
-    private async Task<uint> ResolveReadablePointCountAsync(
-        SlmpDeviceCode device,
-        CancellationToken cancellationToken)
-    {
-        if (!await CanReadWordAddressAsync(device, 0, cancellationToken).ConfigureAwait(false))
-            return 0;
-
-        var upperLimit = MaxRuntimeRangeProbeCount - 1;
-        var low = 0u;
-        var high = 1u;
-        while (high < upperLimit && await CanReadWordAddressAsync(device, high, cancellationToken).ConfigureAwait(false))
-        {
-            low = high;
-            high = Math.Min(upperLimit, checked((high * 2) + 1));
-        }
-
-        if (high == upperLimit && await CanReadWordAddressAsync(device, high, cancellationToken).ConfigureAwait(false))
-            return MaxRuntimeRangeProbeCount;
-
-        var left = low + 1;
-        var right = high - 1;
-        while (left <= right)
-        {
-            var mid = left + ((right - left) / 2);
-            if (await CanReadWordAddressAsync(device, mid, cancellationToken).ConfigureAwait(false))
-            {
-                low = mid;
-                left = mid + 1;
-            }
-            else
-            {
-                if (mid == 0)
-                    break;
-
-                right = mid - 1;
-            }
-        }
-
-        return low + 1;
-    }
-
-    private async Task<bool> CanReadWordAddressAsync(
-        SlmpDeviceCode device,
-        uint number,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            _ = await ReadWordsRawAsync(new SlmpDeviceAddress(device, number, PlcProfile), 1, cancellationToken).ConfigureAwait(false);
-            return true;
-        }
-        catch (SlmpError exception) when (exception.Command == SlmpCommand.DeviceRead)
-        {
-            return false;
-        }
+        return SlmpDeviceRangeResolver.BuildCatalog(rangeProfile, registers);
     }
 
     /// <summary>
@@ -1695,7 +1890,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default)
         => RequestCoreAsync(command, subcommand, payload, expectResponse: true, cancellationToken);
 
-    private async Task<byte[]> RequestCoreAsync(
+    private Task<byte[]> RequestCoreAsync(
         SlmpCommand command,
         ushort subcommand,
         ReadOnlyMemory<byte> payload,
@@ -1704,69 +1899,72 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         ThrowIfDisposed();
         _ = ValidateRequestPayloadLength(payload.Length, nameof(payload));
-        await _requestGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var payloadSnapshot = payload.ToArray();
+        var timeoutSnapshot = Timeout;
+        var monitoringTimerSnapshot = MonitoringTimer;
+        return ExecuteExclusiveAsync(
+            token => RequestCoreWithinOperationAsync(
+                command,
+                subcommand,
+                payloadSnapshot,
+                expectResponse,
+                timeoutSnapshot,
+                monitoringTimerSnapshot,
+                token),
+            cancellationToken);
+    }
+
+    private async Task<byte[]> RequestCoreWithinOperationAsync(
+        SlmpCommand command,
+        ushort subcommand,
+        ReadOnlyMemory<byte> payload,
+        bool expectResponse,
+        TimeSpan timeout,
+        ushort monitoringTimer,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        if (_requiresExplicitOpen)
+            throw new SlmpNotConnectedException();
+
+        var stateChanging = IsStateChangingCommand(command);
+        var requestMayHaveBeenSent = false;
+        using var deadlineCancellation = new CancellationTokenSource();
+        deadlineCancellation.CancelAfter(timeout);
+        using var transactionCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            deadlineCancellation.Token);
         try
         {
-            ThrowIfDisposed();
-            if (_requiresExplicitOpen)
-                throw new InvalidOperationException("The previous exchange invalidated the transport. Call OpenAsync explicitly before another request.");
-            if (!IsOpen) await OpenAsync(cancellationToken).ConfigureAwait(false);
-            var frame = BuildRequestFrame(command, subcommand, payload.Span);
-            ushort? expectedSerial = FrameType == SlmpFrameType.Frame4E
-                ? BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(2, 2))
-                : null;
-            LastRequestFrame = frame;
-            FireTrace(SlmpTraceDirection.Send, frame);
-            if (_transportMode == SlmpTransportMode.Tcp)
-            {
-                if (_tcpStream is null) throw new SlmpError("tcp not open");
-                using var tcpTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                tcpTimeout.CancelAfter(Timeout);
-                try
-                {
-                    await _tcpStream.WriteAsync(frame, tcpTimeout.Token).ConfigureAwait(false);
-                    RecordSend(frame.Length);
-                    if (!expectResponse)
-                    {
-                        LastResponseFrame = [];
-                        InvalidateTransport();
-                        return [];
-                    }
+            if (!IsOpen)
+                await OpenCoreAsync(timeout, transactionCancellation.Token).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            if (deadlineCancellation.IsCancellationRequested || cancellationToken.IsCancellationRequested)
+                InvalidateTransport();
+            throw ClassifyTransactionFailure(
+                exception,
+                stateChanging,
+                requestMayHaveBeenSent,
+                deadlineCancellation.IsCancellationRequested,
+                cancellationToken);
+        }
 
-                    while (true)
-                    {
-                        tcpTimeout.Token.ThrowIfCancellationRequested();
-                        var response = await ReceiveTcpFrameAsync(_tcpStream, FrameType, tcpTimeout.Token).ConfigureAwait(false);
-                        RecordReceive(response.Length);
-                        LastResponseFrame = response;
-                        FireTrace(SlmpTraceDirection.Receive, response);
-                        ValidateResponseEnvelope(response, FrameType);
-                        if (!HasExpectedResponseSerial(response, expectedSerial))
-                            continue;
-                        if (!HasExpectedResponseRoute(response, FrameType, TargetAddress))
-                            continue;
-                        return ParseResponse(command, subcommand, response);
-                    }
-                }
-                catch (SlmpError ex) when (ex.EndCode is not null)
-                {
-                    // A PLC end code is an application-level response. Keep the
-                    // connection usable so callers can issue the next request.
-                    throw;
-                }
-                catch
-                {
-                    InvalidateTransport();
-                    throw;
-                }
-            }
-
-            if (_udp is null) throw new SlmpError("udp not open");
-            using var udpTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            udpTimeout.CancelAfter(Timeout);
+        var frame = BuildRequestFrame(command, subcommand, payload.Span, monitoringTimer);
+        ushort? expectedSerial = FrameType == SlmpFrameType.Frame4E
+            ? BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(2, 2))
+            : null;
+        LastRequestFrame = frame;
+        FireTrace(SlmpTraceDirection.Send, frame);
+        if (_transportMode == SlmpTransportMode.Tcp)
+        {
+            if (_tcpStream is null) throw new SlmpTransportException("The SLMP TCP transport is not open.");
             try
             {
-                await _udp.SendAsync(frame, udpTimeout.Token).ConfigureAwait(false);
+                transactionCancellation.Token.ThrowIfCancellationRequested();
+                requestMayHaveBeenSent = true;
+                await _tcpStream.WriteAsync(frame, transactionCancellation.Token).ConfigureAwait(false);
                 RecordSend(frame.Length);
                 if (!expectResponse)
                 {
@@ -1777,34 +1975,157 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
                 while (true)
                 {
-                    udpTimeout.Token.ThrowIfCancellationRequested();
-                    var datagram = await _udp.ReceiveAsync(udpTimeout.Token).ConfigureAwait(false);
-                    RecordReceive(datagram.Buffer.Length);
-                    LastResponseFrame = datagram.Buffer;
-                    FireTrace(SlmpTraceDirection.Receive, datagram.Buffer);
-                    ValidateResponseEnvelope(datagram.Buffer, FrameType);
-                    if (!HasExpectedResponseSerial(datagram.Buffer, expectedSerial))
+                    transactionCancellation.Token.ThrowIfCancellationRequested();
+                    var response = await ReceiveTcpFrameAsync(
+                        _tcpStream,
+                        FrameType,
+                        transactionCancellation.Token).ConfigureAwait(false);
+                    transactionCancellation.Token.ThrowIfCancellationRequested();
+                    RecordReceive(response.Length);
+                    LastResponseFrame = response;
+                    FireTrace(SlmpTraceDirection.Receive, response);
+                    transactionCancellation.Token.ThrowIfCancellationRequested();
+                    ValidateResponseEnvelope(response, FrameType);
+                    if (!HasExpectedResponseSerial(response, expectedSerial))
                         continue;
-                    if (!HasExpectedResponseRoute(datagram.Buffer, FrameType, TargetAddress))
+                    if (!HasExpectedResponseRoute(response, FrameType, TargetAddress))
                         continue;
-                    return ParseResponse(command, subcommand, datagram.Buffer);
+                    var parsed = ParseResponse(command, subcommand, response);
+                    transactionCancellation.Token.ThrowIfCancellationRequested();
+                    return parsed;
                 }
             }
             catch (SlmpError ex) when (ex.EndCode is not null)
             {
+                // A PLC end code is an application-level response. Keep the
+                // connection usable so callers can issue the next request.
                 throw;
             }
-            catch
+            catch (SlmpOperationOutcomeUnknownException)
+            {
+                throw;
+            }
+            catch (Exception exception)
             {
                 InvalidateTransport();
-                throw;
+                throw ClassifyTransactionFailure(
+                    exception,
+                    stateChanging,
+                    requestMayHaveBeenSent,
+                    deadlineCancellation.IsCancellationRequested,
+                    cancellationToken);
             }
         }
-        finally
+
+        if (_udp is null) throw new SlmpTransportException("The SLMP UDP transport is not open.");
+        try
         {
-            _requestGate.Release();
+            transactionCancellation.Token.ThrowIfCancellationRequested();
+            requestMayHaveBeenSent = true;
+            await _udp.SendAsync(frame, transactionCancellation.Token).ConfigureAwait(false);
+            RecordSend(frame.Length);
+            if (!expectResponse)
+            {
+                LastResponseFrame = [];
+                InvalidateTransport();
+                return [];
+            }
+
+            while (true)
+            {
+                transactionCancellation.Token.ThrowIfCancellationRequested();
+                var datagram = await _udp.ReceiveAsync(transactionCancellation.Token).ConfigureAwait(false);
+                transactionCancellation.Token.ThrowIfCancellationRequested();
+                RecordReceive(datagram.Buffer.Length);
+                LastResponseFrame = datagram.Buffer;
+                FireTrace(SlmpTraceDirection.Receive, datagram.Buffer);
+                transactionCancellation.Token.ThrowIfCancellationRequested();
+                ValidateResponseEnvelope(datagram.Buffer, FrameType);
+                if (!HasExpectedResponseSerial(datagram.Buffer, expectedSerial))
+                    continue;
+                if (!HasExpectedResponseRoute(datagram.Buffer, FrameType, TargetAddress))
+                    continue;
+                var parsed = ParseResponse(command, subcommand, datagram.Buffer);
+                transactionCancellation.Token.ThrowIfCancellationRequested();
+                return parsed;
+            }
+        }
+        catch (SlmpError ex) when (ex.EndCode is not null)
+        {
+            throw;
+        }
+        catch (SlmpOperationOutcomeUnknownException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            InvalidateTransport();
+            throw ClassifyTransactionFailure(
+                exception,
+                stateChanging,
+                requestMayHaveBeenSent,
+                deadlineCancellation.IsCancellationRequested,
+                cancellationToken);
         }
     }
+
+    private Exception ClassifyTransactionFailure(
+        Exception exception,
+        bool stateChanging,
+        bool requestMayHaveBeenSent,
+        bool deadlineExpired,
+        CancellationToken operationCancellation)
+    {
+        var generationRetired = _operationContext.Value is { } context &&
+            ReferenceEquals(context.Client, this) &&
+            context.Generation.IsRetired;
+
+        if (stateChanging && requestMayHaveBeenSent)
+        {
+            var reason = generationRetired
+                ? SlmpOutcomeUnknownReason.Closed
+                : deadlineExpired && !operationCancellation.IsCancellationRequested
+                    ? SlmpOutcomeUnknownReason.Timeout
+                    : operationCancellation.IsCancellationRequested
+                        ? SlmpOutcomeUnknownReason.Cancellation
+                        : exception is SlmpError
+                            ? SlmpOutcomeUnknownReason.MalformedResponse
+                            : SlmpOutcomeUnknownReason.Transport;
+            return new SlmpOperationOutcomeUnknownException(reason, NormalizeTransportFailure(exception));
+        }
+
+        if (generationRetired)
+            return new SlmpConnectionClosedException();
+        if (deadlineExpired && !operationCancellation.IsCancellationRequested)
+            return new SlmpTimeoutException("The SLMP transaction deadline expired.", exception);
+        if (operationCancellation.IsCancellationRequested)
+            return exception;
+        return NormalizeTransportFailure(exception);
+    }
+
+    private static bool IsNativeTransportFailure(Exception exception)
+        => exception is SocketException or IOException or ObjectDisposedException;
+
+    private static Exception NormalizeTransportFailure(Exception exception)
+        => exception is SlmpTransportException
+            ? exception
+            : IsNativeTransportFailure(exception)
+                ? new SlmpTransportException("The SLMP transport failed.", exception)
+                : exception;
+
+    private static bool IsStateChangingCommand(SlmpCommand command)
+        => command is not (
+            SlmpCommand.DeviceRead or
+            SlmpCommand.DeviceReadRandom or
+            SlmpCommand.DeviceReadBlock or
+            SlmpCommand.Monitor or
+            SlmpCommand.ReadTypeName or
+            SlmpCommand.LabelArrayRead or
+            SlmpCommand.LabelReadRandom or
+            SlmpCommand.MemoryRead or
+            SlmpCommand.ExtendUnitRead or
+            SlmpCommand.SelfTest);
 
     private void RecordSend(int frameLength)
     {
@@ -1814,7 +2135,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private void RecordReceive(int frameLength) => Interlocked.Add(ref _rxBytes, frameLength);
 
-    private byte[] BuildRequestFrame(SlmpCommand command, ushort subcommand, ReadOnlySpan<byte> payload)
+    private byte[] BuildRequestFrame(
+        SlmpCommand command,
+        ushort subcommand,
+        ReadOnlySpan<byte> payload,
+        ushort monitoringTimer)
     {
         var payloadLength = ValidateRequestPayloadLength(payload.Length, nameof(payload));
         var headerSize = FrameType == SlmpFrameType.Frame4E ? 19 : 15;
@@ -1828,7 +2153,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(8, 2), TargetAddress.ModuleIo);
             frame[10] = TargetAddress.Multidrop;
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(11, 2), checked((ushort)(6 + payloadLength)));
-            BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(13, 2), MonitoringTimer);
+            BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(13, 2), monitoringTimer);
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(15, 2), (ushort)command);
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(17, 2), subcommand);
         }
@@ -1840,7 +2165,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(4, 2), TargetAddress.ModuleIo);
             frame[6] = TargetAddress.Multidrop;
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(7, 2), checked((ushort)(6 + payloadLength)));
-            BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(9, 2), MonitoringTimer);
+            BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(9, 2), monitoringTimer);
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(11, 2), (ushort)command);
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(13, 2), subcommand);
         }
@@ -1964,7 +2289,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         while (!buffer.IsEmpty)
         {
             var read = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
-            if (read == 0) throw new SlmpError("connection closed while reading response");
+            if (read == 0)
+                throw new SlmpTransportException("The SLMP connection closed while reading a response.");
             buffer = buffer[read..];
         }
     }
@@ -2738,12 +3064,19 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         var result = new bool[points];
         var need = (points + 1) / 2;
-        if (data.Length < need) throw new SlmpError("read_bits payload size mismatch");
+        if (data.Length != need) throw new SlmpError("read_bits payload size mismatch");
         var idx = 0;
         for (var i = 0; i < need && idx < points; i++)
         {
-            result[idx++] = ((data[i] >> 4) & 0x1) != 0;
-            if (idx < points) result[idx++] = (data[i] & 0x1) != 0;
+            var high = (data[i] >> 4) & 0x0F;
+            if (high > 1) throw new SlmpError("read_bits payload contains a non-binary high nibble");
+            result[idx++] = high == 1;
+            if (idx < points)
+            {
+                var low = data[i] & 0x0F;
+                if (low > 1) throw new SlmpError("read_bits payload contains a non-binary low nibble");
+                result[idx++] = low == 1;
+            }
         }
         return result;
     }

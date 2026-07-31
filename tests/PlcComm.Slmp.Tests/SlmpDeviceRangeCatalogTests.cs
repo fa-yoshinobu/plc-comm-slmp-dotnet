@@ -307,26 +307,12 @@ public sealed class SlmpDeviceRangeCatalogTests
     }
 
     [Fact]
-    public async Task ReadDeviceRangeCatalogAsync_QCpuUnitUsesSixteenPointZWhenZ15IsReadable()
+    public async Task ReadDeviceRangeCatalogAsync_QCpuUsesCanonicalRulesWithoutRuntimeProbes()
     {
         var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.QCpuQj71E71100);
         var sdValues = new ushort[profile.RegisterCount];
 
-        await using var server = new MultiResponseSlmpServer(
-        [
-            (BuildWordPayload(sdValues), (ushort)0),
-            (BuildWordPayload([0]), (ushort)0),
-            (BuildWordPayload([0]), (ushort)0),
-            (BuildWordPayload([0]), (ushort)0),
-            (BuildWordPayload([0]), (ushort)0),
-            (BuildWordPayload([0]), (ushort)0),
-            (BuildWordPayload([0]), (ushort)0),
-            (Array.Empty<byte>(), (ushort)0x4031),
-            (Array.Empty<byte>(), (ushort)0x4031),
-            (Array.Empty<byte>(), (ushort)0x4031),
-            (Array.Empty<byte>(), (ushort)0x4031),
-            (Array.Empty<byte>(), (ushort)0x4031),
-        ]);
+        await using var server = new MultiResponseSlmpServer([BuildWordPayload(sdValues)]);
         await server.StartAsync();
 
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
@@ -336,52 +322,94 @@ public sealed class SlmpDeviceRangeCatalogTests
 
         var catalog = await client.ReadDeviceRangeCatalogAsync();
 
-        Assert.Equal(12, server.RequestFrames.Count);
+        Assert.Single(server.RequestFrames);
         Assert.Equal(SlmpPlcProfile.QCpuQj71E71100, catalog.PlcProfile);
-        Assert.Equal(16u, GetEntry(catalog, "Z").PointCount);
-        Assert.Equal(15u, GetEntry(catalog, "Z").UpperBound);
-        Assert.Equal("Z0-Z15", GetEntry(catalog, "Z").AddressRange);
-        Assert.Equal("Runtime access check", GetEntry(catalog, "Z").Source);
-        Assert.Equal(16u, GetEntry(catalog, "ZR").PointCount);
-        Assert.Equal(15u, GetEntry(catalog, "ZR").UpperBound);
-        Assert.Equal("ZR0-ZR15", GetEntry(catalog, "ZR").AddressRange);
-        Assert.Equal(16u, GetEntry(catalog, "R").PointCount);
-        Assert.Equal(15u, GetEntry(catalog, "R").UpperBound);
-        Assert.Equal("R0-R15", GetEntry(catalog, "R").AddressRange);
-    }
-
-    [Fact]
-    public async Task ReadDeviceRangeCatalogAsync_QCpuUsesTenPointZWhenZ15IsRejected()
-    {
-        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.QCpu);
-        var sdValues = new ushort[profile.RegisterCount];
-
-        await using var server = new MultiResponseSlmpServer(
-        [
-            (BuildWordPayload(sdValues), (ushort)0),
-            (Array.Empty<byte>(), (ushort)0x4031),
-            (Array.Empty<byte>(), (ushort)0x4031),
-        ]);
-        await server.StartAsync();
-
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
-        {
-            MonitoringTimer = 0x0010,
-        };
-
-        var catalog = await client.ReadDeviceRangeCatalogAsync();
-
-        Assert.Equal(3, server.RequestFrames.Count);
         Assert.Equal(10u, GetEntry(catalog, "Z").PointCount);
         Assert.Equal(9u, GetEntry(catalog, "Z").UpperBound);
         Assert.Equal("Z0-Z9", GetEntry(catalog, "Z").AddressRange);
-        Assert.Equal("Runtime access check", GetEntry(catalog, "Z").Source);
-        Assert.Equal(0u, GetEntry(catalog, "ZR").PointCount);
+        Assert.Equal("Fixed family limit", GetEntry(catalog, "Z").Source);
+        Assert.Null(GetEntry(catalog, "ZR").PointCount);
         Assert.Null(GetEntry(catalog, "ZR").UpperBound);
         Assert.Null(GetEntry(catalog, "ZR").AddressRange);
-        Assert.Equal(0u, GetEntry(catalog, "R").PointCount);
-        Assert.Null(GetEntry(catalog, "R").UpperBound);
-        Assert.Null(GetEntry(catalog, "R").AddressRange);
+        Assert.Equal(32768u, GetEntry(catalog, "R").PointCount);
+        Assert.Equal(32767u, GetEntry(catalog, "R").UpperBound);
+        Assert.Equal("R0-R32767", GetEntry(catalog, "R").AddressRange);
+    }
+
+    [Theory]
+    [InlineData(0xC061)] // route/target error
+    [InlineData(0xC200)] // remote-password error
+    [InlineData(0xCEE0)] // PLC busy/error state
+    [InlineData(0xD123)] // unclassified PLC end code
+    public async Task ReadDeviceRangeCatalogAsync_PropagatesPlcEndCodeWithoutBoundaryInference(ushort endCode)
+    {
+        await using var server = new MultiResponseSlmpServer([(Array.Empty<byte>(), endCode)]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
+        {
+            MonitoringTimer = 0x0010,
+        };
+
+        var error = await Assert.ThrowsAsync<SlmpError>(() => client.ReadDeviceRangeCatalogAsync());
+
+        Assert.Equal(endCode, error.EndCode);
+        Assert.Single(server.RequestFrames);
+    }
+
+    [Fact]
+    public async Task ReadDeviceRangeCatalogAsync_PropagatesProtocolFailureWithoutAProbe()
+    {
+        await using var server = new MultiResponseSlmpServer([new byte[] { 0x12 }]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
+        {
+            MonitoringTimer = 0x0010,
+        };
+
+        await Assert.ThrowsAsync<SlmpError>(() => client.ReadDeviceRangeCatalogAsync());
+
+        Assert.Single(server.RequestFrames);
+    }
+
+    [Fact]
+    public async Task ReadDeviceRangeCatalogAsync_PropagatesCancellationWithoutTransport()
+    {
+        await using var server = new MultiResponseSlmpServer([BuildWordPayload(new ushort[50])]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
+        {
+            MonitoringTimer = 0x0010,
+        };
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadDeviceRangeCatalogAsync(cancellation.Token));
+
+        Assert.Empty(server.RequestFrames);
+    }
+
+    [Fact]
+    public async Task ReadDeviceRangeCatalogAsync_PropagatesTimeoutWithoutAProbe()
+    {
+        await using var server = new MultiResponseSlmpServer([BuildWordPayload(new ushort[50])])
+        {
+            ResponseDelay = TimeSpan.FromMilliseconds(100),
+        };
+        await server.StartAsync();
+
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
+        {
+            MonitoringTimer = 0x0010,
+            Timeout = TimeSpan.FromMilliseconds(10),
+        };
+
+        await Assert.ThrowsAsync<SlmpTimeoutException>(() => client.ReadDeviceRangeCatalogAsync());
+
+        Assert.Single(server.RequestFrames);
     }
 
     [Fact]
@@ -557,6 +585,8 @@ public sealed class SlmpDeviceRangeCatalogTests
 
         public List<byte[]> RequestFrames { get; } = [];
 
+        public TimeSpan ResponseDelay { get; init; }
+
         public Task StartAsync()
         {
             _listener.Start();
@@ -600,6 +630,10 @@ public sealed class SlmpDeviceRangeCatalogTests
                     RequestFrames.Add(request);
 
                     var (payload, endCode) = _responses.Dequeue();
+                    if (ResponseDelay > TimeSpan.Zero)
+                    {
+                        await Task.Delay(ResponseDelay).ConfigureAwait(false);
+                    }
                     var response = request[0] == 0x54
                         ? Build4EResponse(request, payload, endCode)
                         : Build3EResponse(request, payload, endCode);
@@ -611,6 +645,9 @@ public sealed class SlmpDeviceRangeCatalogTests
             {
             }
             catch (ObjectDisposedException)
+            {
+            }
+            catch (IOException)
             {
             }
         }

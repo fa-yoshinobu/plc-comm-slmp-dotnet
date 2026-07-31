@@ -197,6 +197,19 @@ public sealed class SlmpParserTests
         Assert.Contains("NAME,NETWORK,STATION,MODULE_IO,MULTIDROP", ex.Message);
     }
 
+    [Theory]
+    [InlineData(",1,2,3,4")]
+    [InlineData("PLC-A,,2,3,4")]
+    [InlineData("PLC-A,1,,3,4")]
+    [InlineData("PLC-A,1,2,,4")]
+    [InlineData("PLC-A,1,2,3,")]
+    [InlineData("PLC-A,1,,2,3,4")]
+    [InlineData("PLC-A,1,2,3,4,5")]
+    public void ParseNamedTarget_RejectsEmptyAndExtraRouteFields(string text)
+    {
+        Assert.Throws<ArgumentException>(() => SlmpTargetParser.ParseNamed(text));
+    }
+
     [Fact]
     public void ParseQualifiedDevice_UsesExtensionSpec()
     {
@@ -220,33 +233,30 @@ public sealed class SlmpParserTests
     }
 
     [Fact]
-    public void QueuedClient_ConstructsWithInnerClient()
+    public void OrdinaryClient_IsTheOnlyPublicClientType()
     {
-        using var inner = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
-        using var queued = new QueuedSlmpClient(inner);
-        Assert.Same(inner, queued.InnerClient);
+        Assert.Null(typeof(SlmpClient).Assembly.GetType("PlcComm.Slmp.QueuedSlmpClient"));
     }
 
     [Fact]
-    public void QueuedClient_ExposesConfigurationProperties()
+    public void OrdinaryClient_ExposesConfigurationProperties()
     {
-        using var inner = new SlmpClient(
+        using var client = new SlmpClient(
             "127.0.0.1",
             SlmpPlcProfile.QCpuQj71E71100,
             1025,
             SlmpTransportMode.Tcp,
-            new SlmpTargetAddress(0x01, 0x02, 0x03E0, 0x00));
-        using var queued = new QueuedSlmpClient(inner)
+            new SlmpTargetAddress(0x01, 0x02, 0x03E0, 0x00))
         {
             MonitoringTimer = 0x0020,
             Timeout = TimeSpan.FromSeconds(5),
         };
 
-        Assert.Equal(SlmpFrameType.Frame4E, inner.FrameType);
-        Assert.Equal(SlmpCompatibilityMode.Legacy, inner.CompatibilityMode);
-        Assert.Equal((byte)0x01, inner.TargetAddress.Network);
-        Assert.Equal((ushort)0x0020, inner.MonitoringTimer);
-        Assert.Equal(TimeSpan.FromSeconds(5), inner.Timeout);
+        Assert.Equal(SlmpFrameType.Frame4E, client.FrameType);
+        Assert.Equal(SlmpCompatibilityMode.Legacy, client.CompatibilityMode);
+        Assert.Equal((byte)0x01, client.TargetAddress.Network);
+        Assert.Equal((ushort)0x0020, client.MonitoringTimer);
+        Assert.Equal(TimeSpan.FromSeconds(5), client.Timeout);
     }
 
     [Fact]

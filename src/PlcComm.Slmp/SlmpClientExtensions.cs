@@ -49,22 +49,18 @@ internal sealed record SlmpNamedReadPlan(
 );
 
 /// <summary>
-/// Extension methods for <see cref="SlmpClient"/> and <see cref="QueuedSlmpClient"/>
-/// providing typed read/write helpers, single-request block access, named-device access, and polling.
+/// Extension methods for <see cref="SlmpClient"/> providing typed read/write helpers,
+/// single-request block access, named-device access, and polling.
 /// </summary>
+/// <remarks>
+/// Typed, block, and named operations use one SLMP request unless the method explicitly
+/// documents a read-modify-write sequence. Named operations reject plans that require
+/// more than one request; polling performs a separate declared read cycle each interval.
+/// </remarks>
 public static class SlmpClientExtensions
 {
     private static SlmpDeviceAddress ParseDeviceForClient(
         SlmpClient client,
-        string address,
-        [CallerArgumentExpression(nameof(address))] string? parameterName = null)
-    {
-        ArgumentNullException.ThrowIfNull(address, parameterName);
-        return SlmpDeviceParser.Parse(address, client.PlcProfile);
-    }
-
-    private static SlmpDeviceAddress ParseDeviceForClient(
-        QueuedSlmpClient client,
         string address,
         [CallerArgumentExpression(nameof(address))] string? parameterName = null)
     {
@@ -94,17 +90,30 @@ public static class SlmpClientExtensions
     /// This is the main single-value read helper for user code. Prefer it over
     /// raw word access when the PLC data should be treated as a typed scalar.
     /// </remarks>
-    public static async Task<object> ReadTypedAsync(
+    public static Task<object> ReadTypedAsync(
         this SlmpClient client,
         SlmpDeviceAddress device,
         string dtype,
         CancellationToken ct = default)
     {
         var normalizedDType = RequireDType(dtype, nameof(dtype));
+        ValidateLongFamilyDType(device, normalizedDType, nameof(dtype));
+        ValidateDWordOnlyDType(device, normalizedDType, nameof(dtype));
+        ValidateDeviceUnitDType(device, normalizedDType, nameof(dtype));
+        return client.ExecuteExclusiveAsync(
+            token => ReadTypedCoreAsync(client, device, normalizedDType, token),
+            ct);
+    }
+
+    private static async Task<object> ReadTypedCoreAsync(
+        SlmpClient client,
+        SlmpDeviceAddress device,
+        string normalizedDType,
+        CancellationToken ct)
+    {
         var longRead = GetLongTimerReadSpec(device.Code);
         if (longRead is not null)
         {
-            ValidateLongFamilyDType(device, normalizedDType, nameof(dtype));
             if (IsLongCounterStateDirectBitRead(longRead.Value))
             {
                 var bits = await client.ReadBitsUncheckedAsync(device, 1, ct).ConfigureAwait(false);
@@ -120,8 +129,6 @@ public static class SlmpClientExtensions
             var timer = await ReadLongLikePointAsync(client, longRead.Value.BaseCode, device.Number, ct).ConfigureAwait(false);
             return DecodeLongLikeValue(normalizedDType, longRead.Value, timer);
         }
-
-        ValidateDWordOnlyDType(device, normalizedDType, nameof(dtype));
 
         switch (normalizedDType)
         {
@@ -173,36 +180,6 @@ public static class SlmpClientExtensions
         => client.ReadTypedAsync(ParseDeviceForClient(client, device), dtype, ct);
 
     /// <summary>
-    /// Reads one device value and converts it to the specified type through a queued client.
-    /// </summary>
-    /// <param name="client">Queued SLMP client safe for shared use.</param>
-    /// <param name="device">Starting device address.</param>
-    /// <param name="dtype">Requested application type.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>A boxed scalar matching the requested type.</returns>
-    public static Task<object> ReadTypedAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress device,
-        string dtype,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.ReadTypedAsync(device, dtype, ct), ct);
-
-    /// <summary>
-    /// Reads one device value using a string address through a queued client.
-    /// </summary>
-    /// <param name="client">Queued SLMP client safe for shared use.</param>
-    /// <param name="device">Device string such as <c>D100</c> or <c>M1000</c>.</param>
-    /// <param name="dtype">Requested application type.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>A boxed scalar matching the requested type.</returns>
-    public static Task<object> ReadTypedAsync(
-        this QueuedSlmpClient client,
-        string device,
-        string dtype,
-        CancellationToken ct = default)
-        => client.ReadTypedAsync(ParseDeviceForClient(client, device), dtype, ct);
-
-    /// <summary>
     /// Writes one logical value using strict dtype validation and encoding.
     /// </summary>
     /// <param name="client">Connected SLMP client.</param>
@@ -218,7 +195,7 @@ public static class SlmpClientExtensions
     /// manually splitting words or packing float32 values. Values are not parsed
     /// from strings or converted between Boolean, floating, and integer types.
     /// </remarks>
-    public static async Task WriteTypedAsync(
+    public static Task WriteTypedAsync(
         this SlmpClient client,
         SlmpDeviceAddress device,
         string dtype,
@@ -227,6 +204,18 @@ public static class SlmpClientExtensions
     {
         ArgumentNullException.ThrowIfNull(value);
         var normalizedDType = RequireDType(dtype, nameof(dtype));
+        return client.ExecuteExclusiveAsync(
+            token => WriteTypedCoreAsync(client, device, normalizedDType, value, token),
+            ct);
+    }
+
+    private static async Task WriteTypedCoreAsync(
+        SlmpClient client,
+        SlmpDeviceAddress device,
+        string normalizedDType,
+        object value,
+        CancellationToken ct)
+    {
         switch (ResolveWriteRoute(device, normalizedDType, client.PlcProfile))
         {
             case SlmpNamedWriteRoute.RandomBits:
@@ -298,38 +287,6 @@ public static class SlmpClientExtensions
         => client.WriteTypedAsync(ParseDeviceForClient(client, device), dtype, value, ct);
 
     /// <summary>
-    /// Writes one device value through a queued client.
-    /// </summary>
-    /// <param name="client">Queued SLMP client safe for shared use.</param>
-    /// <param name="device">Starting device address.</param>
-    /// <param name="dtype">Requested application type.</param>
-    /// <param name="value">Application value to encode and write.</param>
-    /// <param name="ct">Cancellation token.</param>
-    public static Task WriteTypedAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress device,
-        string dtype,
-        object value,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.WriteTypedAsync(device, dtype, value, ct), ct);
-
-    /// <summary>
-    /// Writes one device value using a string address through a queued client.
-    /// </summary>
-    /// <param name="client">Queued SLMP client safe for shared use.</param>
-    /// <param name="device">Device string such as <c>D100</c>, <c>D200:F</c>, or <c>M1000</c>.</param>
-    /// <param name="dtype">Requested application type.</param>
-    /// <param name="value">Application value to encode and write.</param>
-    /// <param name="ct">Cancellation token.</param>
-    public static Task WriteTypedAsync(
-        this QueuedSlmpClient client,
-        string device,
-        string dtype,
-        object value,
-        CancellationToken ct = default)
-        => client.WriteTypedAsync(ParseDeviceForClient(client, device), dtype, value, ct);
-
-    /// <summary>
     /// Performs a read-modify-write to set or clear one bit inside a word device.
     /// </summary>
     /// <param name="client">Connected SLMP client.</param>
@@ -338,10 +295,13 @@ public static class SlmpClientExtensions
     /// <param name="value">New bit state.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <remarks>
-    /// This helper is useful when a PLC stores request and status flags inside
-    /// one control word and only one flag should change.
+    /// The read and write occupy one FIFO turn on this client, so its other
+    /// operations cannot interleave. They remain two SLMP requests and are not
+    /// PLC-atomic: another client, PLC logic, or external writer can change the
+    /// word between them. Applications that require atomic coordination must
+    /// implement it in the PLC contract.
     /// </remarks>
-    public static async Task WriteBitInWordAsync(
+    public static Task WriteBitInWordAsync(
         this SlmpClient client,
         SlmpDeviceAddress device,
         int bitIndex,
@@ -350,6 +310,18 @@ public static class SlmpClientExtensions
     {
         if (bitIndex is < 0 or > 15)
             throw new ArgumentOutOfRangeException(nameof(bitIndex), "bitIndex must be 0-15.");
+        return client.ExecuteExclusiveAsync(
+            token => WriteBitInWordCoreAsync(client, device, bitIndex, value, token),
+            ct);
+    }
+
+    private static async Task WriteBitInWordCoreAsync(
+        SlmpClient client,
+        SlmpDeviceAddress device,
+        int bitIndex,
+        bool value,
+        CancellationToken ct)
+    {
         var words = await client.ReadWordsRawAsync(device, 1, ct).ConfigureAwait(false);
         int current = words[0];
         if (value)
@@ -362,30 +334,12 @@ public static class SlmpClientExtensions
     /// <summary>
     /// Performs a read-modify-write using a string address.
     /// </summary>
+    /// <remarks>
+    /// This overload has the same two-request, locally exclusive, non-PLC-atomic
+    /// behavior as the typed-address overload.
+    /// </remarks>
     public static Task WriteBitInWordAsync(
         this SlmpClient client,
-        string device,
-        int bitIndex,
-        bool value,
-        CancellationToken ct = default)
-        => client.WriteBitInWordAsync(ParseDeviceForClient(client, device), bitIndex, value, ct);
-
-    /// <summary>
-    /// Performs a read-modify-write through a queued client.
-    /// </summary>
-    public static Task WriteBitInWordAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress device,
-        int bitIndex,
-        bool value,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.WriteBitInWordAsync(device, bitIndex, value, ct), ct);
-
-    /// <summary>
-    /// Performs a read-modify-write using a string address through a queued client.
-    /// </summary>
-    public static Task WriteBitInWordAsync(
-        this QueuedSlmpClient client,
         string device,
         int bitIndex,
         bool value,
@@ -418,26 +372,6 @@ public static class SlmpClientExtensions
         => client.ReadBitsBlockAsync(ParseDeviceForClient(client, start), count, ct);
 
     /// <summary>
-    /// Reads a contiguous bit-device range through a queued client.
-    /// </summary>
-    public static Task<bool[]> ReadBitsBlockAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        ushort count,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.ReadBitsBlockAsync(start, count, ct), ct);
-
-    /// <summary>
-    /// Reads a contiguous bit-device range using a string address through a queued client.
-    /// </summary>
-    public static Task<bool[]> ReadBitsBlockAsync(
-        this QueuedSlmpClient client,
-        string start,
-        ushort count,
-        CancellationToken ct = default)
-        => client.ReadBitsBlockAsync(ParseDeviceForClient(client, start), count, ct);
-
-    /// <summary>
     /// Writes a contiguous bit-device range from boolean values.
     /// </summary>
     /// <param name="client">Connected SLMP client.</param>
@@ -456,26 +390,6 @@ public static class SlmpClientExtensions
     /// </summary>
     public static Task WriteBitsBlockAsync(
         this SlmpClient client,
-        string start,
-        IReadOnlyList<bool> values,
-        CancellationToken ct = default)
-        => client.WriteBitsBlockAsync(ParseDeviceForClient(client, start), values, ct);
-
-    /// <summary>
-    /// Writes a contiguous bit-device range through a queued client.
-    /// </summary>
-    public static Task WriteBitsBlockAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        IReadOnlyList<bool> values,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.WriteBitsBlockAsync(start, values, ct), ct);
-
-    /// <summary>
-    /// Writes a contiguous bit-device range using a string address through a queued client.
-    /// </summary>
-    public static Task WriteBitsBlockAsync(
-        this QueuedSlmpClient client,
         string start,
         IReadOnlyList<bool> values,
         CancellationToken ct = default)
@@ -506,26 +420,6 @@ public static class SlmpClientExtensions
         => client.WriteWordsBlockAsync(ParseDeviceForClient(client, start), values, ct);
 
     /// <summary>
-    /// Writes a contiguous word-device range through a queued client.
-    /// </summary>
-    public static Task WriteWordsBlockAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        IReadOnlyList<ushort> values,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.WriteWordsBlockAsync(start, values, ct), ct);
-
-    /// <summary>
-    /// Writes a contiguous word-device range using a string address through a queued client.
-    /// </summary>
-    public static Task WriteWordsBlockAsync(
-        this QueuedSlmpClient client,
-        string start,
-        IReadOnlyList<ushort> values,
-        CancellationToken ct = default)
-        => client.WriteWordsBlockAsync(ParseDeviceForClient(client, start), values, ct);
-
-    /// <summary>
     /// Writes a contiguous DWord-device range from 32-bit values.
     /// </summary>
     public static Task WriteDWordsBlockAsync(
@@ -540,26 +434,6 @@ public static class SlmpClientExtensions
     /// </summary>
     public static Task WriteDWordsBlockAsync(
         this SlmpClient client,
-        string start,
-        IReadOnlyList<uint> values,
-        CancellationToken ct = default)
-        => client.WriteDWordsBlockAsync(ParseDeviceForClient(client, start), values, ct);
-
-    /// <summary>
-    /// Writes a contiguous DWord-device range through a queued client.
-    /// </summary>
-    public static Task WriteDWordsBlockAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        IReadOnlyList<uint> values,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.WriteDWordsBlockAsync(start, values, ct), ct);
-
-    /// <summary>
-    /// Writes a contiguous DWord-device range using a string address through a queued client.
-    /// </summary>
-    public static Task WriteDWordsBlockAsync(
-        this QueuedSlmpClient client,
         string start,
         IReadOnlyList<uint> values,
         CancellationToken ct = default)
@@ -589,26 +463,6 @@ public static class SlmpClientExtensions
         => client.ReadWordsSingleRequestAsync(ParseDeviceForClient(client, start), count, ct);
 
     /// <summary>
-    /// Reads contiguous word devices using one SLMP request or returns an error through a queued client.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsSingleRequestAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.ReadWordsSingleRequestAsync(start, count, ct), ct);
-
-    /// <summary>
-    /// Reads contiguous word devices using one SLMP request or returns an error through a queued client.
-    /// </summary>
-    public static Task<ushort[]> ReadWordsSingleRequestAsync(
-        this QueuedSlmpClient client,
-        string start,
-        int count,
-        CancellationToken ct = default)
-        => client.ReadWordsSingleRequestAsync(ParseDeviceForClient(client, start), count, ct);
-
-    /// <summary>
     /// Reads contiguous DWord devices using one SLMP request or returns an error.
     /// </summary>
     public static Task<uint[]> ReadDWordsSingleRequestAsync(
@@ -626,26 +480,6 @@ public static class SlmpClientExtensions
     /// </summary>
     public static Task<uint[]> ReadDWordsSingleRequestAsync(
         this SlmpClient client,
-        string start,
-        int count,
-        CancellationToken ct = default)
-        => client.ReadDWordsSingleRequestAsync(ParseDeviceForClient(client, start), count, ct);
-
-    /// <summary>
-    /// Reads contiguous DWord devices using one SLMP request or returns an error through a queued client.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsSingleRequestAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        int count,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.ReadDWordsSingleRequestAsync(start, count, ct), ct);
-
-    /// <summary>
-    /// Reads contiguous DWord devices using one SLMP request or returns an error through a queued client.
-    /// </summary>
-    public static Task<uint[]> ReadDWordsSingleRequestAsync(
-        this QueuedSlmpClient client,
         string start,
         int count,
         CancellationToken ct = default)
@@ -675,26 +509,6 @@ public static class SlmpClientExtensions
         => client.WriteWordsSingleRequestAsync(ParseDeviceForClient(client, start), values, ct);
 
     /// <summary>
-    /// Writes contiguous word devices using one SLMP request or returns an error through a queued client.
-    /// </summary>
-    public static Task WriteWordsSingleRequestAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        IReadOnlyList<ushort> values,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.WriteWordsSingleRequestAsync(start, values, ct), ct);
-
-    /// <summary>
-    /// Writes contiguous word devices using one SLMP request or returns an error through a queued client.
-    /// </summary>
-    public static Task WriteWordsSingleRequestAsync(
-        this QueuedSlmpClient client,
-        string start,
-        IReadOnlyList<ushort> values,
-        CancellationToken ct = default)
-        => client.WriteWordsSingleRequestAsync(ParseDeviceForClient(client, start), values, ct);
-
-    /// <summary>
     /// Writes contiguous DWord devices using one SLMP request or returns an error.
     /// </summary>
     public static Task WriteDWordsSingleRequestAsync(
@@ -717,26 +531,6 @@ public static class SlmpClientExtensions
         CancellationToken ct = default)
         => client.WriteDWordsSingleRequestAsync(ParseDeviceForClient(client, start), values, ct);
 
-    /// <summary>
-    /// Writes contiguous DWord devices using one SLMP request or returns an error through a queued client.
-    /// </summary>
-    public static Task WriteDWordsSingleRequestAsync(
-        this QueuedSlmpClient client,
-        SlmpDeviceAddress start,
-        IReadOnlyList<uint> values,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.WriteDWordsSingleRequestAsync(start, values, ct), ct);
-
-    /// <summary>
-    /// Writes contiguous DWord devices using one SLMP request or returns an error through a queued client.
-    /// </summary>
-    public static Task WriteDWordsSingleRequestAsync(
-        this QueuedSlmpClient client,
-        string start,
-        IReadOnlyList<uint> values,
-        CancellationToken ct = default)
-        => client.WriteDWordsSingleRequestAsync(ParseDeviceForClient(client, start), values, ct);
-
     // -----------------------------------------------------------------------
     // Named-device read
     // -----------------------------------------------------------------------
@@ -754,25 +548,15 @@ public static class SlmpClientExtensions
     /// The complete address list is compiled into exactly one random-read request.
     /// Entries that require another command family are rejected before transport.
     /// </remarks>
-    public static async Task<IReadOnlyDictionary<string, object>> ReadNamedAsync(
+    public static Task<IReadOnlyDictionary<string, object>> ReadNamedAsync(
         this SlmpClient client,
         IEnumerable<string> addresses,
         CancellationToken ct = default)
     {
         var plan = CompileReadPlan(addresses, client.PlcProfile);
-        return await ReadNamedCompiledAsync(client, plan, ct).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Reads multiple devices by address string through a queued client.
-    /// </summary>
-    public static Task<IReadOnlyDictionary<string, object>> ReadNamedAsync(
-        this QueuedSlmpClient client,
-        IEnumerable<string> addresses,
-        CancellationToken ct = default)
-    {
-        var plan = CompileReadPlan(addresses, client.PlcProfile);
-        return client.ExecuteAsync(inner => ReadNamedCompiledAsync(inner, plan, ct), ct);
+        return client.ExecuteExclusiveAsync(
+            token => ReadNamedCompiledAsync(client, plan, token),
+            ct);
     }
 
     /// <summary>
@@ -789,7 +573,7 @@ public static class SlmpClientExtensions
     /// entries may share that request; bit entries use one random-bit request. Mixing those
     /// command families or requesting bit-in-word read-modify-write is rejected before transport.
     /// </remarks>
-    public static async Task WriteNamedAsync(
+    public static Task WriteNamedAsync(
         this SlmpClient client,
         IReadOnlyDictionary<string, object> updates,
         CancellationToken ct = default)
@@ -797,6 +581,18 @@ public static class SlmpClientExtensions
         ArgumentNullException.ThrowIfNull(updates);
         if (updates.Count == 0)
             throw new ArgumentException("WriteNamedAsync requires at least one update.", nameof(updates));
+
+        var snapshot = updates.ToArray();
+        return client.ExecuteExclusiveAsync(
+            token => WriteNamedCoreAsync(client, snapshot, token),
+            ct);
+    }
+
+    private static async Task WriteNamedCoreAsync(
+        SlmpClient client,
+        IReadOnlyList<KeyValuePair<string, object>> updates,
+        CancellationToken ct)
+    {
 
         var wordEntries = new List<(SlmpDeviceAddress Device, ushort Value)>();
         var dwordEntries = new List<(SlmpDeviceAddress Device, uint Value)>();
@@ -857,18 +653,6 @@ public static class SlmpClientExtensions
             await client.WriteRandomWordsAsync(wordEntries, dwordEntries, ct).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Writes multiple named values through a queued client.
-    /// </summary>
-    /// <param name="client">Queued SLMP client safe for shared use.</param>
-    /// <param name="updates">Address-to-value map in the same format as <see cref="WriteNamedAsync(SlmpClient,System.Collections.Generic.IReadOnlyDictionary{string,object},System.Threading.CancellationToken)"/>.</param>
-    /// <param name="ct">Cancellation token.</param>
-    public static Task WriteNamedAsync(
-        this QueuedSlmpClient client,
-        IReadOnlyDictionary<string, object> updates,
-        CancellationToken ct = default)
-        => client.ExecuteAsync(inner => inner.WriteNamedAsync(updates, ct), ct);
-
     // -----------------------------------------------------------------------
     // Polling
     // -----------------------------------------------------------------------
@@ -894,29 +678,9 @@ public static class SlmpClientExtensions
         var plan = CompileReadPlan(addresses, client.PlcProfile);
         while (!ct.IsCancellationRequested)
         {
-            yield return await ReadNamedCompiledAsync(client, plan, ct).ConfigureAwait(false);
-            await Task.Delay(interval, ct).ConfigureAwait(false);
-        }
-    }
-
-    /// <summary>
-    /// Continuously polls the specified devices at the given interval through a queued client.
-    /// </summary>
-    /// <param name="client">Queued SLMP client safe for shared use.</param>
-    /// <param name="addresses">Address list in the same format as <see cref="ReadNamedAsync(SlmpClient,System.Collections.Generic.IEnumerable{string},System.Threading.CancellationToken)"/>.</param>
-    /// <param name="interval">Delay between snapshots.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>An async stream of snapshot dictionaries.</returns>
-    public static async IAsyncEnumerable<IReadOnlyDictionary<string, object>> PollAsync(
-        this QueuedSlmpClient client,
-        IEnumerable<string> addresses,
-        TimeSpan interval,
-        [EnumeratorCancellation] CancellationToken ct = default)
-    {
-        var plan = CompileReadPlan(addresses, client.PlcProfile);
-        while (!ct.IsCancellationRequested)
-        {
-            yield return await client.ExecuteAsync(inner => ReadNamedCompiledAsync(inner, plan, ct), ct).ConfigureAwait(false);
+            yield return await client.ExecuteExclusiveAsync(
+                token => ReadNamedCompiledAsync(client, plan, token),
+                ct).ConfigureAwait(false);
             await Task.Delay(interval, ct).ConfigureAwait(false);
         }
     }
@@ -1299,14 +1063,29 @@ public static class SlmpClientExtensions
         }
     }
 
-    private static string NormalizeDTypeForDevice(SlmpDeviceAddress device, string dtype)
-        => RequireDType(dtype, nameof(dtype));
+    private static void ValidateDeviceUnitDType(SlmpDeviceAddress device, string dtype, string paramName)
+    {
+        var isBitDevice = IsBitDevice(device.Code);
+        if (isBitDevice && dtype != "BIT")
+        {
+            throw new ArgumentException(
+                $"{device.Code} is a bit device and requires dtype 'BIT'.",
+                paramName);
+        }
+
+        if (!isBitDevice && dtype == "BIT")
+        {
+            throw new ArgumentException(
+                $"{device.Code} is a word device and cannot use dtype 'BIT'. Use bit-in-word notation for a bit inside a word device.",
+                paramName);
+        }
+    }
 
     internal static string ResolveDTypeForAddress(string address, SlmpDeviceAddress device, string dtype, int? bitIdx)
     {
         if (bitIdx is not null)
             return "BIT_IN_WORD";
-        return NormalizeDTypeForDevice(device, dtype);
+        return RequireDType(dtype, nameof(dtype));
     }
 
     internal static SlmpNamedWriteRoute ResolveWriteRoute(
@@ -1314,9 +1093,10 @@ public static class SlmpClientExtensions
         string dtype,
         SlmpPlcProfile plcProfile = SlmpPlcProfile.Unspecified)
     {
-        var normalized = NormalizeDTypeForDevice(device, dtype);
+        var normalized = RequireDType(dtype, nameof(dtype));
         ValidateLongFamilyDType(device, normalized, nameof(dtype));
         ValidateDWordOnlyDType(device, normalized, nameof(dtype));
+        ValidateDeviceUnitDType(device, normalized, nameof(dtype));
         ValidateWritableDevice(device, plcProfile);
         return normalized switch
         {

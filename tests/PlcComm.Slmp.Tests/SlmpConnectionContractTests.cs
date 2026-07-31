@@ -33,6 +33,103 @@ public sealed class SlmpConnectionContractTests
     }
 
     [Theory]
+    [InlineData("::1")]
+    [InlineData("[::1]")]
+    [InlineData("::ffff:127.0.0.1")]
+    public void ConnectionInputs_RejectIPv6LiteralsBeforeTransport(string host)
+    {
+        Assert.Throws<ArgumentException>(() =>
+            new SlmpClient(
+                host,
+                SlmpPlcProfile.IqR,
+                1025,
+                SlmpTransportMode.Tcp,
+                SlmpTargetAddress.OwnStation));
+        Assert.Throws<ArgumentException>(() =>
+            new SlmpConnectionOptions(
+                host,
+                SlmpPlcProfile.IqR,
+                1025,
+                SlmpTransportMode.Udp,
+                SlmpTargetAddress.OwnStation));
+    }
+
+    [Fact]
+    public void AddressSelection_UsesFirstIPv4AndRejectsIPv6OnlyResults()
+    {
+        var first = IPAddress.Parse("192.0.2.10");
+        var second = IPAddress.Parse("192.0.2.11");
+
+        Assert.Equal(
+            first,
+            SlmpValidation.SelectFirstIpv4Address("plc.local", [IPAddress.IPv6Loopback, first, second]));
+        Assert.Throws<SlmpError>(() =>
+            SlmpValidation.SelectFirstIpv4Address("ipv6-only.local", [IPAddress.IPv6Loopback]));
+    }
+
+    [Fact]
+    public async Task HostnameConnection_UsesIPv4ForTcpAndUdp()
+    {
+        using (var listener = new TcpListener(IPAddress.Loopback, 0))
+        {
+            listener.Start();
+            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            var acceptTask = listener.AcceptTcpClientAsync();
+            using var client = new SlmpClient(
+                "localhost",
+                SlmpPlcProfile.IqR,
+                port,
+                SlmpTransportMode.Tcp,
+                SlmpTargetAddress.OwnStation);
+
+            await client.OpenAsync();
+            using var accepted = await acceptTask;
+            Assert.Equal(AddressFamily.InterNetwork, accepted.Client.RemoteEndPoint!.AddressFamily);
+        }
+
+        using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        var udpPort = ((IPEndPoint)server.Client.LocalEndPoint!).Port;
+        var serverTask = Task.Run(async () =>
+        {
+            var request = await server.ReceiveAsync();
+            Assert.Equal(AddressFamily.InterNetwork, request.RemoteEndPoint.AddressFamily);
+            byte[] response = [
+                0xD4, 0x00, request.Buffer[2], request.Buffer[3], 0x00, 0x00,
+                0x00, 0xFF, 0xFF, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00];
+            await server.SendAsync(response, request.RemoteEndPoint);
+        });
+        using var udpClient = new SlmpClient(
+            "localhost",
+            SlmpPlcProfile.IqR,
+            udpPort,
+            SlmpTransportMode.Udp,
+            SlmpTargetAddress.OwnStation);
+
+        await udpClient.ClearErrorAsync();
+        await serverTask;
+    }
+
+    [Fact]
+    public async Task ExplicitOpenTransportFailure_IsDedicatedTransportError()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+
+        var error = await Assert.ThrowsAsync<SlmpTransportException>(() => client.OpenAsync());
+
+        Assert.IsType<SocketException>(error.InnerException);
+        Assert.False(client.IsOpen);
+    }
+
+    [Theory]
     [InlineData(0)]
     [InlineData(-1)]
     public void Timeout_RejectsNonPositiveValues(double milliseconds)
@@ -142,39 +239,30 @@ public sealed class SlmpConnectionContractTests
         await Task.Run(client.Dispose).WaitAsync(TimeSpan.FromSeconds(2));
         var activeError = await Record.ExceptionAsync(async () =>
             await request.WaitAsync(TimeSpan.FromSeconds(2)));
-        Assert.NotNull(activeError);
-        Assert.IsNotType<TimeoutException>(activeError);
+        var outcomeUnknown = Assert.IsType<SlmpOperationOutcomeUnknownException>(activeError);
+        Assert.Equal(SlmpOutcomeUnknownReason.Closed, outcomeUnknown.Reason);
         await Assert.ThrowsAsync<ObjectDisposedException>(async () =>
             await waitingRequest.WaitAsync(TimeSpan.FromSeconds(2)));
         await Assert.ThrowsAsync<ObjectDisposedException>(() => client.ClearErrorAsync());
     }
 
     [Fact]
-    public async Task QueuedClient_PropagatesTerminalDisposal()
+    public void QueuedClient_PublicTypeIsRemoved()
     {
-        var inner = CreateTcpClient();
-        var queued = new QueuedSlmpClient(inner);
-
-        await queued.DisposeAsync();
-        queued.Dispose();
-
-        await Assert.ThrowsAsync<ObjectDisposedException>(() => queued.OpenAsync());
-        await Assert.ThrowsAsync<ObjectDisposedException>(() => queued.ClearErrorAsync());
-        await Assert.ThrowsAsync<ObjectDisposedException>(() => inner.OpenAsync());
+        Assert.Null(typeof(SlmpClient).Assembly.GetType("PlcComm.Slmp.QueuedSlmpClient"));
     }
 
     [Fact]
     public void TargetAddress_IsReadOnlyAfterConstruction()
     {
         Assert.False(typeof(SlmpClient).GetProperty(nameof(SlmpClient.TargetAddress))!.CanWrite);
-        Assert.False(typeof(QueuedSlmpClient).GetProperty(nameof(QueuedSlmpClient.TargetAddress))!.CanWrite);
     }
 
     [Fact]
-    public void QueuedClient_ExposesFixedCommandSemanticApis()
+    public void OrdinaryClient_ExposesFixedCommandSemanticApis()
     {
-        Assert.NotNull(typeof(QueuedSlmpClient).GetMethod(nameof(QueuedSlmpClient.SelfTestLoopbackAsync)));
-        Assert.NotNull(typeof(QueuedSlmpClient).GetMethod(nameof(QueuedSlmpClient.ClearErrorAsync)));
+        Assert.NotNull(typeof(SlmpClient).GetMethod(nameof(SlmpClient.SelfTestLoopbackAsync)));
+        Assert.NotNull(typeof(SlmpClient).GetMethod(nameof(SlmpClient.ClearErrorAsync)));
     }
 
     [Fact]
@@ -192,7 +280,7 @@ public sealed class SlmpConnectionContractTests
             Timeout = TimeSpan.FromMilliseconds(100),
         };
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+        await Assert.ThrowsAsync<SlmpTimeoutException>(() =>
             client.RawCommandAsync(
                 SlmpCommand.ReadTypeName,
                 0x0000,
@@ -204,7 +292,7 @@ public sealed class SlmpConnectionContractTests
 
         Assert.False(client.IsOpen);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<SlmpNotConnectedException>(() =>
             client.RawCommandAsync(
                 SlmpCommand.ReadTypeName,
                 0x0000,
@@ -212,6 +300,142 @@ public sealed class SlmpConnectionContractTests
 
         await client.OpenAsync();
         Assert.True(client.IsOpen);
+    }
+
+    [Fact]
+    public async Task PostSendStateChangingTimeout_IsOutcomeUnknownWithTimeoutCause()
+    {
+        using var sink = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        var port = ((IPEndPoint)sink.Client.LocalEndPoint!).Port;
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            port,
+            SlmpTransportMode.Udp,
+            SlmpTargetAddress.OwnStation)
+        {
+            Timeout = TimeSpan.FromMilliseconds(100),
+        };
+
+        var error = await Assert.ThrowsAsync<SlmpOperationOutcomeUnknownException>(
+            () => client.ClearErrorAsync());
+
+        Assert.Equal(SlmpOutcomeUnknownReason.Timeout, error.Reason);
+        Assert.IsAssignableFrom<OperationCanceledException>(error.InnerException);
+        Assert.Equal<ulong>(1, client.TrafficStats.RequestCount);
+        Assert.False(client.IsOpen);
+    }
+
+    [Fact]
+    public async Task PostSendUnknownRawCommandTimeout_IsConservativelyOutcomeUnknown()
+    {
+        using var sink = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        var port = ((IPEndPoint)sink.Client.LocalEndPoint!).Port;
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            port,
+            SlmpTransportMode.Udp,
+            SlmpTargetAddress.OwnStation)
+        {
+            Timeout = TimeSpan.FromMilliseconds(100),
+        };
+
+        var error = await Assert.ThrowsAsync<SlmpOperationOutcomeUnknownException>(() =>
+            client.RawCommandAsync((SlmpCommand)0x7FFF, 0x0000, ReadOnlyMemory<byte>.Empty));
+
+        Assert.Equal(SlmpOutcomeUnknownReason.Timeout, error.Reason);
+        Assert.False(client.IsOpen);
+    }
+
+    [Fact]
+    public async Task PostSendStateChangingCancellation_IsOutcomeUnknownWithCancellationCause()
+    {
+        using var sink = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        var port = ((IPEndPoint)sink.Client.LocalEndPoint!).Port;
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            port,
+            SlmpTransportMode.Udp,
+            SlmpTargetAddress.OwnStation)
+        {
+            Timeout = TimeSpan.FromSeconds(10),
+        };
+        using var cancellation = new CancellationTokenSource();
+
+        var request = client.ClearErrorAsync(cancellation.Token);
+        _ = await sink.ReceiveAsync().WaitAsync(TimeSpan.FromSeconds(2));
+        cancellation.Cancel();
+
+        var error = await Assert.ThrowsAsync<SlmpOperationOutcomeUnknownException>(() => request);
+        Assert.Equal(SlmpOutcomeUnknownReason.Cancellation, error.Reason);
+        Assert.IsAssignableFrom<OperationCanceledException>(error.InnerException);
+        Assert.False(client.IsOpen);
+    }
+
+    [Fact]
+    public async Task PostSendStateChangingTransportLoss_IsOutcomeUnknownWithTransportCause()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var server = Task.Run(async () =>
+        {
+            using var accepted = await listener.AcceptTcpClientAsync();
+            var request = new byte[256];
+            _ = await accepted.GetStream().ReadAsync(request);
+            accepted.Client.LingerState = new LingerOption(true, 0);
+        });
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation)
+        {
+            Timeout = TimeSpan.FromSeconds(2),
+        };
+
+        var error = await Assert.ThrowsAsync<SlmpOperationOutcomeUnknownException>(
+            () => client.ClearErrorAsync());
+
+        Assert.Equal(SlmpOutcomeUnknownReason.Transport, error.Reason);
+        Assert.NotNull(error.InnerException);
+        Assert.False(client.IsOpen);
+        await server;
+        listener.Stop();
+    }
+
+    [Fact]
+    public async Task PostSendReadTransportLoss_IsDedicatedTransportError()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var server = Task.Run(async () =>
+        {
+            using var accepted = await listener.AcceptTcpClientAsync();
+            var request = new byte[256];
+            _ = await accepted.GetStream().ReadAsync(request);
+            accepted.Client.LingerState = new LingerOption(true, 0);
+        });
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation)
+        {
+            Timeout = TimeSpan.FromSeconds(2),
+        };
+
+        await Assert.ThrowsAsync<SlmpTransportException>(() =>
+            client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
+
+        Assert.False(client.IsOpen);
+        await server;
+        listener.Stop();
     }
 
     [Fact]
@@ -235,7 +459,7 @@ public sealed class SlmpConnectionContractTests
         Assert.Equal<ulong>(1, client.TrafficStats.RequestCount);
 
         Assert.False(client.IsOpen);
-        await Assert.ThrowsAsync<InvalidOperationException>(() => client.ClearErrorAsync());
+        await Assert.ThrowsAsync<SlmpNotConnectedException>(() => client.ClearErrorAsync());
         listener.Stop();
     }
 

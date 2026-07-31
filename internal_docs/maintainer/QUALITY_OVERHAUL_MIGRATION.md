@@ -328,7 +328,7 @@ Acceptance criteria:
 | D-9 | Accepted. Parity now compares feature sources plus limit source and over-end-code. It exposed and corrected older iQ-R Ethernet-unit/MX-F source drift and swapped iQ-F direct word/bit over-end-codes. |
 | D-11 | Accepted. The MX-R/RJ71EN71 one-off range special case was removed; the general range/address-profile fallback supplies the MX-R rules and the catalog wrapper preserves unit identity. |
 | D-12 | Accepted. Short recognized UDP datagrams are reported as malformed and invalidate the transport. |
-| D-13 | Accepted as the defined lifecycle. Connection establishment has its own timeout; the one absolute request deadline begins after a session is open and covers send plus response correlation. |
+| D-13 | Superseded by `GOAL-SERIAL-DEFER-002` below. Explicit `OpenAsync` retains a connection deadline, while a lazy connection inside a request is included in that request's one absolute transaction deadline. |
 | D-14 | Accepted as an inherent untagged-3E limitation. No automatic write retry or target switching was introduced; 4E remains the correlated choice where delayed-duplicate discrimination is required. |
 
 Additional Codex self-review added explicit cancellation checks around each discard iteration and rejects non-zero 4E reserved response bytes as malformed on TCP and UDP.
@@ -643,3 +643,255 @@ Final local evidence for this delta:
 - `dotnet format ... --verify-no-changes`, profile JSON drift, no-auto-publish, API-generator unit tests, generated API freshness, and `git diff --check`: PASS.
 - Release-mode NuGet and symbol packages were built locally; version/metadata checks passed and the package contained no tests or fixtures. The temporary packages were deleted and no registry publication was attempted.
 - No live PLC communication was requested, authorized, or performed. Parser arithmetic, malformed payloads, request-size limits, lifecycle, null, timeout, and archive behavior are locally deterministic; no new PLC/profile compatibility claim is made.
+
+## GOAL-SERIAL-DEFER-006: ordinary-client FIFO admission and queued-wrapper removal
+
+This approved target supersedes every earlier record in this file that required API parity with,
+or continued availability of, `QueuedSlmpClient`. Those earlier sections remain only as historical
+decision evidence and no longer define the supported public surface.
+
+Target state: `SlmpClient` is the one public live client. Every admitted operation uses one
+arrival-order FIFO queue per client instance, snapshots request inputs before waiting, and owns no
+more than one complete wire transaction. Waiting cancellation sends nothing. Queue waiting does
+not consume the transaction timeout. `Close` and disposal retire the active transport generation
+and reject its active and queued operations. Separate clients have independent queues.
+
+Compatibility impact: `QueuedSlmpClient`, `InnerClient`, its constructor, and every queued-specific
+extension overload are removed without aliases. Both `OpenAndConnectAsync` factories now return
+`SlmpClient`. Migration is a type replacement: keep the returned ordinary client and invoke the
+same methods directly.
+
+Acceptance criteria:
+
+1. Concurrent ordinary-client operations are admitted and sent in arrival order with one active wire transaction.
+2. Cancellation while waiting removes the operation without a request, counter, trace, or serial mutation.
+3. Collection, nested collection, raw payload, route, target, and profile state are immutable by activation time.
+4. Multi-step read-modify-write retains one queue turn and cannot be interleaved by a later operation.
+5. Close/dispose reject active and queued work for the retired generation and prevent a queued post-close send.
+6. Queue wait does not consume the transaction timeout, and different client instances progress independently.
+7. The removed wrapper is absent from assemblies, source, samples, and generated API documentation.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Full static, unit, sample, documentation, archive, and package checks passed.
+- [x] Codex self-review completed and accepted findings corrected.
+- [x] Live PLC verification is not required because admission, send order, cancellation, and lifecycle behavior are deterministic locally.
+- [x] Documentation, migration notes, changelog, and generated API reference agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+Verification evidence:
+
+- `run_ci.bat` passed solution/sample builds, generator tests, generated API freshness,
+  `dotnet format`, and 440 tests on each of net8.0, net9.0, and net10.0 with no failures or skips.
+- Loopback tests proved FIFO wire order, queued cancellation with no send, deep input snapshots,
+  active/queued close rejection, compound read-modify-write non-interleaving, queue-wait timeout
+  exclusion, and independent progress by separate client instances.
+- The generated API contains 50 public types and no `QueuedSlmpClient` or queued-only overload.
+  The former queued sample was renamed to the ordinary-client concurrent sample.
+- Release-mode NuGet inspection passed with 12 expected runtime/metadata files and no tests,
+  samples, repository tooling, or full guide set.
+- A virtual Git tree containing the uncommitted delta passed extracted source-archive restore,
+  build, generator freshness, format, and 440 tests per target framework.
+- No public registry command, commit, push, live PLC communication, or package publication was performed.
+
+Self-review disposition:
+
+- Accepted and corrected: disposing a retired generation token source from the active continuation
+  could race the thread executing `Cancel`; explicit disposal was removed so the unreachable
+  generation is reclaimed only after its continuations release it.
+- Accepted and corrected: an operation admitted concurrently after generation retirement could
+  otherwise race transport closure. Lifecycle transitions now hold new-generation admission until
+  transport close completes, while still canceling an active connect/request before waiting on the
+  transport lock.
+- Accepted and corrected: retaining the old `QueuedSample` project name would preserve a misleading
+  exported example after wrapper removal. It is now `PlcComm.Slmp.ConcurrentSample` and uses only
+  the ordinary client.
+- Rejected with rationale: a process-wide gate is not needed; per-instance queue state is required
+  so independent clients can progress concurrently, as the loopback test proves.
+- No duplicate or deferred finding changes this item.
+
+## GOAL-SERIAL-DEFER-001: complete single-request capacity
+
+Implementation scope: every public `SlmpClient` command and every public helper in
+`SlmpClientExtensions`, for TCP/UDP, 3E/4E, the selected canonical PLC profile, label payloads,
+and managed result allocation.
+
+Target contract: a single-request operation is accepted only when its complete request and
+worst protocol-bounded response fit the selected profile/command, SLMP 16-bit data-length field,
+IPv4 transport frame, encoder, decoder, and result representation. This implementation uses
+dynamic receive/result buffers, so no fixed internal or caller-owned output capacity further
+lowers the protocol/profile maximum. No accepted single-request API creates another request.
+
+Compatibility impact: oversized raw, label, point-count, named, and block operations now fail
+before connection opening, 4E serial allocation, last-frame/trace/counter mutation, or send.
+Callers must intentionally submit separate operations; there is no compatibility split path.
+
+Acceptance criteria:
+
+1. TCP request payload is at most 65,529 bytes; IPv4 UDP applies 65,492 bytes for 3E and 65,488 bytes for 4E.
+2. Profile/command point limits and label aggregate arithmetic are checked before payload allocation or transport.
+3. Exact limits produce one request; maximum-plus-one produces a stable argument-range error with no observable request state change.
+4. Response framing is bounded by the SLMP length field and decoded into managed storage without truncation or partial success.
+5. Generated API/user documentation classifies normal APIs as single-request and records the explicit read-modify-write exception.
+
+- [x] Implementation completed in this repository.
+- [x] Tests cover every acceptance criterion and relevant TCP/UDP plus 3E/4E boundary.
+- [x] Static, unit, documentation, package, and source-archive checks passed.
+- [x] Codex self-review completed and every accepted finding corrected.
+- [x] Live PLC verification is not required because length, allocation, request count, and pre-send state are locally deterministic.
+- [x] Documentation, changelog, migration notes, and generated API reference agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+Evidence: exact TCP and IPv4 UDP 3E/4E payload boundaries, label aggregate arithmetic,
+profile point limits, no-state-mutation maximum-plus-one cases, and exact request counts pass in
+the 451-test suite on net8.0/net9.0/net10.0. Release NuGet contains 12 approved files. The virtual
+worktree source tree contains 76 files and passed extracted-only build, generated API freshness,
+format, and all 451 tests per target framework.
+
+## GOAL-SERIAL-DEFER-002: one absolute transaction deadline
+
+Implementation scope: explicit connect and every TCP/UDP request phase, including lazy IPv4
+resolution/connect, send, TCP header/body assembly, UDP receive, 4E serial filtering, route
+filtering, envelope validation, response parsing, cancellation, and transport retirement.
+
+Target contract: the request snapshots `Timeout` at admission and creates one deadline when it
+reaches the FIFO head. The same deadline covers lazy connection through completed decoding;
+queue wait is excluded. Explicit `OpenAsync` uses one connection deadline. Timeout or active-I/O
+cancellation closes the exact transport generation, permits no retry/resend, and requires an
+explicit successful `OpenAsync` before reuse.
+
+Compatibility impact: partial frames, wrong serials, foreign routes, and other progress no longer
+restart a timeout. A timeout now closes the transport and uses a dedicated exception. Code that
+relied on phase-by-phase timeouts or implicit post-timeout reconnect must migrate.
+
+Acceptance criteria:
+
+1. One linked deadline token covers lazy connection, send, complete receive, correlation, validation, and decode.
+2. TCP split header/body, UDP silence, wrong-serial floods, and foreign-route floods cannot extend the configured deadline.
+3. Queue wait consumes no transaction time and admission snapshots both timeout and monitoring timer.
+4. Timeout/cancellation retires transport, delayed data cannot satisfy a later request, and reuse requires explicit open.
+5. No timeout, cancellation, or transport failure automatically retries a request.
+
+- [x] Implementation completed in this repository.
+- [x] Tests cover every acceptance criterion on applicable TCP/UDP and 3E/4E paths.
+- [x] Static, unit, documentation, package, and source-archive checks passed.
+- [x] Codex self-review completed and every accepted finding corrected.
+- [x] Live PLC verification is not required because deadline and generation behavior are deterministic with loopback transports.
+- [x] Documentation, changelog, migration notes, and generated API reference agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+Evidence: deterministic loopback tests cover TCP header/body delay, UDP silence, wrong-serial and
+foreign-route floods, clean explicit reopen, FIFO wait exclusion, and admission-time timeout/timer
+snapshots. `run_ci.bat`, package inspection, and the extracted virtual-worktree gate all passed.
+
+## GOAL-ERROR-DEFER-001: machine-readable timeout and unknown outcome
+
+Implementation scope: public connection/request error behavior, lifecycle interruption, PLC end
+codes, malformed responses, caller cancellation, and every command that may change PLC state.
+
+Target contract: configured deadline expiration is `SlmpTimeoutException`; retired-session use is
+`SlmpNotConnectedException`; local close is `SlmpConnectionClosedException`. If a state-changing
+request may have been sent but no definitive PLC response is known,
+`SlmpOperationOutcomeUnknownException.Reason` distinguishes timeout, cancellation, close,
+malformed response, and transport loss. PLC NG remains `SlmpError` with `EndCode`. No caller needs
+message matching, and an unknown outcome is never automatically retried.
+
+Compatibility impact: own-deadline cancellation and generic transport/protocol errors are replaced
+by dedicated public classifications. Callers must catch unknown outcome separately, reconcile PLC
+state, and must not treat it as a retryable timeout.
+
+Acceptance criteria:
+
+1. Timeout, caller cancellation, close, not-connected, transport loss, malformed response, PLC NG, and outcome unknown are machine distinguishable.
+2. Read timeout remains timeout; post-send state-changing timeout/cancellation/close/transport/malformed response becomes structured outcome unknown.
+3. Native exceptions remain available as inner causes without becoming the sole classification.
+4. Timeout and ambiguous failures retire transport and never resend.
+5. User guidance defines safe read retry and mandatory state reconciliation for unknown outcomes.
+
+- [x] Implementation completed in this repository.
+- [x] Tests cover every acceptance criterion and structured reason.
+- [x] Static, unit, documentation, package, and source-archive checks passed.
+- [x] Codex self-review completed and every accepted finding corrected.
+- [x] Live PLC verification is not required because classification and possible-send boundaries are locally deterministic.
+- [x] Documentation, changelog, migration notes, and generated API reference agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+Evidence: loopback tests separately prove deadline timeout, caller cancellation, local close,
+not-connected reuse, TCP EOF/transport loss, malformed response, PLC end code, and post-send
+unknown-outcome reasons for timeout, cancellation, close, transport, and malformed response.
+Unknown raw commands conservatively use the state-changing classification.
+
+Self-review disposition:
+
+- Accepted and corrected: `Timeout` and `MonitoringTimer` were originally read only after FIFO
+  activation; both are now atomically snapshotted at call admission.
+- Accepted and corrected: TCP EOF was originally a generic `SlmpError`, which made transport loss
+  indistinguishable from malformed protocol data. It now reports `SlmpTransportException`.
+- Accepted and corrected: a whitelist of known write commands could treat a future/unknown raw
+  command as retryable read-only work. The classifier now whitelists known reads and treats every
+  other raw command conservatively as state-changing.
+- Rejected with rationale: `WriteBitInWordAsync` is an explicitly named two-request
+  read-modify-write semantic helper, not a hidden aggregate split; its write phase uses the same
+  unknown-outcome contract and the full helper retains one FIFO turn.
+
+## GOAL-AGGREGATE-DEFER-001: no implicit state-changing split
+
+Implementation scope: raw/direct/random/block/label operations plus `ReadNamedAsync`,
+`WriteNamedAsync`, `PollAsync`, and the explicitly documented bit-in-word read-modify-write helper.
+
+Target contract: normal and named APIs remain single-request. `ReadNamedAsync` rejects any plan
+that cannot fit one random-read command; `WriteNamedAsync` rejects mixed bit and word/DWord
+families or bit-in-word updates before transport. The library does not auto-split a read or write,
+and no state-changing aggregate is silently converted into multiple write requests.
+`WriteBitInWordAsync` remains an explicitly named and documented two-request semantic operation,
+not an aggregate split; it owns one FIFO turn and exposes the normal outcome-unknown contract for
+its write phase.
+
+Compatibility impact: callers needing multiple independent writes issue and account for each
+operation themselves. Named calls that require another command family fail instead of returning a
+partial read or partially applying updates.
+
+Acceptance criteria:
+
+1. Every single-request API emits at most one request and rejects maximum-plus-one before transport.
+2. Named-read plans validate completely and preserve declared input/result order in one request.
+3. Named writes emit exactly one random-bit or one random-word/DWord request and reject a mixed plan before sending.
+4. Failure exposes no partial named-read result and no partial named-write plan is started.
+5. Documentation identifies the explicit read-modify-write helper and does not describe it as an atomic PLC operation.
+
+- [x] Implementation completed in this repository.
+- [x] Tests cover every acceptance criterion and exact request counts.
+- [x] Static, unit, documentation, package, and source-archive checks passed.
+- [x] Codex self-review completed and every accepted finding corrected.
+- [x] Live PLC verification is not required because planning, request counts, order, and failure exposure are locally deterministic.
+- [x] Documentation, changelog, migration notes, and generated API reference agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+Evidence: named-read over-capacity/fallback plans and mixed named-write plans fail before opening
+transport; valid named read/write plans use one random request. Maximum-plus-one block and direct
+helpers remain pre-transport failures. The generated API classifies the ordinary surface as
+single-request and documents the explicit read-modify-write exception.
+
+## Accepted self-review findings — RMW documentation and packed consumer
+
+The generated API named `WriteBitInWordAsync` as read-modify-write but did not explicitly state the
+important concurrency boundary. Its XML documentation now records that the read and write occupy
+one local client FIFO turn while remaining two SLMP requests, with no PLC atomicity against PLC
+logic, another client, or an external writer.
+
+The NuGet guard previously inspected entries without consuming the resulting artifact. It now
+restores and runs an isolated net8.0 project whose only package source is the generated local NuGet
+output. Both the documentation generation and packed-consumer gate passed on 2026-08-01; no
+registry publication was performed.
+
+The first final archive rerun exposed that its worktree-attribute option still
+archived only the `HEAD` tree. This finding was accepted. The option now creates
+a synthetic archive from all non-ignored current-worktree files while honoring
+deletions and source-artifact exclusions. The corrected extracted archive ran
+the full gate successfully, including 451 tests on each of net8.0, net9.0, and
+net10.0.
+
+The cross-ecosystem artifact review additionally found incomplete negative
+coverage for repository-only NuGet material. The accepted correction now
+rejects CI, cache/build, source, maintainer, release-output, and credential-like
+paths/files. The hardened 12-file NuGet consumer gate passed.

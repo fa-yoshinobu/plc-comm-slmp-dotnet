@@ -2,7 +2,7 @@
 
 ## Start here
 
-Use this page when you want your first successful SLMP read from a MELSEC PLC. The recommended path is one explicit `SlmpPlcProfile`, one connected `QueuedSlmpClient`, and one safe `D` register.
+Use this page when you want your first successful SLMP read from a MELSEC PLC. The recommended path is one explicit `SlmpPlcProfile`, one connected `SlmpClient`, and one safe `D` register.
 
 ## Prerequisites
 
@@ -93,5 +93,5 @@ finally
 | Connection opens but all requests fail | Confirm Binary communication data code in the PLC setup guide. |
 | Reads work but writes fail | Confirm RUN-time write permission in the PLC setup guide and the selected profile write policy. |
 | First register read fails | Start with `D` word reads. Do not start with `G`, `HG`, `LTN`, or `LCN`. |
-| Several callers share one connection | `SlmpClient` serializes individual exchanges. Use `QueuedSlmpClient`, returned by `SlmpClientFactory.OpenAndConnectAsync`, when a multi-step helper must remain under one application-level gate. |
+| Several callers share one connection | The ordinary `SlmpClient` admits complete operations through one FIFO queue. Waiting cancellation sends nothing, and multi-step helpers keep one queue turn. |
 | Long timer or long counter values look wrong | See [Long device families](USAGE_GUIDE.md#long-device-families) before reading `LTN`, `LSTN`, `LCN`, or `LZ`. |

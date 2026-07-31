@@ -47,7 +47,7 @@ Before creating a release tag, confirm these review items:
    - Recent fixes are recorded in `CHANGELOG.md`.
 3. Cross-library parity
    - Public API surface matches the SLMP Python library equivalents.
-   - `QueuedSlmpClient` exposes all new methods added to `SlmpClient`.
+   - `SlmpClient` remains the sole public live client and its FIFO contract covers all new operations.
 4. Release consistency
    - GitHub Release notes mention the package version.
 

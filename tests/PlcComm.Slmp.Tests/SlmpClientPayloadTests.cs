@@ -67,6 +67,21 @@ public sealed class SlmpClientPayloadTests
             SlmpPayloads.EncodeRawDeviceSpec(device, output, SlmpCompatibilityMode.Legacy));
     }
 
+    [Fact]
+    public void DeviceAddressesAndRawEncoding_RejectUndefinedDeviceCodes()
+    {
+        var undefined = (SlmpDeviceCode)0x01A8;
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new SlmpDeviceAddress(undefined, 0, SlmpPlcProfile.IqR));
+
+        var output = new byte[4];
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            SlmpPayloads.EncodeRawDeviceSpec(
+                new SlmpRawDeviceAddress(undefined, 0),
+                output,
+                SlmpCompatibilityMode.Legacy));
+    }
+
     [Theory]
     [InlineData(SlmpCompatibilityMode.Legacy, 4)]
     [InlineData(SlmpCompatibilityMode.Iqr, 6)]

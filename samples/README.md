@@ -12,7 +12,7 @@ dotnet run --project samples/PlcComm.Slmp.PollingReconnectSample -- 192.168.250.
 dotnet run --project samples/PlcComm.Slmp.PollingReconnectSample -- 192.168.250.100 1035 melsec:iq-r D100 U udp SELF 1
 dotnet run --project samples/PlcComm.Slmp.MultiPlcMonitorSample -- --plc line-a=192.168.250.101,melsec:iq-r,1035,udp,SELF --plc line-b=192.168.250.100,melsec:iq-f,1025,tcp,SELF --tag d100=D100:U
 dotnet run --project samples/PlcComm.Slmp.ConfigPollingSample -- --config samples/PlcComm.Slmp.ConfigPollingSample/config_polling.example.json --dry-run
-dotnet run --project samples/PlcComm.Slmp.QueuedSample -- 192.168.250.100 1025 melsec:iq-r tcp SELF 4 10
+dotnet run --project samples/PlcComm.Slmp.ConcurrentSample -- 192.168.250.100 1025 melsec:iq-r tcp SELF 4 10
 dotnet run --project samples/PlcComm.Slmp.Cli -- connection-check --plc-profile melsec:iq-r --host 192.168.250.100 --port 1025 --transport tcp --target SELF
 ```
 
@@ -26,24 +26,24 @@ Use only test addresses that are safe for your PLC program before you run any wr
 | [PlcComm.Slmp.PollingReconnectSample](PlcComm.Slmp.PollingReconnectSample/) | Read-only polling loop with automatic reconnect. | Logs `connected`, `lost`, `reconnecting`, and `recovered` transitions with exponential backoff. |
 | [PlcComm.Slmp.MultiPlcMonitorSample](PlcComm.Slmp.MultiPlcMonitorSample/) | Read-only multi-PLC monitoring recipe. | Uses one task and reconnect loop per PLC so an offline endpoint does not block healthy PLC reads. |
 | [PlcComm.Slmp.ConfigPollingSample](PlcComm.Slmp.ConfigPollingSample/) | Read-only JSON-configured polling recipe. | Supports `--dry-run` and writes optional long-form CSV rows as `timestamp,plc,tag,value`; YAML config is Python-only. |
-| [PlcComm.Slmp.QueuedSample](PlcComm.Slmp.QueuedSample/) | Demonstrates one shared queued client across concurrent workers. | Uses `QueuedSlmpClient` returned by the factory so multiple tasks serialize access to one connection. |
+| [PlcComm.Slmp.ConcurrentSample](PlcComm.Slmp.ConcurrentSample/) | Demonstrates one shared ordinary client across concurrent workers. | Uses the `SlmpClient` returned by the factory and its built-in FIFO admission queue. |
 | [PlcComm.Slmp.Cli](PlcComm.Slmp.Cli/) | Provides command-line checks and operational probes. | Includes `connection-check` and `device-range-catalog` commands for profile-selected PLC sessions. |
 
 Included examples:
 
 - one high-level walkthrough for typed reads and writes, block reads, named value sets, and polling
-- one shared queued client from `SlmpClientFactory.OpenAndConnectAsync`
+- one shared ordinary FIFO client from `SlmpClientFactory.OpenAndConnectAsync`
 - concurrent workers using only high-level helper APIs
 - repeated typed and mixed named reads
 - read-only operational recipes for multi-PLC monitoring and config-driven CSV polling
 
 ## Notes
 
-- The high-level, polling reconnect, and queued samples are the recommended user-facing examples.
+- The high-level, polling reconnect, and concurrent-client samples are the recommended user-facing examples.
 - The multi-PLC monitor and config polling recipes are read-only and call only read APIs.
 - The newer explicit APIs such as `SlmpClientFactory.OpenAndConnectAsync` and
   `ReadWordsSingleRequestAsync` use the same
-  queued-client and device-string model shown in these samples.
+  ordinary-client FIFO and device-string model shown in these samples.
 - The CLI sample remains in the repository as an operational tool, but the user manual now centers on the high-level library APIs.
 - The CLI sample includes `device-range-catalog` for user-selected PLC profile
   plus one profile-specific `SD` block read:

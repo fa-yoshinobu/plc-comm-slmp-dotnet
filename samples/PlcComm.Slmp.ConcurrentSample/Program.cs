@@ -3,17 +3,17 @@ using PlcComm.Slmp;
 
 // Demonstrates the recommended shared-connection pattern:
 // pass a canonical profile string such as "melsec:iq-r", open one
-// QueuedSlmpClient, and let concurrent workers use high-level helpers.
+// ordinary SlmpClient, and let concurrent workers use high-level helpers.
 if (args.Length > 0 && (string.Equals(args[0], "--help", StringComparison.OrdinalIgnoreCase) || string.Equals(args[0], "-h", StringComparison.OrdinalIgnoreCase)))
 {
-    Console.WriteLine("Queued SLMP high-level sample");
-    Console.WriteLine("  dotnet run --project samples/PlcComm.Slmp.QueuedSample -- <host> <port> <plc-profile> <tcp|udp> <target> [workers] [iterations]");
+    Console.WriteLine("Concurrent SLMP FIFO sample");
+    Console.WriteLine("  dotnet run --project samples/PlcComm.Slmp.ConcurrentSample -- <host> <port> <plc-profile> <tcp|udp> <target> [workers] [iterations]");
     return;
 }
 
 if (args.Length < 5)
 {
-    Console.Error.WriteLine("Usage: dotnet run --project samples/PlcComm.Slmp.QueuedSample -- <host> <port> <plc-profile> <tcp|udp> <target> [workers] [iterations]");
+    Console.Error.WriteLine("Usage: dotnet run --project samples/PlcComm.Slmp.ConcurrentSample -- <host> <port> <plc-profile> <tcp|udp> <target> [workers] [iterations]");
     Environment.ExitCode = 2;
     return;
 }
@@ -29,13 +29,13 @@ var iterations = args.Length > 6 ? int.Parse(args[6], CultureInfo.InvariantCultu
 var plcProfile = SlmpPlcProfiles.Parse(plcProfileArg);
 
 // This sample demonstrates the recommended application pattern:
-// 1. open one queued client with one explicit PLC profile
+// 1. open one FIFO-admitted client with one explicit PLC profile
 // 2. share it across multiple tasks
 // 3. use only the high-level helper APIs from SlmpClientExtensions
 var options = new SlmpConnectionOptions(host, plcProfile, port, transport, target);
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options).ConfigureAwait(false);
 
-Console.WriteLine("[INFO] Using queued high-level client");
+Console.WriteLine("[INFO] Using ordinary client with built-in FIFO admission");
 Console.WriteLine($"[INFO] plc_profile={SlmpPlcProfiles.ToCanonicalString(plcProfile)} frame={client.FrameType} compatibility={client.CompatibilityMode}");
 Console.WriteLine($"[INFO] workers={workers} iterations={iterations}");
 

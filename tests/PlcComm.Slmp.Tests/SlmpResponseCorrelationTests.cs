@@ -253,8 +253,8 @@ public sealed class SlmpResponseCorrelationTests
         using var client = CreateClient(server.Port, transport, frameType, TimeSpan.FromMilliseconds(120));
         var stopwatch = Stopwatch.StartNew();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => client.RawCommandAsync(SlmpCommand.ClearError, 0x0000, ReadOnlyMemory<byte>.Empty));
+        await Assert.ThrowsAsync<SlmpTimeoutException>(
+            () => client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
 
         stopwatch.Stop();
         Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(105), TimeSpan.FromMilliseconds(500));
@@ -287,8 +287,8 @@ public sealed class SlmpResponseCorrelationTests
         using var client = CreateClient(server.Port, transport, SlmpFrameType.Frame4E, TimeSpan.FromMilliseconds(120));
         var stopwatch = Stopwatch.StartNew();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => client.RawCommandAsync(SlmpCommand.ClearError, 0x0000, ReadOnlyMemory<byte>.Empty));
+        await Assert.ThrowsAsync<SlmpTimeoutException>(
+            () => client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
 
         stopwatch.Stop();
         Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(105), TimeSpan.FromMilliseconds(500));
@@ -372,8 +372,8 @@ public sealed class SlmpResponseCorrelationTests
         using var client = CreateClient(server.Port, SlmpTransportMode.Tcp, frameType, TimeSpan.FromMilliseconds(100));
         var stopwatch = Stopwatch.StartNew();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => client.RawCommandAsync(SlmpCommand.ClearError, 0x0000, ReadOnlyMemory<byte>.Empty));
+        await Assert.ThrowsAsync<SlmpTimeoutException>(
+            () => client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
 
         stopwatch.Stop();
         Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(85), TimeSpan.FromMilliseconds(500));
@@ -402,14 +402,14 @@ public sealed class SlmpResponseCorrelationTests
         await server.StartAsync();
         using var client = CreateClient(server.Port, SlmpTransportMode.Udp, frameType, TimeSpan.FromMilliseconds(80));
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => client.RawCommandAsync(SlmpCommand.ClearError, 0x0000, ReadOnlyMemory<byte>.Empty));
+        await Assert.ThrowsAsync<SlmpTimeoutException>(
+            () => client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
 
         Assert.False(client.IsOpen);
         Assert.Equal(1UL, client.TrafficStats.RequestCount);
         Assert.Equal(0UL, client.TrafficStats.RxBytes);
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => client.RawCommandAsync(SlmpCommand.ClearError, 0x0000, ReadOnlyMemory<byte>.Empty));
+        await Assert.ThrowsAsync<SlmpNotConnectedException>(
+            () => client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
 
         await client.OpenAsync();
         var response = await client.RawCommandAsync(
@@ -440,12 +440,36 @@ public sealed class SlmpResponseCorrelationTests
         using var client = CreateClient(server.Port, transport, frameType, TimeSpan.FromMilliseconds(500));
 
         var error = await Assert.ThrowsAsync<SlmpError>(
-            () => client.RawCommandAsync(SlmpCommand.ClearError, 0x0000, ReadOnlyMemory<byte>.Empty));
+            () => client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
 
         Assert.Contains("malformed response", error.Message, StringComparison.Ordinal);
         Assert.False(client.IsOpen);
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<SlmpNotConnectedException>(
+            () => client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
+    }
+
+    [Theory]
+    [MemberData(nameof(TransportFrameCases))]
+    public async Task MalformedResponseAfterStateChangingSend_IsOutcomeUnknownWithStructuredReason(
+        SlmpTransportMode transport,
+        SlmpFrameType frameType)
+    {
+        await using var server = new ScriptedSlmpServer(
+            transport,
+            frameType,
+            async (request, send, _) =>
+            {
+                await send(BuildMalformedResponse(request, frameType)).ConfigureAwait(false);
+            });
+        await server.StartAsync();
+        using var client = CreateClient(server.Port, transport, frameType, TimeSpan.FromMilliseconds(500));
+
+        var error = await Assert.ThrowsAsync<SlmpOperationOutcomeUnknownException>(
             () => client.RawCommandAsync(SlmpCommand.ClearError, 0x0000, ReadOnlyMemory<byte>.Empty));
+
+        Assert.Equal(SlmpOutcomeUnknownReason.MalformedResponse, error.Reason);
+        Assert.IsType<SlmpError>(error.InnerException);
+        Assert.False(client.IsOpen);
     }
 
     [Theory]
@@ -466,7 +490,7 @@ public sealed class SlmpResponseCorrelationTests
         using var client = CreateClient(server.Port, SlmpTransportMode.Udp, frameType, TimeSpan.FromMilliseconds(500));
 
         var error = await Assert.ThrowsAsync<SlmpError>(
-            () => client.RawCommandAsync(SlmpCommand.ClearError, 0x0000, ReadOnlyMemory<byte>.Empty));
+            () => client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
 
         Assert.Contains("malformed response", error.Message, StringComparison.Ordinal);
         Assert.False(client.IsOpen);
@@ -490,7 +514,7 @@ public sealed class SlmpResponseCorrelationTests
         using var client = CreateClient(server.Port, transport, SlmpFrameType.Frame4E, TimeSpan.FromMilliseconds(500));
 
         var error = await Assert.ThrowsAsync<SlmpError>(
-            () => client.RawCommandAsync(SlmpCommand.ClearError, 0x0000, ReadOnlyMemory<byte>.Empty));
+            () => client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
 
         Assert.Contains("malformed response", error.Message, StringComparison.Ordinal);
         Assert.False(client.IsOpen);

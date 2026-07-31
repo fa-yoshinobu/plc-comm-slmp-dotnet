@@ -80,6 +80,8 @@ public readonly record struct SlmpDeviceAddress
     /// <summary>Initializes and validates a profile-bound semantic device address.</summary>
     public SlmpDeviceAddress(SlmpDeviceCode code, uint number, SlmpPlcProfile plcProfile)
     {
+        if (!Enum.IsDefined(code))
+            throw new ArgumentOutOfRangeException(nameof(code), code, "Undefined SLMP device codes are not valid semantic addresses.");
         Code = code;
         Number = number;
         PlcProfile = SlmpPlcProfiles.ValidateConnectionProfile(plcProfile);

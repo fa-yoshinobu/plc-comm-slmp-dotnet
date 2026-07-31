@@ -17,7 +17,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Library: One immutable absolute transaction deadline now covers lazy IPv4 connection, TCP/UDP send, complete response framing, route/serial correlation, and response decoding. FIFO queue wait remains outside that deadline, and `Timeout` plus `MonitoringTimer` are snapshotted when the call is admitted.
+- Library: Added dedicated `SlmpTimeoutException`, `SlmpTransportException`, `SlmpNotConnectedException`, and `SlmpOperationOutcomeUnknownException` classifications. A state-changing request interrupted after bytes may have been sent reports a structured timeout, cancellation, close, malformed-response, or transport reason and is never retried automatically.
+- Tests: Added state-changing timeout/cancellation/close/transport/malformed-response classification, admission-time option snapshots, and full-deadline regressions across TCP/UDP and 3E/4E.
+- Library: Ordinary `SlmpClient` operations now use one built-in arrival-order FIFO admission queue. One client permits one complete wire transaction at a time; waiting cancellation sends nothing, queue wait does not consume the transaction timeout, and `Close` or disposal rejects the active and queued transport generation.
+- Library: Multi-step helpers such as bit-in-word read-modify-write retain one exclusive client turn, while separate `SlmpClient` instances remain independent.
+- Tests: Added deterministic FIFO order, queued cancellation/no-send, close-generation rejection, argument snapshot, compound-operation non-interleaving, queue-wait timeout, and separate-client concurrency coverage.
+- Docs: Generated API documentation now states that bit-in-word updates are two SLMP requests held in one local FIFO turn and are not PLC-atomic against PLC logic or other clients.
+- CI: The NuGet package gate now restores and runs an isolated net8.0 consumer using only the generated local package.
+- CI: The NuGet guard now rejects CI, cache/build, source, maintainer, release-output, and credential-like material in addition to its consumer-file allowlist.
+- CI: Source-archive validation can now synthesize the complete current worktree so pre-commit review includes new files, modifications, and deletions rather than stale `HEAD` contents.
+- Release: Aligned artifact roles so the registry package contains consumer runtime, native API metadata, license, README, and ecosystem-native examples where applicable while excluding repository tests and maintainer tooling; the GitHub source archive retains tracked non-hardware validation and maintainer inputs.
+- Library: Audited every live API that accepts a profile-bound address: its exact canonical profile, including unit-specific profiles, must equal the client profile before request construction, counters, trace state, serial allocation, or transport activity.
+- Tests: Profile-mismatch coverage verifies pre-transport rejection for direct and Extended Device paths without reducing unit profiles to their base family.
+- Library: Device-range catalogs now use only canonical profile rules and the single required SD-register window. Communication failures are propagated without converting PLC errors into inferred address limits or hidden boundary probes.
+- Tests: Added device-range catalog coverage proving canonical values use one SD read and Q-series unknown ranges remain unknown without runtime probing.
+- Library: Audited every direct, extended, random, named, typed, and bit-in-word write entry: individual bit values remain CLR `bool` values with no numeric, string, truthy, or compatibility overload. Packed bit-block words remain a separate `ushort` wire-level API.
 - Docs: README documentation links now include the shared Performance and Choosing a Language pages, and package registry metadata was expanded for discoverability. No functional change.
+- Library: TCP and UDP connections are now IPv4-only. IPv6 literals are rejected before socket creation, and hostnames use the first IPv4 resolver result without falling back to IPv6.
 - Library: Corrected array-label bit/byte wire sizing, enforced exact two-byte-padded array-write data, and rejected null, empty, or odd random-label write data before transport.
 - Library: Label response parsing now validates item counts, echoed unit/length fields, bounded data, even random-data lengths, and trailing bytes, and reports malformed payloads as `SlmpError` while preserving unknown data-type and spare bytes.
 - Library: `Dispose` and `DisposeAsync` are now terminal and idempotent; unlike `Close`, disposed clients reject reopening and all later requests with `ObjectDisposedException`.
@@ -25,10 +42,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library: Request payloads now enforce the 16-bit SLMP data-length boundary before transport; IPv4 UDP additionally applies its smaller 3E/4E datagram limits, and oversized label aggregates fail before payload allocation.
 - CI: Source archives now include the test project referenced by the solution, and CI/release gates restore, build, and test an extracted `git archive`.
 - Tests: Added protocol vectors, malformed-response coverage, lifecycle race checks, timeout boundaries, null-input/no-I/O contracts, and TCP/UDP request-payload boundary tests.
+- Library: Undefined `SlmpDeviceCode` values are rejected by semantic addresses and raw encoders instead of being truncated into another legacy device code.
+- Library: Typed scalar APIs now require bit devices to use `BIT` and word devices to use a word/DWord dtype, preventing command/unit mismatches before transport.
+- Library: Named target strings now preserve empty comma-separated fields and reject every empty, missing, or extra route field instead of silently shifting the route.
+- Library: `SlmpClient` snapshots every collection argument when submitted, including nested block values and label data buffers, so later caller mutation cannot change the transmitted request.
+- Library: Direct and extended bit reads now require the exact packed-byte count and reject any used nibble other than `0` or `1`.
+- Tests: Added regressions for undefined device codes, typed device/dtype mismatch, strict target fields, FIFO deep snapshots, and exact packed-bit decoding.
 
 ### BREAKING
 
+- Library: Deadline expiration is now reported as `SlmpTimeoutException` instead of caller cancellation or a generic transport/protocol error. After a possibly transmitted state-changing request, timeout, cancellation, close, malformed response, or transport loss now throws `SlmpOperationOutcomeUnknownException`; callers must reconcile PLC state instead of automatically retrying.
+- Library: Removed `QueuedSlmpClient`, its constructor, `InnerClient`, and all queued-specific extension overloads. `SlmpClientFactory.OpenAndConnectAsync` and `SlmpClient.OpenAndConnectAsync` now return the ordinary `SlmpClient`; callers replace the wrapper type with `SlmpClient` and call the same operations directly. No compatibility alias remains.
+- Library: Callers using an IPv6 endpoint must migrate to an IPv4 literal or a hostname that resolves to IPv4.
 - Library: Code that called `OpenAsync` or issued requests after disposing a client must retain the client and use `Close` when a reopenable session is required. Invalid label write buffers, null inputs, and oversized raw or label payloads that previously reached transport or leaked runtime exceptions now fail before I/O; oversized commands are not split automatically.
+- Library: Undefined device codes, typed device/dtype unit mismatches, and malformed target-route strings that were previously accepted now fail before transport. Ordinary client calls observe collection values at submission time.
 
 ## [4.0.1] - 2026-07-29
 

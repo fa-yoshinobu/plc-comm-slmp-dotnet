@@ -1,7 +1,7 @@
 namespace PlcComm.Slmp;
 
 /// <summary>
-/// Factory helpers for creating connected queued SLMP clients.
+/// Factory helpers for creating connected SLMP clients.
 /// </summary>
 /// <remarks>
 /// This factory is the preferred high-level entry point for applications that want an
@@ -11,19 +11,19 @@ namespace PlcComm.Slmp;
 public static class SlmpClientFactory
 {
     /// <summary>
-    /// Creates, configures, and opens a queued SLMP client.
+    /// Creates, configures, and opens an SLMP client.
     /// </summary>
     /// <param name="options">Explicit connection options.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A connected queued client.</returns>
+    /// <returns>A connected client with built-in FIFO operation admission.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException">The host name is empty or whitespace.</exception>
+    /// <exception cref="ArgumentException">The host is empty, whitespace, or an IPv6 literal.</exception>
     /// <exception cref="ArgumentOutOfRangeException">The configured port is outside the valid TCP/UDP range.</exception>
     /// <remarks>
-    /// The returned <see cref="QueuedSlmpClient"/> serializes multi-step operations through a single gate,
-    /// which makes it suitable for documentation samples and shared-session application code.
+    /// The returned <see cref="SlmpClient"/> serializes complete operations through its
+    /// arrival-order FIFO queue, including multi-step helpers.
     /// </remarks>
-    public static async Task<QueuedSlmpClient> OpenAndConnectAsync(
+    public static async Task<SlmpClient> OpenAndConnectAsync(
         SlmpConnectionOptions options,
         CancellationToken cancellationToken = default)
     {
@@ -36,14 +36,13 @@ public static class SlmpClientFactory
             throw new ArgumentOutOfRangeException(nameof(options), "Transport must be TCP or UDP.");
         _ = SlmpValidation.ValidateTimeout(options.Timeout, nameof(options));
 
-        var inner = new SlmpClient(options.Host, options.PlcProfile, options.Port, options.Transport, options.Target)
+        var client = new SlmpClient(options.Host, options.PlcProfile, options.Port, options.Transport, options.Target)
         {
             Timeout = options.Timeout,
             MonitoringTimer = options.MonitoringTimer,
         };
 
-        var queued = new QueuedSlmpClient(inner);
-        await queued.OpenAsync(cancellationToken).ConfigureAwait(false);
-        return queued;
+        await client.OpenAsync(cancellationToken).ConfigureAwait(false);
+        return client;
     }
 }

@@ -22,6 +22,8 @@ internal static class SlmpPayloads
         // PROFILE_RANGE_NOT_A_TRANSPORT_GUARD: PLC profile device ranges are
         // application metadata. Transport validation is limited to syntax,
         // supported device families, and the selected wire representation.
+        if (!Enum.IsDefined(device.Code))
+            throw new ArgumentOutOfRangeException(nameof(device), device.Code, "Undefined SLMP device codes cannot be encoded.");
         if (compatibilityMode == SlmpCompatibilityMode.Legacy)
         {
             if (device.Number > 0x00FF_FFFF)
@@ -729,6 +731,8 @@ internal static class SlmpPayloads
 
     private static byte[] EncodeLinkDirectDeviceSpec(SlmpDeviceAddress device, SlmpExtensionSpec extension)
     {
+        if (!Enum.IsDefined(device.Code))
+            throw new ArgumentOutOfRangeException(nameof(device), device.Code, "Undefined SLMP device codes cannot be encoded.");
         if (device.Number > 0x00FF_FFFF)
             throw new ArgumentOutOfRangeException(
                 nameof(device),

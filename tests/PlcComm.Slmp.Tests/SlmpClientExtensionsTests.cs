@@ -192,6 +192,24 @@ public sealed class SlmpClientExtensionsTests
         Assert.Contains("32-bit device", ex.Message);
     }
 
+    [Theory]
+    [InlineData(SlmpDeviceCode.M, "U")]
+    [InlineData(SlmpDeviceCode.M, "F")]
+    [InlineData(SlmpDeviceCode.D, "BIT")]
+    public async Task TypedApis_RejectDeviceAndDTypeUnitMismatchBeforeTransport(
+        SlmpDeviceCode code,
+        string dtype)
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var device = new SlmpDeviceAddress(code, 0, SlmpPlcProfile.IqR);
+        var value = dtype == "BIT" ? (object)true : dtype == "F" ? 1.0f : (ushort)1;
+
+        await Assert.ThrowsAsync<ArgumentException>(() => client.ReadTypedAsync(device, dtype));
+        await Assert.ThrowsAsync<ArgumentException>(() => client.WriteTypedAsync(device, dtype, value));
+        Assert.False(client.IsOpen);
+    }
+
     [Fact]
     public void CompileReadPlan_RejectsWordDTypeForLz()
     {

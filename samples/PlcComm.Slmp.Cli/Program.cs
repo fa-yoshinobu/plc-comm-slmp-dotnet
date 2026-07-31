@@ -694,8 +694,7 @@ async Task<int> RunSingleConnectionLoadAsync(IReadOnlyList<string> args)
     var readFailures = 0;
 
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
-    await using var queuedClient = new QueuedSlmpClient(client);
-    await queuedClient.OpenAsync().ConfigureAwait(false);
+    await client.OpenAsync().ConfigureAwait(false);
 
     var tasks = Enumerable.Range(0, workers).Select(async workerIndex =>
     {
@@ -704,8 +703,8 @@ async Task<int> RunSingleConnectionLoadAsync(IReadOnlyList<string> args)
         {
             try
             {
-                _ = await queuedClient.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400, client.PlcProfile), 1).ConfigureAwait(false);
-                _ = await queuedClient.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000, client.PlcProfile), 1).ConfigureAwait(false);
+                _ = await client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400, client.PlcProfile), 1).ConfigureAwait(false);
+                _ = await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000, client.PlcProfile), 1).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

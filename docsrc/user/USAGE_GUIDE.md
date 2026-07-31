@@ -5,9 +5,11 @@
 | API | Use |
 | --- | --- |
 | `SlmpConnectionOptions` | Holds host, profile, port, transport, timeout, target, and monitoring timer settings. |
-| `SlmpClientFactory.OpenAndConnectAsync` | Opens a connected `QueuedSlmpClient` from `SlmpConnectionOptions`. |
+| `SlmpClientFactory.OpenAndConnectAsync` | Opens a connected `SlmpClient` from `SlmpConnectionOptions`. |
 | `ReadTypedAsync` | Reads one typed scalar such as `D100` as `BIT`, `U`, `S`, `D`, `L`, or `F`. |
 | `WriteTypedAsync` | Writes one typed scalar. |
+
+Every semantic `SlmpDeviceAddress` or qualified address is bound to the exact canonical PLC profile used to create it. Passing it to a client configured for any other profile is rejected before request construction or transport activity, including when a unit-specific profile shares a base family with the client. Parse or construct the address again with the destination client's profile instead of reusing it across profiles.
 | `ReadNamedAsync` | Reads a mixed named value set; different command families are not atomic. |
 | `WriteNamedAsync` | Writes a named set of values. |
 | `ReadWordsSingleRequestAsync` / `ReadDWordsSingleRequestAsync` | Reads one contiguous block in one protocol request. |
@@ -49,14 +51,14 @@ non-ASCII text is rejected rather than replaced during encoding.
 
 ```csharp
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
-await client.ExecuteAsync(inner => inner.RemotePasswordUnlockAsync("secret"));
+await client.RemotePasswordUnlockAsync("secret");
 try
 {
     var value = await client.ReadTypedAsync("D100", "U");
 }
 finally
 {
-    await client.ExecuteAsync(inner => inner.RemotePasswordLockAsync("secret"));
+    await client.RemotePasswordLockAsync("secret");
 }
 ```
 
@@ -147,8 +149,8 @@ byte[] echo = await client.SelfTestLoopbackAsync("A1B2C3D4"u8.ToArray());
 await client.ClearErrorAsync();
 ```
 
-These methods are also exposed directly by `QueuedSlmpClient`. Self-test
-accepts only 1–960 ASCII `0-9/A-F` bytes and requires exact declared length,
+These methods are exposed directly by `SlmpClient`. Self-test accepts only
+1–960 ASCII `0-9/A-F` bytes and requires exact declared length,
 actual length, and echo equality. Clear Error always uses the fixed empty
 payload command.
 
@@ -176,7 +178,20 @@ sending, and the library does not split one label command into multiple frames.
 
 ## Close and disposal
 
-`Close` ends the current transport session and permits a later `OpenAsync`.
+Every ordinary client has one arrival-order FIFO operation queue. One complete
+operation owns the connection at a time; this includes both requests in
+`WriteBitInWordAsync`. Arguments are validated and snapshotted when submitted.
+The submitted `Timeout` and `MonitoringTimer` values are also snapshotted, so
+later property changes affect only calls submitted later.
+Canceling while waiting removes that operation without sending, and queue wait
+does not consume the transaction timeout. Use separate clients for independent
+parallel sessions.
+
+`Close` ends the current transport generation, rejects its active and queued
+operations, and permits a later `OpenAsync`. A queued or read-only active operation
+reports `SlmpConnectionClosedException`; an active state-changing request whose
+bytes may already have been sent reports `SlmpOperationOutcomeUnknownException`
+with reason `Closed`.
 `Dispose` and `DisposeAsync` are terminal and idempotent: later open, read, or
 write operations throw `ObjectDisposedException`. A client should not be
 reused after leaving a `using` or `await using` scope.
@@ -272,11 +287,36 @@ Typed writes do not parse strings or convert Boolean and floating-point values i
 integers. `BIT` requires `bool`; U/S/D/L require integral CLR values in their exact
 ranges; F requires a finite numeric value within the float32 range.
 
-Communication timeout values must be at least 1 millisecond. After a request is sent
-and then times out, is cancelled, or loses transport ownership, the client remains
-invalidated until `OpenAsync` is called explicitly. `RemoteResetAsync` also closes and
+The same Boolean-only contract applies to direct, extended, random, named, and
+bit-in-word writes. There is no numeric or string compatibility overload.
+Packed bit-block words are a distinct wire-level API and remain `ushort` values.
+
+Communication timeout values must be at least 1 millisecond. The transaction uses
+one absolute deadline from a lazy connection attempt through send, complete TCP/UDP
+response framing, route/serial filtering, and response decoding. Partial progress,
+foreign responses, and response fragments do not restart it. FIFO queue wait is not
+part of the transaction deadline. Explicit `OpenAsync` uses the same configured value
+as its connection deadline.
+
+A read deadline expires as `SlmpTimeoutException`; connection and I/O failures use
+`SlmpTransportException` with the native failure retained as its inner exception.
+Caller cancellation remains an `OperationCanceledException`, and local close remains distinct. After a request is
+sent and then times out, is cancelled, receives a malformed response, or loses
+transport ownership, the client remains invalidated until `OpenAsync` is called.
+If the request can change PLC state, the public error is
+`SlmpOperationOutcomeUnknownException`; inspect its `Reason` but do not retry the
+operation automatically. First reconcile PLC/application state using the controlled
+read or handshake appropriate to the process. `RemoteResetAsync` also closes and
 invalidates its send-only transport; its completion confirms transmission, not PLC
-execution. Reopen and verify PLC state before continuing.
+execution.
+
+Single-request limits are the minimum of the selected profile/command point limit,
+the 16-bit SLMP data-length field, and the IPv4 TCP/UDP frame capacity. The managed
+client has dynamic receive/result storage and no caller-owned output buffer limit;
+the response length is still bounded by SLMP framing. Maximum-size requests remain
+one request, while maximum-plus-one is rejected before serial allocation, trace,
+counters, connection opening, or send. `ReadNamedAsync` and `WriteNamedAsync` also
+remain single-request APIs and reject plans that need another command/request.
 
 ## Block reads
 
@@ -322,6 +362,11 @@ finally
 }
 ```
 
+`WriteBitInWordAsync` holds one FIFO turn on this client, but it remains two
+SLMP requests: one word read and one word write. It is not PLC-atomic against
+PLC logic, another connection, or another controller. Treat a post-send write
+failure as outcome-unknown and reconcile PLC state before retrying.
+
 ## Polling
 
 ```csharp
@@ -364,7 +409,7 @@ dotnet run --project samples/PlcComm.Slmp.ConfigPollingSample -- --config sample
 
 ## Device range catalog
 
-`ReadDeviceRangeCatalogAsync` reads live device range bounds from your PLC after you connect with an explicit PLC profile. It does not auto-discover the profile.
+`ReadDeviceRangeCatalogAsync` reads the canonical profile's required SD-register window after you connect with an explicit PLC profile. It does not auto-discover the profile, probe candidate addresses, or infer a smaller range from a failed PLC request. Any timeout, cancellation, transport, protocol, route, password, busy, or other PLC error is returned to the caller; a range without an authoritative value remains unknown.
 The source rules for this catalog are maintained in the shared [SLMP device ranges](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/device-ranges/) reference.
 
 ```csharp
@@ -416,6 +461,6 @@ Console.WriteLine($"LCN0:D = {snapshot["LCN0:D"]}");
 Named addresses used with `ReadNamedAsync`, `WriteNamedAsync`, and `PollAsync` must include the intended type, for example `D100:U` or `M1000:BIT`.
 ## Traffic statistics
 
-Read `client.TrafficStats` (or the queued client's equivalent property) for a client-lifetime
+Read `client.TrafficStats` for a client-lifetime
 snapshot of `RequestCount`, `TxBytes`, and `RxBytes`. Complete sends and complete received frames
 are counted; close and reconnect do not reset the snapshot.

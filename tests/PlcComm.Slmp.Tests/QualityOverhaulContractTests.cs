@@ -115,7 +115,7 @@ public sealed class QualityOverhaulContractTests
     [Fact]
     public void PublicCancellationTokens_RemainOptionalDotNetControls()
     {
-        var offenders = new[] { typeof(SlmpClient), typeof(QueuedSlmpClient), typeof(SlmpClientExtensions) }
+        var offenders = new[] { typeof(SlmpClient), typeof(SlmpClientExtensions) }
             .SelectMany(static type => type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
             .SelectMany(static method => method.GetParameters().Select(parameter => (method, parameter)))
             .Where(static item => item.parameter.ParameterType == typeof(CancellationToken) && !item.parameter.IsOptional)
@@ -170,7 +170,7 @@ public sealed class QualityOverhaulContractTests
             "CpuBufferReadWordsAsync", "CpuBufferReadBytesAsync", "CpuBufferReadWordAsync", "CpuBufferReadDWordAsync",
             "CpuBufferWriteWordsAsync", "CpuBufferWriteBytesAsync", "CpuBufferWriteWordAsync", "CpuBufferWriteDWordAsync",
         };
-        foreach (var type in new[] { typeof(SlmpClient), typeof(QueuedSlmpClient) })
+        foreach (var type in new[] { typeof(SlmpClient) })
         {
             foreach (var method in removed)
                 Assert.Null(type.GetMethod(method));

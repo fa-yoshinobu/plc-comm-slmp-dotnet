@@ -97,6 +97,79 @@ public class SlmpError : Exception
 }
 
 /// <summary>
+/// Error thrown when <see cref="SlmpClient.Close"/> retires the transport generation
+/// that owns an active or queued operation.
+/// </summary>
+public sealed class SlmpConnectionClosedException : InvalidOperationException
+{
+    public SlmpConnectionClosedException()
+        : base("The SLMP connection was closed before the operation completed.")
+    {
+    }
+}
+
+/// <summary>Reason a state-changing request has an unknown PLC outcome.</summary>
+public enum SlmpOutcomeUnknownReason
+{
+    /// <summary>The single transaction deadline expired after request bytes may have been sent.</summary>
+    Timeout,
+    /// <summary>The caller canceled after request bytes may have been sent.</summary>
+    Cancellation,
+    /// <summary>The client was closed after request bytes may have been sent.</summary>
+    Closed,
+    /// <summary>A transport failure occurred after request bytes may have been sent.</summary>
+    Transport,
+    /// <summary>A malformed PLC response occurred after request bytes may have been sent.</summary>
+    MalformedResponse,
+}
+
+/// <summary>Error thrown when the configured connect or transaction deadline expires.</summary>
+public sealed class SlmpTimeoutException : TimeoutException
+{
+    public SlmpTimeoutException(string message, Exception? innerException = null)
+        : base(message, innerException)
+    {
+    }
+}
+
+/// <summary>Error thrown when IPv4 TCP/UDP connection or I/O fails.</summary>
+public sealed class SlmpTransportException : IOException
+{
+    public SlmpTransportException(string message, Exception? innerException = null)
+        : base(message, innerException)
+    {
+    }
+}
+
+/// <summary>
+/// Error thrown when a state-changing request may have reached the PLC but its final result is unknown.
+/// </summary>
+public sealed class SlmpOperationOutcomeUnknownException : SlmpError
+{
+    public SlmpOperationOutcomeUnknownException(
+        SlmpOutcomeUnknownReason reason,
+        Exception innerException)
+        : base(
+            $"The state-changing SLMP request may have reached the PLC; its outcome is unknown ({reason}).",
+            innerException: innerException)
+    {
+        Reason = reason;
+    }
+
+    /// <summary>Gets the structured reason the final PLC outcome could not be determined.</summary>
+    public SlmpOutcomeUnknownReason Reason { get; }
+}
+
+/// <summary>Error thrown when an exchange requires an explicit open after transport retirement.</summary>
+public sealed class SlmpNotConnectedException : InvalidOperationException
+{
+    public SlmpNotConnectedException()
+        : base("The SLMP transport is not connected. Call OpenAsync explicitly before another request.")
+    {
+    }
+}
+
+/// <summary>
 /// Error thrown before sending a high-level request when the selected PLC profile
 /// marks a feature as blocked or unverified.
 /// </summary>

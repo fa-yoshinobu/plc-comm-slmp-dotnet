@@ -60,515 +60,6 @@ public sealed class Indirect
 public Indirect()
 ```
 
-### QueuedSlmpClient
-
-```csharp
-public sealed class QueuedSlmpClient
-```
-
-A wrapper for `SlmpClient` that serializes all operations using a semaphore. Useful for environments where a single shared connection must handle multiple concurrent callers.
-
-Remarks: This type is intentionally thin: it keeps the low-level client visible through `InnerClient`, but ensures that compound async helper flows can reuse a single transport session without overlapping request lifetimes.
-
-#### Members
-
-##### QueuedSlmpClient
-
-```csharp
-public QueuedSlmpClient(SlmpClient client)
-```
-
-Initializes a new instance of the `QueuedSlmpClient` class.
-
-Parameters:
-- `client`: The underlying `SlmpClient` to wrap.
-
-##### OpenAsync
-
-```csharp
-public Task OpenAsync(CancellationToken cancellationToken = default)
-```
-
-Opens the connection asynchronously, ensuring exclusive access during the operation.
-
-Remarks: Repeated calls are safe as long as the underlying client supports reopening the session.
-
-##### ExecuteAsync
-
-```csharp
-public Task<T> ExecuteAsync<T>(Func<SlmpClient, Task<T>> operation, CancellationToken cancellationToken = default)
-```
-
-Executes a custom operation on the underlying client with exclusive access.
-
-Returns: The value returned by `operation`.
-
-Parameters:
-- `operation`: Delegate that receives the wrapped `SlmpClient`.
-- `cancellationToken`: Cancellation token used while waiting for the queue gate.
-
-##### ExecuteAsync
-
-```csharp
-public Task ExecuteAsync(Func<SlmpClient, Task> operation, CancellationToken cancellationToken = default)
-```
-
-Executes a custom action on the underlying client with exclusive access.
-
-Parameters:
-- `operation`: Delegate that receives the wrapped `SlmpClient`.
-- `cancellationToken`: Cancellation token used while waiting for the queue gate.
-
-##### ReadTypeNameAsync
-
-```csharp
-public Task<SlmpTypeNameInfo> ReadTypeNameAsync(CancellationToken cancellationToken = default)
-```
-
-##### ReadCpuOperationStateAsync
-
-```csharp
-public Task<SlmpCpuOperationState> ReadCpuOperationStateAsync(CancellationToken cancellationToken = default)
-```
-
-##### SelfTestLoopbackAsync
-
-```csharp
-public Task<byte[]> SelfTestLoopbackAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
-```
-
-##### ClearErrorAsync
-
-```csharp
-public Task ClearErrorAsync(CancellationToken cancellationToken = default)
-```
-
-##### ReadDeviceRangeCatalogAsync
-
-```csharp
-public Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
-```
-
-##### ReadWordsRawAsync
-
-```csharp
-public Task<ushort[]> ReadWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
-```
-
-##### WriteWordsAsync
-
-```csharp
-public Task WriteWordsAsync(SlmpDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
-```
-
-##### ReadBitsAsync
-
-```csharp
-public Task<bool[]> ReadBitsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
-```
-
-##### WriteBitsAsync
-
-```csharp
-public Task WriteBitsAsync(SlmpDeviceAddress device, IReadOnlyList<bool> values, CancellationToken cancellationToken = default)
-```
-
-##### ReadDWordsRawAsync
-
-```csharp
-public Task<uint[]> ReadDWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
-```
-
-##### WriteDWordsAsync
-
-```csharp
-public Task WriteDWordsAsync(SlmpDeviceAddress device, IReadOnlyList<uint> values, CancellationToken cancellationToken = default)
-```
-
-##### ReadFloat32sAsync
-
-```csharp
-public Task<float[]> ReadFloat32sAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
-```
-
-##### WriteFloat32sAsync
-
-```csharp
-public Task WriteFloat32sAsync(SlmpDeviceAddress device, IReadOnlyList<float> values, CancellationToken cancellationToken = default)
-```
-
-##### ReadRandomAsync
-
-```csharp
-public Task<ValueTuple<ushort[], uint[]>> ReadRandomAsync(IReadOnlyList<SlmpDeviceAddress> wordDevices, IReadOnlyList<SlmpDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
-```
-
-##### ReadRandomWordsAsync
-
-```csharp
-public Task<ushort[]> ReadRandomWordsAsync(IReadOnlyList<SlmpDeviceAddress> wordDevices, CancellationToken cancellationToken = default)
-```
-
-##### ReadRandomDWordsAsync
-
-```csharp
-public Task<uint[]> ReadRandomDWordsAsync(IReadOnlyList<SlmpDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
-```
-
-##### WriteRandomWordsAsync
-
-```csharp
-public Task WriteRandomWordsAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, ushort>> wordEntries, IReadOnlyList<ValueTuple<SlmpDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
-```
-
-##### WriteRandomU16sAsync
-
-```csharp
-public Task WriteRandomU16sAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, ushort>> wordEntries, CancellationToken cancellationToken = default)
-```
-
-##### WriteRandomU32sAsync
-
-```csharp
-public Task WriteRandomU32sAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
-```
-
-##### WriteRandomBitsAsync
-
-```csharp
-public Task WriteRandomBitsAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, bool>> bitEntries, CancellationToken cancellationToken = default)
-```
-
-##### ReadBlockAsync
-
-```csharp
-public Task<ValueTuple<ushort[], ushort[]>> ReadBlockAsync(IReadOnlyList<SlmpBlockRead> wordBlocks, IReadOnlyList<SlmpBlockRead> bitBlocks, CancellationToken cancellationToken = default)
-```
-
-##### ReadWordBlocksAsync
-
-```csharp
-public Task<ushort[]> ReadWordBlocksAsync(IReadOnlyList<SlmpBlockRead> wordBlocks, CancellationToken cancellationToken = default)
-```
-
-##### ReadBitBlocksAsync
-
-```csharp
-public Task<ushort[]> ReadBitBlocksAsync(IReadOnlyList<SlmpBlockRead> bitBlocks, CancellationToken cancellationToken = default)
-```
-
-##### WriteBlockAsync
-
-```csharp
-public Task WriteBlockAsync(IReadOnlyList<SlmpBlockWrite> wordBlocks, IReadOnlyList<SlmpBlockWrite> bitBlocks, CancellationToken cancellationToken = default)
-```
-
-##### WriteWordBlocksAsync
-
-```csharp
-public Task WriteWordBlocksAsync(IReadOnlyList<SlmpBlockWrite> wordBlocks, CancellationToken cancellationToken = default)
-```
-
-##### WriteBitBlocksAsync
-
-```csharp
-public Task WriteBitBlocksAsync(IReadOnlyList<SlmpBlockWrite> bitBlocks, CancellationToken cancellationToken = default)
-```
-
-##### ReadBitsExtendedAsync
-
-```csharp
-public Task<bool[]> ReadBitsExtendedAsync(SlmpQualifiedDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
-```
-
-##### WriteBitsExtendedAsync
-
-```csharp
-public Task WriteBitsExtendedAsync(SlmpQualifiedDeviceAddress device, IReadOnlyList<bool> values, CancellationToken cancellationToken = default)
-```
-
-##### ReadWordsExtendedAsync
-
-```csharp
-public Task<ushort[]> ReadWordsExtendedAsync(SlmpQualifiedDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
-```
-
-##### WriteWordsExtendedAsync
-
-```csharp
-public Task WriteWordsExtendedAsync(SlmpQualifiedDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
-```
-
-##### ReadRandomExtAsync
-
-```csharp
-public Task<ValueTuple<ushort[], uint[]>> ReadRandomExtAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices, IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
-```
-
-##### ReadRandomWordsExtendedAsync
-
-```csharp
-public Task<ushort[]> ReadRandomWordsExtendedAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices, CancellationToken cancellationToken = default)
-```
-
-##### ReadRandomDWordsExtendedAsync
-
-```csharp
-public Task<uint[]> ReadRandomDWordsExtendedAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
-```
-
-##### WriteRandomWordsExtAsync
-
-```csharp
-public Task WriteRandomWordsExtAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, ushort>> wordEntries, IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
-```
-
-##### WriteRandomU16sExtendedAsync
-
-```csharp
-public Task WriteRandomU16sExtendedAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, ushort>> wordEntries, CancellationToken cancellationToken = default)
-```
-
-##### WriteRandomU32sExtendedAsync
-
-```csharp
-public Task WriteRandomU32sExtendedAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
-```
-
-##### WriteRandomBitsExtAsync
-
-```csharp
-public Task WriteRandomBitsExtAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, bool>> bitEntries, CancellationToken cancellationToken = default)
-```
-
-##### ReadLongTimerAsync
-
-```csharp
-public Task<SlmpLongTimerResult[]> ReadLongTimerAsync(int headNo, int points, CancellationToken cancellationToken = default)
-```
-
-##### ReadLongRetentiveTimerAsync
-
-```csharp
-public Task<SlmpLongTimerResult[]> ReadLongRetentiveTimerAsync(int headNo, int points, CancellationToken cancellationToken = default)
-```
-
-##### ReadLtcStatesAsync
-
-```csharp
-public Task<bool[]> ReadLtcStatesAsync(int headNo, int points, CancellationToken cancellationToken = default)
-```
-
-##### ReadLtsStatesAsync
-
-```csharp
-public Task<bool[]> ReadLtsStatesAsync(int headNo, int points, CancellationToken cancellationToken = default)
-```
-
-##### ReadLstcStatesAsync
-
-```csharp
-public Task<bool[]> ReadLstcStatesAsync(int headNo, int points, CancellationToken cancellationToken = default)
-```
-
-##### ReadLstsStatesAsync
-
-```csharp
-public Task<bool[]> ReadLstsStatesAsync(int headNo, int points, CancellationToken cancellationToken = default)
-```
-
-##### ReadArrayLabelsAsync
-
-```csharp
-public Task<SlmpLabelArrayReadResult[]> ReadArrayLabelsAsync(IReadOnlyList<SlmpLabelArrayReadPoint> points, IReadOnlyList<string> abbreviationLabels = null, CancellationToken cancellationToken = default)
-```
-
-##### WriteArrayLabelsAsync
-
-```csharp
-public Task WriteArrayLabelsAsync(IReadOnlyList<SlmpLabelArrayWritePoint> points, IReadOnlyList<string> abbreviationLabels = null, CancellationToken cancellationToken = default)
-```
-
-##### ReadRandomLabelsAsync
-
-```csharp
-public Task<SlmpLabelRandomReadResult[]> ReadRandomLabelsAsync(IReadOnlyList<string> labels, IReadOnlyList<string> abbreviationLabels = null, CancellationToken cancellationToken = default)
-```
-
-##### WriteRandomLabelsAsync
-
-```csharp
-public Task WriteRandomLabelsAsync(IReadOnlyList<SlmpLabelRandomWritePoint> points, IReadOnlyList<string> abbreviationLabels = null, CancellationToken cancellationToken = default)
-```
-
-##### MemoryReadWordsAsync
-
-```csharp
-public Task<ushort[]> MemoryReadWordsAsync(uint headAddress, ushort wordLength, CancellationToken cancellationToken = default)
-```
-
-##### MemoryWriteWordsAsync
-
-```csharp
-public Task MemoryWriteWordsAsync(uint headAddress, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
-```
-
-##### ExtendUnitReadBytesAsync
-
-```csharp
-public Task<byte[]> ExtendUnitReadBytesAsync(uint headAddress, ushort byteLength, ushort moduleNo, CancellationToken cancellationToken = default)
-```
-
-##### ExtendUnitReadWordsAsync
-
-```csharp
-public Task<ushort[]> ExtendUnitReadWordsAsync(uint headAddress, ushort wordLength, ushort moduleNo, CancellationToken cancellationToken = default)
-```
-
-##### ExtendUnitReadWordAsync
-
-```csharp
-public Task<ushort> ExtendUnitReadWordAsync(uint headAddress, ushort moduleNo, CancellationToken cancellationToken = default)
-```
-
-##### ExtendUnitReadDWordAsync
-
-```csharp
-public Task<uint> ExtendUnitReadDWordAsync(uint headAddress, ushort moduleNo, CancellationToken cancellationToken = default)
-```
-
-##### ExtendUnitWriteBytesAsync
-
-```csharp
-public Task ExtendUnitWriteBytesAsync(uint headAddress, ushort moduleNo, ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
-```
-
-##### ExtendUnitWriteWordsAsync
-
-```csharp
-public Task ExtendUnitWriteWordsAsync(uint headAddress, ushort moduleNo, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
-```
-
-##### ExtendUnitWriteWordAsync
-
-```csharp
-public Task ExtendUnitWriteWordAsync(uint headAddress, ushort moduleNo, ushort value, CancellationToken cancellationToken = default)
-```
-
-##### ExtendUnitWriteDWordAsync
-
-```csharp
-public Task ExtendUnitWriteDWordAsync(uint headAddress, ushort moduleNo, uint value, CancellationToken cancellationToken = default)
-```
-
-##### RegisterMonitorDevicesAsync
-
-```csharp
-public Task RegisterMonitorDevicesAsync(IReadOnlyList<SlmpDeviceAddress> wordDevices, IReadOnlyList<SlmpDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
-```
-
-##### RegisterMonitorDevicesExtAsync
-
-```csharp
-public Task RegisterMonitorDevicesExtAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices, IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
-```
-
-##### RunMonitorCycleAsync
-
-```csharp
-public Task<SlmpMonitorResult> RunMonitorCycleAsync(int wordPoints, int dwordPoints, CancellationToken cancellationToken = default)
-```
-
-##### Dispose
-
-```csharp
-public void Dispose()
-```
-
-Disposes the client and releases resources.
-
-##### DisposeAsync
-
-```csharp
-public ValueTask DisposeAsync()
-```
-
-Disposes the client asynchronously.
-
-##### InnerClient
-
-```csharp
-public SlmpClient InnerClient { get; }
-```
-
-Gets the underlying low-level SLMP client.
-
-Remarks: Advanced callers can use this property for APIs that are not surfaced directly on `QueuedSlmpClient`, while still using `ExecuteAsync` to preserve serialized access.
-
-##### FrameType
-
-```csharp
-public SlmpFrameType FrameType { get; }
-```
-
-Gets the SLMP frame format derived from `PlcProfile`.
-
-##### PlcProfile
-
-```csharp
-public SlmpPlcProfile PlcProfile { get; }
-```
-
-Gets the canonical PLC profile used by this session.
-
-##### CompatibilityMode
-
-```csharp
-public SlmpCompatibilityMode CompatibilityMode { get; }
-```
-
-Gets the device access compatibility mode derived from `PlcProfile`.
-
-##### TargetAddress
-
-```csharp
-public SlmpTargetAddress TargetAddress { get; }
-```
-
-Gets the immutable destination routing information.
-
-##### TrafficStats
-
-```csharp
-public SlmpTrafficStats TrafficStats { get; }
-```
-
-Gets a read-only snapshot of cumulative traffic for the underlying client lifetime.
-
-##### MonitoringTimer
-
-```csharp
-public ushort MonitoringTimer { get; set; }
-```
-
-Gets or sets the monitoring timer value (multiples of 250ms).
-
-##### Timeout
-
-```csharp
-public TimeSpan Timeout { get; set; }
-```
-
-Gets or sets the communication timeout.
-
-##### IsOpen
-
-```csharp
-public bool IsOpen { get; }
-```
-
-Gets a value indicating whether the client is currently connected.
-
 ### SlmpAddress
 
 ```csharp
@@ -688,7 +179,7 @@ public sealed class SlmpClient
 
 A high-performance, asynchronous SLMP (MC Protocol) client for .NET. Supports 3E and 4E frame formats over TCP and UDP.
 
-Remarks: Requests on one client are serialized so one connection has at most one in-flight exchange and 4E serial numbers remain associated with their responses. `QueuedSlmpClient` additionally keeps multi-step helper operations under one application-level gate. The factory `OpenAndConnectAsync` returns a ready-to-use `QueuedSlmpClient` and is the recommended entry point for most use cases.
+Remarks: Public operations on one client enter one arrival-order FIFO queue, so one connection has at most one active wire transaction and 4E serial numbers remain associated with their responses. Queue waiting does not consume the transaction timeout. A waiting caller can cancel without sending. Unless a method explicitly documents a multi-step semantic operation, each request method emits exactly one SLMP request and never splits an oversized operation. Effective limits are validated before serial allocation or transport. The factory `OpenAndConnectAsync` returns a ready-to-use `SlmpClient` and is the recommended entry point for most use cases.
 
 #### Members
 
@@ -701,7 +192,7 @@ public SlmpClient(string host, SlmpPlcProfile plcProfile, int port, SlmpTranspor
 Initializes a new instance of the `SlmpClient` class.
 
 Parameters:
-- `host`: The IP address or hostname of the PLC.
+- `host`: The IPv4 address or hostname that resolves to IPv4 for the PLC. IPv6 is not supported.
 - `plcProfile`: The PLC profile. This selection derives frame type and compatibility mode.
 - `port`: The required port number.
 - `transportMode`: The transport protocol (TCP or UDP).
@@ -734,7 +225,7 @@ Opens the connection to the PLC synchronously.
 public void Close()
 ```
 
-Closes the connection to the PLC.
+Closes the connection and rejects the active and queued operations for this transport generation.
 
 ##### CloseAsync
 
@@ -767,14 +258,14 @@ Remarks: Disposal is terminal and idempotent. Later open and request operations 
 ##### OpenAndConnectAsync
 
 ```csharp
-public static Task<QueuedSlmpClient> OpenAndConnectAsync(string host, int port, SlmpPlcProfile plcProfile, SlmpTransportMode transportMode, SlmpTargetAddress targetAddress, CancellationToken cancellationToken = default)
+public static Task<SlmpClient> OpenAndConnectAsync(string host, int port, SlmpPlcProfile plcProfile, SlmpTransportMode transportMode, SlmpTargetAddress targetAddress, CancellationToken cancellationToken = default)
 ```
 
-Opens a connection with explicit stable settings and returns a connected `QueuedSlmpClient`.
+Opens a connection with explicit stable settings and returns a connected `SlmpClient`.
 
-Remarks: This is the recommended entry point for application code because it combines one explicit PLC profile with a queued wrapper that is safe to share across multiple tasks.
+Remarks: This is the recommended entry point for application code because it combines one explicit PLC profile with the ordinary client's FIFO admission queue, which is safe to share across multiple tasks.
 
-Returns: A connected queued client ready for high-level helpers such as `ReadTypedAsync`, `ReadNamedAsync`, and `PollAsync`.
+Returns: A connected client ready for high-level helpers such as `ReadTypedAsync`, `ReadNamedAsync`, and `PollAsync`.
 
 Parameters:
 - `host`: PLC IP address or hostname.
@@ -816,7 +307,9 @@ Parameters:
 public Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
 ```
 
-Reads the configured profile-specific device upper-bound catalog.
+Reads the configured profile-specific device upper-bound catalog from one canonical SD-register window.
+
+Remarks: No address probe or error-derived boundary inference is performed. Acquisition errors propagate to the caller.
 
 Returns: A catalog containing the configured profile and device upper-bound entries.
 
@@ -1419,7 +912,9 @@ Gets a value indicating whether the client is currently connected.
 public static class SlmpClientExtensions
 ```
 
-Extension methods for `SlmpClient` and `QueuedSlmpClient` providing typed read/write helpers, single-request block access, named-device access, and polling.
+Extension methods for `SlmpClient` providing typed read/write helpers, single-request block access, named-device access, and polling.
+
+Remarks: Typed, block, and named operations use one SLMP request unless the method explicitly documents a read-modify-write sequence. Named operations reject plans that require more than one request; polling performs a separate declared read cycle each interval.
 
 #### Members
 
@@ -1457,38 +952,6 @@ Parameters:
 - `dtype`: Requested application type such as `U`, `F`, or `BIT`.
 - `ct`: Cancellation token.
 
-##### ReadTypedAsync
-
-```csharp
-public static Task<object> ReadTypedAsync(QueuedSlmpClient client, SlmpDeviceAddress device, string dtype, CancellationToken ct = default)
-```
-
-Reads one device value and converts it to the specified type through a queued client.
-
-Returns: A boxed scalar matching the requested type.
-
-Parameters:
-- `client`: Queued SLMP client safe for shared use.
-- `device`: Starting device address.
-- `dtype`: Requested application type.
-- `ct`: Cancellation token.
-
-##### ReadTypedAsync
-
-```csharp
-public static Task<object> ReadTypedAsync(QueuedSlmpClient client, string device, string dtype, CancellationToken ct = default)
-```
-
-Reads one device value using a string address through a queued client.
-
-Returns: A boxed scalar matching the requested type.
-
-Parameters:
-- `client`: Queued SLMP client safe for shared use.
-- `device`: Device string such as `D100` or `M1000`.
-- `dtype`: Requested application type.
-- `ct`: Cancellation token.
-
 ##### WriteTypedAsync
 
 ```csharp
@@ -1521,36 +984,6 @@ Parameters:
 - `value`: Application value to encode and write.
 - `ct`: Cancellation token.
 
-##### WriteTypedAsync
-
-```csharp
-public static Task WriteTypedAsync(QueuedSlmpClient client, SlmpDeviceAddress device, string dtype, object value, CancellationToken ct = default)
-```
-
-Writes one device value through a queued client.
-
-Parameters:
-- `client`: Queued SLMP client safe for shared use.
-- `device`: Starting device address.
-- `dtype`: Requested application type.
-- `value`: Application value to encode and write.
-- `ct`: Cancellation token.
-
-##### WriteTypedAsync
-
-```csharp
-public static Task WriteTypedAsync(QueuedSlmpClient client, string device, string dtype, object value, CancellationToken ct = default)
-```
-
-Writes one device value using a string address through a queued client.
-
-Parameters:
-- `client`: Queued SLMP client safe for shared use.
-- `device`: Device string such as `D100`, `D200:F`, or `M1000`.
-- `dtype`: Requested application type.
-- `value`: Application value to encode and write.
-- `ct`: Cancellation token.
-
 ##### WriteBitInWordAsync
 
 ```csharp
@@ -1559,7 +992,7 @@ public static Task WriteBitInWordAsync(SlmpClient client, SlmpDeviceAddress devi
 
 Performs a read-modify-write to set or clear one bit inside a word device.
 
-Remarks: This helper is useful when a PLC stores request and status flags inside one control word and only one flag should change.
+Remarks: The read and write occupy one FIFO turn on this client, so its other operations cannot interleave. They remain two SLMP requests and are not PLC-atomic: another client, PLC logic, or external writer can change the word between them. Applications that require atomic coordination must implement it in the PLC contract.
 
 Parameters:
 - `client`: Connected SLMP client.
@@ -1576,21 +1009,7 @@ public static Task WriteBitInWordAsync(SlmpClient client, string device, int bit
 
 Performs a read-modify-write using a string address.
 
-##### WriteBitInWordAsync
-
-```csharp
-public static Task WriteBitInWordAsync(QueuedSlmpClient client, SlmpDeviceAddress device, int bitIndex, bool value, CancellationToken ct = default)
-```
-
-Performs a read-modify-write through a queued client.
-
-##### WriteBitInWordAsync
-
-```csharp
-public static Task WriteBitInWordAsync(QueuedSlmpClient client, string device, int bitIndex, bool value, CancellationToken ct = default)
-```
-
-Performs a read-modify-write using a string address through a queued client.
+Remarks: This overload has the same two-request, locally exclusive, non-PLC-atomic behavior as the typed-address overload.
 
 ##### ReadBitsBlockAsync
 
@@ -1616,22 +1035,6 @@ public static Task<bool[]> ReadBitsBlockAsync(SlmpClient client, string start, u
 
 Reads a contiguous bit-device range using a string address.
 
-##### ReadBitsBlockAsync
-
-```csharp
-public static Task<bool[]> ReadBitsBlockAsync(QueuedSlmpClient client, SlmpDeviceAddress start, ushort count, CancellationToken ct = default)
-```
-
-Reads a contiguous bit-device range through a queued client.
-
-##### ReadBitsBlockAsync
-
-```csharp
-public static Task<bool[]> ReadBitsBlockAsync(QueuedSlmpClient client, string start, ushort count, CancellationToken ct = default)
-```
-
-Reads a contiguous bit-device range using a string address through a queued client.
-
 ##### WriteBitsBlockAsync
 
 ```csharp
@@ -1653,22 +1056,6 @@ public static Task WriteBitsBlockAsync(SlmpClient client, string start, IReadOnl
 ```
 
 Writes a contiguous bit-device range using a string address.
-
-##### WriteBitsBlockAsync
-
-```csharp
-public static Task WriteBitsBlockAsync(QueuedSlmpClient client, SlmpDeviceAddress start, IReadOnlyList<bool> values, CancellationToken ct = default)
-```
-
-Writes a contiguous bit-device range through a queued client.
-
-##### WriteBitsBlockAsync
-
-```csharp
-public static Task WriteBitsBlockAsync(QueuedSlmpClient client, string start, IReadOnlyList<bool> values, CancellationToken ct = default)
-```
-
-Writes a contiguous bit-device range using a string address through a queued client.
 
 ##### WriteWordsBlockAsync
 
@@ -1692,22 +1079,6 @@ public static Task WriteWordsBlockAsync(SlmpClient client, string start, IReadOn
 
 Writes a contiguous word-device range using a string address.
 
-##### WriteWordsBlockAsync
-
-```csharp
-public static Task WriteWordsBlockAsync(QueuedSlmpClient client, SlmpDeviceAddress start, IReadOnlyList<ushort> values, CancellationToken ct = default)
-```
-
-Writes a contiguous word-device range through a queued client.
-
-##### WriteWordsBlockAsync
-
-```csharp
-public static Task WriteWordsBlockAsync(QueuedSlmpClient client, string start, IReadOnlyList<ushort> values, CancellationToken ct = default)
-```
-
-Writes a contiguous word-device range using a string address through a queued client.
-
 ##### WriteDWordsBlockAsync
 
 ```csharp
@@ -1723,22 +1094,6 @@ public static Task WriteDWordsBlockAsync(SlmpClient client, string start, IReadO
 ```
 
 Writes a contiguous DWord-device range using a string address.
-
-##### WriteDWordsBlockAsync
-
-```csharp
-public static Task WriteDWordsBlockAsync(QueuedSlmpClient client, SlmpDeviceAddress start, IReadOnlyList<uint> values, CancellationToken ct = default)
-```
-
-Writes a contiguous DWord-device range through a queued client.
-
-##### WriteDWordsBlockAsync
-
-```csharp
-public static Task WriteDWordsBlockAsync(QueuedSlmpClient client, string start, IReadOnlyList<uint> values, CancellationToken ct = default)
-```
-
-Writes a contiguous DWord-device range using a string address through a queued client.
 
 ##### ReadWordsSingleRequestAsync
 
@@ -1756,22 +1111,6 @@ public static Task<ushort[]> ReadWordsSingleRequestAsync(SlmpClient client, stri
 
 Reads contiguous word devices using one SLMP request or returns an error.
 
-##### ReadWordsSingleRequestAsync
-
-```csharp
-public static Task<ushort[]> ReadWordsSingleRequestAsync(QueuedSlmpClient client, SlmpDeviceAddress start, int count, CancellationToken ct = default)
-```
-
-Reads contiguous word devices using one SLMP request or returns an error through a queued client.
-
-##### ReadWordsSingleRequestAsync
-
-```csharp
-public static Task<ushort[]> ReadWordsSingleRequestAsync(QueuedSlmpClient client, string start, int count, CancellationToken ct = default)
-```
-
-Reads contiguous word devices using one SLMP request or returns an error through a queued client.
-
 ##### ReadDWordsSingleRequestAsync
 
 ```csharp
@@ -1787,22 +1126,6 @@ public static Task<uint[]> ReadDWordsSingleRequestAsync(SlmpClient client, strin
 ```
 
 Reads contiguous DWord devices using one SLMP request or returns an error.
-
-##### ReadDWordsSingleRequestAsync
-
-```csharp
-public static Task<uint[]> ReadDWordsSingleRequestAsync(QueuedSlmpClient client, SlmpDeviceAddress start, int count, CancellationToken ct = default)
-```
-
-Reads contiguous DWord devices using one SLMP request or returns an error through a queued client.
-
-##### ReadDWordsSingleRequestAsync
-
-```csharp
-public static Task<uint[]> ReadDWordsSingleRequestAsync(QueuedSlmpClient client, string start, int count, CancellationToken ct = default)
-```
-
-Reads contiguous DWord devices using one SLMP request or returns an error through a queued client.
 
 ##### WriteWordsSingleRequestAsync
 
@@ -1820,22 +1143,6 @@ public static Task WriteWordsSingleRequestAsync(SlmpClient client, string start,
 
 Writes contiguous word devices using one SLMP request or returns an error.
 
-##### WriteWordsSingleRequestAsync
-
-```csharp
-public static Task WriteWordsSingleRequestAsync(QueuedSlmpClient client, SlmpDeviceAddress start, IReadOnlyList<ushort> values, CancellationToken ct = default)
-```
-
-Writes contiguous word devices using one SLMP request or returns an error through a queued client.
-
-##### WriteWordsSingleRequestAsync
-
-```csharp
-public static Task WriteWordsSingleRequestAsync(QueuedSlmpClient client, string start, IReadOnlyList<ushort> values, CancellationToken ct = default)
-```
-
-Writes contiguous word devices using one SLMP request or returns an error through a queued client.
-
 ##### WriteDWordsSingleRequestAsync
 
 ```csharp
@@ -1851,22 +1158,6 @@ public static Task WriteDWordsSingleRequestAsync(SlmpClient client, string start
 ```
 
 Writes contiguous DWord devices using one SLMP request or returns an error.
-
-##### WriteDWordsSingleRequestAsync
-
-```csharp
-public static Task WriteDWordsSingleRequestAsync(QueuedSlmpClient client, SlmpDeviceAddress start, IReadOnlyList<uint> values, CancellationToken ct = default)
-```
-
-Writes contiguous DWord devices using one SLMP request or returns an error through a queued client.
-
-##### WriteDWordsSingleRequestAsync
-
-```csharp
-public static Task WriteDWordsSingleRequestAsync(QueuedSlmpClient client, string start, IReadOnlyList<uint> values, CancellationToken ct = default)
-```
-
-Writes contiguous DWord devices using one SLMP request or returns an error through a queued client.
 
 ##### ReadNamedAsync
 
@@ -1885,14 +1176,6 @@ Parameters:
 - `addresses`: Address list such as `D100:U`, `D200:F`, `D300:L`, `M1000:BIT`, or `D50.3`.
 - `ct`: Cancellation token.
 
-##### ReadNamedAsync
-
-```csharp
-public static Task<IReadOnlyDictionary<string, object>> ReadNamedAsync(QueuedSlmpClient client, IEnumerable<string> addresses, CancellationToken ct = default)
-```
-
-Reads multiple devices by address string through a queued client.
-
 ##### WriteNamedAsync
 
 ```csharp
@@ -1906,19 +1189,6 @@ Remarks: The complete update set is sent as exactly one random-write request. Wo
 Parameters:
 - `client`: Connected SLMP client.
 - `updates`: Mapping of address string to value, for example `"D100:U"`, `"D200:F"`, `"D50.3"`, or direct bit-device addresses such as `"M1000:BIT"`.
-- `ct`: Cancellation token.
-
-##### WriteNamedAsync
-
-```csharp
-public static Task WriteNamedAsync(QueuedSlmpClient client, IReadOnlyDictionary<string, object> updates, CancellationToken ct = default)
-```
-
-Writes multiple named values through a queued client.
-
-Parameters:
-- `client`: Queued SLMP client safe for shared use.
-- `updates`: Address-to-value map in the same format as `WriteNamedAsync`.
 - `ct`: Cancellation token.
 
 ##### PollAsync
@@ -1939,29 +1209,13 @@ Parameters:
 - `interval`: Delay between snapshots.
 - `ct`: Cancellation token.
 
-##### PollAsync
-
-```csharp
-public static IAsyncEnumerable<IReadOnlyDictionary<string, object>> PollAsync(QueuedSlmpClient client, IEnumerable<string> addresses, TimeSpan interval, CancellationToken ct = default)
-```
-
-Continuously polls the specified devices at the given interval through a queued client.
-
-Returns: An async stream of snapshot dictionaries.
-
-Parameters:
-- `client`: Queued SLMP client safe for shared use.
-- `addresses`: Address list in the same format as `ReadNamedAsync`.
-- `interval`: Delay between snapshots.
-- `ct`: Cancellation token.
-
 ### SlmpClientFactory
 
 ```csharp
 public static class SlmpClientFactory
 ```
 
-Factory helpers for creating connected queued SLMP clients.
+Factory helpers for creating connected SLMP clients.
 
 Remarks: This factory is the preferred high-level entry point for applications that want an already-connected client with explicit session settings captured by `SlmpConnectionOptions`.
 
@@ -1970,14 +1224,14 @@ Remarks: This factory is the preferred high-level entry point for applications t
 ##### OpenAndConnectAsync
 
 ```csharp
-public static Task<QueuedSlmpClient> OpenAndConnectAsync(SlmpConnectionOptions options, CancellationToken cancellationToken = default)
+public static Task<SlmpClient> OpenAndConnectAsync(SlmpConnectionOptions options, CancellationToken cancellationToken = default)
 ```
 
-Creates, configures, and opens a queued SLMP client.
+Creates, configures, and opens an SLMP client.
 
-Remarks: The returned `QueuedSlmpClient` serializes multi-step operations through a single gate, which makes it suitable for documentation samples and shared-session application code.
+Remarks: The returned `SlmpClient` serializes complete operations through its arrival-order FIFO queue, including multi-step helpers.
 
-Returns: A connected queued client.
+Returns: A connected client with built-in FIFO operation admission.
 
 Parameters:
 - `options`: Explicit connection options.
@@ -2175,6 +1429,22 @@ public const SlmpCompatibilityMode Iqr
 
 Modern iQ-R series subcommands (0x0002/0x0003).
 
+### SlmpConnectionClosedException
+
+```csharp
+public sealed class SlmpConnectionClosedException
+```
+
+Error thrown when `Close` retires the transport generation that owns an active or queued operation.
+
+#### Members
+
+##### SlmpConnectionClosedException
+
+```csharp
+public SlmpConnectionClosedException()
+```
+
 ### SlmpConnectionOptions
 
 ```csharp
@@ -2198,7 +1468,7 @@ Explicit connection options for a stable SLMP session profile.
 Remarks: Use `PlcProfile` for the recommended high-level API. The library derives frame type, compatibility mode, string-address handling, and device-range handling from that explicit profile. This type is intended for the unified high-level entry point exposed by `OpenAndConnectAsync`.
 
 Parameters:
-- `Host`: PLC IP address or hostname.
+- `Host`: PLC IPv4 address or hostname that resolves to IPv4. IPv6 is not supported.
 - `PlcProfile`: Canonical PLC profile for the high-level API.
 - `Port`: PLC TCP or UDP port.
 - `Transport`: Transport protocol.
@@ -3727,6 +2997,96 @@ public string Name { get; set; }
 public SlmpTargetAddress Target { get; set; }
 ```
 
+### SlmpNotConnectedException
+
+```csharp
+public sealed class SlmpNotConnectedException
+```
+
+Error thrown when an exchange requires an explicit open after transport retirement.
+
+#### Members
+
+##### SlmpNotConnectedException
+
+```csharp
+public SlmpNotConnectedException()
+```
+
+### SlmpOperationOutcomeUnknownException
+
+```csharp
+public sealed class SlmpOperationOutcomeUnknownException
+```
+
+Error thrown when a state-changing request may have reached the PLC but its final result is unknown.
+
+#### Members
+
+##### SlmpOperationOutcomeUnknownException
+
+```csharp
+public SlmpOperationOutcomeUnknownException(SlmpOutcomeUnknownReason reason, Exception innerException)
+```
+
+##### Reason
+
+```csharp
+public SlmpOutcomeUnknownReason Reason { get; }
+```
+
+Gets the structured reason the final PLC outcome could not be determined.
+
+### SlmpOutcomeUnknownReason
+
+```csharp
+public enum SlmpOutcomeUnknownReason
+```
+
+Reason a state-changing request has an unknown PLC outcome.
+
+#### Members
+
+##### Timeout
+
+```csharp
+public const SlmpOutcomeUnknownReason Timeout
+```
+
+The single transaction deadline expired after request bytes may have been sent.
+
+##### Cancellation
+
+```csharp
+public const SlmpOutcomeUnknownReason Cancellation
+```
+
+The caller canceled after request bytes may have been sent.
+
+##### Closed
+
+```csharp
+public const SlmpOutcomeUnknownReason Closed
+```
+
+The client was closed after request bytes may have been sent.
+
+##### Transport
+
+```csharp
+public const SlmpOutcomeUnknownReason Transport
+```
+
+A transport failure occurred after request bytes may have been sent.
+
+##### MalformedResponse
+
+```csharp
+public const SlmpOutcomeUnknownReason MalformedResponse
+```
+
+A malformed PLC response occurred after request bytes may have been sent.
+
 ### SlmpPlcProfile
 
 ```csharp
@@ -4259,6 +3619,22 @@ public static int ParseAutoNumber(string text)
 
 Parses a number string, supporting both decimal and "0x" hexadecimal notation.
 
+### SlmpTimeoutException
+
+```csharp
+public sealed class SlmpTimeoutException
+```
+
+Error thrown when the configured connect or transaction deadline expires.
+
+#### Members
+
+##### SlmpTimeoutException
+
+```csharp
+public SlmpTimeoutException(string message, Exception innerException = null)
+```
+
 ### SlmpTrafficStats
 
 ```csharp
@@ -4305,6 +3681,22 @@ public ulong RxBytes { get; set; }
 ```
 
 Total bytes in complete response frames or datagrams received.
+
+### SlmpTransportException
+
+```csharp
+public sealed class SlmpTransportException
+```
+
+Error thrown when IPv4 TCP/UDP connection or I/O fails.
+
+#### Members
+
+##### SlmpTransportException
+
+```csharp
+public SlmpTransportException(string message, Exception innerException = null)
+```
 
 ### SlmpTransportMode
 

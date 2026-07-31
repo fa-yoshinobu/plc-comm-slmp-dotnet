@@ -10,7 +10,7 @@ namespace PlcComm.Slmp;
 /// This type is intended for the unified high-level entry point exposed by
 /// <see cref="SlmpClientFactory.OpenAndConnectAsync(SlmpConnectionOptions, CancellationToken)"/>.
 /// </remarks>
-/// <param name="Host">PLC IP address or hostname.</param>
+/// <param name="Host">PLC IPv4 address or hostname that resolves to IPv4. IPv6 is not supported.</param>
 /// <param name="PlcProfile">Canonical PLC profile for the high-level API.</param>
 /// <param name="Port">PLC TCP or UDP port.</param>
 /// <param name="Transport">Transport protocol.</param>
@@ -89,12 +89,7 @@ public sealed record SlmpConnectionOptions(
     }
 
     private static string ValidateHost(string host)
-    {
-        ArgumentNullException.ThrowIfNull(host);
-        return !string.IsNullOrWhiteSpace(host)
-            ? host
-            : throw new ArgumentException("Host must not be empty.", nameof(host));
-    }
+        => SlmpValidation.ValidateIpv4Host(host, nameof(host));
 
     private static int ValidatePort(int port)
         => port is >= 1 and <= 65535

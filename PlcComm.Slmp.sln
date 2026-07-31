@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlcComm.Slmp.Cli", "samples
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlcComm.Slmp.Tests", "tests\PlcComm.Slmp.Tests\PlcComm.Slmp.Tests.csproj", "{F258E674-D5C3-4CDA-BCD0-3A70AC04F952}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlcComm.Slmp.QueuedSample", "samples\PlcComm.Slmp.QueuedSample\PlcComm.Slmp.QueuedSample.csproj", "{49683DE7-E1E9-4C2F-9C87-3532A7D6692F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlcComm.Slmp.ConcurrentSample", "samples\PlcComm.Slmp.ConcurrentSample\PlcComm.Slmp.ConcurrentSample.csproj", "{49683DE7-E1E9-4C2F-9C87-3532A7D6692F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlcComm.Slmp.HighLevelSample", "samples\PlcComm.Slmp.HighLevelSample\PlcComm.Slmp.HighLevelSample.csproj", "{1A2B3C4D-5E6F-4A7B-8C9D-0E1F2A3B4C5D}"
 EndProject
