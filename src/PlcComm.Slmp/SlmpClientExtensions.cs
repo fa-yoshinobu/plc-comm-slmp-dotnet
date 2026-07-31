@@ -54,11 +54,23 @@ internal sealed record SlmpNamedReadPlan(
 /// </summary>
 public static class SlmpClientExtensions
 {
-    private static SlmpDeviceAddress ParseDeviceForClient(SlmpClient client, string address)
-        => SlmpDeviceParser.Parse(address, client.PlcProfile);
+    private static SlmpDeviceAddress ParseDeviceForClient(
+        SlmpClient client,
+        string address,
+        [CallerArgumentExpression(nameof(address))] string? parameterName = null)
+    {
+        ArgumentNullException.ThrowIfNull(address, parameterName);
+        return SlmpDeviceParser.Parse(address, client.PlcProfile);
+    }
 
-    private static SlmpDeviceAddress ParseDeviceForClient(QueuedSlmpClient client, string address)
-        => SlmpDeviceParser.Parse(address, client.PlcProfile);
+    private static SlmpDeviceAddress ParseDeviceForClient(
+        QueuedSlmpClient client,
+        string address,
+        [CallerArgumentExpression(nameof(address))] string? parameterName = null)
+    {
+        ArgumentNullException.ThrowIfNull(address, parameterName);
+        return SlmpDeviceParser.Parse(address, client.PlcProfile);
+    }
 
     private static string NormalizeDeviceForFamily(string address, SlmpPlcProfile plcProfile)
         => SlmpAddress.Normalize(address, plcProfile);
@@ -213,6 +225,7 @@ public static class SlmpClientExtensions
         object value,
         CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(value);
         var normalizedDType = RequireDType(dtype, nameof(dtype));
         switch (ResolveWriteRoute(device, normalizedDType, client.PlcProfile))
         {
@@ -790,6 +803,10 @@ public static class SlmpClientExtensions
         var bitEntries = new List<(SlmpDeviceAddress Device, bool Value)>();
         foreach (var pair in updates)
         {
+            if (pair.Key is null)
+                throw new ArgumentException("Update collection contains a null address.", nameof(updates));
+            if (pair.Value is null)
+                throw new ArgumentException($"Update '{pair.Key}' has a null value.", nameof(updates));
             var (baseAddress, dtype, bitIdx) = ParseAddress(pair.Key);
             var device = ParseDeviceForClient(client, baseAddress);
             if (dtype == "BIT_IN_WORD")
@@ -968,6 +985,7 @@ public static class SlmpClientExtensions
 
     internal static SlmpNamedReadPlan CompileReadPlan(IEnumerable<string> addresses, SlmpPlcProfile plcProfile)
     {
+        ArgumentNullException.ThrowIfNull(addresses);
         var entries = new List<SlmpNamedReadEntry>();
         var wordDevices = new List<SlmpDeviceAddress>();
         var dwordDevices = new List<SlmpDeviceAddress>();
@@ -976,6 +994,8 @@ public static class SlmpClientExtensions
 
         foreach (var address in addresses)
         {
+            if (address is null)
+                throw new ArgumentException("Address collection contains null.", nameof(addresses));
             var (baseAddress, dtype, bitIdx) = ParseAddress(address);
             var device = SlmpDeviceParser.Parse(baseAddress, plcProfile);
             var kind = SlmpNamedReadKind.Fallback;
@@ -1238,6 +1258,7 @@ public static class SlmpClientExtensions
 
     private static string RequireDType(string dtype, string paramName)
     {
+        ArgumentNullException.ThrowIfNull(dtype, paramName);
         var normalized = dtype.Trim().ToUpperInvariant();
         if (string.IsNullOrEmpty(normalized))
         {

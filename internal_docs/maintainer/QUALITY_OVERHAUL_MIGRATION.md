@@ -367,3 +367,279 @@ Acceptance evidence:
 
 Disposition: all supplemental live checks passed. The `R32768` result is PLC-side address evidence,
 not authority to add a communication-library profile-range guard.
+
+## REM-20260731-001 — Array-label wire length
+
+Implementation scope: array-label request builders, response parser, public label models, and tests.
+
+Target contract: unit 0 is a logical bit count encoded in two-byte words
+(`ceil(length / 16) * 2` bytes); unit 1 is a logical byte count padded to an even
+wire length (`ceil(length / 2) * 2` bytes). Unit must be 0 or 1 and logical length
+must be positive. A response must echo each requested unit and logical length.
+
+Compatibility impact: incorrectly sized array writes and mismatched response metadata that were
+formerly accepted now fail before I/O or as `SlmpError`.
+
+Acceptance criteria: official six-bit and boundary vectors decode correctly; request and response
+vectors cover 1/6/16/17/32 bits and 1/2/3/4 bytes; incorrect units, lengths, and data sizes fail
+deterministically.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Relevant static, unit, integration, documentation, and package checks passed.
+- [x] Codex self-review completed against the approved contract and actual diff.
+- [x] Live PLC is not required for deterministic wire arithmetic; no hardware claim is added.
+- [x] User documentation, migration notes, changelog, and generated API reference agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+## REM-20260731-002 — Random-label write and response integrity
+
+Implementation scope: random-label write builder, random-label read parser, models, and tests.
+
+Target contract: every random-label write contains a non-null, positive, even number of wire bytes.
+Every random-label read response has the requested item count, bounded positive even data lengths,
+and no trailing bytes. Unknown data-type and spare values are preserved without reinterpretation.
+
+Compatibility impact: null, empty, odd write buffers and malformed responses formerly accepted or
+reported through runtime exceptions now fail with argument errors or `SlmpError`.
+
+Acceptance criteria: exact write vectors, invalid-input cases, unknown metadata, truncation, count,
+odd/zero length, and trailing-data cases are regression tested.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Relevant static, unit, integration, documentation, and package checks passed.
+- [x] Codex self-review completed against the approved contract and actual diff.
+- [x] Live PLC is not required for deterministic builder/parser boundaries; no hardware claim is added.
+- [x] User documentation, migration notes, changelog, and generated API reference agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+## REM-20260731-003 — Malformed label response errors
+
+Implementation scope: array/random label response parsing and public read methods.
+
+Target contract: bounded reads validate the complete payload and convert all label-payload structural
+errors to `SlmpError`; `IndexOutOfRangeException`, `ArgumentOutOfRangeException`, and other internal
+parser exceptions do not escape. Structurally valid unknown metadata remains data, not an error.
+
+Compatibility impact: malformed peer payloads now have one stable library error boundary.
+
+Acceptance criteria: empty, short, truncated, inconsistent, and trailing payloads are covered for
+both label read commands and produce `SlmpError`.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Relevant static, unit, integration, documentation, and package checks passed.
+- [x] Codex self-review completed against the approved contract and actual diff.
+- [x] Live PLC is not required because malformed payload injection is deterministic locally.
+- [x] User documentation, migration notes, changelog, and generated API reference agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+## REM-20260731-004 — Reproducible source archive
+
+Implementation scope: `.gitattributes`, CI, release workflow, solution, and exported test project.
+
+Target contract: the source archive contains every project referenced by `PlcComm.Slmp.sln`, while
+maintainer-only and generated release files remain excluded. CI and the release gate restore, build,
+and test only files extracted from `git archive`.
+
+Compatibility impact: future source archives include `tests`; runtime and NuGet contents do not change.
+Published tags and archives remain immutable.
+
+Acceptance criteria: archive inventory contains the test project and fixtures, and the extracted
+archive restores, builds, and tests all target frameworks successfully.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Relevant static, unit, integration, documentation, and package checks passed.
+- [x] Codex self-review completed against the approved contract and actual diff.
+- [x] Live PLC is not relevant to source-archive reproducibility.
+- [x] Maintainer documentation, changelog, and workflow behavior agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+## REM-20260731-005 — Terminal disposal
+
+Implementation scope: `SlmpClient` open/request/dispose state transitions and queued propagation.
+
+Target contract: `Close` remains reopenable. `Dispose` and `DisposeAsync` are idempotent and terminal;
+later open/read/write operations throw `ObjectDisposedException`. Disposal interrupts an active
+transport without waiting on the request gate or disposing semaphores that still have waiters.
+
+Compatibility impact: callers that reused a disposed client must use `Close` or construct a new client.
+
+Acceptance criteria: close/reopen, double synchronous and asynchronous disposal, post-dispose
+open/read/write, queued propagation, waiting requests, and active-request disposal are deterministic
+and deadlock-free.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion implemented locally.
+- [x] Relevant static, unit, integration, documentation, and package checks passed.
+- [x] Codex self-review completed against state, cancellation, timeout, and gate behavior.
+- [x] Live PLC is not required because lifecycle behavior is covered with local transports.
+- [x] User documentation, migration notes, changelog, and generated API reference agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+## REM-20260731-006 — Public null contract
+
+Implementation scope: public collection-consuming client APIs, queued pre-snapshot paths, parsers,
+label/block nested values, named address/update collections, and tests.
+
+Target contract: a null public argument produces `ArgumentNullException` with the corresponding
+parameter name. A null collection element or required nested model value produces an argument error
+that identifies the owning public argument. All such validation occurs before transport.
+
+Compatibility impact: null inputs no longer leak `NullReferenceException` or begin an exchange.
+
+Acceptance criteria: null collections, elements, nested label/block values, parser inputs, and queued
+snapshot inputs are mapped to stable argument errors; traffic counters and open state prove no I/O.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for the affected public entry points and nested values.
+- [x] Relevant static, unit, integration, documentation, and package checks passed.
+- [x] Codex self-review completed against the public reference-input inventory.
+- [x] Live PLC is not required because every invalid input is rejected before transport.
+- [x] User documentation, migration notes, changelog, and generated API reference agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+## REM-20260731-007 — One timeout range
+
+Implementation scope: `SlmpClient.Timeout`, `SlmpConnectionOptions.Timeout`, and factory validation.
+
+Target contract: every entry point accepts 1 millisecond through `int.MaxValue` milliseconds inclusive
+and rejects all smaller, non-positive, and larger values through one shared validator.
+
+Compatibility impact: positive sub-millisecond option values formerly accepted are now rejected.
+
+Acceptance criteria: zero, negative, one tick, 1 millisecond, maximum, and above-maximum boundaries
+are tested without transport.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Relevant static, unit, integration, documentation, and package checks passed.
+- [x] Codex self-review completed against every timeout assignment path.
+- [x] Live PLC is not required for local timer-domain validation.
+- [x] User documentation, migration notes, changelog, and generated API reference agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+## REM-20260731-008 — Concurrency documentation disposition
+
+Implementation scope: `SlmpClient`, `QueuedSlmpClient`, XML comments, user guide, and generated API text.
+
+Target contract: base-client request serialization and queued multi-step helper serialization remain
+distinct and accurately documented.
+
+Compatibility impact: none.
+
+Acceptance criteria: the actual request gate, queued gate, XML comments, and user guidance describe
+the same two levels of serialization.
+
+Disposition: rejected as a duplicate/stale report finding. The current source already documents the
+distinction and no runtime or documentation change is required for this item.
+
+- [x] Implementation inspection completed; no defect was present.
+- [x] Existing concurrency tests cover the two gate levels.
+- [x] Relevant static, unit, integration, documentation, and package checks passed.
+- [x] Codex self-review completed against implementation and generated docs.
+- [x] Live PLC is not required for semaphore ownership and scheduling behavior.
+- [x] Documentation and generated API reference verified unchanged in meaning.
+- [x] Final disposition verified and the item marked complete.
+
+## REM-20260731-009 — Request payload length boundary
+
+Implementation scope: the common 3E/4E request path, Array Label Read/Write, Label Read/Write Random,
+raw commands, validation utilities, public documentation, and tests.
+
+Target contract: the request data-length field contains the six bytes for monitoring timer, command,
+and subcommand plus the command payload. Therefore every request payload is limited to
+`ushort.MaxValue - 6`, or 65,529 bytes. Label builders calculate their complete aggregate length
+with bounded arithmetic and reject an oversized request before allocating its payload. The common
+request entry rejects an oversized payload before taking the request gate or opening transport, and
+frame construction repeats the same guard before allocation and serial mutation.
+
+Self-review amendment: the 65,529-byte protocol limit is reachable only over TCP. This client uses
+IPv4 UDP, whose maximum datagram is 65,507 bytes including the complete SLMP frame. The effective
+UDP command-payload limits are therefore 65,492 bytes for 3E and 65,488 bytes for 4E. The approved
+contract is reopened and corrected to apply the smaller transport/frame-specific limit before open.
+
+Compatibility impact: oversized inputs that formerly allocated a payload, opened transport, or
+leaked `OverflowException` now throw `ArgumentOutOfRangeException` with the actual and maximum
+payload lengths. The library does not implicitly split a command into multiple frames.
+
+Acceptance criteria:
+
+1. A 65,529-byte raw TCP payload produces request data length 65,535 for both 3E and 4E.
+2. TCP payload 65,530 and UDP payloads above 65,492 for 3E or 65,488 for 4E fail before transport,
+   traffic statistics, trace, frame allocation,
+   or 4E serial mutation.
+3. UDP payloads at the effective limit produce a 65,507-byte datagram for both frame types.
+4. All four label builders accept their largest protocol-representable even payload size, 65,528 bytes, and
+   reject 65,530-byte aggregate shapes before payload allocation.
+5. Oversized aggregate shapes cover point labels, abbreviation labels, multiple points, and write
+   data; Random Label Write also explicitly rejects data that cannot fit its 16-bit item length.
+6. No `OverflowException`, `OutOfMemoryException`, or array-length exception escapes for tested
+   oversized shapes.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Relevant static, unit, local transport, documentation, archive, and package checks passed.
+- [x] Codex self-review completed and accepted findings corrected.
+- [x] Live PLC is not required because the 16-bit frame boundary and pre-transport behavior are deterministic locally.
+- [x] User documentation, migration notes, changelog, and generated API reference agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+Verification evidence:
+
+- `run_ci.bat` passed build, generator tests, generated API freshness, format, and 408 tests on
+  each of net8.0, net9.0, and net10.0 with zero failures or skips.
+- TCP 3E/4E accepted 65,529-byte command payloads and encoded data length 65,535. IPv4 UDP 3E/4E
+  accepted 65,492/65,488-byte command payloads as complete 65,507-byte datagrams.
+- Each exact upper-bound-plus-one case failed before open, trace, traffic statistics, request frame,
+  or 4E serial consumption. All four label builders passed their 65,528-byte boundary and rejected
+  aggregate oversize from labels, abbreviations, multiple points, and write data.
+- Canonical profile drift, no-auto-publish, and `git diff --check` passed.
+- A virtual Git tree containing the uncommitted delta produced a source archive whose extracted
+  solution restored, built with zero warnings/errors, and passed 408 tests per target framework.
+- Release-mode NuGet and symbol packages built successfully and contained no tests or fixtures.
+
+Self-review disposition:
+
+- Accepted and corrected: the report treated 65,529 bytes as reachable on every transport. The
+  client uses IPv4 UDP, so 3E and 4E now enforce their smaller 65,492- and 65,488-byte limits.
+- Accepted and corrected: Random Label Write lengths above the 16-bit item field now report that
+  range error before the positive/even shape check, including an oversized odd length.
+- Rejected with rationale: applying the UDP limit inside transport-independent label builders would
+  make identical payload construction depend on unavailable client state. Builders enforce the SLMP
+  protocol limit before allocation; the client enforces the smaller transport/frame limit before
+  its gate and before open.
+- No duplicate or deferred finding changes this contract.
+
+The approved sources for these records are `D:\APP\REMEDIATION_REPORT.md` and
+`D:\APP\REMEDIATION_REPORT2.md`, including their 2026-07-31 correction addenda. Published
+`v4.0.1` artifacts remain immutable; these changes target the next release.
+
+### 2026-07-31 Codex self-review findings
+
+| Finding | Classification and disposition |
+|---|---|
+| SR-REM-001 | Accepted and fixed. `DisposeAsync` used only `inheritdoc`, leaving the generated reference without the terminal-disposal contract. Explicit XML summary and remarks were added and the API reference regenerated. |
+| SR-REM-002 | Accepted and fixed. The API generator rendered an `int.MaxValue` cref as only `MaxValue`; timeout XML now uses an exact code literal. |
+| SR-REM-003 | Accepted and fixed. The initial null audit did not cover string parser inputs, named collections, nested updates, or queued monitor snapshots. Guards and no-I/O tests now cover those paths. |
+| SR-REM-004 | Duplicate. The report's concurrency-documentation finding is stale; source, XML, and user guidance already distinguish request serialization from the queued multi-step gate. No change was made. |
+| SR-REM-005 | Accepted and resolved under workspace decision `GOAL-SLMP-LABEL-001`. The original comparison was incomplete because Node-RED was also affected. Node-RED, Python, Rust, and C++ were corrected and independently verified on the same dedicated overhaul branch; no publication was authorized or performed. |
+| SR-REM-006 | Accepted and fixed. The second report found that aggregate label payloads could exceed the 16-bit request data-length field and leak `OverflowException` after transport open. Common and builder-specific guards now reject them deterministically before I/O. |
+| SR-REM-007 | Accepted and fixed during review of SR-REM-006. The report's 65,529-byte boundary omitted IPv4 UDP datagram limits; transport/frame-specific guards and exact loopback vectors now cover them. |
+| SR-REM-008 | Rejected with rationale. Transport-independent label builders must not depend on TCP/UDP or 3E/4E client state; they enforce the protocol maximum, while the client applies the smaller effective limit before opening transport. |
+
+The self-review inspected the actual diff, public API and generated reference, validation order,
+argument errors, request and open gates, close/dispose transitions, active and waiting request behavior,
+timeout/cancellation interaction, label response bounds, unknown metadata preservation, tests, workflows,
+source-archive contents, changelog, migration impact, and NuGet package construction.
+
+Final local evidence for this delta:
+
+- `dotnet build PlcComm.Slmp.sln -c Release --no-restore`: PASS with zero warnings and errors.
+- `dotnet test PlcComm.Slmp.sln -c Release --no-build`: PASS, 408 tests on each of net8.0, net9.0, and net10.0; zero failed or skipped.
+- Exported worktree archive: test project and fixtures present; extracted-only restore/build/test PASS with 408 tests per target framework.
+- `dotnet format ... --verify-no-changes`, profile JSON drift, no-auto-publish, API-generator unit tests, generated API freshness, and `git diff --check`: PASS.
+- Release-mode NuGet and symbol packages were built locally; version/metadata checks passed and the package contained no tests or fixtures. The temporary packages were deleted and no registry publication was attempted.
+- No live PLC communication was requested, authorized, or performed. Parser arithmetic, malformed payloads, request-size limits, lifecycle, null, timeout, and archive behavior are locally deterministic; no new PLC/profile compatibility claim is made.

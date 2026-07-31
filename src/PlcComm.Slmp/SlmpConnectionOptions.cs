@@ -56,11 +56,12 @@ public sealed record SlmpConnectionOptions(
     /// <summary>Gets or sets the communication timeout for the underlying transport.</summary>
     /// <remarks>
     /// This timeout applies to individual request/response exchanges after the session is opened.
+    /// Values must be from 1 millisecond through <c>int.MaxValue</c> milliseconds.
     /// </remarks>
     public TimeSpan Timeout
     {
         get => _timeout;
-        init => _timeout = ValidateTimeout(value);
+        init => _timeout = SlmpValidation.ValidateTimeout(value, nameof(Timeout));
     }
 
     /// <summary>Gets or sets the SLMP monitoring timer value in 250 ms units.</summary>
@@ -88,9 +89,12 @@ public sealed record SlmpConnectionOptions(
     }
 
     private static string ValidateHost(string host)
-        => !string.IsNullOrWhiteSpace(host)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        return !string.IsNullOrWhiteSpace(host)
             ? host
             : throw new ArgumentException("Host must not be empty.", nameof(host));
+    }
 
     private static int ValidatePort(int port)
         => port is >= 1 and <= 65535
@@ -102,8 +106,4 @@ public sealed record SlmpConnectionOptions(
             ? transport
             : throw new ArgumentOutOfRangeException(nameof(transport));
 
-    private static TimeSpan ValidateTimeout(TimeSpan timeout)
-        => timeout > TimeSpan.Zero && timeout <= TimeSpan.FromMilliseconds(int.MaxValue)
-            ? timeout
-            : throw new ArgumentOutOfRangeException(nameof(timeout));
 }

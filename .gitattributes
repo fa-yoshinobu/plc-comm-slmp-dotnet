@@ -12,8 +12,6 @@ release-artifacts export-ignore
 release-artifacts/** export-ignore
 scripts export-ignore
 scripts/** export-ignore
-tests export-ignore
-tests/** export-ignore
 release_check.bat export-ignore
 run_ci.bat export-ignore
 TODO.md export-ignore

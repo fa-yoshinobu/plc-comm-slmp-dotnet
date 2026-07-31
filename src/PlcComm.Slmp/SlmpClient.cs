@@ -43,6 +43,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     private TimeSpan _timeout = TimeSpan.FromSeconds(3);
     private readonly SemaphoreSlim _requestGate = new(1, 1);
     private readonly SemaphoreSlim _openGate = new(1, 1);
+    private int _disposed;
     private bool _requiresExplicitOpen;
     private long _requestCount;
     private long _txBytes;
@@ -63,6 +64,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         SlmpTransportMode transportMode,
         SlmpTargetAddress targetAddress)
     {
+        ArgumentNullException.ThrowIfNull(host);
         if (string.IsNullOrWhiteSpace(host)) throw new ArgumentException("Host must not be empty.", nameof(host));
         if (port is < 1 or > 65535) throw new ArgumentOutOfRangeException(nameof(port));
         if (!Enum.IsDefined(transportMode)) throw new ArgumentOutOfRangeException(nameof(transportMode));
@@ -92,16 +94,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         unchecked((ulong)Interlocked.Read(ref _rxBytes)));
     /// <summary>Gets or sets the monitoring timer value (multiples of 250ms). Default is 0x0010 (4s).</summary>
     public ushort MonitoringTimer { get; set; } = 0x0010;
-    /// <summary>Gets or sets the communication timeout. Values must be from 1 millisecond through <see cref="int.MaxValue"/> milliseconds.</summary>
+    /// <summary>Gets or sets the communication timeout. Values must be from 1 millisecond through <c>int.MaxValue</c> milliseconds.</summary>
     public TimeSpan Timeout
     {
         get => _timeout;
-        set
-        {
-            if (value < TimeSpan.FromMilliseconds(1) || value > TimeSpan.FromMilliseconds(int.MaxValue))
-                throw new ArgumentOutOfRangeException(nameof(value), "Timeout must be at least 1 millisecond and within the supported timer range.");
-            _timeout = value;
-        }
+        set => _timeout = SlmpValidation.ValidateTimeout(value, nameof(value));
     }
     internal byte[] LastRequestFrame { get; private set; } = [];
     internal byte[] LastResponseFrame { get; private set; } = [];
@@ -117,9 +114,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <returns>A task representing the asynchronous operation.</returns>
     public async Task OpenAsync(CancellationToken cancellationToken = default)
     {
+        ThrowIfDisposed();
         await _openGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            ThrowIfDisposed();
             if (IsOpen)
             {
                 _requiresExplicitOpen = false;
@@ -219,15 +218,42 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         return Task.CompletedTask;
     }
 
-    /// <summary>Disposes the client and closes the connection.</summary>
-    public void Dispose() => Close();
-
-    /// <inheritdoc/>
-    public ValueTask DisposeAsync()
+    /// <summary>Disposes the client and permanently closes the connection.</summary>
+    /// <remarks>
+    /// Unlike <see cref="Close"/>, disposal is terminal. Later open and request operations
+    /// throw <see cref="ObjectDisposedException"/>.
+    /// </remarks>
+    public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
+
         Close();
-        return ValueTask.CompletedTask;
     }
+
+    /// <summary>Asynchronously disposes the client and permanently closes the connection.</summary>
+    /// <remarks>
+    /// Disposal is terminal and idempotent. Later open and request operations throw
+    /// <see cref="ObjectDisposedException"/>.
+    /// </remarks>
+    public async ValueTask DisposeAsync()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
+
+        await _openGate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            CloseTransport();
+        }
+        finally
+        {
+            _openGate.Release();
+        }
+    }
+
+    private void ThrowIfDisposed()
+        => ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
 
     private void FireTrace(SlmpTraceDirection direction, byte[] data)
     {
@@ -450,6 +476,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task WriteWordsAsync(SlmpDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(values);
         ValidateDirectWordWriteDevice(device);
         await WriteWordsUncheckedAsync(device, values, cancellationToken).ConfigureAwait(false);
     }
@@ -521,6 +548,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ArgumentNullException.ThrowIfNull(values);
         EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
         ValidateDirectAccessPoints(values.Count, bitUnit: false, "write_words_ext", SlmpProfileLimit.DirectWordWrite);
         ValidateDirectWordWriteDevice(device.Device, allowQualifiedOnlyDevice: true);
@@ -556,6 +584,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ArgumentNullException.ThrowIfNull(values);
         EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
         ValidateDirectAccessPoints(values.Count, bitUnit: true, "write_bits_ext", SlmpProfileLimit.DirectBitWrite);
         ValidateDirectBitWriteDevice(device.Device);
@@ -571,6 +600,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task WriteBitsAsync(SlmpDeviceAddress device, IReadOnlyList<bool> values, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(values);
         EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
         ValidateDirectAccessPoints(values.Count, bitUnit: true, "write_bits", SlmpProfileLimit.DirectBitWrite);
         ValidateDirectBitWriteDevice(device);
@@ -595,6 +625,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task WriteDWordsAsync(SlmpDeviceAddress device, IReadOnlyList<uint> values, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(values);
         ValidateDirectDWordWriteDevice(device);
         EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
         ValidateDirectAccessPoints(checked(values.Count * 2), bitUnit: false, "write_dwords", SlmpProfileLimit.DirectWordWrite);
@@ -620,6 +651,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task WriteFloat32sAsync(SlmpDeviceAddress device, IReadOnlyList<float> values, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(values);
         var dwords = new uint[values.Count];
         for (var i = 0; i < values.Count; i++)
         {
@@ -750,6 +782,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ArgumentNullException.ThrowIfNull(bitEntries);
         if (bitEntries.Count > 0xFF)
         {
             throw new ArgumentOutOfRangeException(nameof(bitEntries), "random bit count must be <= 255");
@@ -942,6 +975,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(wordBlocks);
         ArgumentNullException.ThrowIfNull(bitBlocks);
+        ValidateNoNullBlockReadElements(wordBlocks, nameof(wordBlocks));
+        ValidateNoNullBlockReadElements(bitBlocks, nameof(bitBlocks));
         if (wordBlocks.Count > 0xFF || bitBlocks.Count > 0xFF)
         {
             throw new ArgumentOutOfRangeException(nameof(wordBlocks), "block counts must be <= 255");
@@ -1015,6 +1050,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(wordBlocks);
         ArgumentNullException.ThrowIfNull(bitBlocks);
+        ValidateNoNullBlockWriteElements(wordBlocks, nameof(wordBlocks));
+        ValidateNoNullBlockWriteElements(bitBlocks, nameof(bitBlocks));
         if (wordBlocks.Count > 0xFF || bitBlocks.Count > 0xFF)
         {
             throw new ArgumentOutOfRangeException(nameof(wordBlocks), "block counts must be <= 255");
@@ -1080,6 +1117,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<SlmpDeviceAddress> dwordDevices,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(wordDevices);
+        ArgumentNullException.ThrowIfNull(dwordDevices);
         if (wordDevices.Count == 0 && dwordDevices.Count == 0)
             throw new ArgumentException("wordDevices and dwordDevices must not both be empty.");
         if (wordDevices.Count > 0xFF || dwordDevices.Count > 0xFF)
@@ -1110,6 +1149,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(wordDevices);
+        ArgumentNullException.ThrowIfNull(dwordDevices);
         if (wordDevices.Count == 0 && dwordDevices.Count == 0)
             throw new ArgumentException("wordDevices and dwordDevices must not both be empty.");
         if (wordDevices.Count > 0xFF || dwordDevices.Count > 0xFF)
@@ -1287,10 +1328,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<string>? abbreviationLabels = null,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(points);
+        var requestedPoints = points.ToArray();
         var abbrevs = abbreviationLabels ?? [];
-        var payload = SlmpPayloads.BuildLabelArrayReadPayload(points, abbrevs);
+        var payload = SlmpPayloads.BuildLabelArrayReadPayload(requestedPoints, abbrevs);
         var data = await RequestCoreAsync(SlmpCommand.LabelArrayRead, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
-        return SlmpPayloads.ParseArrayLabelReadResponse(data);
+        return SlmpPayloads.ParseArrayLabelReadResponse(data, requestedPoints);
     }
 
     /// <summary>
@@ -1301,6 +1344,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<string>? abbreviationLabels = null,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(points);
         var abbrevs = abbreviationLabels ?? [];
         var payload = SlmpPayloads.BuildLabelArrayWritePayload(points, abbrevs);
         _ = await RequestCoreAsync(SlmpCommand.LabelArrayWrite, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
@@ -1314,10 +1358,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<string>? abbreviationLabels = null,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(labels);
+        var requestedLabels = labels.ToArray();
         var abbrevs = abbreviationLabels ?? [];
-        var payload = SlmpPayloads.BuildLabelRandomReadPayload(labels, abbrevs);
+        var payload = SlmpPayloads.BuildLabelRandomReadPayload(requestedLabels, abbrevs);
         var data = await RequestCoreAsync(SlmpCommand.LabelReadRandom, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
-        return SlmpPayloads.ParseRandomLabelReadResponse(data);
+        return SlmpPayloads.ParseRandomLabelReadResponse(data, requestedLabels.Length);
     }
 
     /// <summary>
@@ -1328,6 +1374,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<string>? abbreviationLabels = null,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(points);
         var abbrevs = abbreviationLabels ?? [];
         var payload = SlmpPayloads.BuildLabelRandomWritePayload(points, abbrevs);
         _ = await RequestCoreAsync(SlmpCommand.LabelWriteRandom, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
@@ -1384,6 +1431,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<ushort> values,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(values);
         ValidateMemoryWordLength(values.Count, "memory_write");
         var payload = new byte[6 + values.Count * 2];
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0, 4), headAddress);
@@ -1492,6 +1540,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<ushort> values,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(values);
         ValidateExtendUnitWordLength(values.Count, "extend_unit_write_words");
         var wordBytes = new byte[values.Count * 2];
         for (var i = 0; i < values.Count; i++)
@@ -1629,6 +1678,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     }
 
     /// <summary>Runs one explicit maintainer raw command and returns its response payload.</summary>
+    /// <param name="command">Command code.</param>
+    /// <param name="subcommand">Subcommand code.</param>
+    /// <param name="payload">
+    /// Command payload. Over TCP its length must not exceed 65,529 bytes because the request
+    /// data-length field also contains the six-byte monitoring timer, command, and subcommand
+    /// prefix. IPv4 UDP limits are 65,492 bytes for 3E and 65,488 bytes for 4E.
+    /// </param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <remarks>Oversized commands are rejected before transport and are not split automatically.</remarks>
     [EditorBrowsable(EditorBrowsableState.Never)]
     public Task<byte[]> RawCommandAsync(
         SlmpCommand command,
@@ -1644,9 +1702,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         bool expectResponse,
         CancellationToken cancellationToken)
     {
+        ThrowIfDisposed();
+        _ = ValidateRequestPayloadLength(payload.Length, nameof(payload));
         await _requestGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            ThrowIfDisposed();
             if (_requiresExplicitOpen)
                 throw new InvalidOperationException("The previous exchange invalidated the transport. Call OpenAsync explicitly before another request.");
             if (!IsOpen) await OpenAsync(cancellationToken).ConfigureAwait(false);
@@ -1755,8 +1816,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private byte[] BuildRequestFrame(SlmpCommand command, ushort subcommand, ReadOnlySpan<byte> payload)
     {
+        var payloadLength = ValidateRequestPayloadLength(payload.Length, nameof(payload));
         var headerSize = FrameType == SlmpFrameType.Frame4E ? 19 : 15;
-        var frame = new byte[headerSize + payload.Length];
+        var frame = new byte[headerSize + payloadLength];
         if (FrameType == SlmpFrameType.Frame4E)
         {
             frame[0] = 0x54; frame[1] = 0x00;
@@ -1765,7 +1827,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             frame[7] = TargetAddress.Station;
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(8, 2), TargetAddress.ModuleIo);
             frame[10] = TargetAddress.Multidrop;
-            BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(11, 2), checked((ushort)(6 + payload.Length)));
+            BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(11, 2), checked((ushort)(6 + payloadLength)));
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(13, 2), MonitoringTimer);
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(15, 2), (ushort)command);
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(17, 2), subcommand);
@@ -1777,7 +1839,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             frame[3] = TargetAddress.Station;
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(4, 2), TargetAddress.ModuleIo);
             frame[6] = TargetAddress.Multidrop;
-            BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(7, 2), checked((ushort)(6 + payload.Length)));
+            BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(7, 2), checked((ushort)(6 + payloadLength)));
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(9, 2), MonitoringTimer);
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(11, 2), (ushort)command);
             BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(13, 2), subcommand);
@@ -1786,6 +1848,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         payload.CopyTo(frame.AsSpan(headerSize));
         return frame;
     }
+
+    private int ValidateRequestPayloadLength(long payloadLength, string parameterName)
+        => SlmpValidation.ValidateRequestPayloadLength(
+            payloadLength,
+            parameterName,
+            SlmpValidation.GetMaxRequestPayloadLength(_transportMode, FrameType));
 
     private static async Task<byte[]> ReceiveTcpFrameAsync(
         NetworkStream stream,
@@ -2084,6 +2152,27 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var limit = DirectPointLimit(bitUnit: false, SlmpProfileLimit.DirectWordRead);
         if (totalPoints > limit)
             throw new ArgumentOutOfRangeException(nameof(wordBlocks), $"read_block total device points out of range (<={limit}): total_points={totalPoints}");
+    }
+
+    private static void ValidateNoNullBlockReadElements(IReadOnlyList<SlmpBlockRead> blocks, string parameterName)
+    {
+        for (var index = 0; index < blocks.Count; index++)
+        {
+            if (blocks[index] is null)
+                throw new ArgumentException($"Block collection contains null at index {index}.", parameterName);
+        }
+    }
+
+    private static void ValidateNoNullBlockWriteElements(IReadOnlyList<SlmpBlockWrite> blocks, string parameterName)
+    {
+        for (var index = 0; index < blocks.Count; index++)
+        {
+            var block = blocks[index];
+            if (block is null)
+                throw new ArgumentException($"Block collection contains null at index {index}.", parameterName);
+            if (block.Values is null)
+                throw new ArgumentException($"Block at index {index} has null Values.", parameterName);
+        }
     }
 
     private void ValidateBlockWriteLimits(IReadOnlyList<SlmpBlockWrite> wordBlocks, IReadOnlyList<SlmpBlockWrite> bitBlocks)

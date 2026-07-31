@@ -34,8 +34,7 @@ public static class SlmpClientFactory
             throw new ArgumentOutOfRangeException(nameof(options), "Port must be in the range 1-65535.");
         if (!Enum.IsDefined(options.Transport))
             throw new ArgumentOutOfRangeException(nameof(options), "Transport must be TCP or UDP.");
-        if (options.Timeout <= TimeSpan.Zero || options.Timeout > TimeSpan.FromMilliseconds(int.MaxValue))
-            throw new ArgumentOutOfRangeException(nameof(options), "Timeout must be greater than zero and within the supported timer range.");
+        _ = SlmpValidation.ValidateTimeout(options.Timeout, nameof(options));
 
         var inner = new SlmpClient(options.Host, options.PlcProfile, options.Port, options.Transport, options.Target)
         {

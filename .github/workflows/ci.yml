@@ -39,6 +39,17 @@ jobs:
       - name: Test
         run: dotnet test PlcComm.Slmp.sln -c Release --no-build --logger "trx;LogFileName=test-results.trx"
 
+      - name: Verify exported source archive
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP "plc-comm-slmp-dotnet-source.zip"
+          $extract = Join-Path $env:RUNNER_TEMP "plc-comm-slmp-dotnet-source"
+          git archive --format=zip --output=$archive HEAD
+          Expand-Archive -LiteralPath $archive -DestinationPath $extract
+          dotnet restore (Join-Path $extract "PlcComm.Slmp.sln")
+          dotnet build (Join-Path $extract "PlcComm.Slmp.sln") -c Release --no-restore
+          dotnet test (Join-Path $extract "PlcComm.Slmp.sln") -c Release --no-build
+
       - name: Format check
         run: dotnet format PlcComm.Slmp.sln --verify-no-changes --no-restore
 

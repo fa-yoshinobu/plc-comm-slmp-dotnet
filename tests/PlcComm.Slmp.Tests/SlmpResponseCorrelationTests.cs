@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 
@@ -42,6 +43,163 @@ public sealed class SlmpResponseCorrelationTests
             }
             return cases;
         }
+    }
+
+    [Theory]
+    [InlineData(SlmpFrameType.Frame3E)]
+    [InlineData(SlmpFrameType.Frame4E)]
+    public async Task RawCommand_MaximumTcpPayloadEncodesTheMaximumRequestDataLength(SlmpFrameType frameType)
+    {
+        byte[]? capturedRequest = null;
+        await using var server = new ScriptedSlmpServer(
+            SlmpTransportMode.Tcp,
+            frameType,
+            async (request, send, _) =>
+            {
+                capturedRequest = request;
+                var dataLengthOffset = frameType == SlmpFrameType.Frame4E ? 11 : 7;
+                Assert.Equal(
+                    ushort.MaxValue,
+                    BinaryPrimitives.ReadUInt16LittleEndian(request.AsSpan(dataLengthOffset, 2)));
+                await send(BuildResponse(request, frameType)).ConfigureAwait(false);
+            });
+        await server.StartAsync();
+        using var client = CreateClient(
+            server.Port,
+            SlmpTransportMode.Tcp,
+            frameType,
+            TimeSpan.FromSeconds(2));
+
+        _ = await client.RawCommandAsync(
+            SlmpCommand.ClearError,
+            0x0000,
+            new byte[SlmpValidation.MaxRequestPayloadLength]);
+
+        var request = Assert.IsType<byte[]>(capturedRequest);
+        Assert.Equal(
+            (frameType == SlmpFrameType.Frame4E ? 19 : 15) + SlmpValidation.MaxRequestPayloadLength,
+            request.Length);
+    }
+
+    [Theory]
+    [InlineData(SlmpFrameType.Frame3E)]
+    [InlineData(SlmpFrameType.Frame4E)]
+    public async Task RawCommand_OversizedPayloadFailsBeforeTransportTraceStatsAndSerial(SlmpFrameType frameType)
+    {
+        byte[]? capturedRequest = null;
+        await using var server = new ScriptedSlmpServer(
+            SlmpTransportMode.Tcp,
+            frameType,
+            async (request, send, _) =>
+            {
+                capturedRequest = request;
+                await send(BuildResponse(request, frameType)).ConfigureAwait(false);
+            });
+        await server.StartAsync();
+        using var client = CreateClient(
+            server.Port,
+            SlmpTransportMode.Tcp,
+            frameType,
+            TimeSpan.FromSeconds(2));
+        var traceCount = 0;
+        client.MaintainerTraceHook = _ => traceCount++;
+
+        var error = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.RawCommandAsync(
+                SlmpCommand.ClearError,
+                0x0000,
+                new byte[SlmpValidation.MaxRequestPayloadLength + 1]));
+
+        Assert.Equal("payload", error.ParamName);
+        Assert.Equal(
+            (long)SlmpValidation.MaxRequestPayloadLength + 1,
+            Assert.IsType<long>(error.ActualValue));
+        Assert.Contains("65530", error.Message, StringComparison.Ordinal);
+        Assert.Contains("65529", error.Message, StringComparison.Ordinal);
+        Assert.False(client.IsOpen);
+        Assert.Null(capturedRequest);
+        Assert.Empty(client.LastRequestFrame);
+        Assert.Equal(0, traceCount);
+        Assert.Equal(default, client.TrafficStats);
+
+        _ = await client.RawCommandAsync(
+            SlmpCommand.ClearError,
+            0x0000,
+            ReadOnlyMemory<byte>.Empty);
+
+        var validRequest = Assert.IsType<byte[]>(capturedRequest);
+        if (frameType == SlmpFrameType.Frame4E)
+        {
+            Assert.Equal(
+                0,
+                BinaryPrimitives.ReadUInt16LittleEndian(validRequest.AsSpan(2, 2)));
+        }
+    }
+
+    [Theory]
+    [InlineData(SlmpFrameType.Frame3E, 65492)]
+    [InlineData(SlmpFrameType.Frame4E, 65488)]
+    public async Task RawCommand_MaximumUdpPayloadFillsOneIpv4Datagram(
+        SlmpFrameType frameType,
+        int maximumPayloadLength)
+    {
+        byte[]? capturedRequest = null;
+        await using var server = new ScriptedSlmpServer(
+            SlmpTransportMode.Udp,
+            frameType,
+            async (request, send, _) =>
+            {
+                capturedRequest = request;
+                await send(BuildResponse(request, frameType)).ConfigureAwait(false);
+            });
+        await server.StartAsync();
+        using var client = CreateClient(
+            server.Port,
+            SlmpTransportMode.Udp,
+            frameType,
+            TimeSpan.FromSeconds(2));
+
+        _ = await client.RawCommandAsync(
+            SlmpCommand.ClearError,
+            0x0000,
+            new byte[maximumPayloadLength]);
+
+        Assert.Equal(
+            SlmpValidation.MaxIpv4UdpDatagramLength,
+            Assert.IsType<byte[]>(capturedRequest).Length);
+    }
+
+    [Theory]
+    [InlineData(SlmpFrameType.Frame3E, 65492)]
+    [InlineData(SlmpFrameType.Frame4E, 65488)]
+    public async Task RawCommand_OversizedUdpPayloadFailsBeforeOpenAndIo(
+        SlmpFrameType frameType,
+        int maximumPayloadLength)
+    {
+        using var client = CreateClient(
+            1,
+            SlmpTransportMode.Udp,
+            frameType,
+            TimeSpan.FromSeconds(2));
+        var traceCount = 0;
+        client.MaintainerTraceHook = _ => traceCount++;
+
+        var error = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.RawCommandAsync(
+                SlmpCommand.ClearError,
+                0x0000,
+                new byte[maximumPayloadLength + 1]));
+
+        Assert.Equal("payload", error.ParamName);
+        Assert.Equal((long)maximumPayloadLength + 1, Assert.IsType<long>(error.ActualValue));
+        Assert.Contains(
+            maximumPayloadLength.ToString(CultureInfo.InvariantCulture),
+            error.Message,
+            StringComparison.Ordinal);
+        Assert.False(client.IsOpen);
+        Assert.Empty(client.LastRequestFrame);
+        Assert.Equal(0, traceCount);
+        Assert.Equal(default, client.TrafficStats);
     }
 
     [Theory]

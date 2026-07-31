@@ -353,17 +353,25 @@ internal static class SlmpPayloads
     internal static byte[] BuildLabelArrayReadPayload(IReadOnlyList<SlmpLabelArrayReadPoint> points, IReadOnlyList<string> abbreviationLabels)
     {
         ValidateLabelCounts(points, abbreviationLabels);
-        foreach (var point in points)
+        for (var index = 0; index < points.Count; index++)
         {
-            ValidateAbbreviationReferences(point.Label, abbreviationLabels.Count);
-            if (point.ArrayDataLength == 0)
-                throw new ArgumentOutOfRangeException(nameof(points), "Array label read length must be greater than zero.");
+            var point = points[index];
+            if (point is null)
+                throw new ArgumentException($"The point collection contains null at index {index}.", nameof(points));
+            ValidateAbbreviationReferences(point.Label, abbreviationLabels.Count, nameof(points));
+            _ = GetArrayWireByteCount(point.UnitSpecification, point.ArrayDataLength, nameof(points));
         }
         var size = 4;
         foreach (var name in abbreviationLabels)
-            size += GetEncodedLabelNameSize(name);
+            size = SlmpValidation.AddRequestPayloadLength(
+                size,
+                GetEncodedLabelNameSize(name),
+                nameof(abbreviationLabels));
         foreach (var pt in points)
-            size += GetEncodedLabelNameSize(pt.Label) + 4;
+            size = SlmpValidation.AddRequestPayloadLength(
+                size,
+                (long)GetEncodedLabelNameSize(pt.Label) + 4,
+                nameof(points));
 
         var payload = new byte[size];
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(0, 2), checked((ushort)points.Count));
@@ -386,17 +394,33 @@ internal static class SlmpPayloads
     internal static byte[] BuildLabelArrayWritePayload(IReadOnlyList<SlmpLabelArrayWritePoint> points, IReadOnlyList<string> abbreviationLabels)
     {
         ValidateLabelCounts(points, abbreviationLabels);
-        foreach (var point in points)
+        for (var index = 0; index < points.Count; index++)
         {
-            ValidateAbbreviationReferences(point.Label, abbreviationLabels.Count);
-            if (point.ArrayDataLength == 0 || point.Data.Length == 0)
-                throw new ArgumentOutOfRangeException(nameof(points), "Array label write length and data must not be empty.");
+            var point = points[index];
+            if (point is null)
+                throw new ArgumentException($"The point collection contains null at index {index}.", nameof(points));
+            ValidateAbbreviationReferences(point.Label, abbreviationLabels.Count, nameof(points));
+            if (point.Data is null)
+                throw new ArgumentException($"Point.Data must not be null at index {index}.", nameof(points));
+            var expectedDataLength = GetArrayWireByteCount(point.UnitSpecification, point.ArrayDataLength, nameof(points));
+            if (point.Data.Length != expectedDataLength)
+            {
+                throw new ArgumentException(
+                    $"Array label data length mismatch at index {index}: expected={expectedDataLength}, actual={point.Data.Length}.",
+                    nameof(points));
+            }
         }
         var size = 4;
         foreach (var name in abbreviationLabels)
-            size += GetEncodedLabelNameSize(name);
+            size = SlmpValidation.AddRequestPayloadLength(
+                size,
+                GetEncodedLabelNameSize(name),
+                nameof(abbreviationLabels));
         foreach (var pt in points)
-            size += GetEncodedLabelNameSize(pt.Label) + 4 + pt.Data.Length;
+            size = SlmpValidation.AddRequestPayloadLength(
+                size,
+                (long)GetEncodedLabelNameSize(pt.Label) + 4 + pt.Data.Length,
+                nameof(points));
 
         var payload = new byte[size];
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(0, 2), checked((ushort)points.Count));
@@ -422,12 +446,18 @@ internal static class SlmpPayloads
     {
         ValidateLabelCounts(labels, abbreviationLabels);
         foreach (var label in labels)
-            ValidateAbbreviationReferences(label, abbreviationLabels.Count);
+            ValidateAbbreviationReferences(label, abbreviationLabels.Count, nameof(labels));
         var size = 4;
         foreach (var name in abbreviationLabels)
-            size += GetEncodedLabelNameSize(name);
+            size = SlmpValidation.AddRequestPayloadLength(
+                size,
+                GetEncodedLabelNameSize(name),
+                nameof(abbreviationLabels));
         foreach (var label in labels)
-            size += GetEncodedLabelNameSize(label);
+            size = SlmpValidation.AddRequestPayloadLength(
+                size,
+                GetEncodedLabelNameSize(label),
+                nameof(labels));
 
         var payload = new byte[size];
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(0, 2), checked((ushort)labels.Count));
@@ -443,17 +473,39 @@ internal static class SlmpPayloads
     internal static byte[] BuildLabelRandomWritePayload(IReadOnlyList<SlmpLabelRandomWritePoint> points, IReadOnlyList<string> abbreviationLabels)
     {
         ValidateLabelCounts(points, abbreviationLabels);
-        foreach (var point in points)
+        for (var index = 0; index < points.Count; index++)
         {
-            ValidateAbbreviationReferences(point.Label, abbreviationLabels.Count);
-            if (point.Data.Length == 0)
-                throw new ArgumentOutOfRangeException(nameof(points), "Random label write data must not be empty.");
+            var point = points[index];
+            if (point is null)
+                throw new ArgumentException($"The point collection contains null at index {index}.", nameof(points));
+            ValidateAbbreviationReferences(point.Label, abbreviationLabels.Count, nameof(points));
+            if (point.Data is null)
+                throw new ArgumentException($"Point.Data must not be null at index {index}.", nameof(points));
+            if (point.Data.Length > ushort.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(points),
+                    point.Data.Length,
+                    $"Random label write data length actual={point.Data.Length} exceeds maximum={ushort.MaxValue} bytes at index {index}.");
+            }
+            if (point.Data.Length == 0 || (point.Data.Length & 1) != 0)
+            {
+                throw new ArgumentException(
+                    $"Random label write data length must be a positive multiple of two bytes at index {index}; actual={point.Data.Length}.",
+                    nameof(points));
+            }
         }
         var size = 4;
         foreach (var name in abbreviationLabels)
-            size += GetEncodedLabelNameSize(name);
+            size = SlmpValidation.AddRequestPayloadLength(
+                size,
+                GetEncodedLabelNameSize(name),
+                nameof(abbreviationLabels));
         foreach (var pt in points)
-            size += GetEncodedLabelNameSize(pt.Label) + 2 + pt.Data.Length;
+            size = SlmpValidation.AddRequestPayloadLength(
+                size,
+                (long)GetEncodedLabelNameSize(pt.Label) + 2 + pt.Data.Length,
+                nameof(points));
 
         var payload = new byte[size];
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(0, 2), checked((ushort)points.Count));
@@ -473,39 +525,104 @@ internal static class SlmpPayloads
         return payload;
     }
 
-    internal static SlmpLabelArrayReadResult[] ParseArrayLabelReadResponse(byte[] data)
+    internal static SlmpLabelArrayReadResult[] ParseArrayLabelReadResponse(
+        byte[] data,
+        IReadOnlyList<SlmpLabelArrayReadPoint> requestedPoints)
     {
-        var count = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(0, 2));
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(requestedPoints);
+        var reader = new PayloadReader(data, "array-label response");
+        var count = reader.ReadUInt16LittleEndian("number of array points");
+        if (count != requestedPoints.Count)
+        {
+            throw new SlmpError(
+                $"Malformed array-label response: response count={count}, requested count={requestedPoints.Count}.");
+        }
+
         var results = new SlmpLabelArrayReadResult[count];
-        var offset = 2;
         for (var i = 0; i < count; i++)
         {
-            var dtId = data[offset];
-            var uSpec = data[offset + 1];
-            var aLen = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(offset + 2, 2));
-            offset += 4;
-            var dataSize = uSpec == 0 ? aLen * 2 : aLen;
-            results[i] = new SlmpLabelArrayReadResult(dtId, uSpec, aLen, data[offset..(offset + dataSize)]);
-            offset += dataSize;
+            var dtId = reader.ReadByte($"item {i + 1} data type ID");
+            var uSpec = reader.ReadByte($"item {i + 1} read unit specification");
+            var aLen = reader.ReadUInt16LittleEndian($"item {i + 1} read array data length");
+            if (uSpec is not 0 and not 1)
+            {
+                throw new SlmpError(
+                    $"Malformed array-label response: item={i + 1}, unit specification={uSpec}; expected 0 or 1.");
+            }
+            if (aLen == 0)
+            {
+                throw new SlmpError($"Malformed array-label response: item={i + 1}, array data length must be greater than zero.");
+            }
+
+            var requested = requestedPoints[i];
+            if (requested is null)
+                throw new ArgumentException($"The requested point collection contains null at index {i}.", nameof(requestedPoints));
+            if (uSpec != requested.UnitSpecification || aLen != requested.ArrayDataLength)
+            {
+                throw new SlmpError(
+                    $"Malformed array-label response: item={i + 1}, response unit/length={uSpec}/{aLen}, requested={requested.UnitSpecification}/{requested.ArrayDataLength}.");
+            }
+
+            var dataSize = GetArrayWireByteCount(uSpec, aLen, nameof(data));
+            results[i] = new SlmpLabelArrayReadResult(
+                dtId,
+                uSpec,
+                aLen,
+                reader.ReadBytes(dataSize, $"item {i + 1} read data").ToArray());
         }
+
+        reader.EnsureFullyConsumed();
         return results;
     }
 
-    internal static SlmpLabelRandomReadResult[] ParseRandomLabelReadResponse(byte[] data)
+    internal static SlmpLabelRandomReadResult[] ParseRandomLabelReadResponse(byte[] data, int expectedCount)
     {
-        var count = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(0, 2));
+        ArgumentNullException.ThrowIfNull(data);
+        if (expectedCount is < 1 or > ushort.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(expectedCount));
+        var reader = new PayloadReader(data, "random-label response");
+        var count = reader.ReadUInt16LittleEndian("number of read data points");
+        if (count != expectedCount)
+        {
+            throw new SlmpError(
+                $"Malformed random-label response: response count={count}, requested count={expectedCount}.");
+        }
+
         var results = new SlmpLabelRandomReadResult[count];
-        var offset = 2;
         for (var i = 0; i < count; i++)
         {
-            var dtId = data[offset];
-            var spare = data[offset + 1];
-            var rLen = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(offset + 2, 2));
-            offset += 4;
-            results[i] = new SlmpLabelRandomReadResult(dtId, spare, rLen, data[offset..(offset + rLen)]);
-            offset += rLen;
+            var dtId = reader.ReadByte($"item {i + 1} data type ID");
+            var spare = reader.ReadByte($"item {i + 1} spare data");
+            var rLen = reader.ReadUInt16LittleEndian($"item {i + 1} read data length");
+            if (rLen == 0 || (rLen & 1) != 0)
+            {
+                throw new SlmpError(
+                    $"Malformed random-label response: item={i + 1}, read data length={rLen}; expected a positive multiple of two bytes.");
+            }
+            results[i] = new SlmpLabelRandomReadResult(
+                dtId,
+                spare,
+                rLen,
+                reader.ReadBytes(rLen, $"item {i + 1} read data").ToArray());
         }
+
+        reader.EnsureFullyConsumed();
         return results;
+    }
+
+    internal static int GetArrayWireByteCount(byte unitSpecification, ushort arrayDataLength, string parameterName)
+    {
+        if (arrayDataLength == 0)
+            throw new ArgumentOutOfRangeException(parameterName, "Array data length must be greater than zero.");
+        return unitSpecification switch
+        {
+            0 => (((int)arrayDataLength + 15) / 16) * 2,
+            1 => (((int)arrayDataLength + 1) / 2) * 2,
+            _ => throw new ArgumentOutOfRangeException(
+                parameterName,
+                "UnitSpecification must be 0 (bit) or 1 (byte)."),
+        };
     }
 
     private static int GetEncodedLabelNameSize(string label)
@@ -536,12 +653,18 @@ internal static class SlmpPayloads
             throw new ArgumentOutOfRangeException(nameof(points), "Label point count must be in the range 1..65535.");
         if (abbreviationLabels.Count > ushort.MaxValue)
             throw new ArgumentOutOfRangeException(nameof(abbreviationLabels), "Abbreviation label count must be at most 65535.");
-        foreach (var label in abbreviationLabels)
-            _ = GetEncodedLabelNameSize(label);
+        for (var index = 0; index < abbreviationLabels.Count; index++)
+        {
+            if (string.IsNullOrWhiteSpace(abbreviationLabels[index]))
+                throw new ArgumentException($"Abbreviation label at index {index} must not be empty.", nameof(abbreviationLabels));
+            _ = GetEncodedLabelNameSize(abbreviationLabels[index]);
+        }
     }
 
-    private static void ValidateAbbreviationReferences(string label, int abbreviationCount)
+    private static void ValidateAbbreviationReferences(string label, int abbreviationCount, string parameterName)
     {
+        if (string.IsNullOrWhiteSpace(label))
+            throw new ArgumentException("Label name must not be empty.", parameterName);
         _ = GetEncodedLabelNameSize(label);
         for (var index = 0; index < label.Length; index++)
         {
@@ -557,9 +680,50 @@ internal static class SlmpPayloads
             {
                 throw new ArgumentException(
                     $"Label '{label}' contains an invalid abbreviation reference; use %1 through %{abbreviationCount}.",
-                    nameof(label));
+                    parameterName);
             }
             index = digitEnd - 1;
+        }
+    }
+
+    private ref struct PayloadReader
+    {
+        private readonly ReadOnlySpan<byte> _data;
+        private readonly string _context;
+        private int _offset;
+
+        internal PayloadReader(ReadOnlySpan<byte> data, string context)
+        {
+            _data = data;
+            _context = context;
+            _offset = 0;
+        }
+
+        internal byte ReadByte(string field)
+            => ReadBytes(1, field)[0];
+
+        internal ushort ReadUInt16LittleEndian(string field)
+            => BinaryPrimitives.ReadUInt16LittleEndian(ReadBytes(2, field));
+
+        internal ReadOnlySpan<byte> ReadBytes(int count, string field)
+        {
+            var remaining = _data.Length - _offset;
+            if (count < 0 || remaining < count)
+            {
+                throw new SlmpError(
+                    $"Malformed {_context}: field={field}, required={count}, remaining={remaining}.");
+            }
+
+            var result = _data.Slice(_offset, count);
+            _offset += count;
+            return result;
+        }
+
+        internal void EnsureFullyConsumed()
+        {
+            var remaining = _data.Length - _offset;
+            if (remaining != 0)
+                throw new SlmpError($"Malformed {_context}: trailing bytes={remaining}.");
         }
     }
 

@@ -432,6 +432,8 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ArgumentNullException.ThrowIfNull(wordDevices);
+        ArgumentNullException.ThrowIfNull(dwordDevices);
         var wordSnapshot = wordDevices.ToArray();
         var dwordSnapshot = dwordDevices.ToArray();
         return ExecuteAsync(
@@ -446,6 +448,8 @@ public sealed class QueuedSlmpClient : IAsyncDisposable, IDisposable
         CancellationToken cancellationToken = default
     )
     {
+        ArgumentNullException.ThrowIfNull(wordDevices);
+        ArgumentNullException.ThrowIfNull(dwordDevices);
         var wordSnapshot = wordDevices.ToArray();
         var dwordSnapshot = dwordDevices.ToArray();
         return ExecuteAsync(

@@ -88,6 +88,7 @@ public static class SlmpQualifiedDeviceParser
     /// </summary>
     public static SlmpQualifiedDeviceAddress Parse(string text, SlmpPlcProfile plcProfile)
     {
+        ArgumentNullException.ThrowIfNull(text);
         if (string.IsNullOrWhiteSpace(text))
         {
             throw new ArgumentException("Device text is required.", nameof(text));
@@ -154,6 +155,7 @@ public static class SlmpTargetParser
     /// </summary>
     public static SlmpNamedTarget ParseNamed(string text)
     {
+        ArgumentNullException.ThrowIfNull(text);
         if (string.IsNullOrWhiteSpace(text))
         {
             throw new ArgumentException("target text is required", nameof(text));
@@ -188,9 +190,16 @@ public static class SlmpTargetParser
     /// </summary>
     public static IReadOnlyList<SlmpNamedTarget> ParseMany(IReadOnlyList<string> values)
     {
+        ArgumentNullException.ThrowIfNull(values);
         if (values.Count == 0)
         {
             throw new ArgumentException("At least one explicit target is required.", nameof(values));
+        }
+
+        for (var index = 0; index < values.Count; index++)
+        {
+            if (values[index] is null)
+                throw new ArgumentException($"Target collection contains null at index {index}.", nameof(values));
         }
 
         return values.Select(ParseNamed).ToArray();
@@ -220,6 +229,7 @@ public static class SlmpTargetParser
     /// </summary>
     public static int ParseAutoNumber(string text)
     {
+        ArgumentNullException.ThrowIfNull(text);
         if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
         {
             return Convert.ToInt32(text[2..], 16);

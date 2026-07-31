@@ -750,13 +750,19 @@ Closes the connection to the PLC asynchronously.
 public void Dispose()
 ```
 
-Disposes the client and closes the connection.
+Disposes the client and permanently closes the connection.
+
+Remarks: Unlike `Close`, disposal is terminal. Later open and request operations throw `ObjectDisposedException`.
 
 ##### DisposeAsync
 
 ```csharp
 public ValueTask DisposeAsync()
 ```
+
+Asynchronously disposes the client and permanently closes the connection.
+
+Remarks: Disposal is terminal and idempotent. Later open and request operations throw `ObjectDisposedException`.
 
 ##### OpenAndConnectAsync
 
@@ -1397,7 +1403,7 @@ Gets or sets the monitoring timer value (multiples of 250ms). Default is 0x0010 
 public TimeSpan Timeout { get; set; }
 ```
 
-Gets or sets the communication timeout. Values must be from 1 millisecond through `MaxValue` milliseconds.
+Gets or sets the communication timeout. Values must be from 1 millisecond through `int.MaxValue` milliseconds.
 
 ##### IsOpen
 
@@ -2240,7 +2246,7 @@ public TimeSpan Timeout { get; set; }
 
 Gets or sets the communication timeout for the underlying transport.
 
-Remarks: This timeout applies to individual request/response exchanges after the session is opened.
+Remarks: This timeout applies to individual request/response exchanges after the session is opened. Values must be from 1 millisecond through `int.MaxValue` milliseconds.
 
 ##### MonitoringTimer
 
@@ -3286,7 +3292,7 @@ public ushort ArrayDataLength { get; set; }
 public sealed class SlmpLabelArrayReadResult
 ```
 
-Result item returned by `ReadArrayLabelsAsync`.
+Result item returned by `ReadArrayLabelsAsync`. `Data` contains the protocol's two-byte-padded wire representation: bit units use `ceil(ArrayDataLength / 16) * 2` bytes and byte units use `ceil(ArrayDataLength / 2) * 2` bytes.
 
 #### Members
 
@@ -3296,7 +3302,7 @@ Result item returned by `ReadArrayLabelsAsync`.
 public SlmpLabelArrayReadResult(byte DataTypeId, byte UnitSpecification, ushort ArrayDataLength, byte[] Data)
 ```
 
-Result item returned by `ReadArrayLabelsAsync`.
+Result item returned by `ReadArrayLabelsAsync`. `Data` contains the protocol's two-byte-padded wire representation: bit units use `ceil(ArrayDataLength / 16) * 2` bytes and byte units use `ceil(ArrayDataLength / 2) * 2` bytes.
 
 ##### DataTypeId
 
@@ -3328,7 +3334,9 @@ public byte[] Data { get; set; }
 public sealed class SlmpLabelArrayWritePoint
 ```
 
-Describes one array label to write, including the raw data bytes.
+Describes one array label to write, including the raw wire data bytes.
+
+Remarks: The PLC returns an end code when the unit does not match the configured label type.
 
 #### Members
 
@@ -3338,7 +3346,15 @@ Describes one array label to write, including the raw data bytes.
 public SlmpLabelArrayWritePoint(string Label, byte UnitSpecification, ushort ArrayDataLength, byte[] Data)
 ```
 
-Describes one array label to write, including the raw data bytes.
+Describes one array label to write, including the raw wire data bytes.
+
+Remarks: The PLC returns an end code when the unit does not match the configured label type.
+
+Parameters:
+- `Label`: Label name.
+- `UnitSpecification`: Logical length unit: 0 for bits or 1 for bytes.
+- `ArrayDataLength`: Logical length expressed in `UnitSpecification` units.
+- `Data`: Raw data padded to a two-byte boundary. Its length must be exactly `ceil(ArrayDataLength / 16) * 2` for bit units or `ceil(ArrayDataLength / 2) * 2` for byte units.
 
 ##### Label
 
@@ -3346,11 +3362,15 @@ Describes one array label to write, including the raw data bytes.
 public string Label { get; set; }
 ```
 
+Label name.
+
 ##### UnitSpecification
 
 ```csharp
 public byte UnitSpecification { get; set; }
 ```
+
+Logical length unit: 0 for bits or 1 for bytes.
 
 ##### ArrayDataLength
 
@@ -3358,11 +3378,15 @@ public byte UnitSpecification { get; set; }
 public ushort ArrayDataLength { get; set; }
 ```
 
+Logical length expressed in `UnitSpecification` units.
+
 ##### Data
 
 ```csharp
 public byte[] Data { get; set; }
 ```
+
+Raw data padded to a two-byte boundary. Its length must be exactly `ceil(ArrayDataLength / 16) * 2` for bit units or `ceil(ArrayDataLength / 2) * 2` for byte units.
 
 ### SlmpLabelRandomReadResult
 
@@ -3370,7 +3394,7 @@ public byte[] Data { get; set; }
 public sealed class SlmpLabelRandomReadResult
 ```
 
-Result item returned by `ReadRandomLabelsAsync`.
+Result item returned by `ReadRandomLabelsAsync`. `ReadDataLength` is a positive even wire-byte count, and `Spare` is preserved exactly as returned by the PLC.
 
 #### Members
 
@@ -3380,7 +3404,7 @@ Result item returned by `ReadRandomLabelsAsync`.
 public SlmpLabelRandomReadResult(byte DataTypeId, byte Spare, ushort ReadDataLength, byte[] Data)
 ```
 
-Result item returned by `ReadRandomLabelsAsync`.
+Result item returned by `ReadRandomLabelsAsync`. `ReadDataLength` is a positive even wire-byte count, and `Spare` is preserved exactly as returned by the PLC.
 
 ##### DataTypeId
 
@@ -3412,7 +3436,7 @@ public byte[] Data { get; set; }
 public sealed class SlmpLabelRandomWritePoint
 ```
 
-Describes one random label write point.
+Describes one random label write point. `Data` must contain a positive, even number of raw wire bytes, including any required string terminator or padding.
 
 #### Members
 
@@ -3422,7 +3446,7 @@ Describes one random label write point.
 public SlmpLabelRandomWritePoint(string Label, byte[] Data)
 ```
 
-Describes one random label write point.
+Describes one random label write point. `Data` must contain a positive, even number of raw wire bytes, including any required string terminator or padding.
 
 ##### Label
 

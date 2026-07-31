@@ -159,22 +159,37 @@ public sealed record SlmpMonitorResult(ushort[] WordValues, uint[] DwordValues);
 public sealed record SlmpLabelArrayReadPoint(string Label, byte UnitSpecification, ushort ArrayDataLength);
 
 /// <summary>
-/// Describes one array label to write, including the raw data bytes.
+/// Describes one array label to write, including the raw wire data bytes.
 /// </summary>
+/// <param name="Label">Label name.</param>
+/// <param name="UnitSpecification">Logical length unit: 0 for bits or 1 for bytes.</param>
+/// <param name="ArrayDataLength">Logical length expressed in <paramref name="UnitSpecification"/> units.</param>
+/// <param name="Data">
+/// Raw data padded to a two-byte boundary. Its length must be exactly
+/// <c>ceil(ArrayDataLength / 16) * 2</c> for bit units or
+/// <c>ceil(ArrayDataLength / 2) * 2</c> for byte units.
+/// </param>
+/// <remarks>The PLC returns an end code when the unit does not match the configured label type.</remarks>
 public sealed record SlmpLabelArrayWritePoint(string Label, byte UnitSpecification, ushort ArrayDataLength, byte[] Data);
 
 /// <summary>
-/// Describes one random label write point.
+/// Describes one random label write point. <see cref="Data"/> must contain a positive,
+/// even number of raw wire bytes, including any required string terminator or padding.
 /// </summary>
 public sealed record SlmpLabelRandomWritePoint(string Label, byte[] Data);
 
 /// <summary>
-/// Result item returned by <c>ReadArrayLabelsAsync</c>.
+/// Result item returned by <c>ReadArrayLabelsAsync</c>. <see cref="Data"/> contains
+/// the protocol's two-byte-padded wire representation: bit units use
+/// <c>ceil(ArrayDataLength / 16) * 2</c> bytes and byte units use
+/// <c>ceil(ArrayDataLength / 2) * 2</c> bytes.
 /// </summary>
 public sealed record SlmpLabelArrayReadResult(byte DataTypeId, byte UnitSpecification, ushort ArrayDataLength, byte[] Data);
 
 /// <summary>
-/// Result item returned by <c>ReadRandomLabelsAsync</c>.
+/// Result item returned by <c>ReadRandomLabelsAsync</c>. <see cref="ReadDataLength"/>
+/// is a positive even wire-byte count, and <see cref="Spare"/> is preserved exactly
+/// as returned by the PLC.
 /// </summary>
 public sealed record SlmpLabelRandomReadResult(byte DataTypeId, byte Spare, ushort ReadDataLength, byte[] Data);
 
@@ -253,10 +268,12 @@ public static class SlmpDeviceParser
     /// <param name="text">The device string to parse.</param>
     /// <param name="plcProfile">The canonical PLC profile that defines address interpretation.</param>
     /// <returns>A parsed device address object.</returns>
-    /// <exception cref="ArgumentException">Thrown when text is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="text"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="text"/> is empty or whitespace.</exception>
     /// <exception cref="FormatException">Thrown when the device format is invalid.</exception>
     public static SlmpDeviceAddress Parse(string text, SlmpPlcProfile plcProfile)
     {
+        ArgumentNullException.ThrowIfNull(text);
         if (string.IsNullOrWhiteSpace(text))
         {
             throw new ArgumentException("Device text is required.", nameof(text));

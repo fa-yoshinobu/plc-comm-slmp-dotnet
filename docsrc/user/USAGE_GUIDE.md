@@ -152,6 +152,35 @@ accepts only 1–960 ASCII `0-9/A-F` bytes and requires exact declared length,
 actual length, and echo equality. Clear Error always uses the fixed empty
 payload command.
 
+## Label wire data
+
+Array-label lengths are logical lengths, while `Data` is the raw SLMP wire
+representation padded to a two-byte boundary. For `UnitSpecification = 0`
+(bit), the exact byte length is `ceil(ArrayDataLength / 16) * 2`. For
+`UnitSpecification = 1` (byte), it is
+`ceil(ArrayDataLength / 2) * 2`. Array writes reject any other data length.
+
+Random-label write data must contain a positive even number of bytes. The
+library does not infer a PLC label's configured type from its name; a unit or
+type mismatch that cannot be known locally is returned as a PLC end code.
+Malformed label responses, including count mismatches, invalid units,
+truncation, odd random-data lengths, and trailing bytes, raise `SlmpError`.
+
+The complete command payload must fit the request data-length field. Over TCP
+the maximum command payload is 65,529 bytes. This client uses IPv4 UDP, whose
+complete datagram limit makes the command-payload maximum 65,492 bytes for 3E
+and 65,488 bytes for 4E. Label command payloads are always even-sized, so their
+largest protocol-level payload is 65,528 bytes before applying the smaller UDP
+limit. Oversized inputs raise `ArgumentOutOfRangeException` before opening or
+sending, and the library does not split one label command into multiple frames.
+
+## Close and disposal
+
+`Close` ends the current transport session and permits a later `OpenAsync`.
+`Dispose` and `DisposeAsync` are terminal and idempotent: later open, read, or
+write operations throw `ObjectDisposedException`. A client should not be
+reused after leaving a `using` or `await using` scope.
+
 ## SLMP response end codes
 
 When the PLC returns a non-zero SLMP end code, the high-level APIs throw `SlmpError`.

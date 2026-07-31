@@ -10,6 +10,180 @@ public sealed class SlmpClientGuardTests
     private static readonly bool[] SingleTrue = [true];
 
     [Fact]
+    public async Task PublicCollectionApis_RejectNullWithStableParameterNamesBeforeTransport()
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var device = new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR);
+        var qualified = new SlmpQualifiedDeviceAddress(device, 1);
+
+        static async Task Verify(string parameterName, Func<Task> operation)
+        {
+            var error = await Assert.ThrowsAsync<ArgumentNullException>(operation);
+            Assert.Equal(parameterName, error.ParamName);
+        }
+
+        await Verify("values", () => client.WriteWordsAsync(device, null!));
+        await Verify("values", () => client.WriteWordsExtendedAsync(qualified, null!));
+        await Verify("values", () => client.WriteBitsAsync(device, null!));
+        await Verify("values", () => client.WriteBitsExtendedAsync(qualified, null!));
+        await Verify("values", () => client.WriteDWordsAsync(device, null!));
+        await Verify("values", () => client.WriteFloat32sAsync(device, null!));
+        await Verify("bitEntries", () => client.WriteRandomBitsAsync(null!));
+        await Verify("wordDevices", () => client.RegisterMonitorDevicesAsync(null!, []));
+        await Verify("dwordDevices", () => client.RegisterMonitorDevicesAsync([], null!));
+        await Verify("wordDevices", () => client.RegisterMonitorDevicesExtAsync(null!, []));
+        await Verify("dwordDevices", () => client.RegisterMonitorDevicesExtAsync([], null!));
+        await Verify("points", () => client.ReadArrayLabelsAsync(null!));
+        await Verify("points", () => client.WriteArrayLabelsAsync(null!));
+        await Verify("labels", () => client.ReadRandomLabelsAsync(null!));
+        await Verify("points", () => client.WriteRandomLabelsAsync(null!));
+        await Verify("values", () => client.MemoryWriteWordsAsync(0, null!));
+        await Verify("values", () => client.ExtendUnitWriteWordsAsync(0, 0, null!));
+
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+    }
+
+    [Fact]
+    public async Task BlockApis_RejectNullElementsAndRequiredModelValuesBeforeTransport()
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var device = new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR);
+
+        var readError = await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.ReadBlockAsync([null!], []));
+        var writeElementError = await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteBlockAsync([null!], []));
+        var writeValuesError = await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteBlockAsync([new SlmpBlockWrite(device, null!)], []));
+
+        Assert.Equal("wordBlocks", readError.ParamName);
+        Assert.Equal("wordBlocks", writeElementError.ParamName);
+        Assert.Equal("wordBlocks", writeValuesError.ParamName);
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+    }
+
+    [Fact]
+    public async Task LabelApis_RejectNullElementsAndRequiredModelValuesBeforeTransport()
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+
+        var arrayRead = await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.ReadArrayLabelsAsync([null!]));
+        var arrayWrite = await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteArrayLabelsAsync([new SlmpLabelArrayWritePoint("Label", 1, 2, null!)]));
+        var randomRead = await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.ReadRandomLabelsAsync([null!]));
+        var randomWrite = await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteRandomLabelsAsync([new SlmpLabelRandomWritePoint("Label", null!)]));
+        var abbreviation = await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.ReadRandomLabelsAsync(["Label"], [null!]));
+
+        Assert.Equal("points", arrayRead.ParamName);
+        Assert.Equal("points", arrayWrite.ParamName);
+        Assert.Equal("labels", randomRead.ParamName);
+        Assert.Equal("points", randomWrite.ParamName);
+        Assert.Equal("abbreviationLabels", abbreviation.ParamName);
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+    }
+
+    [Fact]
+    public async Task LabelApis_RejectAggregatePayloadOverflowBeforeTransport()
+    {
+        static string Label(int characters) => new('L', characters);
+
+        using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var traceCount = 0;
+        client.MaintainerTraceHook = _ => traceCount++;
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadArrayLabelsAsync([new(Label(32760), 1, 2)]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteArrayLabelsAsync([new("A", 1, ushort.MaxValue, new byte[65536])]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadRandomLabelsAsync([Label(32762)]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteRandomLabelsAsync([new(Label(32760), [0x00, 0x00])]));
+
+        Assert.False(client.IsOpen);
+        Assert.Empty(client.LastRequestFrame);
+        Assert.Equal(0, traceCount);
+        Assert.Equal(default, client.TrafficStats);
+    }
+
+    [Fact]
+    public async Task NamedAndQueuedSnapshotApis_RejectNullBeforeTransport()
+    {
+        using var inner = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        using var queued = new QueuedSlmpClient(inner);
+
+        var directAddresses = await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            inner.ReadNamedAsync(null!));
+        var addressElement = await Assert.ThrowsAsync<ArgumentException>(() =>
+            inner.ReadNamedAsync([null!]));
+        var queuedWords = await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            queued.RegisterMonitorDevicesAsync(null!, []));
+        var queuedDwords = await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            queued.RegisterMonitorDevicesExtAsync([], null!));
+
+        Assert.Equal("addresses", directAddresses.ParamName);
+        Assert.Equal("addresses", addressElement.ParamName);
+        Assert.Equal("wordDevices", queuedWords.ParamName);
+        Assert.Equal("dwordDevices", queuedDwords.ParamName);
+        Assert.False(inner.IsOpen);
+        Assert.Equal(default, inner.TrafficStats);
+    }
+
+    [Fact]
+    public void PublicParsers_UseStableNullArgumentErrors()
+    {
+        Assert.Equal("text", Assert.Throws<ArgumentNullException>(() =>
+            SlmpDeviceParser.Parse(null!, SlmpPlcProfile.IqR)).ParamName);
+        Assert.Equal("text", Assert.Throws<ArgumentNullException>(() =>
+            SlmpQualifiedDeviceParser.Parse(null!, SlmpPlcProfile.IqR)).ParamName);
+        Assert.Equal("text", Assert.Throws<ArgumentNullException>(() =>
+            SlmpTargetParser.ParseNamed(null!)).ParamName);
+        Assert.Equal("text", Assert.Throws<ArgumentNullException>(() =>
+            SlmpTargetParser.ParseAutoNumber(null!)).ParamName);
+        Assert.Equal("values", Assert.Throws<ArgumentNullException>(() =>
+            SlmpTargetParser.ParseMany(null!)).ParamName);
+        Assert.Equal("values", Assert.Throws<ArgumentException>(() =>
+            SlmpTargetParser.ParseMany([null!])).ParamName);
+        Assert.Equal("host", Assert.Throws<ArgumentNullException>(() =>
+            new SlmpClient(
+                null!, SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)).ParamName);
+        Assert.Equal("host", Assert.Throws<ArgumentNullException>(() =>
+            new SlmpConnectionOptions(
+                null!, SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)).ParamName);
+    }
+
+    [Fact]
+    public async Task TypedAndStringAddressExtensions_UsePublicParameterNamesForNull()
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var device = new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR);
+
+        Assert.Equal("device", (await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            client.ReadTypedAsync(null!, "U"))).ParamName);
+        Assert.Equal("dtype", (await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            client.ReadTypedAsync(device, null!))).ParamName);
+        Assert.Equal("value", (await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            client.WriteTypedAsync(device, "U", null!))).ParamName);
+        Assert.Equal("start", (await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            client.WriteWordsBlockAsync(null!, [1]))).ParamName);
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+    }
+
+    [Fact]
     public async Task WriteRandomBitsExtAsync_NullEntriesUseStableArgumentError()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);

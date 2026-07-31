@@ -18,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Docs: README documentation links now include the shared Performance and Choosing a Language pages, and package registry metadata was expanded for discoverability. No functional change.
+- Library: Corrected array-label bit/byte wire sizing, enforced exact two-byte-padded array-write data, and rejected null, empty, or odd random-label write data before transport.
+- Library: Label response parsing now validates item counts, echoed unit/length fields, bounded data, even random-data lengths, and trailing bytes, and reports malformed payloads as `SlmpError` while preserving unknown data-type and spare bytes.
+- Library: `Dispose` and `DisposeAsync` are now terminal and idempotent; unlike `Close`, disposed clients reject reopening and all later requests with `ObjectDisposedException`.
+- Library: Public collection inputs and required nested values now report stable argument exceptions before transport, and connection options use the same 1 ms through `int.MaxValue` ms timeout range as `SlmpClient`.
+- Library: Request payloads now enforce the 16-bit SLMP data-length boundary before transport; IPv4 UDP additionally applies its smaller 3E/4E datagram limits, and oversized label aggregates fail before payload allocation.
+- CI: Source archives now include the test project referenced by the solution, and CI/release gates restore, build, and test an extracted `git archive`.
+- Tests: Added protocol vectors, malformed-response coverage, lifecycle race checks, timeout boundaries, null-input/no-I/O contracts, and TCP/UDP request-payload boundary tests.
+
+### BREAKING
+
+- Library: Code that called `OpenAsync` or issued requests after disposing a client must retain the client and use `Close` when a reopenable session is required. Invalid label write buffers, null inputs, and oversized raw or label payloads that previously reached transport or leaked runtime exceptions now fail before I/O; oversized commands are not split automatically.
 
 ## [4.0.1] - 2026-07-29
 

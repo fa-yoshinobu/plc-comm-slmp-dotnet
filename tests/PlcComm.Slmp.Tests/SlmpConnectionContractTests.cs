@@ -56,6 +56,114 @@ public sealed class SlmpConnectionContractTests
     }
 
     [Fact]
+    public void ConnectionOptions_UseTheSameTimeoutBoundariesAsClient()
+    {
+        SlmpConnectionOptions Create(TimeSpan timeout) => new(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            1025,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation)
+        {
+            Timeout = timeout,
+        };
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => Create(TimeSpan.Zero));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Create(TimeSpan.FromTicks(1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Create(TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
+        Assert.Equal(TimeSpan.FromMilliseconds(1), Create(TimeSpan.FromMilliseconds(1)).Timeout);
+        Assert.Equal(
+            TimeSpan.FromMilliseconds(int.MaxValue),
+            Create(TimeSpan.FromMilliseconds(int.MaxValue)).Timeout);
+    }
+
+    [Fact]
+    public async Task Close_AllowsReopen_ButDisposePermanentlyRejectsUse()
+    {
+        using var sink = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        var port = ((IPEndPoint)sink.Client.LocalEndPoint!).Port;
+        var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            port,
+            SlmpTransportMode.Udp,
+            SlmpTargetAddress.OwnStation);
+
+        await client.OpenAsync();
+        client.Close();
+        await client.OpenAsync();
+        Assert.True(client.IsOpen);
+
+        client.Dispose();
+        client.Dispose();
+
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => client.OpenAsync());
+        await Assert.ThrowsAsync<ObjectDisposedException>(() =>
+            client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR), 1));
+        await Assert.ThrowsAsync<ObjectDisposedException>(() =>
+            client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR), [1]));
+        Assert.Equal(default, client.TrafficStats);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_IsIdempotentAndPermanentlyRejectsRequests()
+    {
+        var client = CreateTcpClient();
+
+        await client.DisposeAsync();
+        await client.DisposeAsync();
+        client.Dispose();
+
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => client.ClearErrorAsync());
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+    }
+
+    [Fact]
+    public async Task Dispose_DuringRequest_DoesNotDeadlock()
+    {
+        using var sink = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        var port = ((IPEndPoint)sink.Client.LocalEndPoint!).Port;
+        var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            port,
+            SlmpTransportMode.Udp,
+            SlmpTargetAddress.OwnStation)
+        {
+            Timeout = TimeSpan.FromSeconds(10),
+        };
+
+        var request = client.ClearErrorAsync();
+        _ = await sink.ReceiveAsync().WaitAsync(TimeSpan.FromSeconds(2));
+        var waitingRequest = client.ClearErrorAsync();
+
+        await Task.Run(client.Dispose).WaitAsync(TimeSpan.FromSeconds(2));
+        var activeError = await Record.ExceptionAsync(async () =>
+            await request.WaitAsync(TimeSpan.FromSeconds(2)));
+        Assert.NotNull(activeError);
+        Assert.IsNotType<TimeoutException>(activeError);
+        await Assert.ThrowsAsync<ObjectDisposedException>(async () =>
+            await waitingRequest.WaitAsync(TimeSpan.FromSeconds(2)));
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => client.ClearErrorAsync());
+    }
+
+    [Fact]
+    public async Task QueuedClient_PropagatesTerminalDisposal()
+    {
+        var inner = CreateTcpClient();
+        var queued = new QueuedSlmpClient(inner);
+
+        await queued.DisposeAsync();
+        queued.Dispose();
+
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => queued.OpenAsync());
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => queued.ClearErrorAsync());
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => inner.OpenAsync());
+    }
+
+    [Fact]
     public void TargetAddress_IsReadOnlyAfterConstruction()
     {
         Assert.False(typeof(SlmpClient).GetProperty(nameof(SlmpClient.TargetAddress))!.CanWrite);
