@@ -921,12 +921,12 @@ Acceptance criteria:
 
 - [x] Implementation completed in this repository.
 - [x] Existing deterministic tests are selected for every acceptance criterion.
-- [ ] Relevant CI/static checks passed on the final source state.
-- [ ] Codex self-review completed after the requested verification run.
+- [x] Relevant CI/static checks passed on the final source state.
+- [x] Codex self-review completed after the requested verification run.
 - [x] Live PLC verification is not required because the selected checks use controlled local transports.
 - [x] Maintainer documentation agrees with the implemented CI scope; no user migration note,
   changelog entry, or generated API change is made for this CI-only item.
-- [ ] Final acceptance criteria verified and the item marked complete.
+- [x] Final acceptance criteria verified and the item marked complete.
 
 ## GOAL-DOCUMENTED-API-DIFF-001-SLMP: classified stable-package API differences
 
