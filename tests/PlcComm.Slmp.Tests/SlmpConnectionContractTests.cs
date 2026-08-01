@@ -217,6 +217,186 @@ public sealed class SlmpConnectionContractTests
         Assert.Equal(default, client.TrafficStats);
     }
 
+    [Theory]
+    [InlineData("Close")]
+    [InlineData("CloseAsync")]
+    [InlineData("Dispose")]
+    [InlineData("DisposeAsync")]
+    public async Task DefinitiveDecodedRead_WinsConcurrentLifecycleTransition(string transition)
+    {
+        using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        var client = CreateUdpClient(server);
+        var barrierEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseBarrier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        client.DefinitiveResultBarrier = async () =>
+        {
+            barrierEntered.TrySetResult();
+            await releaseBarrier.Task.ConfigureAwait(false);
+        };
+
+        var request = client.ReadWordsRawAsync(
+            new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR),
+            1);
+        var received = await server.ReceiveAsync().WaitAsync(TimeSpan.FromSeconds(2));
+        await server.SendAsync(BuildUdpResponse(received.Buffer, 0, [0x34, 0x12]), received.RemoteEndPoint);
+        await barrierEntered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await ApplyLifecycleTransitionAsync(client, transition);
+        releaseBarrier.TrySetResult();
+
+        var values = await request.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(new ushort[] { 0x1234 }, values);
+        client.Dispose();
+    }
+
+    [Theory]
+    [InlineData("Close")]
+    [InlineData("CloseAsync")]
+    [InlineData("Dispose")]
+    [InlineData("DisposeAsync")]
+    public async Task DefinitivePlcEndCode_WinsConcurrentLifecycleTransition(string transition)
+    {
+        using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        var client = CreateUdpClient(server);
+        var barrierEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseBarrier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        client.DefinitiveResultBarrier = async () =>
+        {
+            barrierEntered.TrySetResult();
+            await releaseBarrier.Task.ConfigureAwait(false);
+        };
+
+        var request = client.ClearErrorAsync();
+        var received = await server.ReceiveAsync().WaitAsync(TimeSpan.FromSeconds(2));
+        await server.SendAsync(BuildUdpResponse(received.Buffer, 0xC051, []), received.RemoteEndPoint);
+        await barrierEntered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await ApplyLifecycleTransitionAsync(client, transition);
+        releaseBarrier.TrySetResult();
+
+        var error = await Assert.ThrowsAsync<SlmpError>(async () =>
+            await request.WaitAsync(TimeSpan.FromSeconds(2)));
+        Assert.Equal((ushort?)0xC051, error.EndCode);
+        client.Dispose();
+    }
+
+    [Fact]
+    public async Task DefinitiveAcknowledgedWrite_WinsConcurrentClose()
+    {
+        using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        using var client = CreateUdpClient(server);
+        var barrierEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseBarrier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        client.DefinitiveResultBarrier = async () =>
+        {
+            barrierEntered.TrySetResult();
+            await releaseBarrier.Task.ConfigureAwait(false);
+        };
+
+        var request = client.WriteWordsAsync(
+            new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR),
+            [0x1234]);
+        var received = await server.ReceiveAsync().WaitAsync(TimeSpan.FromSeconds(2));
+        await server.SendAsync(BuildUdpResponse(received.Buffer, 0, []), received.RemoteEndPoint);
+        await barrierEntered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        client.Close();
+        releaseBarrier.TrySetResult();
+
+        await request.WaitAsync(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public async Task CloseBeforeCommandDecode_LeavesReadIncompleteAndClosed()
+    {
+        using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        using var client = CreateUdpClient(server);
+        var barrierEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseBarrier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        client.BeforeCommandDecodeBarrier = async () =>
+        {
+            barrierEntered.TrySetResult();
+            await releaseBarrier.Task.ConfigureAwait(false);
+        };
+
+        var request = client.ReadWordsRawAsync(
+            new SlmpDeviceAddress(SlmpDeviceCode.D, 0, SlmpPlcProfile.IqR),
+            1);
+        var received = await server.ReceiveAsync().WaitAsync(TimeSpan.FromSeconds(2));
+        await server.SendAsync(BuildUdpResponse(received.Buffer, 0, [0x34, 0x12]), received.RemoteEndPoint);
+        await barrierEntered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        client.Close();
+        releaseBarrier.TrySetResult();
+
+        await Assert.ThrowsAsync<SlmpConnectionClosedException>(async () =>
+            await request.WaitAsync(TimeSpan.FromSeconds(2)));
+    }
+
+    [Fact]
+    public async Task CloseBeforeAcknowledgementDecode_LeavesStateChangeOutcomeUnknown()
+    {
+        using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        using var client = CreateUdpClient(server);
+        var barrierEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseBarrier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        client.BeforeCommandDecodeBarrier = async () =>
+        {
+            barrierEntered.TrySetResult();
+            await releaseBarrier.Task.ConfigureAwait(false);
+        };
+
+        var request = client.ClearErrorAsync();
+        var received = await server.ReceiveAsync().WaitAsync(TimeSpan.FromSeconds(2));
+        await server.SendAsync(BuildUdpResponse(received.Buffer, 0, [0xAA]), received.RemoteEndPoint);
+        await barrierEntered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        client.Close();
+        releaseBarrier.TrySetResult();
+
+        var error = await Assert.ThrowsAsync<SlmpOperationOutcomeUnknownException>(async () =>
+            await request.WaitAsync(TimeSpan.FromSeconds(2)));
+        Assert.Equal(SlmpOutcomeUnknownReason.Closed, error.Reason);
+    }
+
+    [Fact]
+    public async Task AckOnlyCommand_RejectsUnexpectedSuccessPayloadAsOutcomeUnknown()
+    {
+        using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        using var client = CreateUdpClient(server);
+
+        var request = client.ClearErrorAsync();
+        var received = await server.ReceiveAsync().WaitAsync(TimeSpan.FromSeconds(2));
+        await server.SendAsync(BuildUdpResponse(received.Buffer, 0, [0xAA]), received.RemoteEndPoint);
+
+        var error = await Assert.ThrowsAsync<SlmpOperationOutcomeUnknownException>(async () =>
+            await request.WaitAsync(TimeSpan.FromSeconds(2)));
+        Assert.Equal(SlmpOutcomeUnknownReason.MalformedResponse, error.Reason);
+        var decodeError = Assert.IsType<SlmpError>(error.InnerException);
+        Assert.Equal(SlmpCommand.ClearError, decodeError.Command);
+    }
+
+    [Fact]
+    public async Task TimeoutBeforeMalformedAcknowledgementDecode_RemainsOutcomeUnknownTimeout()
+    {
+        using var server = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        using var client = CreateUdpClient(server);
+        client.Timeout = TimeSpan.FromMilliseconds(30);
+        var barrierEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseBarrier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        client.BeforeCommandDecodeBarrier = async () =>
+        {
+            barrierEntered.TrySetResult();
+            await releaseBarrier.Task.ConfigureAwait(false);
+        };
+
+        var request = client.ClearErrorAsync();
+        var received = await server.ReceiveAsync().WaitAsync(TimeSpan.FromSeconds(2));
+        await server.SendAsync(BuildUdpResponse(received.Buffer, 0, [0xAA]), received.RemoteEndPoint);
+        await barrierEntered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await Task.Delay(100);
+        releaseBarrier.TrySetResult();
+
+        var error = await Assert.ThrowsAsync<SlmpOperationOutcomeUnknownException>(async () =>
+            await request.WaitAsync(TimeSpan.FromSeconds(2)));
+        Assert.Equal(SlmpOutcomeUnknownReason.Timeout, error.Reason);
+    }
+
     [Fact]
     public async Task Dispose_DuringRequest_DoesNotDeadlock()
     {
@@ -526,4 +706,51 @@ public sealed class SlmpConnectionContractTests
             1025,
             SlmpTransportMode.Tcp,
             SlmpTargetAddress.OwnStation);
+
+    private static SlmpClient CreateUdpClient(UdpClient server)
+        => new(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            ((IPEndPoint)server.Client.LocalEndPoint!).Port,
+            SlmpTransportMode.Udp,
+            SlmpTargetAddress.OwnStation);
+
+    private static async Task ApplyLifecycleTransitionAsync(SlmpClient client, string transition)
+    {
+        switch (transition)
+        {
+            case "Close":
+                client.Close();
+                break;
+            case "CloseAsync":
+                await client.CloseAsync();
+                break;
+            case "Dispose":
+                client.Dispose();
+                break;
+            case "DisposeAsync":
+                await client.DisposeAsync();
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(transition));
+        }
+    }
+
+    private static byte[] BuildUdpResponse(byte[] request, ushort endCode, byte[] payload)
+    {
+        var response = new byte[15 + payload.Length];
+        response[0] = 0xD4;
+        response[1] = 0x00;
+        response[2] = request[2];
+        response[3] = request[3];
+        response[6] = request[6];
+        response[7] = request[7];
+        response[8] = request[8];
+        response[9] = request[9];
+        response[10] = request[10];
+        BitConverter.TryWriteBytes(response.AsSpan(11, 2), checked((ushort)(2 + payload.Length)));
+        BitConverter.TryWriteBytes(response.AsSpan(13, 2), endCode);
+        payload.CopyTo(response, 15);
+        return response;
+    }
 }

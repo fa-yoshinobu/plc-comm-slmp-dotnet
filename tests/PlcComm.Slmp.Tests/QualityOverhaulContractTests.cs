@@ -93,6 +93,236 @@ public sealed class QualityOverhaulContractTests
     }
 
     [Fact]
+    public void DeviceUnitClassifier_CoversEveryPublicDeviceCodeExactlyOnce()
+    {
+        var codes = Enum.GetValues<SlmpDeviceCode>();
+        Assert.Equal(codes.Length, codes.Distinct().Count());
+        foreach (var code in codes)
+            Assert.True(SlmpDeviceUnits.Get(code) is SlmpDeviceUnit.Bit or SlmpDeviceUnit.Word, code.ToString());
+    }
+
+    [Fact]
+    public async Task EveryWordDevice_IsRejectedBySemanticBitSurfacesBeforeTransport()
+    {
+        using var client = Client();
+        foreach (var code in Enum.GetValues<SlmpDeviceCode>().Where(SlmpDeviceUnits.IsWord))
+        {
+            var device = new SlmpDeviceAddress(code, 0, SlmpPlcProfile.IqR);
+            var qualified = new SlmpQualifiedDeviceAddress(device, 1);
+
+            await Assert.ThrowsAsync<ArgumentException>(() => client.ReadBitsAsync(device, 1));
+            await Assert.ThrowsAsync<ArgumentException>(() => client.WriteBitsAsync(device, [true]));
+            await Assert.ThrowsAsync<ArgumentException>(() => client.ReadBitsExtendedAsync(qualified, 1));
+            await Assert.ThrowsAsync<ArgumentException>(() => client.WriteBitsExtendedAsync(qualified, [true]));
+            await Assert.ThrowsAsync<ArgumentException>(() => client.WriteRandomBitsAsync([(device, true)]));
+            await Assert.ThrowsAsync<ArgumentException>(() => client.WriteRandomBitsExtAsync([(qualified, true)]));
+            await Assert.ThrowsAsync<ArgumentException>(() => client.ReadBitBlocksAsync([new SlmpBlockRead(device, 1)]));
+            await Assert.ThrowsAsync<ArgumentException>(() => client.WriteBitBlocksAsync([new SlmpBlockWrite(device, [1])]));
+        }
+
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+    }
+
+    [Fact]
+    public async Task EveryBitDevice_IsRejectedByWordBlocksButAllowedByExplicitLowLevelWordAccess()
+    {
+        using var client = Client();
+        foreach (var code in Enum.GetValues<SlmpDeviceCode>().Where(SlmpDeviceUnits.IsBit))
+        {
+            var device = new SlmpDeviceAddress(code, 0, SlmpPlcProfile.IqR);
+            await Assert.ThrowsAsync<ArgumentException>(() => client.ReadWordBlocksAsync([new SlmpBlockRead(device, 1)]));
+            await Assert.ThrowsAsync<ArgumentException>(() => client.WriteWordBlocksAsync([new SlmpBlockWrite(device, [1])]));
+            Assert.IsType<ArgumentException>(Record.Exception(() =>
+            {
+                _ = client.WriteBitInWordAsync(device, 0, true);
+            }));
+        }
+
+        Assert.False(client.IsOpen);
+
+        using var server = new System.Net.Sockets.UdpClient(
+            new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, 0));
+        var port = ((System.Net.IPEndPoint)server.Client.LocalEndPoint!).Port;
+        using var packedClient = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            port,
+            SlmpTransportMode.Udp,
+            SlmpTargetAddress.OwnStation);
+        var packedRead = packedClient.ReadWordsRawAsync(M(0), 1);
+        var request = await server.ReceiveAsync().WaitAsync(TimeSpan.FromSeconds(2));
+        var serial = BitConverter.ToUInt16(request.Buffer, 2);
+        byte[] response =
+        [
+            0xD4, 0x00, (byte)serial, (byte)(serial >> 8), 0x00, 0x00,
+            0x00, 0xFF, 0xFF, 0x03, 0x00,
+            0x04, 0x00, 0x00, 0x00, 0x34, 0x12,
+        ];
+        await server.SendAsync(response, request.RemoteEndPoint);
+
+        var packedValues = await packedRead;
+        Assert.Equal(new ushort[] { 0x1234 }, packedValues);
+        Assert.Equal((ushort)SlmpCommand.DeviceRead, BitConverter.ToUInt16(request.Buffer, 15));
+        Assert.Equal<ushort>(0x0002, BitConverter.ToUInt16(request.Buffer, 17));
+    }
+
+    [Theory]
+    [InlineData("LTN10:D")]
+    [InlineData("LSTN10:L")]
+    [InlineData("LTS10:BIT")]
+    [InlineData("LTC10:BIT")]
+    [InlineData("LSTS10:BIT")]
+    [InlineData("LSTC10:BIT")]
+    public async Task NamedLongTimerDirectRoutes_AreRejectedBeforeTransport(string address)
+    {
+        using var client = Client();
+        await Assert.ThrowsAsync<ArgumentException>(() => client.ReadNamedAsync(["D100:U", address]));
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+        Assert.Empty(client.LastRequestFrame);
+    }
+
+    [Fact]
+    public async Task EmptyNamedRead_IsRejectedInsteadOfReturningAZeroRequestResult()
+    {
+        using var client = Client();
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ReadNamedAsync([]));
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+    }
+
+    [Fact]
+    public async Task InvalidTypedAndNamedWrites_FailBeforeFifoAdmission()
+    {
+        using var client = Client();
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var blocker = client.ExecuteExclusiveAsync(async token =>
+        {
+            entered.TrySetResult();
+            await release.Task.WaitAsync(token);
+        });
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.IsType<ArgumentException>(Record.Exception(() =>
+        {
+            _ = client.WriteTypedAsync(M(0), "U", 1);
+        }));
+        Assert.IsType<ArgumentException>(Record.Exception(() =>
+        {
+            _ = client.WriteNamedAsync(
+                new Dictionary<string, object> { ["D0:BIT"] = true });
+        }));
+
+        Assert.False(blocker.IsCompleted);
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+        release.TrySetResult();
+        await blocker.WaitAsync(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public async Task TypedAndNamedScalars_RequireExactSemanticDeviceUnitsBeforeTransport()
+    {
+        using var client = Client();
+        await Assert.ThrowsAsync<ArgumentException>(() => client.ReadTypedAsync(D(0), "BIT"));
+        await Assert.ThrowsAsync<ArgumentException>(() => client.ReadTypedAsync(M(0), "U"));
+        await Assert.ThrowsAsync<ArgumentException>(() => client.WriteTypedAsync(D(0), "BIT", true));
+        await Assert.ThrowsAsync<ArgumentException>(() => client.WriteTypedAsync(M(0), "U", 1));
+        await Assert.ThrowsAsync<ArgumentException>(() => client.ReadNamedAsync(["D0:BIT"]));
+        await Assert.ThrowsAsync<ArgumentException>(() => client.ReadNamedAsync(["M0:U"]));
+        await Assert.ThrowsAsync<ArgumentException>(() => client.WriteNamedAsync(new Dictionary<string, object> { ["D0:BIT"] = true }));
+        await Assert.ThrowsAsync<ArgumentException>(() => client.WriteNamedAsync(new Dictionary<string, object> { ["M0:U"] = 1 }));
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+    }
+
+    [Theory]
+    [InlineData((ushort)0)]
+    [InlineData((ushort)481)]
+    [InlineData((ushort)32768)]
+    [InlineData(ushort.MaxValue)]
+    public async Task DWordAndFloatReads_RejectPublicUnitCountsBeforeConversion(ushort points)
+    {
+        using var client = Client();
+        var dwordError = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadDWordsRawAsync(D(0), points));
+        var floatError = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadFloat32sAsync(D(0), points));
+        Assert.Equal("points", dwordError.ParamName);
+        Assert.Equal("points", floatError.ParamName);
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(481)]
+    public async Task DWordAndFloatWrites_RejectCollectionCountBeforeMultiplicationOrAllocation(int count)
+    {
+        using var client = Client();
+        var dwords = new uint[count];
+        var floats = new float[count];
+        var dwordError = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteDWordsAsync(D(0), dwords));
+        var floatError = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteFloat32sAsync(D(0), floats));
+        Assert.Equal("values", dwordError.ParamName);
+        Assert.Equal("values", floatError.ParamName);
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DWordAndFloatReads_AcceptExact480ValueBoundary(bool floats)
+    {
+        using var server = new System.Net.Sockets.UdpClient(
+            new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, 0));
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            ((System.Net.IPEndPoint)server.Client.LocalEndPoint!).Port,
+            SlmpTransportMode.Udp,
+            SlmpTargetAddress.OwnStation);
+
+        Task request = floats
+            ? client.ReadFloat32sAsync(D(0), 480)
+            : client.ReadDWordsRawAsync(D(0), 480);
+        var received = await server.ReceiveAsync().WaitAsync(TimeSpan.FromSeconds(2));
+        await server.SendAsync(BuildUdpResponse(received.Buffer, new byte[480 * 4]), received.RemoteEndPoint);
+        await request.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.Equal<ulong>(1, client.TrafficStats.RequestCount);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DWordAndFloatWrites_AcceptExact480ValueBoundary(bool floats)
+    {
+        using var server = new System.Net.Sockets.UdpClient(
+            new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, 0));
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            ((System.Net.IPEndPoint)server.Client.LocalEndPoint!).Port,
+            SlmpTransportMode.Udp,
+            SlmpTargetAddress.OwnStation);
+
+        Task request = floats
+            ? client.WriteFloat32sAsync(D(0), new float[480])
+            : client.WriteDWordsAsync(D(0), new uint[480]);
+        var received = await server.ReceiveAsync().WaitAsync(TimeSpan.FromSeconds(2));
+        await server.SendAsync(BuildUdpResponse(received.Buffer, []), received.RemoteEndPoint);
+        await request.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.Equal<ulong>(1, client.TrafficStats.RequestCount);
+    }
+
+    [Fact]
     public void StateChangingAndTargetSelectingParameters_AreRequired()
     {
         Assert.False(ParameterIsOptional(nameof(SlmpClient.RemoteRunAsync), "mode"));
@@ -212,4 +442,21 @@ public sealed class QualityOverhaulContractTests
             .GetParameters()
             .Single(parameter => parameter.Name == parameterName)
             .IsOptional;
+
+    private static byte[] BuildUdpResponse(byte[] request, byte[] payload)
+    {
+        var response = new byte[15 + payload.Length];
+        response[0] = 0xD4;
+        response[1] = 0x00;
+        response[2] = request[2];
+        response[3] = request[3];
+        response[6] = request[6];
+        response[7] = request[7];
+        response[8] = request[8];
+        response[9] = request[9];
+        response[10] = request[10];
+        BitConverter.TryWriteBytes(response.AsSpan(11, 2), checked((ushort)(payload.Length + 2)));
+        payload.CopyTo(response, 15);
+        return response;
+    }
 }

@@ -27,6 +27,20 @@ string GetRequiredOption(IReadOnlyList<string> args, string name)
     return value;
 }
 
+ushort ParseUshortOption(string text, string optionName)
+{
+    var isHex = text.StartsWith("0x", StringComparison.OrdinalIgnoreCase);
+    var digits = isHex ? text[2..] : text;
+    var style = isHex ? NumberStyles.AllowHexSpecifier : NumberStyles.None;
+    if (digits.Length == 0 ||
+        !ushort.TryParse(digits, style, CultureInfo.InvariantCulture, out var value))
+    {
+        throw new FormatException($"{optionName} must be an integer in the range 0..65535.");
+    }
+
+    return value;
+}
+
 SlmpPlcProfile GetPlcProfileOption(IReadOnlyList<string> args)
 {
     return SlmpPlcProfiles.Parse(GetOption(args, "--plc-profile", string.Empty));
@@ -136,14 +150,9 @@ IReadOnlyList<SlmpNamedTarget> ParseTargets(IReadOnlyList<string> args)
                     : multidrops.Count == networks.Count
                         ? multidrops[index]
                         : throw new ArgumentException("--multidrop count must be 1 or match --network/--station count.");
-            var network = checked((byte)SlmpTargetParser.ParseAutoNumber(networkText));
-            var station = checked((byte)SlmpTargetParser.ParseAutoNumber(stationText));
-            var moduleIo = checked((ushort)SlmpTargetParser.ParseAutoNumber(moduleIoText));
-            var multidrop = checked((byte)SlmpTargetParser.ParseAutoNumber(multidropText));
-            var target = new SlmpTargetAddress(network, station, moduleIo, multidrop);
-            return new SlmpNamedTarget(
-                FormatTargetAddress(target),
-                target);
+            var parsed = SlmpTargetParser.ParseNamed(
+                $"CLI,{networkText},{stationText},{moduleIoText},{multidropText}");
+            return new SlmpNamedTarget(FormatTargetAddress(parsed.Target), parsed.Target);
         }).ToArray();
     }
 
@@ -256,8 +265,8 @@ async Task<int> RunBlockCheckAsync(IReadOnlyList<string> args)
     var writeCheck = HasFlag(args, "--write-check");
     var wordDevice = SlmpDeviceParser.Parse(GetRequiredOption(args, "--word-device"), client.PlcProfile);
     var bitDevice = SlmpDeviceParser.Parse(GetRequiredOption(args, "--bit-device"), client.PlcProfile);
-    var wordPoints = ushort.Parse(GetRequiredOption(args, "--word-points"), CultureInfo.InvariantCulture);
-    var bitPoints = ushort.Parse(GetRequiredOption(args, "--bit-points"), CultureInfo.InvariantCulture);
+    var wordPoints = ParseUshortOption(GetRequiredOption(args, "--word-points"), "--word-points");
+    var bitPoints = ParseUshortOption(GetRequiredOption(args, "--bit-points"), "--bit-points");
 
     var read = await client.ReadBlockAsync(
         [new SlmpBlockRead(wordDevice, wordPoints)],
@@ -280,31 +289,6 @@ async Task<int> RunBlockCheckAsync(IReadOnlyList<string> args)
     Console.WriteLine("[OK] block-write completed");
     return 0;
 }
-
-static bool IsBitExtendedDevice(SlmpDeviceCode code)
-    => code is SlmpDeviceCode.SM
-        or SlmpDeviceCode.X
-        or SlmpDeviceCode.Y
-        or SlmpDeviceCode.M
-        or SlmpDeviceCode.L
-        or SlmpDeviceCode.F
-        or SlmpDeviceCode.V
-        or SlmpDeviceCode.B
-        or SlmpDeviceCode.TS
-        or SlmpDeviceCode.TC
-        or SlmpDeviceCode.LTS
-        or SlmpDeviceCode.LTC
-        or SlmpDeviceCode.STS
-        or SlmpDeviceCode.STC
-        or SlmpDeviceCode.LSTS
-        or SlmpDeviceCode.LSTC
-        or SlmpDeviceCode.CS
-        or SlmpDeviceCode.CC
-        or SlmpDeviceCode.LCS
-        or SlmpDeviceCode.LCC
-        or SlmpDeviceCode.SB
-        or SlmpDeviceCode.DX
-        or SlmpDeviceCode.DY;
 
 static string FormatBits(IEnumerable<bool> values)
     => string.Join(", ", values.Select(x => x ? "1" : "0"));
@@ -331,7 +315,7 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
     if (deviceTexts.Count == 0) throw new ArgumentException("--device is required and may be repeated.");
     var pointsTexts = GetOptions(args, "--points");
     if (pointsTexts.Count == 0) throw new ArgumentException("--points is required and may be repeated.");
-    var pointList = pointsTexts.Select(x => checked((ushort)SlmpTargetParser.ParseAutoNumber(x))).ToArray();
+    var pointList = pointsTexts.Select(x => ParseUshortOption(x, "--points")).ToArray();
     var writeCheck = HasFlag(args, "--write-check");
     var remotePassword = GetRemotePassword(args);
     var rows = new List<CoverageRow>();
@@ -377,7 +361,7 @@ async Task<int> RunGhCoverageAsync(IReadOnlyList<string> args)
                 foreach (var deviceText in deviceTexts)
                 {
                     var qualified = SlmpQualifiedDeviceParser.Parse(deviceText, client.PlcProfile);
-                    var unit = IsBitExtendedDevice(qualified.Device.Code) ? "bit" : "word";
+                    var unit = SlmpDeviceUnits.IsBit(qualified.Device.Code) ? "bit" : "word";
                     // Direct-memory bytes are derived from the semantic qualified route.
                     {
                         var effectiveDirectMemory = SemanticDirectMemory(deviceText, qualified);
@@ -504,7 +488,7 @@ async Task<int> RunExtendedDeviceDeviceRecheckAsync(IReadOnlyList<string> args)
 {
     var target = ParseTargets(args)[0];
     var deviceText = GetRequiredOption(args, "--device");
-    var points = checked((ushort)SlmpTargetParser.ParseAutoNumber(GetRequiredOption(args, "--points")));
+    var points = ParseUshortOption(GetRequiredOption(args, "--points"), "--points");
     var writeCheck = HasFlag(args, "--write-check");
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
     var qualified = SlmpQualifiedDeviceParser.Parse(deviceText, client.PlcProfile);
@@ -544,7 +528,7 @@ async Task<int> RunReadSoakAsync(IReadOnlyList<string> args)
 {
     var target = ParseTargets(args)[0];
     var iterations = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--iterations", "100"));
-    var points = checked((ushort)SlmpTargetParser.ParseAutoNumber(GetRequiredOption(args, "--points")));
+    var points = ParseUshortOption(GetRequiredOption(args, "--points"), "--points");
     var intervalMs = SlmpTargetParser.ParseAutoNumber(GetOption(args, "--interval-ms", "0"));
     using var client = await CreateClientAsync(args, target.Target).ConfigureAwait(false);
     var device = SlmpDeviceParser.Parse(GetRequiredOption(args, "--device"), client.PlcProfile);

@@ -17,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Library: Named reads now reject `LTN`/`LSTN` Direct Read families during complete pre-transport planning, remove unreachable long-timer named execution state, and direct callers to typed or explicit long-timer helpers.
+- Library: Semantic bit APIs now use one exhaustive device-unit classifier, reject every word-addressable family before transport, retain explicit packed word access to bit devices, and require exact typed/named `BIT` versus numeric device units.
+- Library: A fully correlated and command-decoded success or framed PLC end-code now wins a concurrent close or disposal; incomplete reads remain closed and possibly transmitted state changes remain outcome-unknown with reason `Closed`.
+- Library: Direct DWord/Float32 counts are validated in public value units before conversion or allocation, and named-target plus U/J-qualified numeric text now reports field-specific bounded `FormatException` failures without overflow or truncation.
+- Library: Ack-only commands now reject non-empty success payloads as an unknown malformed-response outcome; raw commands retain their explicit response payload and remote reset retains its send-only contract.
+- Library: Typed and named write plans now complete semantic validation before FIFO admission, and `WriteBitInWordAsync` accepts word devices only.
+- Samples: The CLI now reuses bounded named-target parsing for route fields, validates ushort counts explicitly, and uses the library's canonical device-unit classifier.
+- Tests: Added exhaustive device-unit surfaces, named long-timer zero-send plans, DWord/Float32 boundaries, bounded textual fields, and deterministic close/dispose result-precedence races.
 - Samples: All six user-facing repository samples now target `net10.0`; building the samples requires the .NET 10 SDK. The library package remains multi-targeted for `net8.0`, `net9.0`, and `net10.0`.
 - Library: One immutable absolute transaction deadline now covers lazy IPv4 connection, TCP/UDP send, complete response framing, route/serial correlation, and response decoding. FIFO queue wait remains outside that deadline, and `Timeout` plus `MonitoringTimer` are snapshotted when the call is admitted.
 - Library: Added dedicated `SlmpTimeoutException`, `SlmpTransportException`, `SlmpNotConnectedException`, and `SlmpOperationOutcomeUnknownException` classifications. A state-changing request interrupted after bytes may have been sent reports a structured timeout, cancellation, close, malformed-response, or transport reason and is never retried automatically.

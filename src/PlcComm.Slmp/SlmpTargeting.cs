@@ -80,12 +80,16 @@ public readonly record struct SlmpQualifiedDeviceAddress
 /// </summary>
 public static class SlmpQualifiedDeviceParser
 {
-    private static readonly Regex QualifiedPattern = new(@"^U([0-9A-F]+)[\\/](.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-    private static readonly Regex LinkDirectPattern = new(@"^J([0-9]+)[\\/](.+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex QualifiedPattern = new(@"^U([^\\/]*)[\\/](.*)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex LinkDirectPattern = new(@"^J([^\\/]*)[\\/](.*)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     /// <summary>
     /// Parses a qualified device string into a <see cref="SlmpQualifiedDeviceAddress"/>.
     /// </summary>
+    /// <exception cref="FormatException">
+    /// A U extension field is not hexadecimal 0000..FFFF (0..65535), or a J-direct
+    /// network field is not decimal 0..255.
+    /// </exception>
     public static SlmpQualifiedDeviceAddress Parse(string text, SlmpPlcProfile plcProfile)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -100,13 +104,15 @@ public static class SlmpQualifiedDeviceParser
         var jMatch = LinkDirectPattern.Match(token);
         if (jMatch.Success)
         {
+            var networkText = jMatch.Groups[1].Value;
             if (!byte.TryParse(
-                    jMatch.Groups[1].Value,
+                    networkText,
                     NumberStyles.None,
                     CultureInfo.InvariantCulture,
                     out var jNetwork))
             {
-                throw new FormatException("Invalid J-direct network; expected decimal 0..255.");
+                throw new FormatException(
+                    $"Invalid J-direct network field '{networkText}'; expected decimal 0..255.");
             }
             var device = SlmpDeviceParser.Parse(jMatch.Groups[2].Value, plcProfile);
             return new SlmpQualifiedDeviceAddress(device, jNetwork, 0xF9);
@@ -118,7 +124,12 @@ public static class SlmpQualifiedDeviceParser
             return new SlmpQualifiedDeviceAddress(SlmpDeviceParser.Parse(token, plcProfile), null);
         }
 
-        var extensionSpecification = ushort.Parse(match.Groups[1].Value, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
+        var extensionText = match.Groups[1].Value;
+        if (!ushort.TryParse(extensionText, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var extensionSpecification))
+        {
+            throw new FormatException(
+                $"Invalid U extension specification '{extensionText}'; expected hexadecimal 0000..FFFF (0..65535).");
+        }
         var dev = SlmpDeviceParser.Parse(match.Groups[2].Value, plcProfile);
         // G/HG buffer memory devices have a fixed DM by device code (matches GOT pcap-verified format)
         byte? dm = dev.Code switch
@@ -153,6 +164,7 @@ public static class SlmpTargetParser
     /// Parses a single target string. 
     /// Supports "SELF", "SELF-MULTIPLE-CPU-1..4", or "NAME,NETWORK,STATION,MODULE_IO,MULTIDROP".
     /// </summary>
+    /// <exception cref="FormatException">A route numeric field is malformed, negative, or outside its protocol field width.</exception>
     public static SlmpNamedTarget ParseNamed(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -172,21 +184,16 @@ public static class SlmpTargetParser
             throw new ArgumentException("target must be SELF, SELF-MULTIPLE-CPU-1..4, or NAME,NETWORK,STATION,MODULE_IO,MULTIDROP");
         }
 
-        if (parts.Any(string.IsNullOrWhiteSpace))
-        {
-            throw new ArgumentException("target fields NAME, NETWORK, STATION, MODULE_IO, and MULTIDROP must not be empty", nameof(text));
-        }
-
         var name = parts[0];
         if (string.IsNullOrWhiteSpace(name))
         {
-            throw new ArgumentException("target name must not be empty");
+            throw new ArgumentException("target name must not be empty", nameof(text));
         }
 
-        var network = checked((byte)ParseAutoNumber(parts[1]));
-        var station = checked((byte)ParseAutoNumber(parts[2]));
-        var moduleIo = checked((ushort)ParseAutoNumber(parts[3]));
-        var multidrop = checked((byte)ParseAutoNumber(parts[4]));
+        var network = (byte)ParseRouteField(parts[1], "NETWORK", byte.MaxValue);
+        var station = (byte)ParseRouteField(parts[2], "STATION", byte.MaxValue);
+        var moduleIo = (ushort)ParseRouteField(parts[3], "MODULE_IO", ushort.MaxValue);
+        var multidrop = (byte)ParseRouteField(parts[4], "MULTIDROP", byte.MaxValue);
         return new SlmpNamedTarget(name, new SlmpTargetAddress(network, station, moduleIo, multidrop));
     }
 
@@ -241,5 +248,21 @@ public static class SlmpTargetParser
         }
 
         return int.Parse(text, CultureInfo.InvariantCulture);
+    }
+
+    private static uint ParseRouteField(string text, string fieldName, uint maximum)
+    {
+        var isHex = text.StartsWith("0x", StringComparison.OrdinalIgnoreCase);
+        var digits = isHex ? text[2..] : text;
+        var style = isHex ? NumberStyles.AllowHexSpecifier : NumberStyles.None;
+        if (digits.Length == 0 ||
+            !uint.TryParse(digits, style, CultureInfo.InvariantCulture, out var value) ||
+            value > maximum)
+        {
+            throw new FormatException(
+                $"Invalid {fieldName} value '{text}'; expected {(isHex ? "hexadecimal" : "decimal or 0x hexadecimal")} 0..{maximum}.");
+        }
+
+        return value;
     }
 }

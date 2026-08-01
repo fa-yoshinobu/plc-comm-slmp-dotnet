@@ -199,15 +199,49 @@ public sealed class SlmpParserTests
 
     [Theory]
     [InlineData(",1,2,3,4")]
-    [InlineData("PLC-A,,2,3,4")]
-    [InlineData("PLC-A,1,,3,4")]
-    [InlineData("PLC-A,1,2,,4")]
-    [InlineData("PLC-A,1,2,3,")]
     [InlineData("PLC-A,1,,2,3,4")]
     [InlineData("PLC-A,1,2,3,4,5")]
-    public void ParseNamedTarget_RejectsEmptyAndExtraRouteFields(string text)
+    public void ParseNamedTarget_RejectsEmptyNameAndExtraRouteFields(string text)
     {
         Assert.Throws<ArgumentException>(() => SlmpTargetParser.ParseNamed(text));
+    }
+
+    [Fact]
+    public void ParseNamedTarget_AcceptsEveryRouteFieldBoundary()
+    {
+        var minimum = SlmpTargetParser.ParseNamed("MIN,0,0,0,0");
+        Assert.Equal(new SlmpTargetAddress(0, 0, 0, 0), minimum.Target);
+
+        var maximum = SlmpTargetParser.ParseNamed("MAX,255,255,65535,255");
+        Assert.Equal(new SlmpTargetAddress(255, 255, 65535, 255), maximum.Target);
+
+        var hexadecimal = SlmpTargetParser.ParseNamed("HEX,0xFF,0xFF,0xFFFF,0xFF");
+        Assert.Equal(maximum.Target, hexadecimal.Target);
+    }
+
+    [Theory]
+    [InlineData("PLC,,0,0,0", "NETWORK", "0..255")]
+    [InlineData("PLC,-1,0,0,0", "NETWORK", "0..255")]
+    [InlineData("PLC,256,0,0,0", "NETWORK", "0..255")]
+    [InlineData("PLC,999999999999999999999999,0,0,0", "NETWORK", "0..255")]
+    [InlineData("PLC,0,,0,0", "STATION", "0..255")]
+    [InlineData("PLC,0,-1,0,0", "STATION", "0..255")]
+    [InlineData("PLC,0,256,0,0", "STATION", "0..255")]
+    [InlineData("PLC,0,AD,0,0", "STATION", "0..255")]
+    [InlineData("PLC,0,0,,0", "MODULE_IO", "0..65535")]
+    [InlineData("PLC,0,0,-1,0", "MODULE_IO", "0..65535")]
+    [InlineData("PLC,0,0,65536,0", "MODULE_IO", "0..65535")]
+    [InlineData("PLC,0,0,0,", "MULTIDROP", "0..255")]
+    [InlineData("PLC,0,0,0,-1", "MULTIDROP", "0..255")]
+    [InlineData("PLC,0,0,0,256", "MULTIDROP", "0..255")]
+    public void ParseNamedTarget_InvalidNumericFields_AreStableFormatErrors(
+        string text,
+        string field,
+        string range)
+    {
+        var error = Assert.Throws<FormatException>(() => SlmpTargetParser.ParseNamed(text));
+        Assert.Contains(field, error.Message, StringComparison.Ordinal);
+        Assert.Contains(range, error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -230,6 +264,57 @@ public sealed class SlmpParserTests
 
         var ex = Assert.Throws<ArgumentException>(() => SlmpQualifiedDeviceParser.Parse(@"U1\HG0", SlmpPlcProfile.IqR));
         Assert.Contains(@"HG Extended Device access is valid only for U3E0\HG through U3E3\HG", ex.Message);
+    }
+
+    [Theory]
+    [InlineData(@"U0000\G0", (ushort)0)]
+    [InlineData(@"UFFFF\G0", ushort.MaxValue)]
+    public void ParseQualifiedDevice_AcceptsExtensionFieldBoundaries(string text, ushort expected)
+    {
+        Assert.Equal(expected, SlmpQualifiedDeviceParser.Parse(text, SlmpPlcProfile.IqR).ExtensionSpecification);
+    }
+
+    [Theory]
+    [InlineData(@"U10000\G0")]
+    [InlineData(@"U12345\G0")]
+    [InlineData(@"U-1\G0")]
+    [InlineData(@"U+1\G0")]
+    [InlineData(@"U\G0")]
+    [InlineData(@"UZ1\G0")]
+    [InlineData(@"UFFFFFFFFFFFFFFFFFFFFFFFF\G0")]
+    public void ParseQualifiedDevice_InvalidExtensionFields_IdentifyFieldAndRange(string text)
+    {
+        var error = Assert.Throws<FormatException>(() =>
+            SlmpQualifiedDeviceParser.Parse(text, SlmpPlcProfile.IqR));
+        Assert.Contains("U extension", error.Message, StringComparison.Ordinal);
+        Assert.Contains("0..65535", error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(@"J0\SW0", (ushort)0)]
+    [InlineData(@"J255\SW0", (ushort)255)]
+    public void ParseQualifiedDevice_AcceptsJDirectNetworkBoundaries(
+        string text,
+        ushort expected)
+    {
+        Assert.Equal(
+            expected,
+            SlmpQualifiedDeviceParser.Parse(text, SlmpPlcProfile.IqR).ExtensionSpecification);
+    }
+
+    [Theory]
+    [InlineData(@"J-1\SW0")]
+    [InlineData(@"J+1\SW0")]
+    [InlineData(@"J\SW0")]
+    [InlineData(@"JAB\SW0")]
+    [InlineData(@"J256\SW0")]
+    [InlineData(@"J999999999999999999999999\SW0")]
+    public void ParseQualifiedDevice_InvalidJDirectNetworks_IdentifyFieldAndRange(string text)
+    {
+        var error = Assert.Throws<FormatException>(() =>
+            SlmpQualifiedDeviceParser.Parse(text, SlmpPlcProfile.IqR));
+        Assert.Contains("J-direct network", error.Message, StringComparison.Ordinal);
+        Assert.Contains("0..255", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -354,7 +439,8 @@ public sealed class SlmpParserTests
         var error = Assert.Throws<FormatException>(() =>
             SlmpQualifiedDeviceParser.Parse(@"J256\SW10", SlmpPlcProfile.IqR));
 
-        Assert.Equal("Invalid J-direct network; expected decimal 0..255.", error.Message);
+        Assert.Contains("J-direct network", error.Message, StringComparison.Ordinal);
+        Assert.Contains("0..255", error.Message, StringComparison.Ordinal);
     }
 
     [Theory]

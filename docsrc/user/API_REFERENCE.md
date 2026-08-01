@@ -179,7 +179,7 @@ public sealed class SlmpClient
 
 A high-performance, asynchronous SLMP (MC Protocol) client for .NET. Supports 3E and 4E frame formats over TCP and UDP.
 
-Remarks: Public operations on one client enter one arrival-order FIFO queue, so one connection has at most one active wire transaction and 4E serial numbers remain associated with their responses. Queue waiting does not consume the transaction timeout. A waiting caller can cancel without sending. Unless a method explicitly documents a multi-step semantic operation, each request method emits exactly one SLMP request and never splits an oversized operation. Effective limits are validated before serial allocation or transport. The factory `OpenAndConnectAsync` returns a ready-to-use `SlmpClient` and is the recommended entry point for most use cases.
+Remarks: Public operations on one client enter one arrival-order FIFO queue, so one connection has at most one active wire transaction and 4E serial numbers remain associated with their responses. Queue waiting does not consume the transaction timeout. A waiting caller can cancel without sending. Unless a method explicitly documents a multi-step semantic operation, each request method emits exactly one SLMP request and never splits an oversized operation. Effective limits are validated before serial allocation or transport. The factory `OpenAndConnectAsync` returns a ready-to-use `SlmpClient` and is the recommended entry point for most use cases. Concurrent close or disposal rejects incomplete active work and queued work. A success value or framed PLC end-code error that has completed command-specific decoding remains definitive and is not replaced by the later lifecycle transition.
 
 #### Members
 
@@ -379,11 +379,20 @@ public Task WriteBitsAsync(SlmpDeviceAddress device, IReadOnlyList<bool> values,
 public Task<uint[]> ReadDWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
 ```
 
+Reads contiguous 32-bit values in one Direct Read request.
+
+Parameters:
+- `device`: Starting word-addressable device.
+- `points`: Number of DWord values, in public 32-bit units; maximum 480 for a 960-word profile limit.
+- `cancellationToken`: Cancellation token.
+
 ##### WriteDWordsAsync
 
 ```csharp
 public Task WriteDWordsAsync(SlmpDeviceAddress device, IReadOnlyList<uint> values, CancellationToken cancellationToken = default)
 ```
+
+Writes contiguous 32-bit values in one Direct Write request.
 
 ##### ReadFloat32sAsync
 
@@ -391,11 +400,15 @@ public Task WriteDWordsAsync(SlmpDeviceAddress device, IReadOnlyList<uint> value
 public Task<float[]> ReadFloat32sAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
 ```
 
+Reads contiguous float32 values in one Direct Read request.
+
 ##### WriteFloat32sAsync
 
 ```csharp
 public Task WriteFloat32sAsync(SlmpDeviceAddress device, IReadOnlyList<float> values, CancellationToken cancellationToken = default)
 ```
+
+Writes contiguous float32 values in one Direct Write request.
 
 ##### ReadRandomAsync
 
@@ -960,7 +973,7 @@ public static Task WriteTypedAsync(SlmpClient client, SlmpDeviceAddress device, 
 
 Writes one logical value using strict dtype validation and encoding.
 
-Remarks: Use this helper when application code wants strict typed writes without manually splitting words or packing float32 values. Values are not parsed from strings or converted between Boolean, floating, and integer types.
+Remarks: Use this helper when application code wants strict typed writes without manually splitting words or packing float32 values. Values are not parsed from strings or converted between Boolean, floating, and integer types. Device unit, route, and value validation complete before FIFO admission.
 
 Parameters:
 - `client`: Connected SLMP client.
@@ -992,7 +1005,7 @@ public static Task WriteBitInWordAsync(SlmpClient client, SlmpDeviceAddress devi
 
 Performs a read-modify-write to set or clear one bit inside a word device.
 
-Remarks: The read and write occupy one FIFO turn on this client, so its other operations cannot interleave. They remain two SLMP requests and are not PLC-atomic: another client, PLC logic, or external writer can change the word between them. Applications that require atomic coordination must implement it in the PLC contract.
+Remarks: The read and write occupy one FIFO turn on this client, so its other operations cannot interleave. They remain two SLMP requests and are not PLC-atomic: another client, PLC logic, or external writer can change the word between them. Applications that require atomic coordination must implement it in the PLC contract. Bit-device packed-word access is not a bit-in-word operation and is rejected by this helper.
 
 Parameters:
 - `client`: Connected SLMP client.
@@ -1167,7 +1180,7 @@ public static Task<IReadOnlyDictionary<string, object>> ReadNamedAsync(SlmpClien
 
 Reads a mixed named value set and returns a dictionary keyed by the original addresses.
 
-Remarks: The complete address list is compiled into exactly one random-read request. Entries that require another command family are rejected before transport.
+Remarks: The complete address list is compiled into exactly one random-read request. Entries that require another command family are rejected before transport. Use `ReadTypedAsync` or an explicit long-timer helper for LTN/LSTN current, contact, and coil routes.
 
 Returns: A dictionary whose keys match the requested address strings.
 
@@ -1184,7 +1197,7 @@ public static Task WriteNamedAsync(SlmpClient client, IReadOnlyDictionary<string
 
 Writes a mixed named value set by address string.
 
-Remarks: The complete update set is sent as exactly one random-write request. Word and DWord entries may share that request; bit entries use one random-bit request. Mixing those command families or requesting bit-in-word read-modify-write is rejected before transport.
+Remarks: The complete update set is sent as exactly one random-write request. Word and DWord entries may share that request; bit entries use one random-bit request. Mixing those command families or requesting bit-in-word read-modify-write is rejected before transport. The complete semantic plan is validated before FIFO admission.
 
 Parameters:
 - `client`: Connected SLMP client.

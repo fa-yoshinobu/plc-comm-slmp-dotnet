@@ -10,7 +10,7 @@
 | `WriteTypedAsync` | Writes one typed scalar. |
 
 Every semantic `SlmpDeviceAddress` or qualified address is bound to the exact canonical PLC profile used to create it. Passing it to a client configured for any other profile is rejected before request construction or transport activity, including when a unit-specific profile shares a base family with the client. Parse or construct the address again with the destination client's profile instead of reusing it across profiles.
-| `ReadNamedAsync` | Reads a mixed named value set; different command families are not atomic. |
+| `ReadNamedAsync` | Reads one named value set that fits exactly one Random Read request. |
 | `WriteNamedAsync` | Writes a named set of values. |
 | `ReadWordsSingleRequestAsync` / `ReadDWordsSingleRequestAsync` | Reads one contiguous block in one protocol request. |
 | `WriteBitInWordAsync` | Sets or clears one bit in a word device. |
@@ -191,7 +191,9 @@ parallel sessions.
 operations, and permits a later `OpenAsync`. A queued or read-only active operation
 reports `SlmpConnectionClosedException`; an active state-changing request whose
 bytes may already have been sent reports `SlmpOperationOutcomeUnknownException`
-with reason `Closed`.
+with reason `Closed`. If the matching response has already passed route/serial,
+protocol, end-code, length, and command-specific decoding, that definitive success
+or PLC end-code remains the result even when close or disposal occurs concurrently.
 `Dispose` and `DisposeAsync` are terminal and idempotent: later open, read, or
 write operations throw `ObjectDisposedException`. A client should not be
 reused after leaving a `using` or `await using` scope.
@@ -282,6 +284,15 @@ foreach (var (address, value) in snapshot)
 that request; direct/block/long-timer fallback routes are rejected before
 transport. `WriteNamedAsync` emits one random word/DWord request or one random
 bit request and rejects mixed families and bit-in-word read-modify-write.
+
+Semantic `BIT` operations accept only bit-addressable families such as `M`, `X`,
+and `Y`. Numeric and string scalar types accept only word-addressable families.
+Use `ReadWordsRawAsync` or `WriteWordsAsync` explicitly when packed 16-bit access
+to a bit-device range is intentional. Use `.0` through `.F` or
+`ReadNamedAsync(["D100.0"])` to read one bit inside a word device, and use
+`WriteBitInWordAsync` for the corresponding explicit non-atomic read-modify-write.
+An invalid `D100:BIT` call is never translated automatically, and
+`WriteBitInWordAsync` rejects bit-device families.
 
 Typed writes do not parse strings or convert Boolean and floating-point values into
 integers. `BIT` requires `bool`; U/S/D/L require integral CLR values in their exact
@@ -428,7 +439,10 @@ Console.WriteLine($"{row.Device}: supported={row.Supported}, range={row.AddressR
 
 ## Long device families
 
-`LTN`, `LSTN`, `LCN`, and `LZ` are 32-bit families. Always use `:D` or `:L` in named addresses, or pass `D` or `L` as the `ReadTypedAsync` / `WriteTypedAsync` dtype.
+`LTN`, `LSTN`, `LCN`, and `LZ` are 32-bit families. Pass `D` or `L` as the
+`ReadTypedAsync` / `WriteTypedAsync` dtype. Ordinary named reads reject `LTN`,
+`LSTN`, and their contact/coil families because those values require a Direct
+Read helper rather than the single Random Read used by `ReadNamedAsync`.
 
 ```csharp
 using System;
@@ -438,13 +452,23 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var current = await client.ReadTypedAsync("LTN0", "D");
-var snapshot = await client.ReadNamedAsync(["LTN0:D", "LSTN0:L", "LCN0:D", "LZ0:L"]);
+var timers = await client.ReadLongTimerAsync(0, 1);
+var snapshot = await client.ReadNamedAsync(["LCN0:D", "LZ0:L"]);
 
 Console.WriteLine($"LTN0 = {current}");
+Console.WriteLine($"LTN0 status = 0x{timers[0].StatusWord:X4}");
 Console.WriteLine($"LCN0:D = {snapshot["LCN0:D"]}");
 ```
 
 > **Caution:** Plain word access to `LTN`, `LSTN`, `LCN`, and `LZ` is rejected by the library.
+
+Direct DWord and Float32 reads/writes accept `1..480` public values when the
+active profile permits 960 Direct Word points. Invalid numeric counts throw
+`ArgumentOutOfRangeException` before multiplication, allocation, or transport.
+Malformed, negative, or out-of-range numeric fields in named targets and
+qualified `U`/`J` device text throw field-specific `FormatException` without
+truncation. U extension fields are hexadecimal `0000..FFFF` (`0..65535`), and
+J-direct network fields are decimal `0..255`.
 
 ## Address reference
 

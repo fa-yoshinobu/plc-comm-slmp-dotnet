@@ -8,7 +8,6 @@ internal enum SlmpNamedReadKind
     Word,
     Dword,
     BitInWord,
-    LongTimer,
     Fallback,
 }
 
@@ -38,14 +37,26 @@ internal sealed record SlmpNamedReadEntry(
     SlmpDeviceAddress Device,
     string DType,
     int? BitIndex,
-    SlmpNamedReadKind Kind,
-    SlmpLongTimerReadSpec? LongTimerRead
+    SlmpNamedReadKind Kind
 );
 
 internal sealed record SlmpNamedReadPlan(
     IReadOnlyList<SlmpNamedReadEntry> Entries,
     IReadOnlyList<SlmpDeviceAddress> WordDevices,
     IReadOnlyList<SlmpDeviceAddress> DwordDevices
+);
+
+internal readonly record struct SlmpPreparedTypedWrite(
+    SlmpNamedWriteRoute Route,
+    bool BitValue,
+    ushort WordValue,
+    uint DwordValue
+);
+
+internal sealed record SlmpNamedWritePlan(
+    IReadOnlyList<(SlmpDeviceAddress Device, ushort Value)> WordEntries,
+    IReadOnlyList<(SlmpDeviceAddress Device, uint Value)> DwordEntries,
+    IReadOnlyList<(SlmpDeviceAddress Device, bool Value)> BitEntries
 );
 
 /// <summary>
@@ -194,6 +205,7 @@ public static class SlmpClientExtensions
     /// Use this helper when application code wants strict typed writes without
     /// manually splitting words or packing float32 values. Values are not parsed
     /// from strings or converted between Boolean, floating, and integer types.
+    /// Device unit, route, and value validation complete before FIFO admission.
     /// </remarks>
     public static Task WriteTypedAsync(
         this SlmpClient client,
@@ -204,70 +216,35 @@ public static class SlmpClientExtensions
     {
         ArgumentNullException.ThrowIfNull(value);
         var normalizedDType = RequireDType(dtype, nameof(dtype));
-        return client.ExecuteExclusiveAsync(
-            token => WriteTypedCoreAsync(client, device, normalizedDType, value, token),
-            ct);
+        var prepared = PrepareTypedWrite(device, normalizedDType, value, client.PlcProfile);
+        return WriteTypedCoreAsync(client, device, prepared, ct);
     }
 
-    private static async Task WriteTypedCoreAsync(
+    private static Task WriteTypedCoreAsync(
         SlmpClient client,
         SlmpDeviceAddress device,
-        string normalizedDType,
-        object value,
+        SlmpPreparedTypedWrite prepared,
         CancellationToken ct)
     {
-        switch (ResolveWriteRoute(device, normalizedDType, client.PlcProfile))
+        return prepared.Route switch
         {
-            case SlmpNamedWriteRoute.RandomBits:
-                await client.WriteRandomBitsAsync(
-                        [(device, RequireBooleanWriteValue(value))],
-                        ct)
-                    .ConfigureAwait(false);
-                break;
-            case SlmpNamedWriteRoute.ContiguousBits:
-                await client.WriteBitsAsync(device, [RequireBooleanWriteValue(value)], ct)
-                    .ConfigureAwait(false);
-                break;
-            case SlmpNamedWriteRoute.ContiguousDWords when normalizedDType == "F":
-                await client.WriteDWordsAsync(
-                        device,
-                        [unchecked((uint)BitConverter.SingleToInt32Bits(RequireFloat32WriteValue(value)))],
-                        ct)
-                    .ConfigureAwait(false);
-                break;
-            case SlmpNamedWriteRoute.RandomDWords when normalizedDType == "L":
-                await client.WriteRandomWordsAsync(
-                        [],
-                        [(device, unchecked((uint)RequireInt32WriteValue(value, "L")))],
-                        ct)
-                    .ConfigureAwait(false);
-                break;
-            case SlmpNamedWriteRoute.RandomDWords:
-                await client.WriteRandomWordsAsync(
-                        [],
-                        [(device, RequireUInt32WriteValue(value, "D"))],
-                        ct)
-                    .ConfigureAwait(false);
-                break;
-            case SlmpNamedWriteRoute.ContiguousDWords when normalizedDType == "L":
-                await client.WriteDWordsAsync(
-                        device,
-                        [unchecked((uint)RequireInt32WriteValue(value, "L"))],
-                        ct)
-                    .ConfigureAwait(false);
-                break;
-            case SlmpNamedWriteRoute.ContiguousDWords:
-                await client.WriteDWordsAsync(device, [RequireUInt32WriteValue(value, "D")], ct)
-                    .ConfigureAwait(false);
-                break;
-            default:
-                var word = normalizedDType == "S"
-                    ? unchecked((ushort)RequireInt16WriteValue(value, "S"))
-                    : RequireUInt16WriteValue(value, "U");
-                await client.WriteWordsAsync(device, [word], ct)
-                    .ConfigureAwait(false);
-                break;
-        }
+            SlmpNamedWriteRoute.RandomBits => client.WriteRandomBitsAsync(
+                [(device, prepared.BitValue)],
+                ct),
+            SlmpNamedWriteRoute.ContiguousBits => client.WriteBitsAsync(
+                device,
+                [prepared.BitValue],
+                ct),
+            SlmpNamedWriteRoute.RandomDWords => client.WriteRandomWordsAsync(
+                [],
+                [(device, prepared.DwordValue)],
+                ct),
+            SlmpNamedWriteRoute.ContiguousDWords => client.WriteDWordsAsync(
+                device,
+                [prepared.DwordValue],
+                ct),
+            _ => client.WriteWordsAsync(device, [prepared.WordValue], ct),
+        };
     }
 
     /// <summary>
@@ -299,8 +276,10 @@ public static class SlmpClientExtensions
     /// operations cannot interleave. They remain two SLMP requests and are not
     /// PLC-atomic: another client, PLC logic, or external writer can change the
     /// word between them. Applications that require atomic coordination must
-    /// implement it in the PLC contract.
+    /// implement it in the PLC contract. Bit-device packed-word access is not a
+    /// bit-in-word operation and is rejected by this helper.
     /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="device"/> is not word-addressable.</exception>
     public static Task WriteBitInWordAsync(
         this SlmpClient client,
         SlmpDeviceAddress device,
@@ -310,6 +289,12 @@ public static class SlmpClientExtensions
     {
         if (bitIndex is < 0 or > 15)
             throw new ArgumentOutOfRangeException(nameof(bitIndex), "bitIndex must be 0-15.");
+        if (!SlmpDeviceUnits.IsWord(device.Code))
+        {
+            throw new ArgumentException(
+                $"WriteBitInWordAsync requires a word-addressable device; {device.Code} is bit-addressable.",
+                nameof(device));
+        }
         return client.ExecuteExclusiveAsync(
             token => WriteBitInWordCoreAsync(client, device, bitIndex, value, token),
             ct);
@@ -547,6 +532,8 @@ public static class SlmpClientExtensions
     /// <remarks>
     /// The complete address list is compiled into exactly one random-read request.
     /// Entries that require another command family are rejected before transport.
+    /// Use <see cref="ReadTypedAsync(SlmpClient,SlmpDeviceAddress,string,CancellationToken)"/>
+    /// or an explicit long-timer helper for LTN/LSTN current, contact, and coil routes.
     /// </remarks>
     public static Task<IReadOnlyDictionary<string, object>> ReadNamedAsync(
         this SlmpClient client,
@@ -572,6 +559,7 @@ public static class SlmpClientExtensions
     /// The complete update set is sent as exactly one random-write request. Word and DWord
     /// entries may share that request; bit entries use one random-bit request. Mixing those
     /// command families or requesting bit-in-word read-modify-write is rejected before transport.
+    /// The complete semantic plan is validated before FIFO admission.
     /// </remarks>
     public static Task WriteNamedAsync(
         this SlmpClient client,
@@ -583,17 +571,16 @@ public static class SlmpClientExtensions
             throw new ArgumentException("WriteNamedAsync requires at least one update.", nameof(updates));
 
         var snapshot = updates.ToArray();
-        return client.ExecuteExclusiveAsync(
-            token => WriteNamedCoreAsync(client, snapshot, token),
-            ct);
+        var plan = CompileNamedWritePlan(client, snapshot);
+        return plan.BitEntries.Count != 0
+            ? client.WriteRandomBitsAsync(plan.BitEntries, ct)
+            : client.WriteRandomWordsAsync(plan.WordEntries, plan.DwordEntries, ct);
     }
 
-    private static async Task WriteNamedCoreAsync(
+    private static SlmpNamedWritePlan CompileNamedWritePlan(
         SlmpClient client,
-        IReadOnlyList<KeyValuePair<string, object>> updates,
-        CancellationToken ct)
+        IReadOnlyList<KeyValuePair<string, object>> updates)
     {
-
         var wordEntries = new List<(SlmpDeviceAddress Device, ushort Value)>();
         var dwordEntries = new List<(SlmpDeviceAddress Device, uint Value)>();
         var bitEntries = new List<(SlmpDeviceAddress Device, bool Value)>();
@@ -647,10 +634,7 @@ public static class SlmpClientExtensions
                 "WriteNamedAsync cannot mix bit and word/DWord destinations because that requires multiple protocol requests.",
                 nameof(updates));
 
-        if (bitEntries.Count != 0)
-            await client.WriteRandomBitsAsync(bitEntries, ct).ConfigureAwait(false);
-        else
-            await client.WriteRandomWordsAsync(wordEntries, dwordEntries, ct).ConfigureAwait(false);
+        return new SlmpNamedWritePlan(wordEntries, dwordEntries, bitEntries);
     }
 
     // -----------------------------------------------------------------------
@@ -763,7 +747,6 @@ public static class SlmpClientExtensions
             var (baseAddress, dtype, bitIdx) = ParseAddress(address);
             var device = SlmpDeviceParser.Parse(baseAddress, plcProfile);
             var kind = SlmpNamedReadKind.Fallback;
-            var longTimerRead = GetLongTimerReadSpec(device.Code);
 
             if (dtype == "BIT_IN_WORD")
             {
@@ -784,9 +767,9 @@ public static class SlmpClientExtensions
                 ValidateDWordOnlyEntry(address, device, dtype);
             }
 
-            if (longTimerRead is not null)
+            if (IsLongTimerDirectNamedDevice(device.Code))
             {
-                kind = SlmpNamedReadKind.LongTimer;
+                kind = SlmpNamedReadKind.Fallback;
             }
             else if (dtype == "BIT" && TryPlainBitWordRead(device, out var wordDevice, out var plainBitIndex))
             {
@@ -810,17 +793,24 @@ public static class SlmpClientExtensions
                     dwordDevices.Add(device);
             }
 
-            entries.Add(new SlmpNamedReadEntry(address, device, dtype, bitIdx, kind, longTimerRead));
+            entries.Add(new SlmpNamedReadEntry(address, device, dtype, bitIdx, kind));
+        }
+
+        if (entries.Count == 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(addresses),
+                "ReadNamedAsync requires at least one address for its single Random Read request.");
         }
 
         var unsupported = entries
-            .Where(entry => entry.Kind is SlmpNamedReadKind.Fallback or SlmpNamedReadKind.LongTimer)
+            .Where(entry => entry.Kind is SlmpNamedReadKind.Fallback)
             .Select(entry => entry.Address)
             .ToArray();
         if (unsupported.Length != 0)
         {
             throw new ArgumentException(
-                $"ReadNamedAsync accepts only addresses that fit one random-read request; use explicit read calls for {string.Join(", ", unsupported)}.",
+                $"ReadNamedAsync accepts only addresses that fit one random-read request; use ReadTypedAsync or an explicit long-timer helper for long-timer Direct Read routes and explicit read calls for other unsupported entries: {string.Join(", ", unsupported)}.",
                 nameof(addresses));
         }
 
@@ -832,10 +822,10 @@ public static class SlmpClientExtensions
         SlmpNamedReadPlan plan,
         CancellationToken ct)
     {
+        ValidateCompiledReadPlan(plan);
+
         var result = new Dictionary<string, object>(plan.Entries.Count);
         var (wordValues, dwordValues) = await ReadRandomMapsAsync(client, plan.WordDevices, plan.DwordDevices, ct).ConfigureAwait(false);
-        var longTimerCache = new Dictionary<(SlmpDeviceCode BaseCode, uint Number), SlmpLongTimerResult>();
-
         foreach (var entry in plan.Entries)
         {
             switch (entry.Kind)
@@ -856,53 +846,46 @@ public static class SlmpClientExtensions
                         _ => dwordValues[entry.Device],
                     };
                     break;
-                case SlmpNamedReadKind.LongTimer:
-                    result[entry.Address] = await ReadLongTimerValueAsync(client, entry, longTimerCache, ct).ConfigureAwait(false);
-                    break;
                 default:
-                    if (entry.DType == "BIT_IN_WORD")
-                    {
-                        var words = await client.ReadWordsRawAsync(entry.Device, 1, ct).ConfigureAwait(false);
-                        result[entry.Address] = ((words[0] >> RequireBitInWordIndex(entry.Address, entry.BitIndex)) & 1) != 0;
-                    }
-                    else
-                    {
-                        result[entry.Address] = await client.ReadTypedAsync(entry.Device, entry.DType, ct).ConfigureAwait(false);
-                    }
-                    break;
+                    throw new InvalidOperationException($"Unsupported named-read plan kind: {entry.Kind}.");
             }
         }
 
         return result;
     }
 
-    private static async Task<object> ReadLongTimerValueAsync(
-        SlmpClient client,
-        SlmpNamedReadEntry entry,
-        Dictionary<(SlmpDeviceCode BaseCode, uint Number), SlmpLongTimerResult> cache,
-        CancellationToken ct)
+    private static void ValidateCompiledReadPlan(SlmpNamedReadPlan plan)
     {
-        var spec = entry.LongTimerRead ?? throw new InvalidOperationException("Long timer read metadata is missing.");
-        if (IsLongCounterStateDirectBitRead(spec))
-        {
-            var bits = await client.ReadBitsUncheckedAsync(entry.Device, 1, ct).ConfigureAwait(false);
-            return bits[0];
-        }
+        if (plan.Entries.Count == 0)
+            throw new ArgumentException("The named read plan must contain at least one entry.", nameof(plan));
 
-        if (spec.BaseCode == SlmpDeviceCode.LCN && spec.Kind == SlmpLongTimerReadKind.Current)
+        var wordDevices = plan.WordDevices.ToHashSet();
+        var dwordDevices = plan.DwordDevices.ToHashSet();
+        foreach (var entry in plan.Entries)
         {
-            var value = await ReadRandomDWordValueAsync(client, entry.Device, ct).ConfigureAwait(false);
-            return string.Equals(entry.DType, "L", StringComparison.OrdinalIgnoreCase) ? DecodeSignedDWord(value) : value;
+            switch (entry.Kind)
+            {
+                case SlmpNamedReadKind.Word when
+                    entry.DType is "U" or "S" &&
+                    SlmpDeviceUnits.IsWord(entry.Device.Code) &&
+                    wordDevices.Contains(entry.Device):
+                    break;
+                case SlmpNamedReadKind.BitInWord when
+                    entry.DType == "BIT_IN_WORD" &&
+                    entry.BitIndex is >= 0 and <= 15 &&
+                    wordDevices.Contains(entry.Device):
+                    break;
+                case SlmpNamedReadKind.Dword when
+                    entry.DType is "D" or "L" or "F" &&
+                    SlmpDeviceUnits.IsWord(entry.Device.Code) &&
+                    dwordDevices.Contains(entry.Device):
+                    break;
+                default:
+                    throw new ArgumentException(
+                        $"Named read entry '{entry.Address}' is not a valid member of the single Random Read plan.",
+                        nameof(plan));
+            }
         }
-
-        var key = (spec.BaseCode, entry.Device.Number);
-        if (!cache.TryGetValue(key, out var timer))
-        {
-            timer = await ReadLongLikePointAsync(client, spec.BaseCode, entry.Device.Number, ct).ConfigureAwait(false);
-            cache[key] = timer;
-        }
-
-        return DecodeLongLikeValue(entry.DType, spec, timer);
     }
 
     private static async Task<SlmpLongTimerResult> ReadLongLikePointAsync(
@@ -1001,7 +984,7 @@ public static class SlmpClientExtensions
 
     private static void ValidateBitInWordTarget(string address, SlmpDeviceAddress device)
     {
-        if (!IsWordDevice(device.Code))
+        if (!SlmpDeviceUnits.IsWord(device.Code))
         {
             throw new ArgumentException(
                 $"Address '{address}' uses '.bit' notation, which is only valid for word devices. " +
@@ -1047,7 +1030,7 @@ public static class SlmpClientExtensions
         if (dtype == "BIT_IN_WORD")
             return;
 
-        var isBitDevice = IsBitDevice(device.Code);
+        var isBitDevice = SlmpDeviceUnits.IsBit(device.Code);
         if (isBitDevice && dtype != "BIT")
         {
             throw new ArgumentException(
@@ -1065,7 +1048,7 @@ public static class SlmpClientExtensions
 
     private static void ValidateDeviceUnitDType(SlmpDeviceAddress device, string dtype, string paramName)
     {
-        var isBitDevice = IsBitDevice(device.Code);
+        var isBitDevice = SlmpDeviceUnits.IsBit(device.Code);
         if (isBitDevice && dtype != "BIT")
         {
             throw new ArgumentException(
@@ -1114,6 +1097,52 @@ public static class SlmpClientExtensions
         };
     }
 
+    private static SlmpPreparedTypedWrite PrepareTypedWrite(
+        SlmpDeviceAddress device,
+        string normalizedDType,
+        object value,
+        SlmpPlcProfile plcProfile)
+    {
+        var route = ResolveWriteRoute(device, normalizedDType, plcProfile);
+        return normalizedDType switch
+        {
+            "BIT" => new SlmpPreparedTypedWrite(
+                route,
+                RequireBooleanWriteValue(value),
+                default,
+                default),
+            "U" => new SlmpPreparedTypedWrite(
+                route,
+                default,
+                RequireUInt16WriteValue(value, normalizedDType),
+                default),
+            "S" => new SlmpPreparedTypedWrite(
+                route,
+                default,
+                unchecked((ushort)RequireInt16WriteValue(value, normalizedDType)),
+                default),
+            "F" => new SlmpPreparedTypedWrite(
+                route,
+                default,
+                default,
+                unchecked((uint)BitConverter.SingleToInt32Bits(RequireFloat32WriteValue(value)))),
+            "L" => new SlmpPreparedTypedWrite(
+                route,
+                default,
+                default,
+                unchecked((uint)RequireInt32WriteValue(value, normalizedDType))),
+            "D" => new SlmpPreparedTypedWrite(
+                route,
+                default,
+                default,
+                RequireUInt32WriteValue(value, normalizedDType)),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(normalizedDType),
+                normalizedDType,
+                "Unsupported prepared write dtype."),
+        };
+    }
+
     internal static SlmpLongTimerReadSpec? GetLongTimerReadSpec(SlmpDeviceCode code)
         => code switch
         {
@@ -1128,6 +1157,14 @@ public static class SlmpClientExtensions
             SlmpDeviceCode.LCC => new SlmpLongTimerReadSpec(SlmpDeviceCode.LCC, SlmpLongTimerReadKind.Coil),
             _ => null,
         };
+
+    private static bool IsLongTimerDirectNamedDevice(SlmpDeviceCode code)
+        => code is SlmpDeviceCode.LTN
+            or SlmpDeviceCode.LSTN
+            or SlmpDeviceCode.LTS
+            or SlmpDeviceCode.LTC
+            or SlmpDeviceCode.LSTS
+            or SlmpDeviceCode.LSTC;
 
     private static bool IsLongCounterStateDirectBitRead(SlmpLongTimerReadSpec spec)
         => spec.BaseCode is SlmpDeviceCode.LCS or SlmpDeviceCode.LCC
@@ -1235,51 +1272,6 @@ public static class SlmpClientExtensions
             or SlmpDeviceCode.LSTC
             or SlmpDeviceCode.LCS
             or SlmpDeviceCode.LCC;
-
-    private static bool IsWordDevice(SlmpDeviceCode code)
-        => code is SlmpDeviceCode.SD
-            or SlmpDeviceCode.D
-            or SlmpDeviceCode.W
-            or SlmpDeviceCode.TN
-            or SlmpDeviceCode.LTN
-            or SlmpDeviceCode.STN
-            or SlmpDeviceCode.LSTN
-            or SlmpDeviceCode.CN
-            or SlmpDeviceCode.LCN
-            or SlmpDeviceCode.SW
-            or SlmpDeviceCode.Z
-            or SlmpDeviceCode.LZ
-            or SlmpDeviceCode.R
-            or SlmpDeviceCode.ZR
-            or SlmpDeviceCode.RD
-            or SlmpDeviceCode.G
-            or SlmpDeviceCode.HG;
-
-    private static bool IsBitDevice(SlmpDeviceCode code)
-        => code is SlmpDeviceCode.SM
-            or SlmpDeviceCode.X
-            or SlmpDeviceCode.Y
-            or SlmpDeviceCode.M
-            or SlmpDeviceCode.L
-            or SlmpDeviceCode.F
-            or SlmpDeviceCode.V
-            or SlmpDeviceCode.B
-            or SlmpDeviceCode.S
-            or SlmpDeviceCode.TS
-            or SlmpDeviceCode.TC
-            or SlmpDeviceCode.LTS
-            or SlmpDeviceCode.LTC
-            or SlmpDeviceCode.STS
-            or SlmpDeviceCode.STC
-            or SlmpDeviceCode.LSTS
-            or SlmpDeviceCode.LSTC
-            or SlmpDeviceCode.CS
-            or SlmpDeviceCode.CC
-            or SlmpDeviceCode.LCS
-            or SlmpDeviceCode.LCC
-            or SlmpDeviceCode.SB
-            or SlmpDeviceCode.DX
-            or SlmpDeviceCode.DY;
 
     private static bool IsPlainBitWordBatchable(SlmpDeviceCode code)
         => code is SlmpDeviceCode.SM

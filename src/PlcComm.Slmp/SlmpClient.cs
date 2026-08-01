@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
 using System.Text;
 
 namespace PlcComm.Slmp;
@@ -28,6 +29,11 @@ namespace PlcComm.Slmp;
 /// The factory <see cref="SlmpClientFactory.OpenAndConnectAsync(SlmpConnectionOptions, CancellationToken)"/>
 /// returns a ready-to-use <see cref="SlmpClient"/> and is the recommended entry
 /// point for most use cases.
+/// </para>
+/// <para>
+/// Concurrent close or disposal rejects incomplete active work and queued work. A success value or
+/// framed PLC end-code error that has completed command-specific decoding remains definitive and is
+/// not replaced by the later lifecycle transition.
 /// </para>
 /// </remarks>
 public sealed class SlmpClient : IDisposable, IAsyncDisposable
@@ -83,6 +89,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private readonly record struct OperationLease(OperationGeneration Generation, bool OwnsTurn);
     private sealed record OperationContext(SlmpClient Client, OperationGeneration Generation);
+
+    private sealed class SlmpCommandDecodeException(Exception innerException) : Exception(null, innerException);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SlmpClient"/> class.
@@ -143,6 +151,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     internal byte[] LastRequestFrame { get; private set; } = [];
     internal byte[] LastResponseFrame { get; private set; } = [];
     internal Action<SlmpTraceFrame>? MaintainerTraceHook { get; set; }
+    internal Func<Task>? BeforeCommandDecodeBarrier { get; set; }
+    internal Func<Task>? DefinitiveResultBarrier { get; set; }
 
     /// <summary>Gets a value indicating whether the client is currently connected.</summary>
     public bool IsOpen => _transportMode == SlmpTransportMode.Tcp ? _tcp?.Connected == true : _udp is not null;
@@ -295,9 +305,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         try
         {
             var result = await operation(linked.Token).ConfigureAwait(false);
-            if (lease.Generation.IsRetired)
-                throw lease.Generation.CreateFailure(this);
+            if (lease.OwnsTurn && DefinitiveResultBarrier is { } resultBarrier)
+                await resultBarrier().ConfigureAwait(false);
             return result;
+        }
+        catch (SlmpError exception) when (exception.EndCode is not null)
+        {
+            if (lease.OwnsTurn && DefinitiveResultBarrier is { } resultBarrier)
+                await resultBarrier().ConfigureAwait(false);
+            throw;
         }
         catch (SlmpOperationOutcomeUnknownException)
         {
@@ -596,14 +612,20 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     public async Task<SlmpTypeNameInfo> ReadTypeNameAsync(CancellationToken cancellationToken = default)
     {
         EnsureProfileFeatureAllowed(SlmpProfileFeature.TypeName);
-        var payload = await RequestCoreAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty, true, cancellationToken).ConfigureAwait(false);
-        if (payload.Length < 16) throw new SlmpError("read_type_name response too short");
-        var model = Encoding.ASCII.GetString(payload.AsSpan(0, 16)).TrimEnd('\0', ' ');
-        if (payload.Length >= 18)
-        {
-            return new SlmpTypeNameInfo(model, BinaryPrimitives.ReadUInt16LittleEndian(payload.AsSpan(16, 2)), true);
-        }
-        return new SlmpTypeNameInfo(model, 0, false);
+        return await RequestCoreAsync(
+            SlmpCommand.ReadTypeName,
+            0x0000,
+            ReadOnlyMemory<byte>.Empty,
+            true,
+            static payload =>
+            {
+                if (payload.Length < 16) throw new SlmpError("read_type_name response too short");
+                var model = Encoding.ASCII.GetString(payload.AsSpan(0, 16)).TrimEnd('\0', ' ');
+                return payload.Length >= 18
+                    ? new SlmpTypeNameInfo(model, BinaryPrimitives.ReadUInt16LittleEndian(payload.AsSpan(16, 2)), true)
+                    : new SlmpTypeNameInfo(model, 0, false);
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -613,8 +635,16 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <returns>The decoded CPU operation state and raw masked code.</returns>
     public async Task<SlmpCpuOperationState> ReadCpuOperationStateAsync(CancellationToken cancellationToken = default)
     {
-        var statusWord = (await ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.SD, 203, PlcProfile), 1, cancellationToken).ConfigureAwait(false))[0];
-        return DecodeCpuOperationState(statusWord);
+        return await ExecuteExclusiveAsync(
+            async token =>
+            {
+                var statusWord = (await ReadWordsRawAsync(
+                    new SlmpDeviceAddress(SlmpDeviceCode.SD, 203, PlcProfile),
+                    1,
+                    token).ConfigureAwait(false))[0];
+                return DecodeCpuOperationState(statusWord);
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -627,8 +657,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         var rangeProfile = SlmpPlcProfiles.Resolve(PlcProfile).RangeProfile;
         var deviceRangeProfile = SlmpDeviceRangeResolver.ResolveProfile(rangeProfile);
-        var registers = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, deviceRangeProfile, cancellationToken).ConfigureAwait(false);
-        return SlmpDeviceRangeResolver.BuildCatalog(rangeProfile, registers);
+        return await ExecuteExclusiveAsync(
+            async token =>
+            {
+                var registers = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, deviceRangeProfile, token).ConfigureAwait(false);
+                return SlmpDeviceRangeResolver.BuildCatalog(rangeProfile, registers);
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -662,11 +697,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         var payload = BuildReadWritePayload(device, points, null, bitUnit: false);
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0000 : (ushort)0x0002;
-        var data = await RequestCoreAsync(SlmpCommand.DeviceRead, sub, payload, true, cancellationToken).ConfigureAwait(false);
-        if (data.Length != points * 2) throw new SlmpError("read_words payload size mismatch");
-        var values = new ushort[points];
-        for (var i = 0; i < points; i++) values[i] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(i * 2, 2));
-        return values;
+        return await RequestCoreAsync(
+            SlmpCommand.DeviceRead,
+            sub,
+            payload,
+            true,
+            data => DecodeWords(data, points, "read_words"),
+            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task WriteWordsAsync(SlmpDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
@@ -697,10 +734,21 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
         ValidateDirectAccessPoints(points, bitUnit: true, "read_bits", SlmpProfileLimit.DirectBitRead);
+        if (!SlmpDeviceUnits.IsBit(device.Code))
+        {
+            throw new ArgumentException(
+                $"Bit-unit reads require a bit-addressable device; {device.Code} is word-addressable.",
+                nameof(device));
+        }
         var payload = BuildReadWritePayload(device, points, null, bitUnit: true);
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0001 : (ushort)0x0003;
-        var data = await RequestCoreAsync(SlmpCommand.DeviceRead, sub, payload, true, cancellationToken).ConfigureAwait(false);
-        return UnpackBitValues(data, points);
+        return await RequestCoreAsync(
+            SlmpCommand.DeviceRead,
+            sub,
+            payload,
+            true,
+            data => UnpackBitValues(data, points),
+            cancellationToken).ConfigureAwait(false);
     }
 
     private static SlmpCpuOperationState DecodeCpuOperationState(ushort statusWord)
@@ -730,11 +778,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: false, CompatibilityMode);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0080
             : CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
-        var data = await RequestCoreAsync(SlmpCommand.DeviceRead, sub, payload, true, cancellationToken).ConfigureAwait(false);
-        if (data.Length != points * 2) throw new SlmpError("read_words_ext payload size mismatch");
-        var values = new ushort[points];
-        for (var i = 0; i < points; i++) values[i] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(i * 2, 2));
-        return values;
+        return await RequestCoreAsync(
+            SlmpCommand.DeviceRead,
+            sub,
+            payload,
+            true,
+            data => DecodeWords(data, points, "read_words_ext"),
+            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task WriteWordsExtendedAsync(
@@ -769,8 +819,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: true, CompatibilityMode);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0081
             : CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0081 : (ushort)0x0083;
-        var data = await RequestCoreAsync(SlmpCommand.DeviceRead, sub, payload, true, cancellationToken).ConfigureAwait(false);
-        return UnpackBitValues(data, points);
+        return await RequestCoreAsync(
+            SlmpCommand.DeviceRead,
+            sub,
+            payload,
+            true,
+            data => UnpackBitValues(data, points),
+            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task WriteBitsExtendedAsync(
@@ -806,24 +861,35 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         _ = await RequestCoreAsync(SlmpCommand.DeviceWrite, sub, payload, true, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Reads contiguous 32-bit values in one Direct Read request.</summary>
+    /// <param name="device">Starting word-addressable device.</param>
+    /// <param name="points">Number of DWord values, in public 32-bit units; maximum 480 for a 960-word profile limit.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The value count is outside the active profile's DWord limit.</exception>
     public async Task<uint[]> ReadDWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
     {
+        ValidateDirectDWordPoints(points, nameof(points), SlmpProfileLimit.DirectWordRead);
         ValidateDirectDWordReadDevice(device);
-        var words = await ReadWordsRawAsync(device, checked((ushort)(points * 2)), cancellationToken).ConfigureAwait(false);
-        var result = new uint[points];
-        for (var i = 0; i < points; i++)
-        {
-            result[i] = (uint)(words[i * 2] | (words[(i * 2) + 1] << 16));
-        }
-        return result;
+        return await ExecuteExclusiveAsync(
+            async token =>
+            {
+                var words = await ReadWordsRawAsync(device, (ushort)(points * 2), token).ConfigureAwait(false);
+                var result = new uint[points];
+                for (var index = 0; index < points; index++)
+                    result[index] = (uint)(words[index * 2] | (words[(index * 2) + 1] << 16));
+                return result;
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Writes contiguous 32-bit values in one Direct Write request.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The collection count is outside the active profile's DWord limit.</exception>
     public async Task WriteDWordsAsync(SlmpDeviceAddress device, IReadOnlyList<uint> values, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(values);
+        ValidateDirectDWordPoints(values.Count, nameof(values), SlmpProfileLimit.DirectWordWrite);
         ValidateDirectDWordWriteDevice(device);
         EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
-        ValidateDirectAccessPoints(checked(values.Count * 2), bitUnit: false, "write_dwords", SlmpProfileLimit.DirectWordWrite);
         var words = new ushort[values.Count * 2];
         for (var i = 0; i < values.Count; i++)
         {
@@ -833,20 +899,29 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         await WriteWordsUncheckedAsync(device, words, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Reads contiguous float32 values in one Direct Read request.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value count is outside the active profile's Float32 limit.</exception>
     public async Task<float[]> ReadFloat32sAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
     {
-        var dwords = await ReadDWordsRawAsync(device, points, cancellationToken).ConfigureAwait(false);
-        var values = new float[dwords.Length];
-        for (var i = 0; i < dwords.Length; i++)
-        {
-            values[i] = BitConverter.Int32BitsToSingle(unchecked((int)dwords[i]));
-        }
-        return values;
+        ValidateDirectDWordPoints(points, nameof(points), SlmpProfileLimit.DirectWordRead);
+        return await ExecuteExclusiveAsync(
+            async token =>
+            {
+                var dwords = await ReadDWordsRawAsync(device, points, token).ConfigureAwait(false);
+                var values = new float[dwords.Length];
+                for (var index = 0; index < dwords.Length; index++)
+                    values[index] = BitConverter.Int32BitsToSingle(unchecked((int)dwords[index]));
+                return values;
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Writes contiguous float32 values in one Direct Write request.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The collection count is outside the active profile's Float32 limit.</exception>
     public async Task WriteFloat32sAsync(SlmpDeviceAddress device, IReadOnlyList<float> values, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(values);
+        ValidateDirectDWordPoints(values.Count, nameof(values), SlmpProfileLimit.DirectWordWrite);
         var dwords = new uint[values.Count];
         for (var i = 0; i < values.Count; i++)
         {
@@ -885,27 +960,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         }
 
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0000 : (ushort)0x0002;
-        var data = await RequestCoreAsync(SlmpCommand.DeviceReadRandom, sub, payload, true, cancellationToken).ConfigureAwait(false);
-        var expected = (wordDevices.Count * 2) + (dwordDevices.Count * 4);
-        if (data.Length != expected)
-        {
-            throw new SlmpError($"read_random response size mismatch expected={expected} actual={data.Length}");
-        }
-
-        var words = new ushort[wordDevices.Count];
-        var dwords = new uint[dwordDevices.Count];
-        var cursor = 0;
-        for (var i = 0; i < words.Length; i++)
-        {
-            words[i] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(cursor, 2));
-            cursor += 2;
-        }
-        for (var i = 0; i < dwords.Length; i++)
-        {
-            dwords[i] = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(cursor, 4));
-            cursor += 4;
-        }
-        return (words, dwords);
+        return await RequestCoreAsync(
+            SlmpCommand.DeviceReadRandom,
+            sub,
+            payload,
+            true,
+            data => DecodeRandomReadResponse(data, wordDevices.Count, dwordDevices.Count, "read_random"),
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Reads only word devices in one random-read request.</summary>
@@ -1035,27 +1096,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var linkDirect = SelectExtendedQlLayout(wordDevices.Concat(dwordDevices), "read_random_ext");
         var sub = linkDirect || CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
         var payload = SlmpPayloads.BuildExtendedRandomReadPayload(wordDevices, dwordDevices, CompatibilityMode, PlcProfile);
-        var data = await RequestCoreAsync(SlmpCommand.DeviceReadRandom, sub, payload, true, cancellationToken).ConfigureAwait(false);
-        var expected = (wordDevices.Count * 2) + (dwordDevices.Count * 4);
-        if (data.Length != expected)
-        {
-            throw new SlmpError($"read_random_ext response size mismatch expected={expected} actual={data.Length}");
-        }
-
-        var words = new ushort[wordDevices.Count];
-        var dwords = new uint[dwordDevices.Count];
-        var cursor = 0;
-        for (var i = 0; i < words.Length; i++)
-        {
-            words[i] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(cursor, 2));
-            cursor += 2;
-        }
-        for (var i = 0; i < dwords.Length; i++)
-        {
-            dwords[i] = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(cursor, 4));
-            cursor += 4;
-        }
-        return (words, dwords);
+        return await RequestCoreAsync(
+            SlmpCommand.DeviceReadRandom,
+            sub,
+            payload,
+            true,
+            data => DecodeRandomReadResponse(data, wordDevices.Count, dwordDevices.Count, "read_random_ext"),
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Reads only word devices through semantic Extended Device routes.</summary>
@@ -1202,27 +1249,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         }
 
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0000 : (ushort)0x0002;
-        var data = await RequestCoreAsync(SlmpCommand.DeviceReadBlock, sub, payload, true, cancellationToken).ConfigureAwait(false);
-        var expected = (totalWordPoints + totalBitPoints) * 2;
-        if (data.Length != expected)
-        {
-            throw new SlmpError($"read_block response size mismatch expected={expected} actual={data.Length}");
-        }
-
-        var words = new ushort[totalWordPoints];
-        var bits = new ushort[totalBitPoints];
-        var cursor = 0;
-        for (var i = 0; i < words.Length; i++)
-        {
-            words[i] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(cursor, 2));
-            cursor += 2;
-        }
-        for (var i = 0; i < bits.Length; i++)
-        {
-            bits[i] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(cursor, 2));
-            cursor += 2;
-        }
-        return (words, bits);
+        return await RequestCoreAsync(
+            SlmpCommand.DeviceReadBlock,
+            sub,
+            payload,
+            true,
+            data => DecodeBlockReadResponse(data, totalWordPoints, totalBitPoints),
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Reads only word blocks in one block-read request.</summary>
@@ -1391,17 +1424,17 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             dwordPoints,
             "run_monitor_cycle",
             limitKey: SlmpProfileLimit.MonitorRegisterWord);
-        var data = await RequestCoreAsync(SlmpCommand.Monitor, 0x0000, ReadOnlyMemory<byte>.Empty, true, cancellationToken).ConfigureAwait(false);
-        var expected = wordPoints * 2 + dwordPoints * 4;
-        if (data.Length != expected)
-            throw new SlmpError($"monitor response size mismatch: expected={expected} actual={data.Length}");
-
-        var words = new ushort[wordPoints];
-        var dwords = new uint[dwordPoints];
-        var cursor = 0;
-        for (var i = 0; i < wordPoints; i++) { words[i] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(cursor, 2)); cursor += 2; }
-        for (var i = 0; i < dwordPoints; i++) { dwords[i] = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(cursor, 4)); cursor += 4; }
-        return new SlmpMonitorResult(words, dwords);
+        return await RequestCoreAsync(
+            SlmpCommand.Monitor,
+            0x0000,
+            ReadOnlyMemory<byte>.Empty,
+            true,
+            data =>
+            {
+                var decoded = DecodeRandomReadResponse(data, wordPoints, dwordPoints, "monitor");
+                return new SlmpMonitorResult(decoded.WordValues, decoded.DwordValues);
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task RemoteRunAsync(
@@ -1475,31 +1508,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var payload = new byte[2 + snapshot.Length];
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(0, 2), checked((ushort)snapshot.Length));
         snapshot.CopyTo(payload.AsSpan(2));
-        var response = await RequestCoreAsync(SlmpCommand.SelfTest, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
-        if (response.Length < 2)
-        {
-            throw new SlmpError("self_test response too short");
-        }
-
-        var responseLength = BinaryPrimitives.ReadUInt16LittleEndian(response.AsSpan(0, 2));
-        var expectedEcho = payload.AsSpan(2);
-        if (responseLength != expectedEcho.Length)
-        {
-            throw new SlmpError($"self_test response declared length mismatch: expected={expectedEcho.Length}, declared={responseLength}");
-        }
-
-        if (response.Length != responseLength + 2)
-        {
-            throw new SlmpError($"self_test response size mismatch: expected={responseLength + 2}, actual={response.Length}");
-        }
-
-        var echo = response.AsSpan(2);
-        if (!echo.SequenceEqual(expectedEcho))
-        {
-            throw new SlmpError("self_test response payload mismatch");
-        }
-
-        return echo.ToArray();
+        return await RequestCoreAsync(
+            SlmpCommand.SelfTest,
+            0x0000,
+            payload,
+            true,
+            response => DecodeSelfTestResponse(response, snapshot),
+            cancellationToken).ConfigureAwait(false);
     }
 
     private static bool IsSelfTestHexByte(byte value)
@@ -1527,8 +1542,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var requestedPoints = points.ToArray();
         var abbrevs = abbreviationLabels ?? [];
         var payload = SlmpPayloads.BuildLabelArrayReadPayload(requestedPoints, abbrevs);
-        var data = await RequestCoreAsync(SlmpCommand.LabelArrayRead, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
-        return SlmpPayloads.ParseArrayLabelReadResponse(data, requestedPoints);
+        return await RequestCoreAsync(
+            SlmpCommand.LabelArrayRead,
+            0x0000,
+            payload,
+            true,
+            data => SlmpPayloads.ParseArrayLabelReadResponse(data, requestedPoints),
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1557,8 +1577,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var requestedLabels = labels.ToArray();
         var abbrevs = abbreviationLabels ?? [];
         var payload = SlmpPayloads.BuildLabelRandomReadPayload(requestedLabels, abbrevs);
-        var data = await RequestCoreAsync(SlmpCommand.LabelReadRandom, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
-        return SlmpPayloads.ParseRandomLabelReadResponse(data, requestedLabels.Length);
+        return await RequestCoreAsync(
+            SlmpCommand.LabelReadRandom,
+            0x0000,
+            payload,
+            true,
+            data => SlmpPayloads.ParseRandomLabelReadResponse(data, requestedLabels.Length),
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1606,13 +1631,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var payload = new byte[6];
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0, 4), headAddress);
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(4, 2), wordLength);
-        var data = await RequestCoreAsync(SlmpCommand.MemoryRead, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
-        if (data.Length != wordLength * 2)
-            throw new SlmpError($"memory read size mismatch: expected={wordLength} actual={data.Length / 2}");
-        var result = new ushort[wordLength];
-        for (var i = 0; i < wordLength; i++)
-            result[i] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(i * 2, 2));
-        return result;
+        return await RequestCoreAsync(
+            SlmpCommand.MemoryRead,
+            0x0000,
+            payload,
+            true,
+            data => DecodeWords(data, wordLength, "memory read"),
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1658,10 +1683,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0, 4), headAddress);
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(4, 2), byteLength);
         BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(6, 2), moduleNo);
-        var data = await RequestCoreAsync(SlmpCommand.ExtendUnitRead, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
-        if (data.Length != byteLength)
-            throw new SlmpError($"extend unit read size mismatch: expected={byteLength} actual={data.Length}");
-        return data;
+        return await RequestCoreAsync(
+            SlmpCommand.ExtendUnitRead,
+            0x0000,
+            payload,
+            true,
+            data => data.Length == byteLength
+                ? data
+                : throw new SlmpError($"extend unit read size mismatch: expected={byteLength} actual={data.Length}"),
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1678,11 +1708,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken = default)
     {
         ValidateExtendUnitWordLength(wordLength, "extend_unit_read_words");
-        var data = await ExtendUnitReadBytesAsync(headAddress, (ushort)(wordLength * 2), moduleNo, cancellationToken).ConfigureAwait(false);
-        var result = new ushort[wordLength];
-        for (var i = 0; i < wordLength; i++)
-            result[i] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(i * 2, 2));
-        return result;
+        return await ExecuteExclusiveAsync(
+            async token =>
+            {
+                var data = await ExtendUnitReadBytesAsync(headAddress, (ushort)(wordLength * 2), moduleNo, token).ConfigureAwait(false);
+                return DecodeWords(data, wordLength, "extend unit word read");
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1696,8 +1728,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// </summary>
     public async Task<uint> ExtendUnitReadDWordAsync(uint headAddress, ushort moduleNo, CancellationToken cancellationToken = default)
     {
-        var data = await ExtendUnitReadBytesAsync(headAddress, 4, moduleNo, cancellationToken).ConfigureAwait(false);
-        return BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(0, 4));
+        return await ExecuteExclusiveAsync(
+            async token =>
+            {
+                var data = await ExtendUnitReadBytesAsync(headAddress, 4, moduleNo, token).ConfigureAwait(false);
+                return BinaryPrimitives.ReadUInt32LittleEndian(data);
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1771,8 +1808,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         int points,
         CancellationToken cancellationToken = default)
     {
-        var words = await ReadLongTimerStatusWordsAsync(SlmpDeviceCode.LTN, headNo, points, cancellationToken).ConfigureAwait(false);
-        return ParseLongTimerWords(words, headNo, "LTN", points);
+        return await ExecuteExclusiveAsync(
+            async token =>
+            {
+                var words = await ReadLongTimerStatusWordsAsync(SlmpDeviceCode.LTN, headNo, points, token).ConfigureAwait(false);
+                return ParseLongTimerWords(words, headNo, "LTN", points);
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1787,8 +1829,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         int points,
         CancellationToken cancellationToken = default)
     {
-        var words = await ReadLongTimerStatusWordsAsync(SlmpDeviceCode.LSTN, headNo, points, cancellationToken).ConfigureAwait(false);
-        return ParseLongTimerWords(words, headNo, "LSTN", points);
+        return await ExecuteExclusiveAsync(
+            async token =>
+            {
+                var words = await ReadLongTimerStatusWordsAsync(SlmpDeviceCode.LSTN, headNo, points, token).ConfigureAwait(false);
+                return ParseLongTimerWords(words, headNo, "LSTN", points);
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Returns the coil state of each long timer in the range.</summary>
@@ -1888,7 +1935,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ushort subcommand,
         ReadOnlyMemory<byte> payload,
         CancellationToken cancellationToken = default)
-        => RequestCoreAsync(command, subcommand, payload, expectResponse: true, cancellationToken);
+        => RequestCoreAsync(
+            command,
+            subcommand,
+            payload,
+            expectResponse: true,
+            static response => response,
+            cancellationToken);
 
     private Task<byte[]> RequestCoreAsync(
         SlmpCommand command,
@@ -1897,7 +1950,44 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         bool expectResponse,
         CancellationToken cancellationToken)
     {
+        Func<byte[], byte[]> decodeResponse = expectResponse
+            ? response => DecodeEmptyAcknowledgement(response, command, subcommand)
+            : static response => response;
+        return RequestCoreAsync(
+            command,
+            subcommand,
+            payload,
+            expectResponse,
+            decodeResponse,
+            cancellationToken);
+    }
+
+    private static byte[] DecodeEmptyAcknowledgement(
+        byte[] response,
+        SlmpCommand command,
+        ushort subcommand)
+    {
+        if (response.Length != 0)
+        {
+            throw new SlmpError(
+                $"SLMP acknowledgement payload must be empty; actual length={response.Length}.",
+                command: command,
+                subcommand: subcommand);
+        }
+
+        return response;
+    }
+
+    private Task<T> RequestCoreAsync<T>(
+        SlmpCommand command,
+        ushort subcommand,
+        ReadOnlyMemory<byte> payload,
+        bool expectResponse,
+        Func<byte[], T> decodeResponse,
+        CancellationToken cancellationToken)
+    {
         ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(decodeResponse);
         _ = ValidateRequestPayloadLength(payload.Length, nameof(payload));
         var payloadSnapshot = payload.ToArray();
         var timeoutSnapshot = Timeout;
@@ -1910,17 +2000,19 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 expectResponse,
                 timeoutSnapshot,
                 monitoringTimerSnapshot,
+                decodeResponse,
                 token),
             cancellationToken);
     }
 
-    private async Task<byte[]> RequestCoreWithinOperationAsync(
+    private async Task<T> RequestCoreWithinOperationAsync<T>(
         SlmpCommand command,
         ushort subcommand,
         ReadOnlyMemory<byte> payload,
         bool expectResponse,
         TimeSpan timeout,
         ushort monitoringTimer,
+        Func<byte[], T> decodeResponse,
         CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
@@ -1970,7 +2062,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 {
                     LastResponseFrame = [];
                     InvalidateTransport();
-                    return [];
+                    return await DecodeCommandResponseAsync([], decodeResponse, transactionCancellation.Token).ConfigureAwait(false);
                 }
 
                 while (true)
@@ -1992,8 +2084,25 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                         continue;
                     var parsed = ParseResponse(command, subcommand, response);
                     transactionCancellation.Token.ThrowIfCancellationRequested();
-                    return parsed;
+                    return await DecodeCommandResponseAsync(parsed, decodeResponse, transactionCancellation.Token).ConfigureAwait(false);
                 }
+            }
+            catch (SlmpCommandDecodeException exception)
+            {
+                var decodeFailure = exception.InnerException!;
+                if (stateChanging || transactionCancellation.IsCancellationRequested)
+                {
+                    InvalidateTransport();
+                    throw ClassifyTransactionFailure(
+                        decodeFailure,
+                        stateChanging,
+                        requestMayHaveBeenSent,
+                        deadlineCancellation.IsCancellationRequested,
+                        cancellationToken);
+                }
+
+                ExceptionDispatchInfo.Capture(decodeFailure).Throw();
+                throw;
             }
             catch (SlmpError ex) when (ex.EndCode is not null)
             {
@@ -2028,7 +2137,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             {
                 LastResponseFrame = [];
                 InvalidateTransport();
-                return [];
+                return await DecodeCommandResponseAsync([], decodeResponse, transactionCancellation.Token).ConfigureAwait(false);
             }
 
             while (true)
@@ -2047,8 +2156,25 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                     continue;
                 var parsed = ParseResponse(command, subcommand, datagram.Buffer);
                 transactionCancellation.Token.ThrowIfCancellationRequested();
-                return parsed;
+                return await DecodeCommandResponseAsync(parsed, decodeResponse, transactionCancellation.Token).ConfigureAwait(false);
             }
+        }
+        catch (SlmpCommandDecodeException exception)
+        {
+            var decodeFailure = exception.InnerException!;
+            if (stateChanging || transactionCancellation.IsCancellationRequested)
+            {
+                InvalidateTransport();
+                throw ClassifyTransactionFailure(
+                    decodeFailure,
+                    stateChanging,
+                    requestMayHaveBeenSent,
+                    deadlineCancellation.IsCancellationRequested,
+                    cancellationToken);
+            }
+
+            ExceptionDispatchInfo.Capture(decodeFailure).Throw();
+            throw;
         }
         catch (SlmpError ex) when (ex.EndCode is not null)
         {
@@ -2067,6 +2193,24 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 requestMayHaveBeenSent,
                 deadlineCancellation.IsCancellationRequested,
                 cancellationToken);
+        }
+    }
+
+    private async Task<T> DecodeCommandResponseAsync<T>(
+        byte[] response,
+        Func<byte[], T> decodeResponse,
+        CancellationToken cancellationToken)
+    {
+        if (BeforeCommandDecodeBarrier is { } decodeBarrier)
+            await decodeBarrier().ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        try
+        {
+            return decodeResponse(response);
+        }
+        catch (Exception exception)
+        {
+            throw new SlmpCommandDecodeException(exception);
         }
     }
 
@@ -2389,6 +2533,18 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             throw new ArgumentOutOfRangeException(name, $"{name} {unit} access points out of range (1..{limit}): {points}");
     }
 
+    private void ValidateDirectDWordPoints(int points, string parameterName, SlmpProfileLimit wordLimitKey)
+    {
+        var limit = DirectPointLimit(bitUnit: false, wordLimitKey) / 2;
+        if (points < 1 || points > limit)
+        {
+            throw new ArgumentOutOfRangeException(
+                parameterName,
+                points,
+                $"DWord/Float32 access points must be in public value units (1..{limit}).");
+        }
+    }
+
     private void ValidateRandomReadLikeCounts(
         int wordPoints,
         int dwordPoints,
@@ -2555,18 +2711,32 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private static void ValidateDirectBitReadDevice(SlmpDeviceAddress device)
     {
+        if (!SlmpDeviceUnits.IsBit(device.Code))
+        {
+            throw new ArgumentException(
+                $"Bit-unit reads require a bit-addressable device; {device.Code} is word-addressable.",
+                nameof(device));
+        }
+
         // Long-family state bits must enter through the typed/named helpers. Some devices
         // use status blocks internally, and LCS/LCC use direct bit read only inside the helper.
         if (IsLongTimerStateDevice(device.Code) || IsLongCounterContactDevice(device))
         {
             throw new ArgumentException(
-                $"Direct bit read is not supported for {device.Code}. Use ReadTypedAsync/ReadNamedAsync or the long-family helpers.",
+                $"Direct bit read is not supported for {device.Code}. Use ReadTypedAsync or the explicit long-family helper.",
                 nameof(device));
         }
     }
 
     private void ValidateDirectBitWriteDevice(SlmpDeviceAddress device)
     {
+        if (!SlmpDeviceUnits.IsBit(device.Code))
+        {
+            throw new ArgumentException(
+                $"Bit-unit writes require a bit-addressable device; {device.Code} is word-addressable. Use an explicit bit-in-word helper for one bit inside a word device.",
+                nameof(device));
+        }
+
         ValidateWritableDevice(device);
 
         // PLCs reject direct bit write (0x1401) for these state bits. The
@@ -2594,7 +2764,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (IsRandomDWordOnlyReadDevice(device.Code))
         {
             throw new ArgumentException(
-                $"Direct word read is not supported for {device.Code}. {device.Code} is a 32-bit device; use ReadTypedAsync/ReadNamedAsync with ':D' or ':L' instead.",
+                $"Direct word read is not supported for {device.Code}. {device.Code} is a 32-bit device; use ReadTypedAsync or an explicit route-appropriate helper instead.",
                 nameof(device));
         }
 
@@ -2661,7 +2831,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (IsLongCurrentValueDevice(device.Code) || IsDWordOnlyScalarDevice(device.Code))
         {
             throw new ArgumentException(
-                $"Direct DWord read is not supported for {device.Code}. Use ReadTypedAsync/ReadNamedAsync so the supported 32-bit route is selected.",
+                $"Direct DWord read is not supported for {device.Code}. Use ReadTypedAsync or the explicit long-family helper so the supported 32-bit route is selected.",
                 nameof(device));
         }
     }
@@ -2676,21 +2846,21 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (wordDevices.Any(device => IsLongTimerStateDevice(device.Code)) || dwordDevices.Any(device => IsLongTimerStateDevice(device.Code)))
         {
             throw new ArgumentException(
-                "Read Random (0x0403) does not support LTS/LTC/LSTS/LSTC. Use ReadTypedAsync/ReadNamedAsync or the long timer status helpers instead.",
+                "Read Random (0x0403) does not support LTS/LTC/LSTS/LSTC. Use ReadTypedAsync or the explicit long timer status helpers instead.",
                 nameof(wordDevices));
         }
 
         if (wordDevices.Any(IsLongCounterContactDevice) || dwordDevices.Any(IsLongCounterContactDevice))
         {
             throw new ArgumentException(
-                "Read Random (0x0403) does not support LCS/LCC. Use ReadTypedAsync/ReadNamedAsync so the long counter bit helper is selected.",
+                "Read Random (0x0403) does not support LCS/LCC. Use ReadTypedAsync so the long counter bit helper is selected.",
                 nameof(wordDevices));
         }
 
         if (wordDevices.Any(device => IsLongCurrentValueDevice(device.Code) || IsDWordOnlyScalarDevice(device.Code)))
         {
             throw new ArgumentException(
-                "Read Random (0x0403) does not support LTN/LSTN/LCN/LZ as word entries. Use dword entries or ReadTypedAsync/ReadNamedAsync with ':D' or ':L' instead.",
+                "Read Random (0x0403) does not support LTN/LSTN/LCN/LZ as word entries. Use dword entries, ReadTypedAsync, or the explicit long timer helper instead.",
                 nameof(wordDevices));
         }
 
@@ -2730,7 +2900,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (invalidLongCurrentBlock is not null)
         {
             throw new ArgumentException(
-                $"Read Block (0x0406) direct read of {invalidLongCurrentBlock.Device.Code} requires 4-word blocks. Requested points={invalidLongCurrentBlock.Points}; use ReadTypedAsync/ReadNamedAsync for 32-bit current values.",
+                $"Read Block (0x0406) direct read of {invalidLongCurrentBlock.Device.Code} requires 4-word blocks. Requested points={invalidLongCurrentBlock.Points}; use ReadTypedAsync or the explicit long timer helper for 32-bit current values.",
                 nameof(wordBlocks));
         }
 
@@ -2829,37 +2999,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IEnumerable<SlmpDeviceAddress> wordDevices,
         IEnumerable<SlmpDeviceAddress> bitDevices)
     {
-        if (wordDevices.Any(device => IsBitDevice(device.Code)))
+        if (wordDevices.Any(device => !SlmpDeviceUnits.IsWord(device.Code)))
             throw new ArgumentException("Word blocks require word-addressable device codes.", nameof(wordDevices));
-        if (bitDevices.Any(device => !IsBitDevice(device.Code)))
+        if (bitDevices.Any(device => !SlmpDeviceUnits.IsBit(device.Code)))
             throw new ArgumentException("Bit blocks require bit-addressable device codes.", nameof(bitDevices));
     }
-
-    private static bool IsBitDevice(SlmpDeviceCode code)
-        => code is SlmpDeviceCode.SM
-            or SlmpDeviceCode.X
-            or SlmpDeviceCode.Y
-            or SlmpDeviceCode.M
-            or SlmpDeviceCode.L
-            or SlmpDeviceCode.F
-            or SlmpDeviceCode.V
-            or SlmpDeviceCode.B
-            or SlmpDeviceCode.S
-            or SlmpDeviceCode.TS
-            or SlmpDeviceCode.TC
-            or SlmpDeviceCode.LTS
-            or SlmpDeviceCode.LTC
-            or SlmpDeviceCode.STS
-            or SlmpDeviceCode.STC
-            or SlmpDeviceCode.LSTS
-            or SlmpDeviceCode.LSTC
-            or SlmpDeviceCode.CS
-            or SlmpDeviceCode.CC
-            or SlmpDeviceCode.LCS
-            or SlmpDeviceCode.LCC
-            or SlmpDeviceCode.SB
-            or SlmpDeviceCode.DX
-            or SlmpDeviceCode.DY;
 
     private static bool IsRandomDWordOnlyReadDevice(SlmpDeviceCode code)
         => code is SlmpDeviceCode.LCN or SlmpDeviceCode.LZ;
@@ -2902,6 +3046,20 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private void ValidateRandomBitWriteDevices(IReadOnlyList<(SlmpDeviceAddress Device, bool Value)> bitEntries)
     {
+        if (bitEntries.Any(entry => IsQualifiedOnlyDevice(entry.Device.Code)))
+        {
+            throw new ArgumentException(
+                "Write Random bits (0x1402) does not support G/HG devices because those routes are word-addressable. Use U-qualified word access instead.",
+                nameof(bitEntries));
+        }
+
+        if (bitEntries.Any(entry => !SlmpDeviceUnits.IsBit(entry.Device.Code)))
+        {
+            throw new ArgumentException(
+                "Random bit writes require bit-addressable device codes.",
+                nameof(bitEntries));
+        }
+
         var readOnlyEntry = bitEntries.FirstOrDefault(entry => IsReadOnlyForProfile(entry.Device.Code));
         if (readOnlyEntry.Device.Code != default)
         {
@@ -2910,12 +3068,6 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 nameof(bitEntries));
         }
 
-        if (bitEntries.Any(entry => IsQualifiedOnlyDevice(entry.Device.Code)))
-        {
-            throw new ArgumentException(
-                "Write Random bits (0x1402) does not support G/HG devices. Use U-qualified word access instead.",
-                nameof(bitEntries));
-        }
     }
 
     private static void ValidateNoOverlappingRandomWriteTargets(
@@ -3119,5 +3271,95 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             raw.CopyTo(result.AsSpan(2));
             return result;
         }
+    }
+
+    private static ushort[] DecodeWords(byte[] data, int points, string operationName)
+    {
+        if (data.Length != points * 2)
+            throw new SlmpError($"{operationName} payload size mismatch");
+
+        var values = new ushort[points];
+        for (var index = 0; index < points; index++)
+            values[index] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(index * 2, 2));
+        return values;
+    }
+
+    private static (ushort[] WordValues, uint[] DwordValues) DecodeRandomReadResponse(
+        byte[] data,
+        int wordCount,
+        int dwordCount,
+        string operationName)
+    {
+        var expected = (wordCount * 2) + (dwordCount * 4);
+        if (data.Length != expected)
+        {
+            throw new SlmpError(
+                $"{operationName} response size mismatch expected={expected} actual={data.Length}");
+        }
+
+        var words = new ushort[wordCount];
+        var dwords = new uint[dwordCount];
+        var cursor = 0;
+        for (var index = 0; index < words.Length; index++)
+        {
+            words[index] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(cursor, 2));
+            cursor += 2;
+        }
+        for (var index = 0; index < dwords.Length; index++)
+        {
+            dwords[index] = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(cursor, 4));
+            cursor += 4;
+        }
+        return (words, dwords);
+    }
+
+    private static (ushort[] WordValues, ushort[] BitWordValues) DecodeBlockReadResponse(
+        byte[] data,
+        int wordCount,
+        int bitWordCount)
+    {
+        var expected = (wordCount + bitWordCount) * 2;
+        if (data.Length != expected)
+        {
+            throw new SlmpError(
+                $"read_block response size mismatch expected={expected} actual={data.Length}");
+        }
+
+        var words = new ushort[wordCount];
+        var bits = new ushort[bitWordCount];
+        var cursor = 0;
+        for (var index = 0; index < words.Length; index++)
+        {
+            words[index] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(cursor, 2));
+            cursor += 2;
+        }
+        for (var index = 0; index < bits.Length; index++)
+        {
+            bits[index] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(cursor, 2));
+            cursor += 2;
+        }
+        return (words, bits);
+    }
+
+    private static byte[] DecodeSelfTestResponse(byte[] response, byte[] expectedEcho)
+    {
+        if (response.Length < 2)
+            throw new SlmpError("self_test response too short");
+
+        var responseLength = BinaryPrimitives.ReadUInt16LittleEndian(response.AsSpan(0, 2));
+        if (responseLength != expectedEcho.Length)
+        {
+            throw new SlmpError(
+                $"self_test response declared length mismatch: expected={expectedEcho.Length}, declared={responseLength}");
+        }
+        if (response.Length != responseLength + 2)
+        {
+            throw new SlmpError(
+                $"self_test response size mismatch: expected={responseLength + 2}, actual={response.Length}");
+        }
+        if (!response.AsSpan(2).SequenceEqual(expectedEcho))
+            throw new SlmpError("self_test response payload mismatch");
+
+        return response.AsSpan(2).ToArray();
     }
 }

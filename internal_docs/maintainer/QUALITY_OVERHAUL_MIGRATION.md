@@ -1019,3 +1019,177 @@ Acceptance criteria:
 - [x] Live PLC verification is not required because the sample TFM change does not alter PLC communication.
 - [x] Documentation and changelog agree with the implemented target-framework change.
 - [x] Final sample acceptance criteria verified by the executed worktree and extracted source-archive gates.
+
+## GOAL-DOTNET-R1-20260801: single-request named reads and explicit long-timer routes
+
+Stable identifier: `GOAL-SLMP-REVIEW-R1-001-DOTNET`.
+
+Implementation scope: named-read planning/execution, polling plan reuse, runtime guidance,
+tests, user documentation, generated API documentation, migration notes, and changelog.
+
+Target contract: `ReadNamedAsync` and each `PollAsync` cycle emit exactly one Random Read or
+reject the complete plan before connection, request state, trace, counters, or transport.
+`LTN`, `LSTN`, `LTS`, `LTC`, `LSTS`, and `LSTC` never enter an implicit Direct Read fallback;
+typed scalar and explicit long-timer helpers retain those supported routes.
+
+Compatibility impact: callers that supplied a long-timer Direct Read family to a named read
+must call `ReadTypedAsync`, `ReadLongTimerAsync`, or `ReadLongRetentiveTimerAsync` explicitly.
+
+Acceptance criteria:
+
+1. Mixed `D100:U` plus each long-timer Direct family fails as one complete zero-send plan.
+2. Named execution contains no long-timer or generic fallback branch capable of another request.
+3. Typed and explicit long-timer routes remain available and documented.
+4. Runtime guidance, user docs, generated API, migration, and changelog agree.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Relevant static, unit, sample, package, API, and generated-document checks passed.
+- [x] Codex self-review completed and every accepted finding corrected.
+- [x] Live PLC verification is not required; admission and request count are deterministic local properties.
+- [x] Documentation, migration notes, changelog, and generated API agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+## GOAL-DOTNET-D1-20260801: definitive result precedence across close and disposal
+
+Stable identifier: `GOAL-SLMP-REVIEW-D1-001-DOTNET`.
+
+Implementation scope: FIFO operation completion, command-specific decoding, close/disposal
+races, success/end-code/error classification, tests, documentation, and changelog.
+
+Target contract: after route/serial correlation, protocol/end-code validation, response-length
+validation, and command-specific result construction, a success or PLC end-code is definitive
+and cannot be replaced by concurrent `Close`, `CloseAsync`, `Dispose`, or `DisposeAsync`.
+Before that point, an incomplete read is closed and a possibly transmitted state change is
+outcome-unknown with reason `Closed`; retired queued work sends nothing.
+
+Compatibility impact: narrow races can now return the already-established PLC result instead
+of closed/disposed status, preventing unsafe retries of operations whose result is known.
+
+Acceptance criteria:
+
+1. Deterministic post-decode barriers preserve read success for all four lifecycle methods.
+2. A framed PLC end-code and a structurally valid empty-payload acknowledgement retain their definitive results.
+3. A non-empty ack-only success payload is malformed and remains outcome-unknown; close or timeout before acknowledgement decode retains the corresponding unknown reason.
+4. Queued zero-send rejection, prompt transport retirement, reconnect, and terminal disposal remain intact.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Relevant static, unit, sample, package, API, and generated-document checks passed.
+- [x] Codex self-review completed and every accepted finding corrected.
+- [x] Live PLC verification is not required; deterministic local transports cover lifecycle races.
+- [x] Documentation, migration notes, changelog, and generated API agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+## GOAL-DOTNET-D2-20260801: bounded public counts and textual numeric fields
+
+Stable identifier: `GOAL-SLMP-REVIEW-D2-001-DOTNET`.
+
+Implementation scope: Direct DWord/Float32 reads and writes, named-target parsing,
+U-qualified parsing, CLI route/count parsing, tests, XML/generated API, user docs, and changelog.
+
+Target contract: numeric DWord/Float32 counts fail with `ArgumentOutOfRangeException` naming
+the public parameter before multiplication, narrowing, allocation, admission, or transport.
+The public limit is 480 values for a 960-word profile limit. Malformed, negative, overflowing,
+or field-width-invalid route text fails with `FormatException`: byte route fields are 0..255,
+and module I/O plus U extension fields are 0..65535.
+
+Compatibility impact: leaked `OverflowException` and internal word-unit count errors become the
+stable public exception category for the supplied typed/count or textual input.
+
+Acceptance criteria:
+
+1. Read and write zero, one, 480, 481, 32768, and ushort-maximum boundaries are classified before unsafe arithmetic.
+2. Named target field boundaries and invalid text identify the field and range without truncation.
+3. U0000/UFFFF and J0/J255 parse; U/J signs, empty or malformed digits, width overflow, and oversized digits return field/range-bearing `FormatException`.
+4. The CLI does not demonstrate checked narrowing of unbounded route or point text.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Relevant static, unit, sample, package, API, and generated-document checks passed.
+- [x] Codex self-review completed and every accepted finding corrected.
+- [x] Live PLC verification is not required; numeric validation and zero-send are local properties.
+- [x] Documentation, migration notes, changelog, and generated API agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+## GOAL-DOTNET-N1-20260801: exact semantic device-unit APIs
+
+Stable identifier: `GOAL-SLMP-REVIEW-N1-001-DOTNET`.
+
+Implementation scope: canonical device metadata, Direct/Extended bit methods, Random bit writes,
+Block categories, typed/named helpers, CLI routing, tests, docs, migration, and changelog.
+
+Target contract: one exhaustive classifier assigns every public device code to bit or word.
+Every semantic bit-unit or bit-entry API requires a bit device. Typed/named `BIT` requires bit,
+and numeric types require word. Block categories are strict in both directions. Explicit low-level
+word methods retain valid packed 16-bit access to bit devices, and `.n`/explicit RMW remains the
+only word-device single-bit route. G/HG remain qualified word-only families.
+
+Compatibility impact: invalid word-device bit calls and numeric bit-device typed/named calls now
+fail locally with `ArgumentException`; intentional bit-device packing migrates to explicit word APIs.
+
+Acceptance criteria:
+
+1. One exhaustive classifier covers every enum value and is reused by semantic validators.
+2. Every word family fails Direct, Extended/link, Random bit, and bit Block surfaces with zero transport.
+3. Every bit family fails word Block and `WriteBitInWordAsync` surfaces; explicit packed word access to M remains encoded as word-unit Direct Read.
+4. Typed/named write semantics and values are fully planned before FIFO admission; queued invalid writes fail immediately without client state or transport effects.
+5. Typed/named mappings, bit-in-word guidance, docs, migration, and changelog agree.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Relevant static, unit, sample, package, API, and generated-document checks passed.
+- [x] Codex self-review completed and every accepted finding corrected.
+- [x] Live PLC verification is not required; device classification and subcommand selection are local properties.
+- [x] Documentation, migration notes, changelog, and generated API agree.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+## Verification evidence and self-review — R1/D1/D2/N1 (2026-08-01)
+
+Evidence: the final worktree and a synthetic extracted source archive each built without warnings
+and passed 514 tests on each of `net8.0`, `net9.0`, and `net10.0`. The generated API reference was
+fresh, all six samples built, formatting passed, the 12-file NuGet package restored and ran in an
+isolated `net8.0` consumer, the profile fixtures reported no drift, and the registry-publication
+guard passed. The immutable-package API comparison passed all 564 exact classifications across the
+three TFMs. No PLC communication or public-registry publication was performed.
+
+The implementation added no new unclassified public member addition or removal. Adding private
+lifecycle/decode machinery changed 62 compiler-generated async state-machine ordinals on each of
+three TFMs. The API-policy key sets still matched exactly, with zero stale or unclassified keys;
+the 186 exact `after` signatures were synchronized while retaining their existing classifications
+and rationale. Callable signatures, nullability, defaults, and public contract fields were unchanged
+by that synchronization.
+
+Accepted and corrected self-review findings:
+
+- Command-specific decoding initially occurred after the transaction deadline scope. It now runs
+  inside the correlated transaction before a result becomes definitive.
+- Moving decode into the transaction initially retired a healthy transport for read-only semantic
+  decode errors. An internal decode wrapper now preserves the original exception and connection
+  when no cancellation or lifecycle transition occurred, while state-changing or cancelled work
+  keeps the required failure classification.
+- An empty named-read plan could return a zero-request success, and a structurally invalid internal
+  compiled plan could reach transport before failing. Empty input and the complete compiled entry
+  structure are now rejected in preflight.
+- Empty named-target numeric fields still used the former generic `ArgumentException`. They now use
+  the same field-specific, range-bearing `FormatException` as other malformed numeric text.
+- U/J qualified parsers recognized only already-valid digit shapes, so signs, empty fields, and
+  malformed digits fell through to the generic device parser. Qualified candidates now reach the
+  field-width validator and report the U extension or J-direct network field and valid range.
+- Ack-only commands initially treated any success payload as a definitive acknowledgement. They now
+  require an empty command payload; malformed success payloads keep state-changing outcome-unknown
+  classification, while `RawCommandAsync` and send-only remote reset retain their explicit contracts.
+- `WriteBitInWordAsync` initially inherited packed word access and consequently accepted bit-device
+  families. It now requires a canonical word device before FIFO admission, while low-level packed
+  word methods remain available separately.
+- Typed and named write semantic planning initially occurred after outer FIFO admission. Complete
+  route, unit, shape, value, duplicate, overlap, and downstream command validation now occurs before
+  the one underlying request is admitted; a deterministic occupied-FIFO test proves invalid plans do
+  not wait or mutate client state.
+- User guidance initially named a nonexistent `ReadBitInWordAsync`. It now documents `.n` named read
+  notation and the existing word-only `WriteBitInWordAsync` helper.
+
+Rejected with rationale: restoring the former post-result generation-retired check would replace a
+fully decoded success or framed PLC end-code with a later close/dispose result and therefore violate
+the approved D1 definitive-result boundary. No self-review findings were classified as duplicate or
+deferred.
