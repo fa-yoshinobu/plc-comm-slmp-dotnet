@@ -2175,6 +2175,19 @@
       "after": "constructor|6278|params=0:System.String:0:default=<none>:required=:optional=:attrs=;1:System.Exception:4112:default=null:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute((Byte)2)],[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]"
     },
     {
+      "key": "net8.0|added|P:PlcComm.Slmp.SlmpErrorInfo.Extra",
+      "category": "additive",
+      "rationale": "The approved structured SLMP error contract preserves response bytes that follow a non-zero end code so callers can inspect complete PLC diagnostics.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "property|type=System.Byte[]|get=2182|set=2182|setrequired=System.Runtime.CompilerServices.IsExternalInit|index=|attrs="
+    },
+    {
       "key": "net8.0|added|P:PlcComm.Slmp.SlmpOperationOutcomeUnknownException.Reason",
       "category": "additive",
       "rationale": "This exact type or member is an additive part of the approved structured timeout, transport, closed, not-connected, or outcome-unknown error contract.",
@@ -5204,6 +5217,19 @@
       "after": "constructor|6278|params=0:System.String:0:default=<none>:required=:optional=:attrs=;1:System.Exception:4112:default=null:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute((Byte)2)],[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]"
     },
     {
+      "key": "net9.0|added|P:PlcComm.Slmp.SlmpErrorInfo.Extra",
+      "category": "additive",
+      "rationale": "The approved structured SLMP error contract preserves response bytes that follow a non-zero end code so callers can inspect complete PLC diagnostics.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "property|type=System.Byte[]|get=2182|set=2182|setrequired=System.Runtime.CompilerServices.IsExternalInit|index=|attrs="
+    },
+    {
       "key": "net9.0|added|P:PlcComm.Slmp.SlmpOperationOutcomeUnknownException.Reason",
       "category": "additive",
       "rationale": "This exact type or member is an additive part of the approved structured timeout, transport, closed, not-connected, or outcome-unknown error contract.",
@@ -8231,6 +8257,19 @@
       ],
       "before": null,
       "after": "constructor|6278|params=0:System.String:0:default=<none>:required=:optional=:attrs=;1:System.Exception:4112:default=null:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute((Byte)2)],[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]"
+    },
+    {
+      "key": "net10.0|added|P:PlcComm.Slmp.SlmpErrorInfo.Extra",
+      "category": "additive",
+      "rationale": "The approved structured SLMP error contract preserves response bytes that follow a non-zero end code so callers can inspect complete PLC diagnostics.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "property|type=System.Byte[]|get=2182|set=2182|setrequired=System.Runtime.CompilerServices.IsExternalInit|index=|attrs="
     },
     {
       "key": "net10.0|added|P:PlcComm.Slmp.SlmpOperationOutcomeUnknownException.Reason",
