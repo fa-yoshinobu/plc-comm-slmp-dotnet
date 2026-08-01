@@ -8,12 +8,39 @@ permissions:
   contents: read
 
 jobs:
+  linux-contract-smoke:
+    name: Linux bounded lifecycle smoke (.NET 10)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore representative test project
+        run: dotnet restore tests/PlcComm.Slmp.Tests/PlcComm.Slmp.Tests.csproj
+
+      - name: Run bounded TCP/UDP lifecycle contract smoke
+        run: >-
+          dotnet test tests/PlcComm.Slmp.Tests/PlcComm.Slmp.Tests.csproj
+          -c Release
+          -f net10.0
+          --no-restore
+          --filter "FullyQualifiedName~HostnameConnection_UsesIPv4ForTcpAndUdp|FullyQualifiedName~ExplicitOpenTransportFailure_IsDedicatedTransportError|FullyQualifiedName~Dispose_DuringRequest_DoesNotDeadlock|FullyQualifiedName~PostSendStateChangingTimeout_IsOutcomeUnknownWithTimeoutCause|FullyQualifiedName~UdpTimeoutRequiresExplicitReopenAndNextExchangeUsesACleanSession|FullyQualifiedName~TcpHeaderAndBodyMayBeSplitWithoutRestartingReceiveState|FullyQualifiedName~WrongSerialIsDiscardedUntilMatchingResponseArrives"
+
   build-test:
     runs-on: windows-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Check release workflows do not auto-publish
         shell: pwsh
@@ -35,6 +62,28 @@ jobs:
 
       - name: Build
         run: dotnet build PlcComm.Slmp.sln -c Release --no-restore
+
+      - name: Check API diff policy implementation
+        run: |
+          python scripts/test_generate_api_reference.py
+          python -m unittest scripts/test_check_documented_api_diff.py
+
+      - name: Check generated API reference freshness
+        run: >-
+          python scripts/generate_api_reference.py
+          --assembly src/PlcComm.Slmp/bin/Release/net8.0/PlcComm.Slmp.dll
+          --xml src/PlcComm.Slmp/bin/Release/net8.0/PlcComm.Slmp.xml
+          --output docsrc/user/API_REFERENCE.md
+          --title "SLMP .NET API Reference"
+          --package PlcComm.Slmp
+          --check
+
+      - name: Check documented API differences against stable package
+        run: >-
+          python scripts/check_documented_api_diff.py
+          --candidate-root src/PlcComm.Slmp/bin/Release
+          --policy internal_docs/maintainer/api-diff-policy.json
+          --repository-root .
 
       - name: Test
         run: dotnet test PlcComm.Slmp.sln -c Release --no-build --logger "trx;LogFileName=test-results.trx"

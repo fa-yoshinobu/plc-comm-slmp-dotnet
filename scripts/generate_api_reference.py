@@ -19,6 +19,7 @@ CSHARP_INSPECTOR = r'''
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -61,8 +62,9 @@ static string MemberDocId(MemberInfo member)
     {
         Type type => "T:" + DocTypeName(type),
         ConstructorInfo ctor => "M:" + DocTypeName(ctor.DeclaringType!) + ".#ctor" + DocParams(ctor),
-        MethodInfo method => "M:" + DocTypeName(method.DeclaringType!) + "." + method.Name + GenericSuffix(method) + DocParams(method),
-        PropertyInfo prop => "P:" + DocTypeName(prop.DeclaringType!) + "." + prop.Name,
+        MethodInfo method => "M:" + DocTypeName(method.DeclaringType!) + "." + method.Name + GenericSuffix(method) +
+            DocParams(method) + ConversionReturnSuffix(method),
+        PropertyInfo prop => "P:" + DocTypeName(prop.DeclaringType!) + "." + prop.Name + PropertyDocParams(prop),
         FieldInfo field => "F:" + DocTypeName(field.DeclaringType!) + "." + field.Name,
         EventInfo ev => "E:" + DocTypeName(ev.DeclaringType!) + "." + ev.Name,
         _ => "",
@@ -124,6 +126,80 @@ static string TypeKind(Type type)
     if (type.IsInterface) return "interface";
     if (type.IsValueType) return "struct";
     return "class";
+}
+
+static string ConversionReturnSuffix(MethodInfo method)
+{
+    return method.Name is "op_Implicit" or "op_Explicit" ? "~" + DocParamName(method.ReturnType) : "";
+}
+
+static string PropertyDocParams(PropertyInfo property)
+{
+    var parameters = property.GetIndexParameters();
+    if (parameters.Length == 0)
+        return "";
+    return "(" + string.Join(",", parameters.Select(p => DocParamName(p.ParameterType))) + ")";
+}
+
+static string ContractTypeName(Type type)
+{
+    if (type.IsByRef)
+        return ContractTypeName(type.GetElementType()!) + "&";
+    if (type.IsPointer)
+        return ContractTypeName(type.GetElementType()!) + "*";
+    if (type.IsArray)
+        return ContractTypeName(type.GetElementType()!) + "[" + new string(',', type.GetArrayRank() - 1) + "]";
+    if (type.IsGenericParameter)
+        return (type.DeclaringMethod is null ? "!" : "!!") + type.GenericParameterPosition;
+    if (type.IsGenericType)
+    {
+        var definition = type.GetGenericTypeDefinition();
+        var name = CleanName(definition.FullName ?? definition.Name);
+        return name + "<" + string.Join(",", type.GetGenericArguments().Select(ContractTypeName)) + ">";
+    }
+    return CleanName(type.FullName ?? type.Name);
+}
+
+static string AttributeFingerprint(IEnumerable<CustomAttributeData> attributes)
+{
+    return string.Join(",", attributes
+        .OrderBy(attribute => attribute.AttributeType.FullName, StringComparer.Ordinal)
+        .Select(attribute => attribute.ToString()));
+}
+
+static string ConstantValue(object? value)
+{
+    if (value is null) return "null";
+    if (value is Missing) return "missing";
+    var type = value.GetType();
+    if (type.IsEnum)
+        return ContractTypeName(type) + ":" + Convert.ToInt64(value, CultureInfo.InvariantCulture);
+    if (value is string text) return "System.String:" + JsonSerializer.Serialize(text);
+    if (value is char character) return "System.Char:" + ((int)character).ToString(CultureInfo.InvariantCulture);
+    if (value is bool flag) return "System.Boolean:" + (flag ? "true" : "false");
+    return ContractTypeName(type) + ":" + (Convert.ToString(value, CultureInfo.InvariantCulture) ?? value.ToString() ?? "");
+}
+
+static string GenericContract(IEnumerable<Type> arguments)
+{
+    return string.Join(";", arguments.Where(argument => argument.IsGenericParameter).Select(argument =>
+        $"{argument.GenericParameterPosition}:{(int)argument.GenericParameterAttributes}:" +
+        string.Join("&", argument.GetGenericParameterConstraints()
+            .Select(ContractTypeName)
+            .OrderBy(value => value, StringComparer.Ordinal)) + ":" +
+        AttributeFingerprint(argument.CustomAttributes)));
+}
+
+static string TypeContractSignature(Type type)
+{
+    var baseType = type.BaseType is null ? "" : ContractTypeName(type.BaseType);
+    var interfaces = string.Join(",", type.GetInterfaces()
+        .Select(ContractTypeName)
+        .OrderBy(value => value, StringComparer.Ordinal));
+    var enumType = type.IsEnum ? ContractTypeName(Enum.GetUnderlyingType(type)) : "";
+    return $"type|{CleanName(type.FullName ?? type.Name)}|{(int)type.Attributes}|" +
+        $"byreflike={type.IsByRefLike}|enum={enumType}|base={baseType}|interfaces={interfaces}|" +
+        $"generic={GenericContract(type.GetGenericArguments())}|attrs={AttributeFingerprint(type.CustomAttributes)}";
 }
 
 static string TypeSignature(Type type)
@@ -216,15 +292,92 @@ static bool IsCompilerGenerated(MemberInfo member)
     return member.GetCustomAttribute<CompilerGeneratedAttribute>() is not null || member.Name.Contains('<');
 }
 
-static bool IsDeclaredPublic(MemberInfo member)
+static string ParameterContract(ParameterInfo parameter)
+{
+    var defaultValue = parameter.HasDefaultValue
+        ? ConstantValue(parameter.DefaultValue)
+        : "<none>";
+    var required = string.Join(",", parameter.GetRequiredCustomModifiers().Select(ContractTypeName));
+    var optional = string.Join(",", parameter.GetOptionalCustomModifiers().Select(ContractTypeName));
+    return $"{parameter.Position}:{ContractTypeName(parameter.ParameterType)}:{(int)parameter.Attributes}:" +
+        $"default={defaultValue}:required={required}:optional={optional}:attrs={AttributeFingerprint(parameter.CustomAttributes)}";
+}
+
+static string MethodContract(MethodInfo method)
+{
+    return $"method|{(int)method.Attributes}|return={ContractTypeName(method.ReturnType)}|" +
+        $"returnattrs={AttributeFingerprint(method.ReturnParameter.CustomAttributes)}|" +
+        $"returnrequired={string.Join(",", method.ReturnParameter.GetRequiredCustomModifiers().Select(ContractTypeName))}|" +
+        $"generic={GenericContract(method.GetGenericArguments())}|" +
+        $"params={string.Join(";", method.GetParameters().Select(ParameterContract))}|" +
+        $"attrs={AttributeFingerprint(method.CustomAttributes)}";
+}
+
+static string ConstructorContract(ConstructorInfo constructor)
+    => $"constructor|{(int)constructor.Attributes}|params={string.Join(";", constructor.GetParameters().Select(ParameterContract))}|attrs={AttributeFingerprint(constructor.CustomAttributes)}";
+
+static string PropertyContract(PropertyInfo property)
+{
+    var getter = property.GetMethod is null ? "" : ((int)property.GetMethod.Attributes).ToString();
+    var setter = property.SetMethod is null ? "" : ((int)property.SetMethod.Attributes).ToString();
+    var setterRequired = property.SetMethod is null
+        ? ""
+        : string.Join(",", property.SetMethod.ReturnParameter.GetRequiredCustomModifiers().Select(ContractTypeName));
+    return $"property|type={ContractTypeName(property.PropertyType)}|get={getter}|set={setter}|" +
+        $"setrequired={setterRequired}|index={string.Join(";", property.GetIndexParameters().Select(ParameterContract))}|" +
+        $"attrs={AttributeFingerprint(property.CustomAttributes)}";
+}
+
+static string FieldContract(FieldInfo field)
+{
+    var value = field.IsLiteral
+        ? ConstantValue(field.GetRawConstantValue())
+        : "<none>";
+    return $"field|{(int)field.Attributes}|type={ContractTypeName(field.FieldType)}|value={value}|attrs={AttributeFingerprint(field.CustomAttributes)}";
+}
+
+static string EventContract(EventInfo eventInfo)
+{
+    var add = eventInfo.AddMethod is null ? "" : ((int)eventInfo.AddMethod.Attributes).ToString();
+    var remove = eventInfo.RemoveMethod is null ? "" : ((int)eventInfo.RemoveMethod.Attributes).ToString();
+    return $"event|type={ContractTypeName(eventInfo.EventHandlerType ?? typeof(object))}|add={add}|remove={remove}|attrs={AttributeFingerprint(eventInfo.CustomAttributes)}";
+}
+
+static string MemberContractSignature(MemberInfo member)
 {
     return member switch
     {
-        ConstructorInfo ctor => ctor.IsPublic,
-        MethodInfo method => method.IsPublic && !method.IsSpecialName,
-        PropertyInfo prop => prop.GetMethod?.IsPublic == true || prop.SetMethod?.IsPublic == true,
-        FieldInfo field => field.IsPublic && !field.IsSpecialName,
-        EventInfo ev => ev.AddMethod?.IsPublic == true,
+        ConstructorInfo constructor => ConstructorContract(constructor),
+        MethodInfo method => MethodContract(method),
+        PropertyInfo property => PropertyContract(property),
+        FieldInfo field => FieldContract(field),
+        EventInfo eventInfo => EventContract(eventInfo),
+        _ => member.ToString() ?? member.Name,
+    };
+}
+
+static bool IsDeclaredPublic(MemberInfo member, bool contractSurface)
+{
+    return member switch
+    {
+        ConstructorInfo ctor => contractSurface
+            ? ctor.IsPublic || ctor.IsFamily || ctor.IsFamilyOrAssembly
+            : ctor.IsPublic,
+        MethodInfo method => (contractSurface
+                ? method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly
+                : method.IsPublic) &&
+            (!method.IsSpecialName || (contractSurface && method.Name.StartsWith("op_", StringComparison.Ordinal))),
+        PropertyInfo prop => contractSurface
+            ? new[] { prop.GetMethod, prop.SetMethod }.Any(accessor => accessor is not null &&
+                (accessor.IsPublic || accessor.IsFamily || accessor.IsFamilyOrAssembly))
+            : prop.GetMethod?.IsPublic == true || prop.SetMethod?.IsPublic == true,
+        FieldInfo field => (contractSurface
+                ? field.IsPublic || field.IsFamily || field.IsFamilyOrAssembly
+                : field.IsPublic) && !field.IsSpecialName,
+        EventInfo ev => contractSurface
+            ? new[] { ev.AddMethod, ev.RemoveMethod }.Any(accessor => accessor is not null &&
+                (accessor.IsPublic || accessor.IsFamily || accessor.IsFamilyOrAssembly))
+            : ev.AddMethod?.IsPublic == true,
         _ => false,
     };
 }
@@ -232,10 +385,17 @@ static bool IsDeclaredPublic(MemberInfo member)
 static bool IsDocumented(MemberInfo member)
     => member.GetCustomAttribute<EditorBrowsableAttribute>()?.State != EditorBrowsableState.Never;
 
+static bool IsContractVisibleType(Type type)
+    => type.IsPublic || type.IsNestedPublic || type.IsNestedFamily || type.IsNestedFamORAssem;
+
 var assemblyPath = args[0];
+var includeEditorHidden = args.Length > 1 && bool.Parse(args[1]);
 var assembly = Assembly.LoadFrom(assemblyPath);
-var types = assembly.GetExportedTypes()
-    .Where(t => !IsCompilerGenerated(t))
+var candidateTypes = includeEditorHidden
+    ? assembly.GetTypes().Where(IsContractVisibleType)
+    : assembly.GetExportedTypes();
+var types = candidateTypes
+    .Where(t => includeEditorHidden || !IsCompilerGenerated(t))
     .OrderBy(t => t.Namespace)
     .ThenBy(t => t.Name)
     .Select(type => new
@@ -245,9 +405,10 @@ var types = assembly.GetExportedTypes()
         FullName = CleanName(type.FullName ?? type.Name),
         Kind = TypeKind(type),
         Signature = TypeSignature(type),
+        ContractSignature = TypeContractSignature(type),
         DocId = MemberDocId(type),
-        Members = type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
-            .Where(m => !IsCompilerGenerated(m) && IsDeclaredPublic(m) && IsDocumented(m))
+        Members = type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
+            .Where(m => (includeEditorHidden || !IsCompilerGenerated(m)) && IsDeclaredPublic(m, includeEditorHidden) && (includeEditorHidden || IsDocumented(m)))
             .OrderBy(m => m.MetadataToken)
             .Select(m => new
             {
@@ -262,6 +423,7 @@ var types = assembly.GetExportedTypes()
                     EventInfo ev => EventSignature(ev),
                     _ => m.ToString() ?? m.Name,
                 },
+                ContractSignature = MemberContractSignature(m),
                 DocId = MemberDocId(m),
             })
             .ToArray(),
@@ -351,23 +513,62 @@ def doc_for(docs: dict[str, DocEntry], doc_id: str) -> DocEntry:
     return DocEntry("", "", "", {})
 
 
-def run_inspector(assembly_path: Path) -> list[dict[str, object]]:
+def run_inspector(
+    assembly_path: Path,
+    target_framework: str = "net8.0",
+    *,
+    include_editor_hidden: bool = False,
+) -> list[dict[str, object]]:
+    return run_inspectors(
+        [assembly_path],
+        target_framework,
+        include_editor_hidden=include_editor_hidden,
+    )[0]
+
+
+def run_inspectors(
+    assembly_paths: list[Path],
+    target_framework: str = "net10.0",
+    *,
+    include_editor_hidden: bool = False,
+) -> list[list[dict[str, object]]]:
+    if not assembly_paths:
+        return []
     with tempfile.TemporaryDirectory(prefix="dotnet_api_ref_") as temp_dir:
         temp = Path(temp_dir)
         (temp / "ApiInspector.csproj").write_text(
             '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType>'
-            '<TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings>'
+            f'<TargetFramework>{target_framework}</TargetFramework><ImplicitUsings>enable</ImplicitUsings>'
             "<Nullable>enable</Nullable></PropertyGroup></Project>",
             encoding="utf-8",
         )
         (temp / "Program.cs").write_text(CSHARP_INSPECTOR, encoding="utf-8")
-        result = subprocess.run(
-            ["dotnet", "run", "--project", str(temp / "ApiInspector.csproj"), "--", str(assembly_path.resolve())],
+        subprocess.run(
+            ["dotnet", "build", str(temp / "ApiInspector.csproj"), "-c", "Release", "--nologo"],
             check=True,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
         )
-    return json.loads(result.stdout)
+        inspector = temp / "bin" / "Release" / target_framework / "ApiInspector.dll"
+        inspected: list[list[dict[str, object]]] = []
+        for assembly_path in assembly_paths:
+            result = subprocess.run(
+                [
+                    "dotnet",
+                    str(inspector),
+                    str(assembly_path.resolve()),
+                    str(include_editor_hidden).lower(),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            inspected.append(json.loads(result.stdout))
+    return inspected
 
 
 def render_doc(entry: DocEntry, *, include_parameters: bool) -> list[str]:

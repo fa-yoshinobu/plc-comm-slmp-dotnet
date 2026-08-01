@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Samples: All six user-facing repository samples now target `net10.0`; building the samples requires the .NET 10 SDK. The library package remains multi-targeted for `net8.0`, `net9.0`, and `net10.0`.
 - Library: One immutable absolute transaction deadline now covers lazy IPv4 connection, TCP/UDP send, complete response framing, route/serial correlation, and response decoding. FIFO queue wait remains outside that deadline, and `Timeout` plus `MonitoringTimer` are snapshotted when the call is admitted.
 - Library: Added dedicated `SlmpTimeoutException`, `SlmpTransportException`, `SlmpNotConnectedException`, and `SlmpOperationOutcomeUnknownException` classifications. A state-changing request interrupted after bytes may have been sent reports a structured timeout, cancellation, close, malformed-response, or transport reason and is never retried automatically.
 - Tests: Added state-changing timeout/cancellation/close/transport/malformed-response classification, admission-time option snapshots, and full-deadline regressions across TCP/UDP and 3E/4E.

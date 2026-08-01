@@ -81,6 +81,14 @@ jobs:
       - name: Build
         run: dotnet build PlcComm.Slmp.sln -c Release --no-restore
 
+      - name: Enforce documented API difference and release-major policy
+        run: >-
+          python scripts/check_documented_api_diff.py
+          --candidate-root src/PlcComm.Slmp/bin/Release
+          --policy internal_docs/maintainer/api-diff-policy.json
+          --repository-root .
+          --enforce-candidate-major
+
       - name: Test
         run: dotnet test PlcComm.Slmp.sln -c Release --no-build --logger "trx;LogFileName=test-results.trx"
 
