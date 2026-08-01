@@ -30,6 +30,22 @@ class CrefLabelTests(unittest.TestCase):
         self.assertIn("EditorBrowsableState.Never", source)
         self.assertIn("IsDocumented(m)", source)
 
+    def test_contract_mode_tracks_surface_not_rendered_by_user_reference(self) -> None:
+        source = __import__("generate_api_reference").CSHARP_INSPECTOR
+        for required in (
+            "ContractSignature",
+            "GetRawConstantValue",
+            "Enum.GetUnderlyingType",
+            "GetRequiredCustomModifiers",
+            "GetGenericParameterConstraints",
+            "BindingFlags.NonPublic",
+            "IsNestedFamily",
+            'StartsWith("op_"',
+            "GetIndexParameters",
+            "CustomAttributes",
+        ):
+            self.assertIn(required, source)
+
 
 if __name__ == "__main__":
     unittest.main()

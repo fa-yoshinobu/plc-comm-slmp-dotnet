@@ -389,10 +389,12 @@ public sealed class SlmpResponseCorrelationTests
         await using var server = new ScriptedSlmpServer(
             SlmpTransportMode.Udp,
             frameType,
-            async (request, send, _) =>
+            async (request, send, cancellationToken) =>
             {
                 if (Interlocked.Increment(ref exchange) == 1)
                 {
+                    await Task.Delay(TimeSpan.FromMilliseconds(120), cancellationToken).ConfigureAwait(false);
+                    await send(BuildResponse(request, frameType, payload: [0xEE])).ConfigureAwait(false);
                     return;
                 }
 
@@ -400,7 +402,7 @@ public sealed class SlmpResponseCorrelationTests
             },
             exchangeCount: 2);
         await server.StartAsync();
-        using var client = CreateClient(server.Port, SlmpTransportMode.Udp, frameType, TimeSpan.FromMilliseconds(80));
+        using var client = CreateClient(server.Port, SlmpTransportMode.Udp, frameType, TimeSpan.FromMilliseconds(60));
 
         await Assert.ThrowsAsync<SlmpTimeoutException>(
             () => client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
@@ -411,6 +413,7 @@ public sealed class SlmpResponseCorrelationTests
         await Assert.ThrowsAsync<SlmpNotConnectedException>(
             () => client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
 
+        client.Timeout = TimeSpan.FromMilliseconds(500);
         await client.OpenAsync();
         var response = await client.RawCommandAsync(
             SlmpCommand.ClearError,

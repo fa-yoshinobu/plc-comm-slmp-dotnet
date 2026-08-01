@@ -895,3 +895,127 @@ The cross-ecosystem artifact review additionally found incomplete negative
 coverage for repository-only NuGet material. The accepted correction now
 rejects CI, cache/build, source, maintainer, release-output, and credential-like
 paths/files. The hardened 12-file NuGet consumer gate passed.
+
+## GOAL-CROSS-OS-CI-001-DOTNET-SLMP: bounded Linux lifecycle smoke
+
+Implementation scope: the normal GitHub Actions workflow for the SLMP .NET repository only. The
+existing Windows job remains the complete repository gate.
+
+Target contract: one .NET 10 Linux job exercises a focused, deterministic TCP/UDP lifecycle subset
+covering IPv4 hostname connection, explicit connection failure, split TCP response reception,
+post-send timeout classification, disposal during pending I/O, timeout-driven UDP socket retirement,
+explicit reconnect, rejection of a delayed response from the retired socket, and TCP/UDP response
+association. The job has an explicit ten minute upper bound and does not duplicate the full
+multi-TFM, package, formatting, generated-doc, or source-archive gates.
+
+Compatibility impact: none. This changes CI coverage only and does not alter the package or runtime
+contract.
+
+Acceptance criteria:
+
+1. The Linux job restores only the representative test project and runs only on `net10.0`.
+2. The selected tests cover fragmented receive, connection failure, bounded timeout, pending-I/O
+   disposal, retirement, reconnect, late-response rejection, and TCP/UDP response association.
+3. All selected network tests use local controlled peers and never contact a PLC.
+4. The job has an explicit timeout and the existing Windows full gate remains unchanged in scope.
+
+- [x] Implementation completed in this repository.
+- [x] Existing deterministic tests are selected for every acceptance criterion.
+- [ ] Relevant CI/static checks passed on the final source state.
+- [ ] Codex self-review completed after the requested verification run.
+- [x] Live PLC verification is not required because the selected checks use controlled local transports.
+- [x] Maintainer documentation agrees with the implemented CI scope; no user migration note,
+  changelog entry, or generated API change is made for this CI-only item.
+- [ ] Final acceptance criteria verified and the item marked complete.
+
+## GOAL-DOCUMENTED-API-DIFF-001-SLMP: classified stable-package API differences
+
+Implementation scope: the public API inspector, immutable NuGet and stable-documentation baseline
+policy, classification validator, its deterministic unit tests, the required Windows CI gate, and
+release-major enforcement. Population of the actual classification set is tracked separately from
+the detector implementation.
+
+Target contract: compare the candidate `net8.0`, `net9.0`, and `net10.0` assemblies with the recorded
+stable `PlcComm.Slmp` package whose exact version is intentionally retained here as historical
+baseline identity and whose bytes are pinned by SHA-256. Every added, removed, or changed public
+surface must be explicitly classified as `documented-contract`, `undocumented-public`, `additive`,
+or `generated-or-noncontract`; stale or missing classifications fail CI. Documented-contract breaks
+require an approved decision, migration, changelog, and machine-readable major-version disposition.
+Each classification pins the exact before/after contract signatures, so a later signature drift
+cannot reuse an earlier approval. `undocumented-public` and `documented-contract` are checked against
+README, the five standard user pages, generated API reference, and maintained samples at the exact
+stable source commit associated with the package baseline. The contract signature includes
+editor-hidden and compiler-generated accessible members, protected contract surface, fully-qualified
+types, default values, generic constraints, inheritance/interfaces, operators, indexer parameters,
+property setter/init shape, attributes/modifiers used for nullable/tuple/required/extension/params/in
+semantics, enum underlying types, and public constant/enum values. Generated API-reference freshness
+is checked in the same required job; exception behavior, XML prose semantics, and package-symbol
+content remain explicit Codex self-review responsibilities.
+
+Compatibility impact: none for consumers. The change strengthens release admission. Classification
+does not create a compatibility alias or silently permit a documented contract break.
+
+Acceptance criteria:
+
+1. Baseline package bytes are rejected unless their SHA-256 equals the recorded digest.
+2. Candidate and baseline APIs are compared independently for all three supported TFMs.
+3. Added, removed, and signature-changed surfaces fail when unclassified; duplicate and stale policy entries fail.
+4. Duplicate API identities fail instead of being overwritten, and every classification is tied to
+   exact before/after signatures.
+5. Each classification has rationale and repository evidence; stable-baseline user documentation
+   distinguishes documented from undocumented surface.
+6. Documented-contract breaks require approval/migration/changelog fields and a major-version
+   disposition; release CI enforces the candidate major.
+7. The required CI job checks the policy implementation, generated API freshness, and the actual baseline comparison.
+8. Final self-review covers exception behavior, XML/generated documentation, profile identifiers, package symbols, and every detector limitation.
+
+- [x] Detector, policy schema, CI gate, policy tests, and release-major enforcement implemented.
+- [x] Exact candidate differences generated and every entry classified against the stable contract.
+- [x] Deterministic policy tests were added for the classification validator.
+- [x] Relevant static, three-TFM unit, generated-document, package, sample, format, and extracted source-archive checks passed on the reviewed worktree state.
+- [x] Codex self-review completed against the actual generated difference set, public source changes, package surface, documentation, and detector limitations.
+- [x] Live PLC verification is not required because this is a static package/API contract gate.
+- [x] Documentation, migration notes, changelog, generated API reference, and classifications agree with the final comparison.
+- [x] The release-major gate correctly rejected current version `4.0.1` because documented incompatible changes require major `5`.
+- [ ] Update the actual release version to major `5` or later and record final release acceptance.
+
+Current actual-diff disposition: the authorized comparison found 188 distinct API differences with
+the same signatures on all three TFMs, expanded to 564 exact per-TFM classification records. The
+101 removed queued-wrapper/type-specific APIs and two factory return-type changes are
+`documented-contract` under `GOAL-SERIAL-DEFER-006` and require candidate major 5. The 17 new
+structured lifecycle/outcome error APIs are `additive`. The remaining 68 differences are
+`generated-or-noncontract`: after removing only the compiler-generated async/iterator state-machine
+attribute, their callable signature, nullability, defaults, modifiers, and public contract are byte-
+for-byte identical. Every record pins its complete before/after signature; no wildcard or blanket
+namespace suppression is used.
+
+Verification evidence (2026-08-01): the exact API gate passed all 564 classifications with no
+unclassified or stale record. The worktree and extracted source archive each passed 451 tests on
+net8.0, net9.0, and net10.0; all six net10.0 samples, generated API freshness, package consumer,
+format, and source-archive validation passed. Candidate-major enforcement rejected `4.0.1` because
+major `5` is required. No version was changed and no package was published.
+
+## GOAL-DOTNET-SAMPLE-TFM-001-SLMP: user samples target .NET 10
+
+Implementation scope: the six projects under `samples`, the sample README, user Getting Started
+prerequisites, and the changelog.
+
+Target contract: every user-facing sample targets `net10.0`, while the reusable library and test
+projects continue to target `net8.0`, `net9.0`, and `net10.0`. No maintainer-only validation project
+is changed merely for symmetry.
+
+Compatibility impact: users building repository samples need the .NET 10 SDK. Package consumers and
+the library's supported TFMs are unchanged.
+
+Acceptance criteria:
+
+1. All six user-facing sample project files target exactly `net10.0`.
+2. The library and test projects retain `net8.0;net9.0;net10.0`.
+3. Sample prerequisites and the compatibility impact are recorded in sample documentation and the changelog.
+
+- [x] Implementation completed in this repository.
+- [x] All six sample restore/build and relevant archive/package checks passed on the reviewed worktree state.
+- [x] Codex self-review completed after the requested verification run.
+- [x] Live PLC verification is not required because the sample TFM change does not alter PLC communication.
+- [x] Documentation and changelog agree with the implemented target-framework change.
+- [x] Final sample acceptance criteria verified by the executed worktree and extracted source-archive gates.

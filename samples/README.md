@@ -2,6 +2,10 @@
 
 These projects show how to connect to a MELSEC PLC with one explicit `SlmpPlcProfile` and the current high-level SLMP API.
 
+Building the repository samples requires the .NET 10 SDK. The reusable library
+continues to provide its separately documented `net8.0`, `net9.0`, and
+`net10.0` package targets.
+
 ## How to run
 
 Use `192.168.250.100` and TCP port `1025` for the standard getting-started setup. Use UDP port `1035` when you intentionally test cable-pull recovery.
