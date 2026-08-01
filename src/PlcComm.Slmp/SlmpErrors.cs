@@ -11,7 +11,7 @@ namespace PlcComm.Slmp;
 /// <param name="Multidrop">Multidrop station number reported by the PLC.</param>
 /// <param name="Command">Command code associated with the PLC error.</param>
 /// <param name="Subcommand">Subcommand code associated with the PLC error.</param>
-/// <param name="Raw">Raw 9-byte error information block.</param>
+/// <param name="Raw">Raw required 9-byte error-information prefix.</param>
 public sealed record SlmpErrorInfo(
     byte Network,
     byte Station,
@@ -21,8 +21,12 @@ public sealed record SlmpErrorInfo(
     ushort Subcommand,
     byte[] Raw)
 {
+    /// <summary>Bytes following the required 9-byte error-information prefix.</summary>
+    public byte[] Extra { get; init; } = [];
+
     /// <summary>
-    /// Parse a 9-byte SLMP error information block, or return null when it is not present.
+    /// Parse the required 9-byte SLMP error-information prefix and retain any following bytes,
+    /// or return null when the complete prefix is not present.
     /// </summary>
     public static SlmpErrorInfo? Parse(ReadOnlySpan<byte> data)
     {
@@ -39,7 +43,10 @@ public sealed record SlmpErrorInfo(
             raw[4],
             BinaryPrimitives.ReadUInt16LittleEndian(raw.AsSpan(5, 2)),
             BinaryPrimitives.ReadUInt16LittleEndian(raw.AsSpan(7, 2)),
-            raw);
+            raw)
+        {
+            Extra = data[9..].ToArray(),
+        };
     }
 }
 

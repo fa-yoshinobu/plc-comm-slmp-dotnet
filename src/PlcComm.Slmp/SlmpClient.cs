@@ -2231,7 +2231,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                         continue;
                     if (!HasExpectedResponseRoute(response, FrameType, TargetAddress))
                         continue;
-                    var parsed = ParseResponse(command, subcommand, response);
+                    var parsed = ParseResponse(command, subcommand, TargetAddress, response);
                     transactionCancellation.Token.ThrowIfCancellationRequested();
                     return await DecodeCommandResponseAsync(parsed, decodeResponse, transactionCancellation.Token).ConfigureAwait(false);
                 }
@@ -2303,7 +2303,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                     continue;
                 if (!HasExpectedResponseRoute(datagram.Buffer, FrameType, TargetAddress))
                     continue;
-                var parsed = ParseResponse(command, subcommand, datagram.Buffer);
+                var parsed = ParseResponse(command, subcommand, TargetAddress, datagram.Buffer);
                 transactionCancellation.Token.ThrowIfCancellationRequested();
                 return await DecodeCommandResponseAsync(parsed, decodeResponse, transactionCancellation.Token).ConfigureAwait(false);
             }
@@ -2506,7 +2506,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         throw new SlmpError("invalid response subheader");
     }
 
-    private static byte[] ParseResponse(SlmpCommand command, ushort subcommand, byte[] response)
+    private static byte[] ParseResponse(
+        SlmpCommand command,
+        ushort subcommand,
+        SlmpTargetAddress expectedTarget,
+        byte[] response)
     {
         var is4E = response.Length >= 13 && response[0] == 0xD4 && response[1] == 0x00;
         var is3E = response.Length >= 9 && response[0] == 0xD0 && response[1] == 0x00;
@@ -2518,6 +2522,19 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         if (endCode != 0)
         {
             var errorInfo = SlmpErrorInfo.Parse(response.AsSpan(headerSize + 2, dataLength - 2));
+            if (errorInfo is not null &&
+                (errorInfo.Network != expectedTarget.Network ||
+                 errorInfo.Station != expectedTarget.Station ||
+                 errorInfo.ModuleIo != expectedTarget.ModuleIo ||
+                 errorInfo.Multidrop != expectedTarget.Multidrop ||
+                 errorInfo.Command != (ushort)command ||
+                 errorInfo.Subcommand != subcommand))
+            {
+                throw new SlmpError(
+                    "SLMP error information does not match the active request.",
+                    command: command,
+                    subcommand: subcommand);
+            }
             throw new SlmpError(
                 $"SLMP error end_code=0x{endCode:X4} command=0x{(ushort)command:X4} subcommand=0x{subcommand:X4}",
                 endCode,

@@ -994,7 +994,7 @@ public sealed class SlmpClientGuardTests
     [Fact]
     public async Task PlcError_ExposesStructuredErrorInformation()
     {
-        byte[] errorData = [0x00, 0xFF, 0xFF, 0x03, 0x00, 0x01, 0x04, 0x01, 0x00];
+        byte[] errorData = [0x00, 0xFF, 0xFF, 0x03, 0x00, 0x01, 0x04, 0x02, 0x00];
         await using var server = new MultiShotSlmpServer([
             (0xC051, errorData),
         ]);
@@ -1014,7 +1014,7 @@ public sealed class SlmpClientGuardTests
         Assert.Equal((ushort)0x03FF, ex.ErrorInfo.ModuleIo);
         Assert.Equal((byte)0x00, ex.ErrorInfo.Multidrop);
         Assert.Equal((ushort)0x0401, ex.ErrorInfo.Command);
-        Assert.Equal((ushort)0x0001, ex.ErrorInfo.Subcommand);
+        Assert.Equal((ushort)0x0002, ex.ErrorInfo.Subcommand);
         Assert.Equal(errorData, ex.ErrorInfo.Raw);
     }
 

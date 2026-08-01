@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Library: Nonzero-end-code responses that contain structured error information now require the embedded route, command, and subcommand to match the active request. A mismatch is malformed, retires the transport, and makes a transmitted state change outcome-unknown; matching additional error bytes are retained in `SlmpErrorInfo.Extra`.
 - BREAKING: Contiguous Direct, Random, Monitor-registration, Block, and applicable Extended Device operations now reject a request whose consumed device span exceeds the selected 24-bit or 32-bit wire address field before client state or transport activity. Packed word access to bit devices consumes 16 device numbers per word, ordinary DWord/Float32 access consumes two word devices per value, and bit blocks consume 16 bit devices per block point; no configured PLC device-range limit is inferred.
 - Library: Typed, named, polling, long-timer, and bit-in-word helpers now finish route/span/profile/writable-target admission before FIFO waiting; invalid bit-in-word targets send neither the read nor write request.
 - Library: Named reads now reject `LTN`/`LSTN` Direct Read families during complete pre-transport planning, remove unreachable long-timer named execution state, and direct callers to typed or explicit long-timer helpers.

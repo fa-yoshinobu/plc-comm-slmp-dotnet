@@ -45,6 +45,26 @@ public sealed class SlmpResponseCorrelationTests
         }
     }
 
+    public static TheoryData<SlmpTransportMode, SlmpFrameType, ErrorIdentityField, bool> ErrorIdentityCases
+    {
+        get
+        {
+            var cases = new TheoryData<SlmpTransportMode, SlmpFrameType, ErrorIdentityField, bool>();
+            foreach (var transport in Enum.GetValues<SlmpTransportMode>())
+            {
+                foreach (var frame in Enum.GetValues<SlmpFrameType>())
+                {
+                    foreach (var identityField in Enum.GetValues<ErrorIdentityField>())
+                    {
+                        cases.Add(transport, frame, identityField, false);
+                        cases.Add(transport, frame, identityField, true);
+                    }
+                }
+            }
+            return cases;
+        }
+    }
+
     [Theory]
     [InlineData(SlmpFrameType.Frame3E)]
     [InlineData(SlmpFrameType.Frame4E)]
@@ -476,6 +496,81 @@ public sealed class SlmpResponseCorrelationTests
     }
 
     [Theory]
+    [MemberData(nameof(ErrorIdentityCases))]
+    public async Task MismatchedErrorInformationIsMalformedAndRequiresExplicitReopen(
+        SlmpTransportMode transport,
+        SlmpFrameType frameType,
+        ErrorIdentityField field,
+        bool stateChanging)
+    {
+        var exchange = 0;
+        await using var server = new ScriptedSlmpServer(
+            transport,
+            frameType,
+            async (request, send, _) =>
+            {
+                if (Interlocked.Increment(ref exchange) == 1)
+                    await send(BuildErrorResponse(request, frameType, field)).ConfigureAwait(false);
+                else
+                    await send(BuildResponse(request, frameType)).ConfigureAwait(false);
+            },
+            exchangeCount: 2);
+        await server.StartAsync();
+        using var client = CreateClient(server.Port, transport, frameType, TimeSpan.FromMilliseconds(500));
+        var command = stateChanging ? SlmpCommand.ClearError : SlmpCommand.ReadTypeName;
+
+        if (stateChanging)
+        {
+            var error = await Assert.ThrowsAsync<SlmpOperationOutcomeUnknownException>(
+                () => client.RawCommandAsync(command, 0x0000, ReadOnlyMemory<byte>.Empty));
+            Assert.Equal(SlmpOutcomeUnknownReason.MalformedResponse, error.Reason);
+            var cause = Assert.IsType<SlmpError>(error.InnerException);
+            Assert.Null(cause.EndCode);
+        }
+        else
+        {
+            var error = await Assert.ThrowsAsync<SlmpError>(
+                () => client.RawCommandAsync(command, 0x0000, ReadOnlyMemory<byte>.Empty));
+            Assert.Null(error.EndCode);
+        }
+
+        Assert.False(client.IsOpen);
+        await Assert.ThrowsAsync<SlmpNotConnectedException>(
+            () => client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
+        await client.OpenAsync();
+        Assert.Empty(await client.RawCommandAsync(
+            SlmpCommand.ReadTypeName,
+            0x0000,
+            ReadOnlyMemory<byte>.Empty));
+        Assert.True(client.IsOpen);
+    }
+
+    [Theory]
+    [MemberData(nameof(TransportFrameCases))]
+    public async Task MatchingErrorInformationAndAdditionalBytesRemainDefinitive(
+        SlmpTransportMode transport,
+        SlmpFrameType frameType)
+    {
+        foreach (var extra in new[] { Array.Empty<byte>(), new byte[] { 0xA5 }, new byte[] { 0xA5, 0x5A, 0xC3 } })
+        {
+            await using var server = new ScriptedSlmpServer(
+                transport,
+                frameType,
+                async (request, send, _) =>
+                    await send(BuildErrorResponse(request, frameType, extra: extra)).ConfigureAwait(false));
+            await server.StartAsync();
+            using var client = CreateClient(server.Port, transport, frameType, TimeSpan.FromMilliseconds(500));
+
+            var error = await Assert.ThrowsAsync<SlmpError>(
+                () => client.RawCommandAsync(SlmpCommand.ReadTypeName, 0x0000, ReadOnlyMemory<byte>.Empty));
+
+            Assert.Equal((ushort)0xC051, error.EndCode);
+            Assert.Equal(extra, Assert.IsType<SlmpErrorInfo>(error.ErrorInfo).Extra);
+            Assert.True(client.IsOpen);
+        }
+    }
+
+    [Theory]
     [InlineData(SlmpFrameType.Frame3E)]
     [InlineData(SlmpFrameType.Frame4E)]
     public async Task ShortUdpDatagramIsReportedAsMalformedAndInvalidatesTransport(SlmpFrameType frameType)
@@ -582,6 +677,47 @@ public sealed class SlmpResponseCorrelationTests
         return response;
     }
 
+    private static byte[] BuildErrorResponse(
+        ReadOnlySpan<byte> request,
+        SlmpFrameType frameType,
+        ErrorIdentityField? mismatch = null,
+        ReadOnlySpan<byte> extra = default)
+    {
+        var requestRouteOffset = frameType == SlmpFrameType.Frame4E ? 6 : 2;
+        var requestCommandOffset = frameType == SlmpFrameType.Frame4E ? 15 : 11;
+        var errorInfo = new byte[9 + extra.Length];
+        request.Slice(requestRouteOffset, 5).CopyTo(errorInfo);
+        request.Slice(requestCommandOffset, 4).CopyTo(errorInfo.AsSpan(5));
+        extra.CopyTo(errorInfo.AsSpan(9));
+        switch (mismatch)
+        {
+            case ErrorIdentityField.Network:
+                errorInfo[0]++;
+                break;
+            case ErrorIdentityField.Station:
+                errorInfo[1]++;
+                break;
+            case ErrorIdentityField.ModuleIo:
+                BinaryPrimitives.WriteUInt16LittleEndian(
+                    errorInfo.AsSpan(2, 2),
+                    unchecked((ushort)(BinaryPrimitives.ReadUInt16LittleEndian(errorInfo.AsSpan(2, 2)) + 1)));
+                break;
+            case ErrorIdentityField.Multidrop:
+                errorInfo[4]++;
+                break;
+            case ErrorIdentityField.Command:
+                errorInfo[5]++;
+                break;
+            case ErrorIdentityField.Subcommand:
+                errorInfo[7]++;
+                break;
+        }
+        var response = BuildResponse(request, frameType, payload: errorInfo);
+        var headerSize = frameType == SlmpFrameType.Frame4E ? 13 : 9;
+        BinaryPrimitives.WriteUInt16LittleEndian(response.AsSpan(headerSize, 2), 0xC051);
+        return response;
+    }
+
     private static void MutateRoute(byte[] response, int routeOffset, RouteField? field)
     {
         switch (field)
@@ -608,6 +744,16 @@ public sealed class SlmpResponseCorrelationTests
         Station,
         ModuleIo,
         Multidrop,
+    }
+
+    public enum ErrorIdentityField
+    {
+        Network,
+        Station,
+        ModuleIo,
+        Multidrop,
+        Command,
+        Subcommand,
     }
 
     private sealed class ScriptedSlmpServer : IAsyncDisposable
@@ -677,28 +823,31 @@ public sealed class SlmpResponseCorrelationTests
         {
             try
             {
-                using var client = await _tcpListener!.AcceptTcpClientAsync(_stopping.Token).ConfigureAwait(false);
-                using var stream = client.GetStream();
-                var request = await ReadTcpRequestAsync(stream, _frameType, _stopping.Token).ConfigureAwait(false);
-                await _script(
-                    request,
-                    async response =>
-                    {
-                        if (_splitTcpResponses && response.Length > 1)
+                for (var exchange = 0; exchange < _exchangeCount; exchange++)
+                {
+                    using var client = await _tcpListener!.AcceptTcpClientAsync(_stopping.Token).ConfigureAwait(false);
+                    using var stream = client.GetStream();
+                    var request = await ReadTcpRequestAsync(stream, _frameType, _stopping.Token).ConfigureAwait(false);
+                    await _script(
+                        request,
+                        async response =>
                         {
-                            var split = response.Length - 1;
-                            await stream.WriteAsync(response.AsMemory(0, split), _stopping.Token).ConfigureAwait(false);
+                            if (_splitTcpResponses && response.Length > 1)
+                            {
+                                var split = response.Length - 1;
+                                await stream.WriteAsync(response.AsMemory(0, split), _stopping.Token).ConfigureAwait(false);
+                                await stream.FlushAsync(_stopping.Token).ConfigureAwait(false);
+                                await Task.Delay(_splitTcpDelay, _stopping.Token).ConfigureAwait(false);
+                                await stream.WriteAsync(response.AsMemory(split), _stopping.Token).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                await stream.WriteAsync(response, _stopping.Token).ConfigureAwait(false);
+                            }
                             await stream.FlushAsync(_stopping.Token).ConfigureAwait(false);
-                            await Task.Delay(_splitTcpDelay, _stopping.Token).ConfigureAwait(false);
-                            await stream.WriteAsync(response.AsMemory(split), _stopping.Token).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            await stream.WriteAsync(response, _stopping.Token).ConfigureAwait(false);
-                        }
-                        await stream.FlushAsync(_stopping.Token).ConfigureAwait(false);
-                    },
-                    _stopping.Token).ConfigureAwait(false);
+                        },
+                        _stopping.Token).ConfigureAwait(false);
+                }
             }
             catch (Exception ex) when (ex is OperationCanceledException or SocketException or IOException or ObjectDisposedException)
             {

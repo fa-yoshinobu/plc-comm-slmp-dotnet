@@ -1294,3 +1294,85 @@ API freshness, passed 528 tests on each of `net8.0`, `net9.0`, and `net10.0`, an
 passed formatting. The separate Release NuGet package/isolated `net8.0` consumer
 contract passed with the expected 12-file package. `git diff --check` passed; no
 live PLC communication, commit, push, or publication was performed.
+
+## GOAL-SLMP-ERROR-INFO-CORRELATION-20260802 — Correlate structured error information
+
+Stable identifier: `SLMP-ERROR-INFO-CORRELATION-001`.
+
+Implementation scope: the .NET `SlmpClient` TCP and UDP response paths for 3E
+and 4E responses with a nonzero end code and at least nine bytes of structured
+error information, including propagation through `QueuedSlmpClient`.
+
+Target contract: when a nonzero-end-code response contains the nine-byte SLMP
+error-information prefix, its network, station, module I/O, multidrop, command,
+and subcommand fields must match the immutable target and command identity of
+the active request. Any mismatch is a malformed response rather than a
+definitive PLC end-code result. For a state-changing request, that mismatch
+produces `SlmpOperationOutcomeUnknownException` with reason
+`MalformedResponse`, invalidates the active transport generation, and requires
+an explicit reopen before later communication. A matching prefix retains the
+existing PLC-error behavior. Bytes following the required nine-byte prefix
+remain permitted and are retained as the error information's additional data;
+their presence alone is not malformed.
+
+Compatibility impact: a peer, gateway, or delayed response whose structured
+error information identifies another route or command is no longer exposed as
+the current request's definitive PLC error, and the affected transport cannot
+be reused. Applications that retried based on that former classification must
+instead treat a state-changing request as outcome-unknown. The behavior of a
+nonzero-end-code response that does not contain the complete nine-byte
+error-information prefix is intentionally undecided and outside this item.
+
+Machine-verifiable acceptance criteria:
+
+1. TCP and UDP tests for both 3E and 4E independently mismatch network,
+   station, module I/O, multidrop, command, and subcommand in an otherwise
+   structurally valid nonzero-end-code response; every case is classified as
+   malformed and never as the current request's definitive PLC error.
+2. A state-changing request receiving each mismatched response fails with
+   `SlmpOperationOutcomeUnknownException`, reason `MalformedResponse`, retires
+   the transport generation, rejects implicit reuse, and permits communication
+   only after explicit reopen.
+3. A read-only request receiving a mismatched structured error follows the
+   established malformed-response classification and transport-invalidation
+   contract without exposing the mismatched PLC end code as definitive.
+4. For each transport and frame format, an exactly matching route, command, and
+   subcommand preserves the existing `SlmpError` end-code result.
+5. Matching error information with zero, one, and multiple bytes after the
+   nine-byte prefix remains accepted, and every additional byte is retained in
+   `SlmpErrorInfo.Extra` without truncation.
+6. A representative queued-client test proves the same exception, outcome
+   reason, and transport-generation behavior as the direct client.
+7. The acceptance suite passes independently on `net8.0`, `net9.0`, and
+   `net10.0`; no criterion relies on live PLC communication.
+
+- [x] Implementation completed in every affected repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Relevant static checks, unit tests, integration tests, examples, and package/build checks passed.
+- [x] Codex self-review completed against the approved contract and cross-language consistency requirements.
+- [x] Required live-PLC checks passed, or each unavailable check has an explicit release disposition.
+- [x] Documentation, migration notes, changelog, and generated API reference agree with the implementation.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+### Verification evidence and self-review disposition (2026-08-02)
+
+- `run_ci.bat`: PASS. Build, release-version checks, API-generator tests,
+  generated API freshness, formatting, and all 580 tests on each of `net8.0`,
+  `net9.0`, and `net10.0` completed with zero failures or skips.
+- Deterministic loopback fixtures cover TCP and UDP, 3E and 4E, all six
+  independently mismatched identity fields, read-only and state-changing
+  classifications, transport retirement, explicit reopen, and matching
+  prefixes followed by zero, one, or three retained extra bytes.
+- `QueuedSlmpClient` is non-applicable to acceptance criterion 6 because the
+  approved `GOAL-SERIAL-DEFER-006` removed that type and expressly supersedes
+  every historical parity requirement. Exported-surface tests continue to
+  prove its absence; `SlmpClient` is the sole supported live-client path.
+- Codex self-review inspected the response parse order, public error surface,
+  immutable target and command comparison, short-error boundary, read/write
+  classification, invalidation and reopen lifecycle, tests, documentation,
+  generated API, and cross-language behavior. Accepted findings: none.
+  Rejected findings: none. Duplicate findings: none. Deferred findings: none.
+- Live PLC verification is not required for this item: correlation and
+  lifecycle behavior are completely observable with deterministic transport
+  fixtures, and no PLC/profile compatibility claim changed. No live PLC
+  communication was performed.
