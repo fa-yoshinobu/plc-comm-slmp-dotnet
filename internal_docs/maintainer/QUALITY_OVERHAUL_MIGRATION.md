@@ -1193,3 +1193,104 @@ Rejected with rationale: restoring the former post-result generation-retired che
 fully decoded success or framed PLC end-code with a later close/dispose result and therefore violate
 the approved D1 definitive-result boundary. No self-review findings were classified as duplicate or
 deferred.
+
+## GOAL-SLMP-SPAN-20260801 — Complete wire-address span admission
+
+Stable identifier: `SLMP-SPAN-20260801-DOTNET`.
+
+Implementation scope: .NET contiguous Direct word/bit/DWord/Float32 operations,
+Random entries, Monitor registration, Block routes, applicable Extended Device
+routes, long-timer Direct status blocks, validation ordering, tests, user and
+generated API documentation, migration notes, and changelog.
+
+Target contract: before connection, frame publication, request-counter mutation,
+or transport, every applicable operation proves that its complete consumed
+device span fits the selected address field. Q/L-compatible and link-direct wire
+layouts use 24 bits and iQ-R layouts use 32 bits. Word devices consume one number
+per word, packed word access to bit devices consumes 16 numbers per word,
+ordinary DWord/Float32 values consume two word-device numbers, packed bit-device
+DWords consume 32 numbers, bit blocks consume 16 bit-device numbers per block
+point, and Direct LTN/LSTN status blocks consume one logical device per four wire
+words. Random/Monitor long scalar entries retain their existing one-device
+semantic width. This is wire representability only; canonical profile usable
+ranges are not pre-send guards.
+
+Compatibility impact: requests that previously wrapped or truncated their final
+device number, or reached transport with an unrepresentable span, now fail
+locally with `ArgumentOutOfRangeException`. Exact-boundary requests remain
+admitted. No compatibility alias or silent split is retained.
+
+Machine-verifiable acceptance criteria:
+
+1. Q/L-compatible 24-bit and iQ-R 32-bit Direct word/bit read and write accept
+   one point at the maximum and reject a two-point span from that maximum with
+   zero client-state or transport effects.
+2. Ordinary DWord/Float32 read and write accept one value at maximum-minus-one,
+   reject two values there, and reject one value at the maximum.
+3. Packed bit-device word/DWord and bit-block routes use 16/32-device expansion;
+   Direct long-timer status blocks use one logical device per four wire words.
+4. Random and Monitor DWord entries and word/bit Block reads and writes apply the
+   same route-specific span rules, including Extended Device layouts where that
+   contiguous-width contract applies.
+5. Validation uses checked wide arithmetic, runs before connection/frame/counter
+   mutation, and does not consult the profile device-range catalog.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Relevant static checks, unit tests, integration tests, examples, and package/build checks passed.
+- [x] Codex self-review completed against the approved contract and cross-language consistency requirements.
+- [x] Live PLC checks are not required; wire-field arithmetic and zero-send admission are deterministic local properties.
+- [x] Documentation, migration notes, changelog, and generated API reference agree with the implementation.
+- [x] Final acceptance criteria verified and the item marked complete.
+
+Self-review disposition (2026-08-01):
+
+- Accepted: the initial shared width helper treated every `LTN`/`LSTN` use as a
+  four-word Direct status block, which would have misclassified Random/Monitor
+  scalar entries. Direct long-status semantics and scalar DWord-entry semantics
+  are now explicit and independently tested.
+- Accepted: existing Random/Extended Random and Block write-overlap checks still
+  used fixed logical widths. They now use the same packed bit-device 16/32-width
+  model as admission, with overlap regression tests and wide end arithmetic.
+- Accepted: Block Read initially applied ordinary word width to Direct
+  `LTN`/`LSTN` status blocks. It now applies the approved four-wire-words per
+  logical-device width, with exact and overflowing Block boundaries tested.
+- Accepted: Extended Random overlap and bit-duplicate identity initially compared
+  nullable extension fields instead of the effective encoded extension. Null and
+  explicit zero now identify the same wire route and reject overlap/duplicates.
+- Accepted: long-timer helpers and typed, named, and polling reads initially
+  completed span admission only after FIFO entry. Their exact underlying route is
+  now validated before FIFO waiting; an occupied-FIFO regression proves invalid
+  calls fail immediately with zero added state or transport effects.
+- Accepted: the first typed-read preflight reused the public low-level Direct Bit
+  guard for `LCS`/`LCC`, although the typed helper intentionally owns that Direct
+  route. Typed preflight now mirrors its unchecked internal bit route while the
+  public low-level rejection remains unchanged.
+- Accepted: the first named-read preflight delegated its 256-entry count failure
+  to the low-level Random guard and changed the established high-level diagnostic.
+  The one-request named limit now runs first and retains its documented error.
+- Accepted: `WriteBitInWordAsync` initially admitted its read before validating
+  the eventual write. Read and write feature, policy, point, profile, and span
+  admission now all complete before FIFO waiting, so an invalid target sends
+  neither request.
+- Accepted: initial coverage did not exercise packed bit-device DWord/Float32,
+  link-direct 24-bit Extended Device, or long-timer exact-boundary behavior.
+  Focused zero-send and exact-boundary tests now cover each applicable route.
+- Accepted: initial positive-boundary coverage omitted the independent Extended
+  methods and native Random/Monitor DWord families. Exact-boundary transport tests
+  now cover the independent Extended read/write routes and native
+  `LTN`/`LSTN`/`LCN`/`LZ` scalar width.
+- Accepted: the generated API reference was stale after the final XML contract
+  clarification. It was regenerated from the final public assembly/XML surface.
+- Rejected: enforcing the configured PLC device-range catalog here would turn a
+  wire-representability invariant into profile policy and contradict the
+  approved contract; no such guard was added.
+- Deferred: none. Live PLC communication is not required for deterministic
+  arithmetic and pre-transport state assertions.
+
+Verification evidence: after every accepted self-review correction,
+`run_ci.bat` built all targets and samples without warnings, confirmed generated
+API freshness, passed 528 tests on each of `net8.0`, `net9.0`, and `net10.0`, and
+passed formatting. The separate Release NuGet package/isolated `net8.0` consumer
+contract passed with the expected 12-file package. `git diff --check` passed; no
+live PLC communication, commit, push, or publication was performed.

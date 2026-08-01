@@ -67,6 +67,8 @@ internal sealed record SlmpNamedWritePlan(
 /// Typed, block, and named operations use one SLMP request unless the method explicitly
 /// documents a read-modify-write sequence. Named operations reject plans that require
 /// more than one request; polling performs a separate declared read cycle each interval.
+/// Typed, named, polling, long-timer, and bit-in-word helpers complete route, span,
+/// profile, and writable-target admission before waiting for the client FIFO.
 /// </remarks>
 public static class SlmpClientExtensions
 {
@@ -111,6 +113,7 @@ public static class SlmpClientExtensions
         ValidateLongFamilyDType(device, normalizedDType, nameof(dtype));
         ValidateDWordOnlyDType(device, normalizedDType, nameof(dtype));
         ValidateDeviceUnitDType(device, normalizedDType, nameof(dtype));
+        ValidateTypedReadAdmission(client, device, normalizedDType);
         return client.ExecuteExclusiveAsync(
             token => ReadTypedCoreAsync(client, device, normalizedDType, token),
             ct);
@@ -277,7 +280,9 @@ public static class SlmpClientExtensions
     /// PLC-atomic: another client, PLC logic, or external writer can change the
     /// word between them. Applications that require atomic coordination must
     /// implement it in the PLC contract. Bit-device packed-word access is not a
-    /// bit-in-word operation and is rejected by this helper.
+    /// bit-in-word operation and is rejected by this helper. Read and write
+    /// admission both complete before FIFO waiting, so a read-only or
+    /// wire-unrepresentable target sends neither request.
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="device"/> is not word-addressable.</exception>
     public static Task WriteBitInWordAsync(
@@ -295,6 +300,8 @@ public static class SlmpClientExtensions
                 $"WriteBitInWordAsync requires a word-addressable device; {device.Code} is bit-addressable.",
                 nameof(device));
         }
+        client.ValidateDirectWordReadAdmission(device, 1);
+        client.ValidateDirectWordWriteAdmission(device, 1);
         return client.ExecuteExclusiveAsync(
             token => WriteBitInWordCoreAsync(client, device, bitIndex, value, token),
             ct);
@@ -541,6 +548,7 @@ public static class SlmpClientExtensions
         CancellationToken ct = default)
     {
         var plan = CompileReadPlan(addresses, client.PlcProfile);
+        ValidateNamedReadAdmission(client, plan);
         return client.ExecuteExclusiveAsync(
             token => ReadNamedCompiledAsync(client, plan, token),
             ct);
@@ -660,6 +668,7 @@ public static class SlmpClientExtensions
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var plan = CompileReadPlan(addresses, client.PlcProfile);
+        ValidateNamedReadAdmission(client, plan);
         while (!ct.IsCancellationRequested)
         {
             yield return await client.ExecuteExclusiveAsync(
@@ -684,6 +693,68 @@ public static class SlmpClientExtensions
         ArgumentNullException.ThrowIfNull(values);
         if (values.Count == 0 || values.Count > maxCount)
             throw new ArgumentOutOfRangeException(paramName, $"values.Count must be in the range 1-{maxCount}.");
+    }
+
+    private static void ValidateTypedReadAdmission(
+        SlmpClient client,
+        SlmpDeviceAddress device,
+        string normalizedDType)
+    {
+        var longRead = GetLongTimerReadSpec(device.Code);
+        if (longRead is not null)
+        {
+            if (IsLongCounterStateDirectBitRead(longRead.Value))
+            {
+                client.ValidateDirectBitReadUncheckedAdmission(device, 1);
+                return;
+            }
+
+            if (longRead.Value.Kind == SlmpLongTimerReadKind.Current && device.Code == SlmpDeviceCode.LCN)
+            {
+                client.ValidateRandomReadAdmission([], [device]);
+                return;
+            }
+
+            if (device.Number > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(device),
+                    device,
+                    "Long-timer typed reads require a device number no greater than Int32.MaxValue.");
+            }
+            _ = client.PrepareLongTimerRead(longRead.Value.BaseCode, (int)device.Number, 1);
+            return;
+        }
+
+        switch (normalizedDType)
+        {
+            case "BIT":
+                client.ValidateDirectBitReadAdmission(device, 1);
+                break;
+            case "F":
+            case "D":
+            case "L":
+                if (IsRandomDWordAddressedDevice(device.Code))
+                    client.ValidateRandomReadAdmission([], [device]);
+                else
+                    client.ValidateDirectDWordReadAdmission(device, 1);
+                break;
+            default:
+                client.ValidateDirectWordReadAdmission(device, 1);
+                break;
+        }
+    }
+
+    private static void ValidateNamedReadAdmission(SlmpClient client, SlmpNamedReadPlan plan)
+    {
+        ValidateCompiledReadPlan(plan);
+        if (plan.WordDevices.Count > 0xFF || plan.DwordDevices.Count > 0xFF)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(plan),
+                "Named read must fit in one random-read request (at most 255 word and 255 DWord devices). Split intentionally in application code if multiple request times are acceptable.");
+        }
+        client.ValidateRandomReadAdmission(plan.WordDevices, plan.DwordDevices);
     }
 
     internal static (string Base, string DType, int? BitIdx) ParseAddress(string address)

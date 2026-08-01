@@ -179,7 +179,7 @@ public sealed class SlmpClient
 
 A high-performance, asynchronous SLMP (MC Protocol) client for .NET. Supports 3E and 4E frame formats over TCP and UDP.
 
-Remarks: Public operations on one client enter one arrival-order FIFO queue, so one connection has at most one active wire transaction and 4E serial numbers remain associated with their responses. Queue waiting does not consume the transaction timeout. A waiting caller can cancel without sending. Unless a method explicitly documents a multi-step semantic operation, each request method emits exactly one SLMP request and never splits an oversized operation. Effective limits are validated before serial allocation or transport. The factory `OpenAndConnectAsync` returns a ready-to-use `SlmpClient` and is the recommended entry point for most use cases. Concurrent close or disposal rejects incomplete active work and queued work. A success value or framed PLC end-code error that has completed command-specific decoding remains definitive and is not replaced by the later lifecycle transition.
+Remarks: Public operations on one client enter one arrival-order FIFO queue, so one connection has at most one active wire transaction and 4E serial numbers remain associated with their responses. Queue waiting does not consume the transaction timeout. A waiting caller can cancel without sending. Unless a method explicitly documents a multi-step semantic operation, each request method emits exactly one SLMP request and never splits an oversized operation. Effective limits are validated before serial allocation or transport. Contiguous Direct, Random, Monitor-registration, Block, and applicable Extended Device routes validate their complete consumed device span against the selected 24-bit Q/L-compatible or 32-bit iQ-R wire address field. Link-direct Extended Device layouts remain 24-bit even on an iQ-R client. Packed word access to a bit device consumes 16 device numbers per word; ordinary DWord/Float32 access consumes two word devices per value, while packed DWord/Float32 access to a bit device consumes 32 device numbers per value; a bit-block point consumes 16 bit devices; and four words in a Direct long-timer status block consume one LTN/LSTN device. This representability check does not enforce configured PLC usable ranges. The factory `OpenAndConnectAsync` returns a ready-to-use `SlmpClient` and is the recommended entry point for most use cases. Concurrent close or disposal rejects incomplete active work and queued work. A success value or framed PLC end-code error that has completed command-specific decoding remains definitive and is not replaced by the later lifecycle transition.
 
 #### Members
 
@@ -927,7 +927,7 @@ public static class SlmpClientExtensions
 
 Extension methods for `SlmpClient` providing typed read/write helpers, single-request block access, named-device access, and polling.
 
-Remarks: Typed, block, and named operations use one SLMP request unless the method explicitly documents a read-modify-write sequence. Named operations reject plans that require more than one request; polling performs a separate declared read cycle each interval.
+Remarks: Typed, block, and named operations use one SLMP request unless the method explicitly documents a read-modify-write sequence. Named operations reject plans that require more than one request; polling performs a separate declared read cycle each interval. Typed, named, polling, long-timer, and bit-in-word helpers complete route, span, profile, and writable-target admission before waiting for the client FIFO.
 
 #### Members
 
@@ -1005,7 +1005,7 @@ public static Task WriteBitInWordAsync(SlmpClient client, SlmpDeviceAddress devi
 
 Performs a read-modify-write to set or clear one bit inside a word device.
 
-Remarks: The read and write occupy one FIFO turn on this client, so its other operations cannot interleave. They remain two SLMP requests and are not PLC-atomic: another client, PLC logic, or external writer can change the word between them. Applications that require atomic coordination must implement it in the PLC contract. Bit-device packed-word access is not a bit-in-word operation and is rejected by this helper.
+Remarks: The read and write occupy one FIFO turn on this client, so its other operations cannot interleave. They remain two SLMP requests and are not PLC-atomic: another client, PLC logic, or external writer can change the word between them. Applications that require atomic coordination must implement it in the PLC contract. Bit-device packed-word access is not a bit-in-word operation and is rejected by this helper. Read and write admission both complete before FIFO waiting, so a read-only or wire-unrepresentable target sends neither request.
 
 Parameters:
 - `client`: Connected SLMP client.

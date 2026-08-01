@@ -322,6 +322,407 @@ public sealed class QualityOverhaulContractTests
         Assert.Equal<ulong>(1, client.TrafficStats.RequestCount);
     }
 
+    [Theory]
+    [InlineData(SlmpPlcProfile.IqR)]
+    [InlineData(SlmpPlcProfile.QnUQj71E71100)]
+    public async Task DirectWordAndBitSpans_UseSelectedWireWidthBeforeAdmission(
+        SlmpPlcProfile plcProfile)
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            plcProfile,
+            1025,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var maximum = plcProfile == SlmpPlcProfile.IqR ? uint.MaxValue : 0x00FF_FFFFU;
+        var word = new SlmpDeviceAddress(SlmpDeviceCode.D, maximum, plcProfile);
+        var bit = new SlmpDeviceAddress(SlmpDeviceCode.M, maximum, plcProfile);
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadWordsRawAsync(word, 1, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteWordsAsync(word, [1], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadBitsAsync(bit, 1, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteBitsAsync(bit, [true], cancelled.Token));
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadWordsRawAsync(word, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteWordsAsync(word, [1, 2]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadBitsAsync(bit, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteBitsAsync(bit, [true, false]));
+
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+        Assert.Empty(client.LastRequestFrame);
+    }
+
+    [Theory]
+    [InlineData(SlmpPlcProfile.IqR)]
+    [InlineData(SlmpPlcProfile.QnUQj71E71100)]
+    public async Task PackedBitDeviceWordSpans_CountSixteenDeviceNumbersPerWord(
+        SlmpPlcProfile plcProfile)
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            plcProfile,
+            1025,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var maximum = plcProfile == SlmpPlcProfile.IqR ? uint.MaxValue : 0x00FF_FFFFU;
+        var validStart = new SlmpDeviceAddress(SlmpDeviceCode.M, maximum - 15U, plcProfile);
+        var validDwordStart = new SlmpDeviceAddress(SlmpDeviceCode.M, maximum - 31U, plcProfile);
+        var invalidStart = new SlmpDeviceAddress(SlmpDeviceCode.M, maximum, plcProfile);
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadWordsRawAsync(validStart, 1, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteWordsAsync(validStart, [1], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadDWordsRawAsync(validDwordStart, 1, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteDWordsAsync(validDwordStart, [1U], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadFloat32sAsync(validDwordStart, 1, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteFloat32sAsync(validDwordStart, [1.0F], cancelled.Token));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadWordsRawAsync(validStart, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteWordsAsync(validStart, [1, 2]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadWordsRawAsync(invalidStart, 1));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteWordsAsync(invalidStart, [1]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadDWordsRawAsync(validDwordStart, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteDWordsAsync(validDwordStart, [1U, 2U]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadFloat32sAsync(invalidStart, 1));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteFloat32sAsync(invalidStart, [1.0F]));
+
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+        Assert.Empty(client.LastRequestFrame);
+    }
+
+    [Theory]
+    [InlineData(SlmpPlcProfile.IqR)]
+    public async Task LongTimerDirectBlocks_CountOneDevicePerFourWords(
+        SlmpPlcProfile plcProfile)
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            plcProfile,
+            1025,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var maximum = plcProfile == SlmpPlcProfile.IqR ? uint.MaxValue : 0x00FF_FFFFU;
+        var lastTimer = new SlmpDeviceAddress(SlmpDeviceCode.LTN, maximum, plcProfile);
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadWordsRawAsync(lastTimer, 4, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadBlockAsync([new SlmpBlockRead(lastTimer, 4)], [], cancelled.Token));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadWordsRawAsync(lastTimer, 8));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadBlockAsync([new SlmpBlockRead(lastTimer, 8)], []));
+
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+        Assert.Empty(client.LastRequestFrame);
+    }
+
+    [Theory]
+    [InlineData(SlmpPlcProfile.IqR)]
+    [InlineData(SlmpPlcProfile.QnUQj71E71100)]
+    public async Task DWordAndFloatSpans_CountTwoWordAddressesPerValueBeforeAdmission(
+        SlmpPlcProfile plcProfile)
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            plcProfile,
+            1025,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var maximum = plcProfile == SlmpPlcProfile.IqR ? uint.MaxValue : 0x00FF_FFFFU;
+        var validStart = new SlmpDeviceAddress(SlmpDeviceCode.D, maximum - 1U, plcProfile);
+        var invalidStart = new SlmpDeviceAddress(SlmpDeviceCode.D, maximum, plcProfile);
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadDWordsRawAsync(validStart, 1, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteDWordsAsync(validStart, [1U], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadFloat32sAsync(validStart, 1, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteFloat32sAsync(validStart, [1.0F], cancelled.Token));
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadDWordsRawAsync(validStart, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteDWordsAsync(validStart, [1U, 2U]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadFloat32sAsync(validStart, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteFloat32sAsync(validStart, [1.0F, 2.0F]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadDWordsRawAsync(invalidStart, 1));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteDWordsAsync(invalidStart, [1U]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadFloat32sAsync(invalidStart, 1));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteFloat32sAsync(invalidStart, [1.0F]));
+
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+        Assert.Empty(client.LastRequestFrame);
+    }
+
+    [Theory]
+    [InlineData(SlmpPlcProfile.IqR)]
+    [InlineData(SlmpPlcProfile.QnUQj71E71100)]
+    public async Task RandomMonitorAndBlockRoutes_UseTheirConsumedDeviceSpansBeforeAdmission(
+        SlmpPlcProfile plcProfile)
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            plcProfile,
+            1025,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var maximum = plcProfile == SlmpPlcProfile.IqR ? uint.MaxValue : 0x00FF_FFFFU;
+        var validDword = new SlmpDeviceAddress(SlmpDeviceCode.D, maximum - 1U, plcProfile);
+        var invalidDword = new SlmpDeviceAddress(SlmpDeviceCode.D, maximum, plcProfile);
+        var lastWord = new SlmpDeviceAddress(SlmpDeviceCode.D, maximum, plcProfile);
+        var lastBitBlock = new SlmpDeviceAddress(SlmpDeviceCode.M, maximum - 15U, plcProfile);
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadRandomAsync([], [validDword], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteRandomWordsAsync([], [(validDword, 1U)], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.RegisterMonitorDevicesAsync([], [validDword], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadBlockAsync(
+                [new SlmpBlockRead(lastWord, 1)],
+                [new SlmpBlockRead(lastBitBlock, 1)],
+                cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteBlockAsync(
+                [new SlmpBlockWrite(lastWord, [1])],
+                [new SlmpBlockWrite(lastBitBlock, [1])],
+                cancelled.Token));
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadRandomAsync([], [invalidDword]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteRandomWordsAsync([], [(invalidDword, 1U)]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.RegisterMonitorDevicesAsync([], [invalidDword]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadBlockAsync([new SlmpBlockRead(lastWord, 2)], []));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadBlockAsync([], [new SlmpBlockRead(lastBitBlock, 2)]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteBlockAsync([new SlmpBlockWrite(lastWord, [1, 2])], []));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteBlockAsync([], [new SlmpBlockWrite(lastBitBlock, [1, 2])]));
+
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+        Assert.Empty(client.LastRequestFrame);
+    }
+
+    [Fact]
+    public async Task ExtendedRoutes_UseTheirSelectedWireWidthBeforeAdmission()
+    {
+        using var client = Client();
+        var iqrMaximum = new SlmpQualifiedDeviceAddress(
+            new SlmpDeviceAddress(SlmpDeviceCode.D, uint.MaxValue, SlmpPlcProfile.IqR),
+            1);
+        var linkMaximum = SlmpQualifiedDeviceParser.Parse(@"J2\SWFFFFFF", SlmpPlcProfile.IqR);
+        var linkDword = SlmpQualifiedDeviceParser.Parse(@"J2\SWFFFFFE", SlmpPlcProfile.IqR);
+        var iqrBitMaximum = new SlmpQualifiedDeviceAddress(
+            new SlmpDeviceAddress(SlmpDeviceCode.M, uint.MaxValue, SlmpPlcProfile.IqR),
+            1);
+        var iqrPackedWord = new SlmpQualifiedDeviceAddress(
+            new SlmpDeviceAddress(SlmpDeviceCode.M, uint.MaxValue - 15U, SlmpPlcProfile.IqR),
+            1);
+        var iqrPackedDword = new SlmpQualifiedDeviceAddress(
+            new SlmpDeviceAddress(SlmpDeviceCode.M, uint.MaxValue - 31U, SlmpPlcProfile.IqR),
+            1);
+        var linkBitMaximum = SlmpQualifiedDeviceParser.Parse(@"J2\BFFFFFF", SlmpPlcProfile.IqR);
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadWordsExtendedAsync(iqrMaximum, 1, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteWordsExtendedAsync(iqrMaximum, [1], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadWordsExtendedAsync(linkMaximum, 1, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadBitsExtendedAsync(iqrBitMaximum, 1, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteBitsExtendedAsync(iqrBitMaximum, [true], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadBitsExtendedAsync(linkBitMaximum, 1, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteBitsExtendedAsync(linkBitMaximum, [true], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadWordsExtendedAsync(iqrPackedWord, 1, cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteWordsExtendedAsync(iqrPackedWord, [1], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadRandomExtAsync([], [linkDword], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteRandomWordsExtAsync([], [(linkDword, 1U)], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.RegisterMonitorDevicesExtAsync([], [linkDword], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.ReadRandomExtAsync([], [iqrPackedDword], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteRandomWordsExtAsync([], [(iqrPackedDword, 1U)], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.RegisterMonitorDevicesExtAsync([], [iqrPackedDword], cancelled.Token));
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadWordsExtendedAsync(iqrMaximum, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteWordsExtendedAsync(iqrMaximum, [1, 2]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadWordsExtendedAsync(linkMaximum, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadBitsExtendedAsync(iqrBitMaximum, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteBitsExtendedAsync(iqrBitMaximum, [true, false]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadBitsExtendedAsync(linkBitMaximum, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteBitsExtendedAsync(linkBitMaximum, [true, false]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadWordsExtendedAsync(iqrPackedWord, 2));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteWordsExtendedAsync(iqrPackedWord, [1, 2]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadRandomExtAsync([], [linkMaximum]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteRandomWordsExtAsync([], [(linkMaximum, 1U)]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.RegisterMonitorDevicesExtAsync([], [linkMaximum]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.ReadRandomExtAsync([], [iqrBitMaximum]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteRandomWordsExtAsync([], [(iqrBitMaximum, 1U)]));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.RegisterMonitorDevicesExtAsync([], [iqrBitMaximum]));
+
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+        Assert.Empty(client.LastRequestFrame);
+    }
+
+    [Fact]
+    public async Task PackedBitWriteOverlap_UsesConsumedDeviceSpans()
+    {
+        using var client = Client();
+        var m0 = M(0);
+        var m15 = M(15);
+        var m31 = M(31);
+        var q0 = new SlmpQualifiedDeviceAddress(m0, 1);
+        var q15 = new SlmpQualifiedDeviceAddress(m15, 1);
+        var qNull = new SlmpQualifiedDeviceAddress(m0, null);
+        var qZero = new SlmpQualifiedDeviceAddress(m15, 0);
+        var qSameZero = new SlmpQualifiedDeviceAddress(m0, 0);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteRandomWordsAsync([(m0, (ushort)1), (m15, (ushort)2)], []));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteRandomWordsAsync([(m31, (ushort)1)], [(m0, 2U)]));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteRandomWordsExtAsync([(q0, (ushort)1), (q15, (ushort)2)], []));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteRandomWordsExtAsync([(qNull, (ushort)1), (qZero, (ushort)2)], []));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteRandomBitsExtAsync([(qNull, true), (qSameZero, false)]));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.WriteBlockAsync(
+                [],
+                [new SlmpBlockWrite(m0, [1]), new SlmpBlockWrite(m15, [2])]));
+
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+        Assert.Empty(client.LastRequestFrame);
+    }
+
+    [Fact]
+    public async Task NativeDWordRandomAndMonitorEntries_ConsumeOneDeviceNumber()
+    {
+        using var client = Client();
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+
+        foreach (var code in new[]
+                 {
+                     SlmpDeviceCode.LTN,
+                     SlmpDeviceCode.LSTN,
+                     SlmpDeviceCode.LCN,
+                     SlmpDeviceCode.LZ,
+                 })
+        {
+            var device = new SlmpDeviceAddress(code, uint.MaxValue, SlmpPlcProfile.IqR);
+            var qualified = new SlmpQualifiedDeviceAddress(device, null);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                client.ReadRandomAsync([], [device], cancelled.Token));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                client.WriteRandomWordsAsync([], [(device, 1U)], cancelled.Token));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                client.RegisterMonitorDevicesAsync([], [device], cancelled.Token));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                client.ReadRandomExtAsync([], [qualified], cancelled.Token));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                client.WriteRandomWordsExtAsync([], [(qualified, 1U)], cancelled.Token));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                client.RegisterMonitorDevicesExtAsync([], [qualified], cancelled.Token));
+        }
+
+        var lz0 = new SlmpDeviceAddress(SlmpDeviceCode.LZ, 0, SlmpPlcProfile.IqR);
+        var lz1 = new SlmpDeviceAddress(SlmpDeviceCode.LZ, 1, SlmpPlcProfile.IqR);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteRandomWordsAsync([], [(lz0, 1U), (lz1, 2U)], cancelled.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            client.WriteRandomWordsExtAsync(
+                [],
+                [
+                    (new SlmpQualifiedDeviceAddress(lz0, null), 1U),
+                    (new SlmpQualifiedDeviceAddress(lz1, 0), 2U),
+                ],
+                cancelled.Token));
+
+        Assert.False(client.IsOpen);
+        Assert.Equal(default, client.TrafficStats);
+        Assert.Empty(client.LastRequestFrame);
+    }
+
     [Fact]
     public void StateChangingAndTargetSelectingParameters_AreRequired()
     {

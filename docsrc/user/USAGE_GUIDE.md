@@ -292,7 +292,10 @@ to a bit-device range is intentional. Use `.0` through `.F` or
 `ReadNamedAsync(["D100.0"])` to read one bit inside a word device, and use
 `WriteBitInWordAsync` for the corresponding explicit non-atomic read-modify-write.
 An invalid `D100:BIT` call is never translated automatically, and
-`WriteBitInWordAsync` rejects bit-device families.
+`WriteBitInWordAsync` rejects bit-device families. Its read and write admission,
+including writable-target and complete-span checks, finishes before FIFO waiting;
+an invalid target sends neither request. Typed, named, polling, and long-timer
+reads likewise complete their full route/span admission before FIFO waiting.
 
 Typed writes do not parse strings or convert Boolean and floating-point values into
 integers. `BIT` requires `bool`; U/S/D/L require integral CLR values in their exact
@@ -465,6 +468,19 @@ Console.WriteLine($"LCN0:D = {snapshot["LCN0:D"]}");
 Direct DWord and Float32 reads/writes accept `1..480` public values when the
 active profile permits 960 Direct Word points. Invalid numeric counts throw
 `ArgumentOutOfRangeException` before multiplication, allocation, or transport.
+Every contiguous request must also fit the address field selected by the wire
+format: Q/L-compatible and link-direct layouts use 24 bits, while iQ-R layouts
+use 32 bits. Admission uses the complete consumed span, not the configured PLC
+device-range catalog. Word-unit access to a word device consumes one device per
+word; word-unit packed access to a bit device consumes 16 bit devices per word;
+ordinary DWord/Float32 access consumes two word devices per value (32 bit-device
+numbers per value when packed through a bit family); and one bit-block point
+consumes 16 bit devices. The long-timer Direct status block is the explicit
+exception: four returned words consume one `LTN`/`LSTN` device. Random and
+monitor DWord entries use the same route-specific logical widths. A span that
+crosses the wire maximum is rejected before connection, frame publication,
+request counters, or transport; the library does not substitute profile
+usable-range policy for this wire-representability check.
 Malformed, negative, or out-of-range numeric fields in named targets and
 qualified `U`/`J` device text throw field-specific `FormatException` without
 truncation. U extension fields are hexadecimal `0000..FFFF` (`0..65535`), and

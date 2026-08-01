@@ -1614,6 +1614,96 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
+    public async Task InvalidLongAndHighLevelReads_FailBeforeOccupiedFifoAdmission()
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, 1025,
+            SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var blocker = client.ExecuteExclusiveAsync(async token =>
+        {
+            entered.TrySetResult();
+            await release.Task.WaitAsync(token);
+        });
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        try
+        {
+            var invalidLongReads = new Func<Task>[]
+            {
+                () => client.ReadLongTimerAsync(-1, 1),
+                () => client.ReadLongRetentiveTimerAsync(-1, 1),
+                () => client.ReadLtcStatesAsync(-1, 1),
+                () => client.ReadLtsStatesAsync(-1, 1),
+                () => client.ReadLstcStatesAsync(-1, 1),
+                () => client.ReadLstsStatesAsync(-1, 1),
+            };
+            foreach (var invalid in invalidLongReads)
+            {
+                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () =>
+                    await invalid().WaitAsync(TimeSpan.FromMilliseconds(250)));
+            }
+
+            var maximum = new SlmpDeviceAddress(SlmpDeviceCode.D, uint.MaxValue, SlmpPlcProfile.IqR);
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () =>
+                await client.ReadTypedAsync(maximum, "D").WaitAsync(TimeSpan.FromMilliseconds(250)));
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () =>
+                await client.ReadNamedAsync(["D4294967295:D"]).WaitAsync(TimeSpan.FromMilliseconds(250)));
+            var bitDevice = new SlmpDeviceAddress(SlmpDeviceCode.S, 0, SlmpPlcProfile.IqR);
+            await Assert.ThrowsAsync<ArgumentException>(async () =>
+                await client.WriteBitInWordAsync(bitDevice, 0, true).WaitAsync(TimeSpan.FromMilliseconds(250)));
+
+            await using var poll = client
+                .PollAsync(["D4294967295:D"], TimeSpan.FromSeconds(1))
+                .GetAsyncEnumerator();
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () =>
+                await poll.MoveNextAsync().AsTask().WaitAsync(TimeSpan.FromMilliseconds(250)));
+
+            Assert.Equal(default, client.TrafficStats);
+            Assert.Empty(client.LastRequestFrame);
+        }
+        finally
+        {
+            release.TrySetResult();
+            await blocker;
+        }
+    }
+
+    [Fact]
+    public async Task InvalidBitInWordSpan_FailsBeforeOccupiedFifoAdmission()
+    {
+        using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.QnUQj71E71100, 1025,
+            SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var blocker = client.ExecuteExclusiveAsync(async token =>
+        {
+            entered.TrySetResult();
+            await release.Task.WaitAsync(token);
+        });
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        try
+        {
+            var invalid = new SlmpDeviceAddress(
+                SlmpDeviceCode.D,
+                0x0100_0000,
+                SlmpPlcProfile.QnUQj71E71100);
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () =>
+                await client.WriteBitInWordAsync(invalid, 0, true).WaitAsync(TimeSpan.FromMilliseconds(250)));
+            Assert.Equal(default, client.TrafficStats);
+            Assert.Empty(client.LastRequestFrame);
+        }
+        finally
+        {
+            release.TrySetResult();
+            await blocker;
+        }
+    }
+
+    [Fact]
     public async Task OrdinaryClients_UseIndependentAdmissionQueues()
     {
         await using var blockedServer = new MultiShotSlmpServer([
