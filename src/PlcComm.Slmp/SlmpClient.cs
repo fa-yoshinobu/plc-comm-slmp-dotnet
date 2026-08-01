@@ -26,6 +26,17 @@ namespace PlcComm.Slmp;
 /// operation. Effective limits are validated before serial allocation or transport.
 /// </para>
 /// <para>
+/// Contiguous Direct, Random, Monitor-registration, Block, and applicable Extended
+/// Device routes validate their complete consumed device span against the selected
+/// 24-bit Q/L-compatible or 32-bit iQ-R wire address field. Link-direct Extended
+/// Device layouts remain 24-bit even on an iQ-R client. Packed word access to a
+/// bit device consumes 16 device numbers per word; ordinary DWord/Float32 access
+/// consumes two word devices per value, while packed DWord/Float32 access to a bit
+/// device consumes 32 device numbers per value; a bit-block point consumes 16 bit devices;
+/// and four words in a Direct long-timer status block consume one LTN/LSTN device.
+/// This representability check does not enforce configured PLC usable ranges.
+/// </para>
+/// <para>
 /// The factory <see cref="SlmpClientFactory.OpenAndConnectAsync(SlmpConnectionOptions, CancellationToken)"/>
 /// returns a ready-to-use <see cref="SlmpClient"/> and is the recommended entry
 /// point for most use cases.
@@ -675,10 +686,16 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <returns>An array of word values (ushort).</returns>
     public async Task<ushort[]> ReadWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
     {
+        ValidateDirectWordReadAdmission(device, points);
+        return await ReadWordsRawUncheckedAsync(device, points, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal void ValidateDirectWordReadAdmission(SlmpDeviceAddress device, ushort points)
+    {
         EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
         ValidateDirectAccessPoints(points, bitUnit: false, "read_words", SlmpProfileLimit.DirectWordRead);
         ValidateDirectWordReadDevice(device, points);
-        return await ReadWordsRawUncheckedAsync(device, points, cancellationToken).ConfigureAwait(false);
+        ValidateDirectDeviceSpan(device, points, bitUnit: false, nameof(device), longCurrentBlock: true);
     }
 
     internal Task<ushort[]> ReadLongStatusBlockWordsAsync(SlmpDeviceCode currentValueDevice, uint number, CancellationToken cancellationToken = default)
@@ -709,8 +726,16 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     public async Task WriteWordsAsync(SlmpDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(values);
-        ValidateDirectWordWriteDevice(device);
+        ValidateDirectWordWriteAdmission(device, values.Count);
         await WriteWordsUncheckedAsync(device, values, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal void ValidateDirectWordWriteAdmission(SlmpDeviceAddress device, int points)
+    {
+        EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
+        ValidateDirectWordWriteDevice(device);
+        ValidateDirectAccessPoints(points, bitUnit: false, "write_words", SlmpProfileLimit.DirectWordWrite);
+        ValidateDirectDeviceSpan(device, points, bitUnit: false, nameof(device));
     }
 
     private async Task WriteWordsUncheckedAsync(SlmpDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
@@ -724,10 +749,29 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     public async Task<bool[]> ReadBitsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
     {
+        ValidateDirectBitReadAdmission(device, points);
+        return await ReadBitsUncheckedAsync(device, points, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal void ValidateDirectBitReadAdmission(SlmpDeviceAddress device, ushort points)
+    {
         EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
         ValidateDirectAccessPoints(points, bitUnit: true, "read_bits", SlmpProfileLimit.DirectBitRead);
         ValidateDirectBitReadDevice(device);
-        return await ReadBitsUncheckedAsync(device, points, cancellationToken).ConfigureAwait(false);
+        ValidateDirectDeviceSpan(device, points, bitUnit: true, nameof(device));
+    }
+
+    internal void ValidateDirectBitReadUncheckedAdmission(SlmpDeviceAddress device, ushort points)
+    {
+        EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
+        ValidateDirectAccessPoints(points, bitUnit: true, "read_bits", SlmpProfileLimit.DirectBitRead);
+        if (!SlmpDeviceUnits.IsBit(device.Code))
+        {
+            throw new ArgumentException(
+                $"Bit-unit reads require a bit-addressable device; {device.Code} is word-addressable.",
+                nameof(device));
+        }
+        ValidateDirectDeviceSpan(device, points, bitUnit: true, nameof(device));
     }
 
     internal async Task<bool[]> ReadBitsUncheckedAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
@@ -740,6 +784,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 $"Bit-unit reads require a bit-addressable device; {device.Code} is word-addressable.",
                 nameof(device));
         }
+        ValidateDirectDeviceSpan(device, points, bitUnit: true, nameof(device));
         var payload = BuildReadWritePayload(device, points, null, bitUnit: true);
         var sub = CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0001 : (ushort)0x0003;
         return await RequestCoreAsync(
@@ -775,6 +820,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ValidateDirectWordReadDevice(device.Device, points, allowQualifiedOnlyDevice: true);
         var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, PlcProfile);
         EnsureExtendedProfileFeatureAllowed(device, effectiveExtension);
+        ValidateDirectDeviceSpan(
+            device.Device,
+            points,
+            bitUnit: false,
+            nameof(device),
+            effectiveExtension.DirectMemorySpecification == 0xF9 ? 0x00FF_FFFFUL : null,
+            longCurrentBlock: true);
         var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: false, CompatibilityMode);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0080
             : CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
@@ -799,6 +851,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ValidateDirectWordWriteDevice(device.Device, allowQualifiedOnlyDevice: true);
         var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, PlcProfile);
         EnsureExtendedProfileFeatureAllowed(device, effectiveExtension);
+        ValidateDirectDeviceSpan(
+            device.Device,
+            values.Count,
+            bitUnit: false,
+            nameof(device),
+            effectiveExtension.DirectMemorySpecification == 0xF9 ? 0x00FF_FFFFUL : null);
         var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, checked((ushort)values.Count), values, effectiveExtension, bitUnit: false, CompatibilityMode);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0080
             : CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
@@ -816,6 +874,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ValidateDirectBitReadDevice(device.Device);
         var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, PlcProfile);
         EnsureExtendedProfileFeatureAllowed(device, effectiveExtension);
+        ValidateDirectDeviceSpan(
+            device.Device,
+            points,
+            bitUnit: true,
+            nameof(device),
+            effectiveExtension.DirectMemorySpecification == 0xF9 ? 0x00FF_FFFFUL : null);
         var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: true, CompatibilityMode);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0081
             : CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0081 : (ushort)0x0083;
@@ -840,6 +904,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ValidateDirectBitWriteDevice(device.Device);
         var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, PlcProfile);
         EnsureExtendedProfileFeatureAllowed(device, effectiveExtension);
+        ValidateDirectDeviceSpan(
+            device.Device,
+            values.Count,
+            bitUnit: true,
+            nameof(device),
+            effectiveExtension.DirectMemorySpecification == 0xF9 ? 0x00FF_FFFFUL : null);
         var wordValues = new ushort[values.Count];
         for (var i = 0; i < values.Count; i++) wordValues[i] = values[i] ? (ushort)1 : (ushort)0;
         var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, checked((ushort)values.Count), wordValues, effectiveExtension, bitUnit: true, CompatibilityMode);
@@ -854,6 +924,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
         ValidateDirectAccessPoints(values.Count, bitUnit: true, "write_bits", SlmpProfileLimit.DirectBitWrite);
         ValidateDirectBitWriteDevice(device);
+        ValidateDirectDeviceSpan(device, values.Count, bitUnit: true, nameof(device));
         var wordValues = new ushort[values.Count];
         for (var i = 0; i < values.Count; i++) wordValues[i] = values[i] ? (ushort)1 : (ushort)0;
         var payload = BuildReadWritePayload(device, checked((ushort)values.Count), wordValues, bitUnit: true);
@@ -868,8 +939,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <exception cref="ArgumentOutOfRangeException">The value count is outside the active profile's DWord limit.</exception>
     public async Task<uint[]> ReadDWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
     {
-        ValidateDirectDWordPoints(points, nameof(points), SlmpProfileLimit.DirectWordRead);
-        ValidateDirectDWordReadDevice(device);
+        ValidateDirectDWordReadAdmission(device, points);
         return await ExecuteExclusiveAsync(
             async token =>
             {
@@ -882,6 +952,14 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             cancellationToken).ConfigureAwait(false);
     }
 
+    internal void ValidateDirectDWordReadAdmission(SlmpDeviceAddress device, ushort points)
+    {
+        EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
+        ValidateDirectDWordPoints(points, nameof(points), SlmpProfileLimit.DirectWordRead);
+        ValidateDirectDWordReadDevice(device);
+        ValidateDirectDeviceSpan(device, points * 2, bitUnit: false, nameof(device));
+    }
+
     /// <summary>Writes contiguous 32-bit values in one Direct Write request.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The collection count is outside the active profile's DWord limit.</exception>
     public async Task WriteDWordsAsync(SlmpDeviceAddress device, IReadOnlyList<uint> values, CancellationToken cancellationToken = default)
@@ -889,6 +967,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ArgumentNullException.ThrowIfNull(values);
         ValidateDirectDWordPoints(values.Count, nameof(values), SlmpProfileLimit.DirectWordWrite);
         ValidateDirectDWordWriteDevice(device);
+        ValidateDirectDeviceSpan(device, values.Count * 2, bitUnit: false, nameof(device));
         EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
         var words = new ushort[values.Count * 2];
         for (var i = 0; i < values.Count; i++)
@@ -904,6 +983,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     public async Task<float[]> ReadFloat32sAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
     {
         ValidateDirectDWordPoints(points, nameof(points), SlmpProfileLimit.DirectWordRead);
+        ValidateDirectDWordReadDevice(device);
+        ValidateDirectDeviceSpan(device, points * 2, bitUnit: false, nameof(device));
         return await ExecuteExclusiveAsync(
             async token =>
             {
@@ -922,6 +1003,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(values);
         ValidateDirectDWordPoints(values.Count, nameof(values), SlmpProfileLimit.DirectWordWrite);
+        ValidateDirectDWordWriteDevice(device);
+        ValidateDirectDeviceSpan(device, values.Count * 2, bitUnit: false, nameof(device));
         var dwords = new uint[values.Count];
         for (var i = 0; i < values.Count; i++)
         {
@@ -938,13 +1021,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(wordDevices);
         ArgumentNullException.ThrowIfNull(dwordDevices);
-        if (wordDevices.Count > 0xFF || dwordDevices.Count > 0xFF)
-        {
-            throw new ArgumentOutOfRangeException(nameof(wordDevices), "random counts must be <= 255");
-        }
-        EnsureProfileFeatureAllowed(SlmpProfileFeature.Random);
-        ValidateRandomReadLikeCounts(wordDevices.Count, dwordDevices.Count, "read_random");
-        ValidateRandomReadDevices(wordDevices, dwordDevices);
+        ValidateRandomReadAdmission(wordDevices, dwordDevices);
 
         var payload = new byte[2 + ((wordDevices.Count + dwordDevices.Count) * DeviceSpecSize())];
         payload[0] = (byte)wordDevices.Count;
@@ -967,6 +1044,23 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             true,
             data => DecodeRandomReadResponse(data, wordDevices.Count, dwordDevices.Count, "read_random"),
             cancellationToken).ConfigureAwait(false);
+    }
+
+    internal void ValidateRandomReadAdmission(
+        IReadOnlyList<SlmpDeviceAddress> wordDevices,
+        IReadOnlyList<SlmpDeviceAddress> dwordDevices)
+    {
+        if (wordDevices.Count > 0xFF || dwordDevices.Count > 0xFF)
+        {
+            throw new ArgumentOutOfRangeException(nameof(wordDevices), "random counts must be <= 255");
+        }
+        EnsureProfileFeatureAllowed(SlmpProfileFeature.Random);
+        ValidateRandomReadLikeCounts(wordDevices.Count, dwordDevices.Count, "read_random");
+        ValidateRandomReadDevices(wordDevices, dwordDevices);
+        foreach (var device in wordDevices)
+            ValidateDirectDeviceSpan(device, 1, bitUnit: false, nameof(wordDevices));
+        foreach (var device in dwordDevices)
+            ValidateDirectDeviceSpan(device, GetDWordEntryWirePoints(device.Code), bitUnit: false, nameof(dwordDevices));
     }
 
     /// <summary>Reads only word devices in one random-read request.</summary>
@@ -999,6 +1093,10 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             wordEntries.Select(static entry => entry.Device).ToArray(),
             dwordEntries.Select(static entry => entry.Device).ToArray());
         ValidateNoOverlappingRandomWriteTargets(wordEntries, dwordEntries);
+        foreach (var entry in wordEntries)
+            ValidateDirectDeviceSpan(entry.Device, 1, bitUnit: false, nameof(wordEntries));
+        foreach (var entry in dwordEntries)
+            ValidateDirectDeviceSpan(entry.Device, GetDWordEntryWirePoints(entry.Device.Code), bitUnit: false, nameof(dwordEntries));
 
         var payload = new byte[2 + (wordEntries.Count * (DeviceSpecSize() + 2)) + (dwordEntries.Count * (DeviceSpecSize() + 4))];
         payload[0] = (byte)wordEntries.Count;
@@ -1047,6 +1145,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ValidateRandomBitWriteCount(bitEntries.Count, "write_random_bits");
         ValidateRandomBitWriteDevices(bitEntries);
         ValidateNoDuplicateBitWriteTargets(bitEntries.Select(static entry => entry.Device));
+        foreach (var entry in bitEntries)
+            ValidateDirectDeviceSpan(entry.Device, 1, bitUnit: true, nameof(bitEntries));
 
         var bitValueSize = CompatibilityMode == SlmpCompatibilityMode.Legacy ? 1 : 2;
         var payload = new byte[1 + (bitEntries.Count * (DeviceSpecSize() + bitValueSize))];
@@ -1089,9 +1189,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             dwordDevices.Select(static entry => entry.Device).ToArray(),
             allowQualifiedOnlyDevices: true);
         foreach (var entry in wordDevices)
+        {
             EnsureExtendedProfileFeatureAllowed(entry, SlmpPayloads.ResolveEffectiveExtension(entry, PlcProfile));
+            ValidateExtendedDeviceSpan(entry, 1, bitUnit: false, nameof(wordDevices));
+        }
         foreach (var entry in dwordDevices)
+        {
             EnsureExtendedProfileFeatureAllowed(entry, SlmpPayloads.ResolveEffectiveExtension(entry, PlcProfile));
+            ValidateExtendedDeviceSpan(entry, GetDWordEntryWirePoints(entry.Device.Code), bitUnit: false, nameof(dwordDevices));
+        }
 
         var linkDirect = SelectExtendedQlLayout(wordDevices.Concat(dwordDevices), "read_random_ext");
         var sub = linkDirect || CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
@@ -1137,9 +1243,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             allowQualifiedOnlyDevices: true);
         ValidateNoOverlappingExtendedRandomWriteTargets(wordEntries, dwordEntries);
         foreach (var entry in wordEntries)
+        {
             EnsureExtendedProfileFeatureAllowed(entry.Device, SlmpPayloads.ResolveEffectiveExtension(entry.Device, PlcProfile));
+            ValidateExtendedDeviceSpan(entry.Device, 1, bitUnit: false, nameof(wordEntries));
+        }
         foreach (var entry in dwordEntries)
+        {
             EnsureExtendedProfileFeatureAllowed(entry.Device, SlmpPayloads.ResolveEffectiveExtension(entry.Device, PlcProfile));
+            ValidateExtendedDeviceSpan(entry.Device, GetDWordEntryWirePoints(entry.Device.Device.Code), bitUnit: false, nameof(dwordEntries));
+        }
 
         var linkDirect = SelectExtendedQlLayout(
             wordEntries.Select(static entry => entry.Device).Concat(dwordEntries.Select(static entry => entry.Device)),
@@ -1174,9 +1286,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         EnsureProfileFeatureAllowed(SlmpProfileFeature.Random);
         ValidateRandomBitWriteCount(bitEntries.Count, "write_random_bits_ext", extended: true);
         ValidateRandomBitWriteDevices(bitEntries.Select(entry => (entry.Device.Device, entry.Value)).ToArray());
-        ValidateNoDuplicateBitWriteTargets(bitEntries.Select(static entry => entry.Device));
+        ValidateNoDuplicateExtendedBitWriteTargets(bitEntries.Select(static entry => entry.Device));
         foreach (var entry in bitEntries)
+        {
             EnsureExtendedProfileFeatureAllowed(entry.Device, SlmpPayloads.ResolveEffectiveExtension(entry.Device, PlcProfile));
+            ValidateExtendedDeviceSpan(entry.Device, 1, bitUnit: true, nameof(bitEntries));
+        }
 
         var linkDirect = SelectExtendedQlLayout(
             bitEntries.Select(static entry => entry.Device),
@@ -1227,6 +1342,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ValidateBlockRouteForProfile("Read Block (0x0406)");
         ValidateBlockReadLimits(wordBlocks, bitBlocks);
         ValidateBlockReadDevices(wordBlocks, bitBlocks);
+        foreach (var block in wordBlocks)
+            ValidateDirectDeviceSpan(
+                block.Device,
+                block.Points,
+                bitUnit: false,
+                nameof(wordBlocks),
+                longCurrentBlock: true);
+        foreach (var block in bitBlocks)
+            ValidateDirectDeviceSpan(block.Device, block.Points, bitUnit: false, nameof(bitBlocks));
 
         var specSize = DeviceSpecSize();
         var totalWordPoints = wordBlocks.Sum(static x => (int)x.Points);
@@ -1289,6 +1413,10 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         ValidateBlockWriteLimits(wordBlocks, bitBlocks);
         ValidateBlockWriteDevices(wordBlocks, bitBlocks);
         ValidateNoOverlappingBlockWriteTargets(wordBlocks, bitBlocks);
+        foreach (var block in wordBlocks)
+            ValidateDirectDeviceSpan(block.Device, block.Values.Count, bitUnit: false, nameof(wordBlocks));
+        foreach (var block in bitBlocks)
+            ValidateDirectDeviceSpan(block.Device, block.Values.Count, bitUnit: false, nameof(bitBlocks));
 
         var specSize = DeviceSpecSize();
         var totalWordPoints = wordBlocks.Sum(static x => x.Values.Count);
@@ -1358,6 +1486,10 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             "register_monitor_devices",
             limitKey: SlmpProfileLimit.MonitorRegisterWord);
         ValidateMonitorRegisterDevices(wordDevices, dwordDevices);
+        foreach (var device in wordDevices)
+            ValidateDirectDeviceSpan(device, 1, bitUnit: false, nameof(wordDevices));
+        foreach (var device in dwordDevices)
+            ValidateDirectDeviceSpan(device, GetDWordEntryWirePoints(device.Code), bitUnit: false, nameof(dwordDevices));
 
         var payload = new byte[2 + (wordDevices.Count + dwordDevices.Count) * DeviceSpecSize()];
         payload[0] = (byte)wordDevices.Count;
@@ -1395,9 +1527,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             dwordDevices.Select(static entry => entry.Device).ToArray(),
             allowQualifiedOnlyDevices: true);
         foreach (var entry in wordDevices)
+        {
             EnsureExtendedProfileFeatureAllowed(entry, SlmpPayloads.ResolveEffectiveExtension(entry, PlcProfile));
+            ValidateExtendedDeviceSpan(entry, 1, bitUnit: false, nameof(wordDevices));
+        }
         foreach (var entry in dwordDevices)
+        {
             EnsureExtendedProfileFeatureAllowed(entry, SlmpPayloads.ResolveEffectiveExtension(entry, PlcProfile));
+            ValidateExtendedDeviceSpan(entry, GetDWordEntryWirePoints(entry.Device.Code), bitUnit: false, nameof(dwordDevices));
+        }
 
         var linkDirect = SelectExtendedQlLayout(
             wordDevices.Concat(dwordDevices),
@@ -1808,10 +1946,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         int points,
         CancellationToken cancellationToken = default)
     {
+        var prepared = PrepareLongTimerRead(SlmpDeviceCode.LTN, headNo, points);
         return await ExecuteExclusiveAsync(
             async token =>
             {
-                var words = await ReadLongTimerStatusWordsAsync(SlmpDeviceCode.LTN, headNo, points, token).ConfigureAwait(false);
+                var words = await ReadLongTimerStatusWordsAsync(prepared.Device, prepared.WordCount, token).ConfigureAwait(false);
                 return ParseLongTimerWords(words, headNo, "LTN", points);
             },
             cancellationToken).ConfigureAwait(false);
@@ -1829,10 +1968,11 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         int points,
         CancellationToken cancellationToken = default)
     {
+        var prepared = PrepareLongTimerRead(SlmpDeviceCode.LSTN, headNo, points);
         return await ExecuteExclusiveAsync(
             async token =>
             {
-                var words = await ReadLongTimerStatusWordsAsync(SlmpDeviceCode.LSTN, headNo, points, token).ConfigureAwait(false);
+                var words = await ReadLongTimerStatusWordsAsync(prepared.Device, prepared.WordCount, token).ConfigureAwait(false);
                 return ParseLongTimerWords(words, headNo, "LSTN", points);
             },
             cancellationToken).ConfigureAwait(false);
@@ -1866,12 +2006,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         return timers.Select(static timer => timer.Contact).ToArray();
     }
 
-    private async Task<ushort[]> ReadLongTimerStatusWordsAsync(
+    internal (SlmpDeviceAddress Device, ushort WordCount) PrepareLongTimerRead(
         SlmpDeviceCode currentValueDevice,
         int headNo,
-        int points,
-        CancellationToken cancellationToken)
+        int points)
     {
+        EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
         if (headNo < 0)
             throw new ArgumentOutOfRangeException(nameof(headNo), "headNo must be >= 0.");
         if (points < 1 || points > DirectWordPointLimit / 4)
@@ -1880,9 +2020,18 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var device = new SlmpDeviceAddress(currentValueDevice, checked((uint)headNo), PlcProfile);
         EnsureDeviceProfile(device);
         ValidateLongTimerDeviceForWireMode(device, CompatibilityMode, nameof(headNo));
+        ValidateDirectDeviceSpan(device, wordCount, bitUnit: false, nameof(headNo), longCurrentBlock: true);
+        return (device, checked((ushort)wordCount));
+    }
+
+    private async Task<ushort[]> ReadLongTimerStatusWordsAsync(
+        SlmpDeviceAddress device,
+        ushort wordCount,
+        CancellationToken cancellationToken)
+    {
         return await ReadWordsRawUncheckedAsync(
             device,
-            checked((ushort)wordCount),
+            wordCount,
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -2545,6 +2694,64 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         }
     }
 
+    private void ValidateDirectDeviceSpan(
+        SlmpDeviceAddress device,
+        int wirePoints,
+        bool bitUnit,
+        string parameterName,
+        ulong? maximumDeviceNumber = null,
+        bool longCurrentBlock = false)
+    {
+        EnsureDeviceProfile(device);
+        var consumedDeviceNumbers = GetConsumedDirectDeviceNumbers(device.Code, wirePoints, bitUnit, longCurrentBlock);
+        var maximum = maximumDeviceNumber ??
+            (CompatibilityMode == SlmpCompatibilityMode.Legacy ? 0x00FF_FFFFUL : uint.MaxValue);
+        var end = (ulong)device.Number + consumedDeviceNumbers - 1UL;
+        if (end > maximum)
+        {
+            throw new ArgumentOutOfRangeException(
+                parameterName,
+                device,
+                $"The contiguous device span exceeds the selected wire address field: " +
+                $"start={device.Number}, consumed_device_numbers={consumedDeviceNumbers}, " +
+                $"end={end}, maximum={maximum}.");
+        }
+    }
+
+    private static ulong GetConsumedDirectDeviceNumbers(
+        SlmpDeviceCode deviceCode,
+        int wirePoints,
+        bool bitUnit,
+        bool longCurrentBlock = false)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(wirePoints, 1);
+        if (bitUnit)
+            return (ulong)wirePoints;
+        if (longCurrentBlock && IsLongTimerCurrentBlockDevice(deviceCode))
+            return (ulong)wirePoints / 4UL;
+        return SlmpDeviceUnits.IsBit(deviceCode)
+            ? (ulong)wirePoints * 16UL
+            : (ulong)wirePoints;
+    }
+
+    private static int GetDWordEntryWirePoints(SlmpDeviceCode deviceCode)
+        => IsLongCurrentValueDevice(deviceCode) || IsDWordOnlyScalarDevice(deviceCode) ? 1 : 2;
+
+    private void ValidateExtendedDeviceSpan(
+        SlmpQualifiedDeviceAddress device,
+        int wirePoints,
+        bool bitUnit,
+        string parameterName)
+    {
+        var extension = SlmpPayloads.ResolveEffectiveExtension(device, PlcProfile);
+        ValidateDirectDeviceSpan(
+            device.Device,
+            wirePoints,
+            bitUnit,
+            parameterName,
+            extension.DirectMemorySpecification == 0xF9 ? 0x00FF_FFFFUL : null);
+    }
+
     private void ValidateRandomReadLikeCounts(
         int wordPoints,
         int dwordPoints,
@@ -3075,10 +3282,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         IReadOnlyList<(SlmpDeviceAddress Device, uint Value)> dwordEntries)
     {
         var ranges = wordEntries
-            .Select(static entry => (entry.Device, Width: 1u))
+            .Select(static entry => (
+                entry.Device,
+                Width: checked((uint)GetConsumedDirectDeviceNumbers(entry.Device.Code, 1, bitUnit: false))))
             .Concat(dwordEntries.Select(static entry => (
                 entry.Device,
-                Width: IsLongCurrentValueDevice(entry.Device.Code) || IsDWordOnlyScalarDevice(entry.Device.Code) ? 1u : 2u)))
+                Width: checked((uint)GetConsumedDirectDeviceNumbers(
+                    entry.Device.Code,
+                    GetDWordEntryWirePoints(entry.Device.Code),
+                    bitUnit: false)))))
             .ToArray();
         for (var i = 0; i < ranges.Length; i++)
         {
@@ -3093,25 +3305,49 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         }
     }
 
-    private static void ValidateNoOverlappingExtendedRandomWriteTargets(
+    private void ValidateNoOverlappingExtendedRandomWriteTargets(
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, ushort Value)> wordEntries,
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, uint Value)> dwordEntries)
     {
         var ranges = wordEntries
-            .Select(static entry => (entry.Device, Width: 1u))
-            .Concat(dwordEntries.Select(static entry => (
+            .Select(entry => (
                 entry.Device,
-                Width: IsLongCurrentValueDevice(entry.Device.Device.Code) || IsDWordOnlyScalarDevice(entry.Device.Device.Code) ? 1u : 2u)))
+                Extension: SlmpPayloads.ResolveEffectiveExtension(entry.Device, PlcProfile),
+                Width: checked((uint)GetConsumedDirectDeviceNumbers(entry.Device.Device.Code, 1, bitUnit: false))))
+            .Concat(dwordEntries.Select(entry => (
+                entry.Device,
+                Extension: SlmpPayloads.ResolveEffectiveExtension(entry.Device, PlcProfile),
+                Width: checked((uint)GetConsumedDirectDeviceNumbers(
+                    entry.Device.Device.Code,
+                    GetDWordEntryWirePoints(entry.Device.Device.Code),
+                    bitUnit: false)))))
             .ToArray();
         for (var i = 0; i < ranges.Length; i++)
         {
             for (var j = i + 1; j < ranges.Length; j++)
             {
-                if (SameDeviceSpace(ranges[i].Device, ranges[j].Device) &&
+                if (SameDeviceSpace(ranges[i].Device.Device, ranges[j].Device.Device) &&
+                    ranges[i].Extension == ranges[j].Extension &&
                     RangesOverlap(ranges[i].Device.Device.Number, ranges[i].Width, ranges[j].Device.Device.Number, ranges[j].Width))
                 {
                     throw new ArgumentException("Extended random word write destinations must not overlap.", nameof(wordEntries));
                 }
+            }
+        }
+    }
+
+    private void ValidateNoDuplicateExtendedBitWriteTargets(
+        IEnumerable<SlmpQualifiedDeviceAddress> devices)
+    {
+        var seen = new HashSet<(SlmpDeviceAddress Device, SlmpExtensionSpec Extension)>();
+        foreach (var device in devices)
+        {
+            var target = (device.Device, SlmpPayloads.ResolveEffectiveExtension(device, PlcProfile));
+            if (!seen.Add(target))
+            {
+                throw new ArgumentException(
+                    "Extended random bit write destinations must not contain duplicates.",
+                    nameof(devices));
             }
         }
     }
@@ -3141,9 +3377,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
                 if (SameDeviceSpace(blocks[i].Device, blocks[j].Device) &&
                     RangesOverlap(
                         blocks[i].Device.Number,
-                        checked((uint)blocks[i].Values.Count),
+                        checked((uint)GetConsumedDirectDeviceNumbers(
+                            blocks[i].Device.Code,
+                            blocks[i].Values.Count,
+                            bitUnit: false)),
                         blocks[j].Device.Number,
-                        checked((uint)blocks[j].Values.Count)))
+                        checked((uint)GetConsumedDirectDeviceNumbers(
+                            blocks[j].Device.Code,
+                            blocks[j].Values.Count,
+                            bitUnit: false))))
                 {
                     throw new ArgumentException("Block write ranges must not overlap within the same unit category.", parameterName);
                 }
@@ -3153,12 +3395,6 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     private static bool SameDeviceSpace(SlmpDeviceAddress left, SlmpDeviceAddress right)
         => left.Code == right.Code && left.PlcProfile == right.PlcProfile;
-
-    private static bool SameDeviceSpace(SlmpQualifiedDeviceAddress left, SlmpQualifiedDeviceAddress right)
-        => SameDeviceSpace(left.Device, right.Device) &&
-           left.ExtensionSpecification == right.ExtensionSpecification &&
-           left.DirectMemorySpecification == right.DirectMemorySpecification &&
-           Equals(left.Modification, right.Modification);
 
     private static bool RangesOverlap(uint leftStart, uint leftWidth, uint rightStart, uint rightWidth)
     {

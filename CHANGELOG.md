@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- BREAKING: Contiguous Direct, Random, Monitor-registration, Block, and applicable Extended Device operations now reject a request whose consumed device span exceeds the selected 24-bit or 32-bit wire address field before client state or transport activity. Packed word access to bit devices consumes 16 device numbers per word, ordinary DWord/Float32 access consumes two word devices per value, and bit blocks consume 16 bit devices per block point; no configured PLC device-range limit is inferred.
+- Library: Typed, named, polling, long-timer, and bit-in-word helpers now finish route/span/profile/writable-target admission before FIFO waiting; invalid bit-in-word targets send neither the read nor write request.
 - Library: Named reads now reject `LTN`/`LSTN` Direct Read families during complete pre-transport planning, remove unreachable long-timer named execution state, and direct callers to typed or explicit long-timer helpers.
 - Library: Semantic bit APIs now use one exhaustive device-unit classifier, reject every word-addressable family before transport, retain explicit packed word access to bit devices, and require exact typed/named `BIT` versus numeric device units.
 - Library: A fully correlated and command-decoded success or framed PLC end-code now wins a concurrent close or disposal; incomplete reads remain closed and possibly transmitted state changes remain outcome-unknown with reason `Closed`.
