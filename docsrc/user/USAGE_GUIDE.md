@@ -201,7 +201,7 @@ reused after leaving a `using` or `await using` scope.
 ## SLMP response end codes
 
 When the PLC returns a non-zero SLMP end code, the high-level APIs throw `SlmpError`.
-Read `EndCode` for the PLC response code and `ErrorInfo` when the PLC returned the structured error-information block.
+Read `EndCode` for the PLC response code and `ErrorInfo` when the PLC returned the structured error-information block. The library accepts that PLC error as definitive only when the embedded route, command, and subcommand match the active request. A mismatch is a malformed response, retires the transport, and makes a transmitted state change outcome-unknown. `ErrorInfo.Raw` contains the required nine-byte prefix and `ErrorInfo.Extra` retains every following byte.
 
 ```csharp
 try

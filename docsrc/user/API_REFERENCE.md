@@ -2441,7 +2441,7 @@ Parameters:
 - `Multidrop`: Multidrop station number reported by the PLC.
 - `Command`: Command code associated with the PLC error.
 - `Subcommand`: Subcommand code associated with the PLC error.
-- `Raw`: Raw 9-byte error information block.
+- `Raw`: Raw required 9-byte error-information prefix.
 
 ##### Parse
 
@@ -2449,7 +2449,7 @@ Parameters:
 public static SlmpErrorInfo Parse(ReadOnlySpan<byte> data)
 ```
 
-Parse a 9-byte SLMP error information block, or return null when it is not present.
+Parse the required 9-byte SLMP error-information prefix and retain any following bytes, or return null when the complete prefix is not present.
 
 ##### Network
 
@@ -2505,7 +2505,15 @@ Subcommand code associated with the PLC error.
 public byte[] Raw { get; set; }
 ```
 
-Raw 9-byte error information block.
+Raw required 9-byte error-information prefix.
+
+##### Extra
+
+```csharp
+public byte[] Extra { get; set; }
+```
+
+Bytes following the required 9-byte error-information prefix.
 
 ### SlmpFrameType
 
