@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Library: `PollAsync` now prepares and validates its immutable Random Read payload and compact decode indexes once per stream, then reuses them for every FIFO-controlled cycle without changing timing, cancellation, close, or error behavior.
+- Library: Typed command decoders now parse a private `ReadOnlyMemory<byte>` view over the owned response frame; public raw/trace/error and byte-result surfaces remain owned. Extended Random and Monitor builders now use a validated exact-size two-pass encoder with one final payload allocation and no per-device encoded arrays.
+- Tests: Added allocation/encoding counters and regressions for one-time polling preparation, compact indexed decode, typed/raw response ownership, and exact-size Extended payload construction.
 - Docs: Corrected generated `init` accessors, timeout lifecycle wording, the Multi-PLC target argument, the recommended-entry table, and state-changing extended-device/Clear Error examples.
 - Tests: Added real mutable/init-only generator fixtures and executable documentation-contract checks, including the exact Multi-PLC dry-run command.
 - Library: Nonzero-end-code responses that contain structured error information now require the embedded route, command, and subcommand to match the active request. A mismatch is malformed, retires the transport, and makes a transmitted state change outcome-unknown; matching additional error bytes are retained in `SlmpErrorInfo.Extra`.

@@ -405,6 +405,11 @@ await foreach (var snapshot in client.PollAsync(["D100:U", "D200:F", "D50.3"], T
 }
 ```
 
+The address plan, compact result indexes, and immutable Random Read payload are
+validated and prepared once when the polling stream is created. Each cycle
+reuses that prepared request while retaining the ordinary client FIFO,
+deadline, cancellation, close, and error contracts.
+
 ## Operational recipes
 
 The samples include two read-only operational recipes for applications that need

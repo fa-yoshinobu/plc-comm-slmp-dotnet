@@ -1212,7 +1212,7 @@ public static IAsyncEnumerable<IReadOnlyDictionary<string, object>> PollAsync(Sl
 
 Continuously polls the specified logical snapshot at the requested interval.
 
-Remarks: The address list is compiled once and reused for every cycle, making this helper suitable for periodic monitoring and historian ingestion.
+Remarks: The address list, compact decode indexes, and immutable Random Read payload are validated and prepared once, then reused for every cycle. Each cycle retains the ordinary client FIFO, timeout, cancellation, close, and error contracts. This helper is suitable for periodic monitoring and historian ingestion.
 
 Returns: An async stream of snapshot dictionaries.
 

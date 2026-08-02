@@ -1956,6 +1956,56 @@ public sealed class SlmpClientGuardTests
         return payload;
     }
 
+    [Fact]
+    public async Task PollAsync_PreparesOnce_ReusesPayload_AndTypedDecodeDoesNotMaterializeResponse()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0, BuildWordPayload(0x1234, 0x5678, 0x9ABC)),
+            (0, BuildWordPayload(0x4321, 0x1111, 0x2222)),
+            (0, new byte[] { 0xAA }),
+        ]);
+        await server.StartAsync();
+
+        using var client = new SlmpClient(
+            "127.0.0.1",
+            SlmpPlcProfile.IqR,
+            server.Port,
+            SlmpTransportMode.Tcp,
+            SlmpTargetAddress.OwnStation);
+        var events = new List<string>();
+        SlmpPerformanceDiagnostics.Sink = events.Add;
+        try
+        {
+            var snapshots = new List<IReadOnlyDictionary<string, object>>();
+            await foreach (var snapshot in client.PollAsync(
+                ["D100:U", "D200:D"],
+                TimeSpan.Zero))
+            {
+                snapshots.Add(snapshot);
+                if (snapshots.Count == 2)
+                    break;
+            }
+
+            Assert.Equal(2, snapshots.Count);
+            Assert.Equal((ushort)0x1234, snapshots[0]["D100:U"]);
+            Assert.Equal(0x9ABC5678u, snapshots[0]["D200:D"]);
+            Assert.Equal(1, events.Count(name => name == "random-read-prepare"));
+            Assert.DoesNotContain("response-payload-materialized", events);
+            Assert.Equal(2, server.RequestFrames.Count);
+            Assert.True(server.RequestFrames[0].AsSpan(19).SequenceEqual(server.RequestFrames[1].AsSpan(19)));
+
+            Assert.Equal([0xAA], await client.RawCommandAsync(
+                SlmpCommand.ReadTypeName,
+                0,
+                ReadOnlyMemory<byte>.Empty));
+            Assert.Equal(1, events.Count(name => name == "response-payload-materialized"));
+        }
+        finally
+        {
+            SlmpPerformanceDiagnostics.Sink = null;
+        }
+    }
+
     private static SlmpDeviceAddress[] RandomWordDevices(int count)
         => Enumerable.Range(0, count).Select(i => new SlmpDeviceAddress(SlmpDeviceCode.D, (uint)(8000 + i), SlmpPlcProfile.IqR)).ToArray();
 

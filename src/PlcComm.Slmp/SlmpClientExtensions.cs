@@ -37,7 +37,8 @@ internal sealed record SlmpNamedReadEntry(
     SlmpDeviceAddress Device,
     string DType,
     int? BitIndex,
-    SlmpNamedReadKind Kind
+    SlmpNamedReadKind Kind,
+    int DecodeIndex
 );
 
 internal sealed record SlmpNamedReadPlan(
@@ -548,9 +549,9 @@ public static class SlmpClientExtensions
         CancellationToken ct = default)
     {
         var plan = CompileReadPlan(addresses, client.PlcProfile);
-        ValidateNamedReadAdmission(client, plan);
+        var prepared = PrepareNamedRead(client, plan);
         return client.ExecuteExclusiveAsync(
-            token => ReadNamedCompiledAsync(client, plan, token),
+            token => ReadNamedCompiledAsync(client, plan, prepared, token),
             ct);
     }
 
@@ -658,8 +659,11 @@ public static class SlmpClientExtensions
     /// <param name="ct">Cancellation token.</param>
     /// <returns>An async stream of snapshot dictionaries.</returns>
     /// <remarks>
-    /// The address list is compiled once and reused for every cycle, making
-    /// this helper suitable for periodic monitoring and historian ingestion.
+    /// The address list, compact decode indexes, and immutable Random Read
+    /// payload are validated and prepared once, then reused for every cycle.
+    /// Each cycle retains the ordinary client FIFO, timeout, cancellation,
+    /// close, and error contracts. This helper is suitable for periodic
+    /// monitoring and historian ingestion.
     /// </remarks>
     public static async IAsyncEnumerable<IReadOnlyDictionary<string, object>> PollAsync(
         this SlmpClient client,
@@ -668,11 +672,11 @@ public static class SlmpClientExtensions
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var plan = CompileReadPlan(addresses, client.PlcProfile);
-        ValidateNamedReadAdmission(client, plan);
+        var prepared = PrepareNamedRead(client, plan);
         while (!ct.IsCancellationRequested)
         {
             yield return await client.ExecuteExclusiveAsync(
-                token => ReadNamedCompiledAsync(client, plan, token),
+                token => ReadNamedCompiledAsync(client, plan, prepared, token),
                 ct).ConfigureAwait(false);
             await Task.Delay(interval, ct).ConfigureAwait(false);
         }
@@ -745,7 +749,7 @@ public static class SlmpClientExtensions
         }
     }
 
-    private static void ValidateNamedReadAdmission(SlmpClient client, SlmpNamedReadPlan plan)
+    private static SlmpPreparedRandomRead PrepareNamedRead(SlmpClient client, SlmpNamedReadPlan plan)
     {
         ValidateCompiledReadPlan(plan);
         if (plan.WordDevices.Count > 0xFF || plan.DwordDevices.Count > 0xFF)
@@ -754,7 +758,7 @@ public static class SlmpClientExtensions
                 nameof(plan),
                 "Named read must fit in one random-read request (at most 255 word and 255 DWord devices). Split intentionally in application code if multiple request times are acceptable.");
         }
-        client.ValidateRandomReadAdmission(plan.WordDevices, plan.DwordDevices);
+        return client.PrepareRandomRead(plan.WordDevices, plan.DwordDevices);
     }
 
     internal static (string Base, string DType, int? BitIdx) ParseAddress(string address)
@@ -808,8 +812,8 @@ public static class SlmpClientExtensions
         var entries = new List<SlmpNamedReadEntry>();
         var wordDevices = new List<SlmpDeviceAddress>();
         var dwordDevices = new List<SlmpDeviceAddress>();
-        var seenWords = new HashSet<SlmpDeviceAddress>();
-        var seenDwords = new HashSet<SlmpDeviceAddress>();
+        var wordIndexes = new Dictionary<SlmpDeviceAddress, int>();
+        var dwordIndexes = new Dictionary<SlmpDeviceAddress, int>();
 
         foreach (var address in addresses)
         {
@@ -826,8 +830,6 @@ public static class SlmpClientExtensions
                 if (IsWordBatchable(device.Code))
                 {
                     kind = SlmpNamedReadKind.BitInWord;
-                    if (seenWords.Add(device))
-                        wordDevices.Add(device);
                 }
             }
             else
@@ -848,23 +850,37 @@ public static class SlmpClientExtensions
                 bitIdx = plainBitIndex;
                 dtype = "BIT_IN_WORD";
                 kind = SlmpNamedReadKind.BitInWord;
-                if (seenWords.Add(device))
-                    wordDevices.Add(device);
             }
             else if ((dtype == "U" || dtype == "S") && IsWordBatchable(device.Code))
             {
                 kind = SlmpNamedReadKind.Word;
-                if (seenWords.Add(device))
-                    wordDevices.Add(device);
             }
             else if ((dtype == "D" || dtype == "L" || dtype == "F") && IsWordBatchable(device.Code))
             {
                 kind = SlmpNamedReadKind.Dword;
-                if (seenDwords.Add(device))
-                    dwordDevices.Add(device);
             }
 
-            entries.Add(new SlmpNamedReadEntry(address, device, dtype, bitIdx, kind));
+            var decodeIndex = -1;
+            if (kind is SlmpNamedReadKind.Word or SlmpNamedReadKind.BitInWord)
+            {
+                if (!wordIndexes.TryGetValue(device, out decodeIndex))
+                {
+                    decodeIndex = wordDevices.Count;
+                    wordIndexes.Add(device, decodeIndex);
+                    wordDevices.Add(device);
+                }
+            }
+            else if (kind is SlmpNamedReadKind.Dword)
+            {
+                if (!dwordIndexes.TryGetValue(device, out decodeIndex))
+                {
+                    decodeIndex = dwordDevices.Count;
+                    dwordIndexes.Add(device, decodeIndex);
+                    dwordDevices.Add(device);
+                }
+            }
+
+            entries.Add(new SlmpNamedReadEntry(address, device, dtype, bitIdx, kind, decodeIndex));
         }
 
         if (entries.Count == 0)
@@ -891,30 +907,29 @@ public static class SlmpClientExtensions
     private static async Task<IReadOnlyDictionary<string, object>> ReadNamedCompiledAsync(
         SlmpClient client,
         SlmpNamedReadPlan plan,
+        SlmpPreparedRandomRead prepared,
         CancellationToken ct)
     {
-        ValidateCompiledReadPlan(plan);
-
         var result = new Dictionary<string, object>(plan.Entries.Count);
-        var (wordValues, dwordValues) = await ReadRandomMapsAsync(client, plan.WordDevices, plan.DwordDevices, ct).ConfigureAwait(false);
+        var (wordValues, dwordValues) = await client.ExecutePreparedRandomReadAsync(prepared, ct).ConfigureAwait(false);
         foreach (var entry in plan.Entries)
         {
             switch (entry.Kind)
             {
                 case SlmpNamedReadKind.Word:
                     result[entry.Address] = entry.DType.Equals("S", StringComparison.OrdinalIgnoreCase)
-                        ? (object)DecodeSignedWord(wordValues[entry.Device])
-                        : wordValues[entry.Device];
+                        ? (object)DecodeSignedWord(wordValues[entry.DecodeIndex])
+                        : wordValues[entry.DecodeIndex];
                     break;
                 case SlmpNamedReadKind.BitInWord:
-                    result[entry.Address] = ((wordValues[entry.Device] >> RequireBitInWordIndex(entry.Address, entry.BitIndex)) & 1) != 0;
+                    result[entry.Address] = ((wordValues[entry.DecodeIndex] >> entry.BitIndex!.Value) & 1) != 0;
                     break;
                 case SlmpNamedReadKind.Dword:
                     result[entry.Address] = entry.DType.ToUpperInvariant() switch
                     {
-                        "F" => (object)DecodeFloatDWord(dwordValues[entry.Device]),
-                        "L" => DecodeSignedDWord(dwordValues[entry.Device]),
-                        _ => dwordValues[entry.Device],
+                        "F" => (object)DecodeFloatDWord(dwordValues[entry.DecodeIndex]),
+                        "L" => DecodeSignedDWord(dwordValues[entry.DecodeIndex]),
+                        _ => dwordValues[entry.DecodeIndex],
                     };
                     break;
                 default:
@@ -930,8 +945,6 @@ public static class SlmpClientExtensions
         if (plan.Entries.Count == 0)
             throw new ArgumentException("The named read plan must contain at least one entry.", nameof(plan));
 
-        var wordDevices = plan.WordDevices.ToHashSet();
-        var dwordDevices = plan.DwordDevices.ToHashSet();
         foreach (var entry in plan.Entries)
         {
             switch (entry.Kind)
@@ -939,17 +952,23 @@ public static class SlmpClientExtensions
                 case SlmpNamedReadKind.Word when
                     entry.DType is "U" or "S" &&
                     SlmpDeviceUnits.IsWord(entry.Device.Code) &&
-                    wordDevices.Contains(entry.Device):
+                    entry.DecodeIndex >= 0 &&
+                    entry.DecodeIndex < plan.WordDevices.Count &&
+                    plan.WordDevices[entry.DecodeIndex] == entry.Device:
                     break;
                 case SlmpNamedReadKind.BitInWord when
                     entry.DType == "BIT_IN_WORD" &&
                     entry.BitIndex is >= 0 and <= 15 &&
-                    wordDevices.Contains(entry.Device):
+                    entry.DecodeIndex >= 0 &&
+                    entry.DecodeIndex < plan.WordDevices.Count &&
+                    plan.WordDevices[entry.DecodeIndex] == entry.Device:
                     break;
                 case SlmpNamedReadKind.Dword when
                     entry.DType is "D" or "L" or "F" &&
                     SlmpDeviceUnits.IsWord(entry.Device.Code) &&
-                    dwordDevices.Contains(entry.Device):
+                    entry.DecodeIndex >= 0 &&
+                    entry.DecodeIndex < plan.DwordDevices.Count &&
+                    plan.DwordDevices[entry.DecodeIndex] == entry.Device:
                     break;
                 default:
                     throw new ArgumentException(
@@ -1024,33 +1043,6 @@ public static class SlmpClientExtensions
     {
         var (_, dwords) = await client.ReadRandomAsync([], [device], ct).ConfigureAwait(false);
         return dwords[0];
-    }
-
-    private static async Task<(Dictionary<SlmpDeviceAddress, ushort> Words, Dictionary<SlmpDeviceAddress, uint> DWords)> ReadRandomMapsAsync(
-        SlmpClient client,
-        IReadOnlyList<SlmpDeviceAddress> wordDevices,
-        IReadOnlyList<SlmpDeviceAddress> dwordDevices,
-        CancellationToken ct)
-    {
-        if (wordDevices.Count > 0xFF || dwordDevices.Count > 0xFF)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(wordDevices),
-                "Named read must fit in one random-read request (at most 255 word and 255 DWord devices). Split intentionally in application code if multiple request times are acceptable.");
-        }
-
-        var words = new Dictionary<SlmpDeviceAddress, ushort>();
-        var dwords = new Dictionary<SlmpDeviceAddress, uint>();
-        if (wordDevices.Count == 0 && dwordDevices.Count == 0)
-            return (words, dwords);
-
-        var random = await client.ReadRandomAsync(wordDevices, dwordDevices, ct).ConfigureAwait(false);
-        for (int i = 0; i < wordDevices.Count; i++)
-            words[wordDevices[i]] = random.WordValues[i];
-        for (int i = 0; i < dwordDevices.Count; i++)
-            dwords[dwordDevices[i]] = random.DwordValues[i];
-
-        return (words, dwords);
     }
 
     private static void ValidateBitInWordTarget(string address, SlmpDeviceAddress device)

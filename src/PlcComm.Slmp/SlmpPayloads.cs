@@ -155,38 +155,45 @@ internal static class SlmpPayloads
         SlmpPlcProfile plcProfile
     )
     {
-        var encodedWords = new byte[wordDevices.Count][];
-        var encodedDwords = new byte[dwordDevices.Count][];
+        var wordExtensions = new SlmpExtensionSpec[wordDevices.Count];
+        var dwordExtensions = new SlmpExtensionSpec[dwordDevices.Count];
         var size = 2;
         for (var i = 0; i < wordDevices.Count; i++)
         {
             var device = wordDevices[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
-            encodedWords[i] = spec;
-            size += spec.Length;
+            var extension = ResolveEffectiveExtension(device, plcProfile);
+            wordExtensions[i] = extension;
+            size = checked(size + ValidateAndGetExtendedDeviceSpecSize(device.Device, extension, compatibilityMode));
         }
 
         for (var i = 0; i < dwordDevices.Count; i++)
         {
             var device = dwordDevices[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
-            encodedDwords[i] = spec;
-            size += spec.Length;
+            var extension = ResolveEffectiveExtension(device, plcProfile);
+            dwordExtensions[i] = extension;
+            size = checked(size + ValidateAndGetExtendedDeviceSpecSize(device.Device, extension, compatibilityMode));
         }
 
         var payload = new byte[size];
+        SlmpPerformanceDiagnostics.Report("extended-final-payload");
         payload[0] = (byte)wordDevices.Count;
         payload[1] = (byte)dwordDevices.Count;
         var offset = 2;
-        foreach (var spec in encodedWords)
+        for (var i = 0; i < wordDevices.Count; i++)
         {
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
+            offset += EncodeExtendedDeviceSpecInto(
+                wordDevices[i].Device,
+                wordExtensions[i],
+                compatibilityMode,
+                payload.AsSpan(offset));
         }
-        foreach (var spec in encodedDwords)
+        for (var i = 0; i < dwordDevices.Count; i++)
         {
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
+            offset += EncodeExtendedDeviceSpecInto(
+                dwordDevices[i].Device,
+                dwordExtensions[i],
+                compatibilityMode,
+                payload.AsSpan(offset));
         }
         return payload;
     }
@@ -198,43 +205,48 @@ internal static class SlmpPayloads
         SlmpPlcProfile plcProfile
     )
     {
-        var encodedWords = new byte[wordEntries.Count][];
-        var encodedDwords = new byte[dwordEntries.Count][];
-        var size = 2 + (wordEntries.Count * 2) + (dwordEntries.Count * 4);
+        var wordExtensions = new SlmpExtensionSpec[wordEntries.Count];
+        var dwordExtensions = new SlmpExtensionSpec[dwordEntries.Count];
+        var size = checked(2 + checked(wordEntries.Count * 2) + checked(dwordEntries.Count * 4));
         for (var i = 0; i < wordEntries.Count; i++)
         {
             var (device, _) = wordEntries[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
-            encodedWords[i] = spec;
-            size += spec.Length;
+            var extension = ResolveEffectiveExtension(device, plcProfile);
+            wordExtensions[i] = extension;
+            size = checked(size + ValidateAndGetExtendedDeviceSpecSize(device.Device, extension, compatibilityMode));
         }
 
         for (var i = 0; i < dwordEntries.Count; i++)
         {
             var (device, _) = dwordEntries[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
-            encodedDwords[i] = spec;
-            size += spec.Length;
+            var extension = ResolveEffectiveExtension(device, plcProfile);
+            dwordExtensions[i] = extension;
+            size = checked(size + ValidateAndGetExtendedDeviceSpecSize(device.Device, extension, compatibilityMode));
         }
 
         var payload = new byte[size];
+        SlmpPerformanceDiagnostics.Report("extended-final-payload");
         payload[0] = (byte)wordEntries.Count;
         payload[1] = (byte)dwordEntries.Count;
         var offset = 2;
         for (var i = 0; i < wordEntries.Count; i++)
         {
-            var spec = encodedWords[i];
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
+            offset += EncodeExtendedDeviceSpecInto(
+                wordEntries[i].Device.Device,
+                wordExtensions[i],
+                compatibilityMode,
+                payload.AsSpan(offset));
             BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(offset, 2), wordEntries[i].Value);
             offset += 2;
         }
 
         for (var i = 0; i < dwordEntries.Count; i++)
         {
-            var spec = encodedDwords[i];
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
+            offset += EncodeExtendedDeviceSpecInto(
+                dwordEntries[i].Device.Device,
+                dwordExtensions[i],
+                compatibilityMode,
+                payload.AsSpan(offset));
             BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(offset, 4), dwordEntries[i].Value);
             offset += 4;
         }
@@ -248,28 +260,30 @@ internal static class SlmpPayloads
         SlmpPlcProfile plcProfile
     )
     {
-        var encodedSpecs = new byte[bitEntries.Count][];
+        var extensions = new SlmpExtensionSpec[bitEntries.Count];
         var qlValueEncoding = new bool[bitEntries.Count];
         var size = 1;
         for (var i = 0; i < bitEntries.Count; i++)
         {
             var (device, _) = bitEntries[i];
             var extension = ResolveEffectiveExtension(device, plcProfile);
-            var spec = EncodeExtendedDeviceSpec(device.Device, extension, compatibilityMode);
-            encodedSpecs[i] = spec;
+            extensions[i] = extension;
             qlValueEncoding[i] = compatibilityMode == SlmpCompatibilityMode.Legacy ||
                 extension.DirectMemorySpecification == 0xF9;
-            size += spec.Length + (qlValueEncoding[i] ? 1 : 2);
+            size = checked(size + ValidateAndGetExtendedDeviceSpecSize(device.Device, extension, compatibilityMode) + (qlValueEncoding[i] ? 1 : 2));
         }
 
         var payload = new byte[size];
+        SlmpPerformanceDiagnostics.Report("extended-final-payload");
         payload[0] = (byte)bitEntries.Count;
         var offset = 1;
         for (var i = 0; i < bitEntries.Count; i++)
         {
-            var spec = encodedSpecs[i];
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
+            offset += EncodeExtendedDeviceSpecInto(
+                bitEntries[i].Device.Device,
+                extensions[i],
+                compatibilityMode,
+                payload.AsSpan(offset));
             if (qlValueEncoding[i])
             {
                 payload[offset++] = bitEntries[i].Value ? (byte)1 : (byte)0;
@@ -291,38 +305,45 @@ internal static class SlmpPayloads
         SlmpPlcProfile plcProfile
     )
     {
-        var encodedWords = new byte[wordDevices.Count][];
-        var encodedDwords = new byte[dwordDevices.Count][];
+        var wordExtensions = new SlmpExtensionSpec[wordDevices.Count];
+        var dwordExtensions = new SlmpExtensionSpec[dwordDevices.Count];
         var size = 2;
         for (var i = 0; i < wordDevices.Count; i++)
         {
             var device = wordDevices[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
-            encodedWords[i] = spec;
-            size += spec.Length;
+            var extension = ResolveEffectiveExtension(device, plcProfile);
+            wordExtensions[i] = extension;
+            size = checked(size + ValidateAndGetExtendedDeviceSpecSize(device.Device, extension, compatibilityMode));
         }
 
         for (var i = 0; i < dwordDevices.Count; i++)
         {
             var device = dwordDevices[i];
-            var spec = EncodeExtendedDeviceSpec(device.Device, ResolveEffectiveExtension(device, plcProfile), compatibilityMode);
-            encodedDwords[i] = spec;
-            size += spec.Length;
+            var extension = ResolveEffectiveExtension(device, plcProfile);
+            dwordExtensions[i] = extension;
+            size = checked(size + ValidateAndGetExtendedDeviceSpecSize(device.Device, extension, compatibilityMode));
         }
 
         var payload = new byte[size];
+        SlmpPerformanceDiagnostics.Report("extended-final-payload");
         payload[0] = (byte)wordDevices.Count;
         payload[1] = (byte)dwordDevices.Count;
         var offset = 2;
-        foreach (var spec in encodedWords)
+        for (var i = 0; i < wordDevices.Count; i++)
         {
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
+            offset += EncodeExtendedDeviceSpecInto(
+                wordDevices[i].Device,
+                wordExtensions[i],
+                compatibilityMode,
+                payload.AsSpan(offset));
         }
-        foreach (var spec in encodedDwords)
+        for (var i = 0; i < dwordDevices.Count; i++)
         {
-            spec.AsSpan().CopyTo(payload.AsSpan(offset));
-            offset += spec.Length;
+            offset += EncodeExtendedDeviceSpecInto(
+                dwordDevices[i].Device,
+                dwordExtensions[i],
+                compatibilityMode,
+                payload.AsSpan(offset));
         }
         return payload;
     }
@@ -332,24 +353,87 @@ internal static class SlmpPayloads
         SlmpExtensionSpec extension,
         SlmpCompatibilityMode compatibilityMode)
     {
-        if (extension.DirectMemorySpecification == 0xF9)
-            return EncodeLinkDirectDeviceSpec(device, extension);
-
-        var deviceSpec = new byte[DeviceSpecSize(compatibilityMode)];
-        _ = EncodeDeviceSpec(device, deviceSpec, compatibilityMode);
-
-        var data = new byte[2 + deviceSpec.Length + 2 + 2 + 1];
-        var cursor = 0;
-        data[cursor++] = extension.DeviceModificationIndex;
-        data[cursor++] = extension.DeviceModificationFlags;
-        deviceSpec.CopyTo(data, cursor);
-        cursor += deviceSpec.Length;
-        data[cursor++] = extension.ExtensionSpecificationModification;
-        data[cursor++] = 0x00;
-        BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(cursor, 2), extension.ExtensionSpecification);
-        cursor += 2;
-        data[cursor] = extension.DirectMemorySpecification;
+        var data = new byte[ValidateAndGetExtendedDeviceSpecSize(device, extension, compatibilityMode)];
+        _ = EncodeExtendedDeviceSpecInto(device, extension, compatibilityMode, data);
+        SlmpPerformanceDiagnostics.Report("extended-owned-spec");
         return data;
+    }
+
+    private static int ValidateAndGetExtendedDeviceSpecSize(
+        SlmpDeviceAddress device,
+        SlmpExtensionSpec extension,
+        SlmpCompatibilityMode compatibilityMode)
+    {
+        if (!Enum.IsDefined(device.Code))
+            throw new ArgumentOutOfRangeException(nameof(device), device.Code, "Undefined SLMP device codes cannot be encoded.");
+        if (extension.DirectMemorySpecification == 0xF9)
+        {
+            if (device.Number > 0x00FF_FFFF)
+                throw new ArgumentOutOfRangeException(
+                    nameof(device),
+                    device.Number,
+                    "Link-direct device numbers must fit the 24-bit Q/L wire field (0..16777215).");
+            if (extension.ExtensionSpecification > byte.MaxValue)
+                throw new ArgumentOutOfRangeException(
+                    nameof(extension),
+                    extension.ExtensionSpecification,
+                    "Link-direct network numbers must fit the 8-bit wire field (0..255).");
+            return 11;
+        }
+
+        if (compatibilityMode == SlmpCompatibilityMode.Legacy && device.Number > 0x00FF_FFFF)
+            throw new ArgumentOutOfRangeException(
+                nameof(device),
+                device.Number,
+                "Legacy device numbers must fit the 24-bit wire field (0..16777215).");
+        return DeviceSpecSize(compatibilityMode) + 7;
+    }
+
+    private static int EncodeExtendedDeviceSpecInto(
+        SlmpDeviceAddress device,
+        SlmpExtensionSpec extension,
+        SlmpCompatibilityMode compatibilityMode,
+        Span<byte> output)
+    {
+        if (extension.DirectMemorySpecification == 0xF9)
+        {
+            output[0] = 0;
+            output[1] = 0;
+            output[2] = (byte)(device.Number & 0xFF);
+            output[3] = (byte)((device.Number >> 8) & 0xFF);
+            output[4] = (byte)((device.Number >> 16) & 0xFF);
+            output[5] = (byte)((ushort)device.Code & 0xFF);
+            output[6] = 0;
+            output[7] = 0;
+            output[8] = (byte)extension.ExtensionSpecification;
+            output[9] = 0;
+            output[10] = 0xF9;
+            return 11;
+        }
+
+        var offset = 0;
+        output[offset++] = extension.DeviceModificationIndex;
+        output[offset++] = extension.DeviceModificationFlags;
+        if (compatibilityMode == SlmpCompatibilityMode.Legacy)
+        {
+            output[offset++] = (byte)(device.Number & 0xFF);
+            output[offset++] = (byte)((device.Number >> 8) & 0xFF);
+            output[offset++] = (byte)((device.Number >> 16) & 0xFF);
+            output[offset++] = (byte)((ushort)device.Code & 0xFF);
+        }
+        else
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(output.Slice(offset, 4), device.Number);
+            offset += 4;
+            BinaryPrimitives.WriteUInt16LittleEndian(output.Slice(offset, 2), (ushort)device.Code);
+            offset += 2;
+        }
+        output[offset++] = extension.ExtensionSpecificationModification;
+        output[offset++] = 0;
+        BinaryPrimitives.WriteUInt16LittleEndian(output.Slice(offset, 2), extension.ExtensionSpecification);
+        offset += 2;
+        output[offset++] = extension.DirectMemorySpecification;
+        return offset;
     }
 
     internal static byte[] BuildLabelArrayReadPayload(IReadOnlyList<SlmpLabelArrayReadPoint> points, IReadOnlyList<string> abbreviationLabels)
@@ -532,8 +616,15 @@ internal static class SlmpPayloads
         IReadOnlyList<SlmpLabelArrayReadPoint> requestedPoints)
     {
         ArgumentNullException.ThrowIfNull(data);
+        return ParseArrayLabelReadResponse((ReadOnlyMemory<byte>)data, requestedPoints);
+    }
+
+    internal static SlmpLabelArrayReadResult[] ParseArrayLabelReadResponse(
+        ReadOnlyMemory<byte> data,
+        IReadOnlyList<SlmpLabelArrayReadPoint> requestedPoints)
+    {
         ArgumentNullException.ThrowIfNull(requestedPoints);
-        var reader = new PayloadReader(data, "array-label response");
+        var reader = new PayloadReader(data.Span, "array-label response");
         var count = reader.ReadUInt16LittleEndian("number of array points");
         if (count != requestedPoints.Count)
         {
@@ -581,9 +672,16 @@ internal static class SlmpPayloads
     internal static SlmpLabelRandomReadResult[] ParseRandomLabelReadResponse(byte[] data, int expectedCount)
     {
         ArgumentNullException.ThrowIfNull(data);
+        return ParseRandomLabelReadResponse((ReadOnlyMemory<byte>)data, expectedCount);
+    }
+
+    internal static SlmpLabelRandomReadResult[] ParseRandomLabelReadResponse(
+        ReadOnlyMemory<byte> data,
+        int expectedCount)
+    {
         if (expectedCount is < 1 or > ushort.MaxValue)
             throw new ArgumentOutOfRangeException(nameof(expectedCount));
-        var reader = new PayloadReader(data, "random-label response");
+        var reader = new PayloadReader(data.Span, "random-label response");
         var count = reader.ReadUInt16LittleEndian("number of read data points");
         if (count != expectedCount)
         {

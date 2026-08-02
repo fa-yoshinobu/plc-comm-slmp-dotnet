@@ -181,6 +181,95 @@ public sealed class SlmpClientPayloadTests
     }
 
     [Fact]
+    public void ExtendedPayloadBuilders_UseOneFinalPayloadAndNoOwnedDeviceSpecs()
+    {
+        var events = new List<string>();
+        SlmpPerformanceDiagnostics.Sink = events.Add;
+        try
+        {
+            static void AssertOneFinalPayload(List<string> events)
+            {
+                Assert.Equal(1, events.Count(name => name == "extended-final-payload"));
+                Assert.DoesNotContain("extended-owned-spec", events);
+                events.Clear();
+            }
+
+            var word = Extended(SlmpDeviceCode.D, 10, 0x0001);
+            var dword = Extended(SlmpDeviceCode.W, 0x20, 0x0002);
+            _ = SlmpPayloads.BuildExtendedRandomReadPayload(
+                [word], [dword], SlmpCompatibilityMode.Iqr, SlmpPlcProfile.IqR);
+            AssertOneFinalPayload(events);
+
+            _ = SlmpPayloads.BuildExtendedRandomWordWritePayload(
+                [(word, (ushort)1)], [(dword, 2u)], SlmpCompatibilityMode.Iqr, SlmpPlcProfile.IqR);
+            AssertOneFinalPayload(events);
+
+            _ = SlmpPayloads.BuildExtendedRandomBitWritePayload(
+                [(Extended(SlmpDeviceCode.M, 7, 0x0003), true)],
+                SlmpCompatibilityMode.Iqr,
+                SlmpPlcProfile.IqR);
+            AssertOneFinalPayload(events);
+
+            _ = SlmpPayloads.BuildExtendedMonitorRegisterPayload(
+                [word], [dword], SlmpCompatibilityMode.Iqr, SlmpPlcProfile.IqR);
+            AssertOneFinalPayload(events);
+        }
+        finally
+        {
+            SlmpPerformanceDiagnostics.Sink = null;
+        }
+    }
+
+    [Fact]
+    public void ExtendedPayloadValidation_FailsBeforeFinalPayloadAllocation()
+    {
+        var events = new List<string>();
+        SlmpPerformanceDiagnostics.Sink = events.Add;
+        try
+        {
+            var invalid = Extended(SlmpDeviceCode.D, 0x0100_0000, 0x0001);
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                SlmpPayloads.BuildExtendedRandomReadPayload(
+                    [invalid], [], SlmpCompatibilityMode.Legacy, SlmpPlcProfile.IqR));
+            Assert.DoesNotContain("extended-final-payload", events);
+            Assert.DoesNotContain("extended-owned-spec", events);
+        }
+        finally
+        {
+            SlmpPerformanceDiagnostics.Sink = null;
+        }
+    }
+
+    [Fact]
+    public async Task NamedReadPlan_StoresCompactDecodeIndexesAndPreparedRequestBinding()
+    {
+        var plan = SlmpClientExtensions.CompileReadPlan(
+            ["D100:U", "D100.1", "D200:D"],
+            SlmpPlcProfile.IqR);
+
+        Assert.Single(plan.WordDevices);
+        Assert.Single(plan.DwordDevices);
+        Assert.Equal([0, 0, 0], plan.Entries.Select(entry => entry.DecodeIndex));
+
+        using var owner = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        using var other = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var events = new List<string>();
+        SlmpPerformanceDiagnostics.Sink = events.Add;
+        try
+        {
+            var prepared = owner.PrepareRandomRead(plan.WordDevices, plan.DwordDevices);
+            Assert.Equal(1, events.Count(name => name == "random-read-prepare"));
+            await Assert.ThrowsAsync<ArgumentException>(() => other.ExecutePreparedRandomReadAsync(prepared));
+        }
+        finally
+        {
+            SlmpPerformanceDiagnostics.Sink = null;
+        }
+    }
+
+    [Fact]
     public async Task SelfTestLoopbackAsync_RejectsManualInvalidPayloadsBeforeTransport()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
