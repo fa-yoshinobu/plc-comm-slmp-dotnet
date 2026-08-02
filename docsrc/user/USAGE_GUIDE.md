@@ -8,8 +8,6 @@
 | `SlmpClientFactory.OpenAndConnectAsync` | Opens a connected `SlmpClient` from `SlmpConnectionOptions`. |
 | `ReadTypedAsync` | Reads one typed scalar such as `D100` as `BIT`, `U`, `S`, `D`, `L`, or `F`. |
 | `WriteTypedAsync` | Writes one typed scalar. |
-
-Every semantic `SlmpDeviceAddress` or qualified address is bound to the exact canonical PLC profile used to create it. Passing it to a client configured for any other profile is rejected before request construction or transport activity, including when a unit-specific profile shares a base family with the client. Parse or construct the address again with the destination client's profile instead of reusing it across profiles.
 | `ReadNamedAsync` | Reads one named value set that fits exactly one Random Read request. |
 | `WriteNamedAsync` | Writes a named set of values. |
 | `ReadWordsSingleRequestAsync` / `ReadDWordsSingleRequestAsync` | Reads one contiguous block in one protocol request. |
@@ -19,6 +17,8 @@ Every semantic `SlmpDeviceAddress` or qualified address is bound to the exact ca
 | `SlmpQualifiedDeviceParser` | Parses extended device text such as `U3\G100`, `U3E0\HG0`, and `J2\SW10`. |
 | `ReadWordsExtendedAsync` / `WriteWordsExtendedAsync` | Reads or writes routed `U...` / `J...` word devices. |
 | `ReadBitsExtendedAsync` / `WriteBitsExtendedAsync` | Reads or writes routed `U...` / `J...` bit devices. |
+
+Every semantic `SlmpDeviceAddress` or qualified address is bound to the exact canonical PLC profile used to create it. Passing it to a client configured for any other profile is rejected before request construction or transport activity, including when a unit-specific profile shares a base family with the client. Parse or construct the address again with the destination client's profile instead of reusing it across profiles.
 
 ## Connection
 
@@ -111,7 +111,6 @@ await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 
 var module = SlmpQualifiedDeviceParser.Parse(@"U3\G100", client.PlcProfile);
 ushort[] moduleWords = await client.ReadWordsExtendedAsync(module, 4);
-await client.WriteWordsExtendedAsync(module, new ushort[] { 1, 2, 3, 4 });
 
 var cpuBuffer = SlmpQualifiedDeviceParser.Parse(@"U3E0\HG0", client.PlcProfile);
 ushort[] cpuBufferWords = await client.ReadWordsExtendedAsync(cpuBuffer, 2);
@@ -122,6 +121,12 @@ ushort[] linkWords = await client.ReadWordsExtendedAsync(linkWord, 1);
 var linkBits = SlmpQualifiedDeviceParser.Parse(@"J1\X10", client.PlcProfile);
 bool[] bits = await client.ReadBitsExtendedAsync(linkBits, 16);
 ```
+
+This general example is intentionally read-only. Use `WriteWordsExtendedAsync`
+or `WriteBitsExtendedAsync` only with a route and address prepared for controlled
+testing. Save the original value first and restore it afterward. If a write has
+an outcome-unknown failure, reopen the client and reconcile the actual PLC state
+before deciding whether restoration or any retry is safe.
 
 For iQ-R multi-CPU `U3En\HG...` access, the qualified device never changes the
 immutable SLMP request target. Create a client with the destination CPU target
@@ -146,13 +151,14 @@ await client.RegisterMonitorDevicesAsync(
 SlmpMonitorResult cycle = await client.RunMonitorCycleAsync(1, 1);
 
 byte[] echo = await client.SelfTestLoopbackAsync("A1B2C3D4"u8.ToArray());
-await client.ClearErrorAsync();
+// Clear Error changes PLC state. Invoke it only after diagnosing the error on a controlled PLC:
+// await client.ClearErrorAsync();
 ```
 
 These methods are exposed directly by `SlmpClient`. Self-test accepts only
 1–960 ASCII `0-9/A-F` bytes and requires exact declared length,
 actual length, and echo equality. Clear Error always uses the fixed empty
-payload command.
+payload command and clears PLC error state; do not use it as an automatic recovery step.
 
 ## Label wire data
 
@@ -417,7 +423,7 @@ backoff, exponential delay, and a 30 second default maximum. YAML config is
 available only in the Python sample; the .NET sample uses JSON.
 
 ```powershell
-dotnet run --project samples/PlcComm.Slmp.MultiPlcMonitorSample -- --plc line-a=192.168.250.101,melsec:iq-r,1035,udp --plc line-b=192.168.250.100,melsec:iq-f,1025,tcp --tag d100=D100:U
+dotnet run --project samples/PlcComm.Slmp.MultiPlcMonitorSample -- --plc line-a=192.168.250.101,melsec:iq-r,1035,udp,SELF --plc line-b=192.168.250.100,melsec:iq-f,1025,tcp,SELF --tag d100=D100:U
 dotnet run --project samples/PlcComm.Slmp.ConfigPollingSample -- --config samples/PlcComm.Slmp.ConfigPollingSample/config_polling.example.json --dry-run
 ```
 

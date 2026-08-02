@@ -4,13 +4,12 @@ This document is the release checklist for `PlcComm.Slmp`.
 
 ## Scope
 
-Confirm that the release contains only public .NET assets:
+Confirm that the source archive contains the complete buildable and reviewable repository contract:
 
-- `src/PlcComm.Slmp`
-- `samples/`
-- `README.md`
-- `CHANGELOG.md`
-- `LICENSE`
+- solution and project manifests, `src/PlcComm.Slmp`, and `samples/`
+- repository tests and the standard pages under `docsrc/user/`
+- tracked validation and maintainer material under `.github/`, `docsrc/maintainer/`, `internal_docs/`, `scripts/`, and `tools/`
+- `run_ci.bat`, `release_check.bat`, `README.md`, `CHANGELOG.md`, `LICENSE`, and repository instruction/TODO files when tracked
 
 Confirm that local output is excluded:
 
@@ -56,7 +55,7 @@ Before creating a release tag, confirm these review items:
 Repository workflows:
 
 - `.github/workflows/ci.yml`
-  - restore, build, and test on Windows for pushes and pull requests
+  - on pushes and pull requests, checks no-auto-publish policy, canonical profiles, restore/build/test, API-diff policy and generated-reference freshness, package/source-archive contents, formatting, and a bounded Linux lifecycle smoke test
 - `.github/workflows/release.yml`
   - build release artifacts on tag pushes
   - create or update a GitHub Release for `v*` tags

@@ -25,6 +25,11 @@ if %errorlevel% neq 0 (
     echo [ERROR] API reference generator tests failed.
     exit /b %errorlevel%
 )
+python scripts\test_documentation_examples.py
+if %errorlevel% neq 0 (
+    echo [ERROR] Documentation example tests failed.
+    exit /b %errorlevel%
+)
 
 echo [4/6] Validate API reference
 python scripts\generate_api_reference.py --assembly src\PlcComm.Slmp\bin\Debug\net8.0\PlcComm.Slmp.dll --xml src\PlcComm.Slmp\bin\Debug\net8.0\PlcComm.Slmp.xml --output docsrc\user\API_REFERENCE.md --title "SLMP .NET API Reference" --package PlcComm.Slmp --check

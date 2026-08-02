@@ -266,9 +266,15 @@ static string PropertySignature(PropertyInfo prop)
 {
     var accessors = new List<string>();
     if (prop.GetMethod?.IsPublic == true) accessors.Add("get;");
-    if (prop.SetMethod?.IsPublic == true) accessors.Add("set;");
+    if (prop.SetMethod?.IsPublic == true) accessors.Add(IsInitOnly(prop) ? "init;" : "set;");
     var staticText = ((prop.GetMethod ?? prop.SetMethod)?.IsStatic == true) ? " static" : "";
     return $"public{staticText} {TypeName(prop.PropertyType)} {prop.Name} {{ {string.Join(" ", accessors)} }}";
+}
+
+static bool IsInitOnly(PropertyInfo prop)
+{
+    return prop.SetMethod?.ReturnParameter.GetRequiredCustomModifiers()
+        .Any(type => type.FullName == "System.Runtime.CompilerServices.IsExternalInit") == true;
 }
 
 static string FieldSignature(FieldInfo field)

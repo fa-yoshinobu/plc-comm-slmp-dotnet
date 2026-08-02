@@ -43,7 +43,7 @@ public IndexZ(byte Index)
 ##### Index
 
 ```csharp
-public byte Index { get; set; }
+public byte Index { get; init; }
 ```
 
 ### Indirect
@@ -132,13 +132,13 @@ Description for a contiguous block of devices to read.
 ##### Device
 
 ```csharp
-public SlmpDeviceAddress Device { get; set; }
+public SlmpDeviceAddress Device { get; init; }
 ```
 
 ##### Points
 
 ```csharp
-public ushort Points { get; set; }
+public ushort Points { get; init; }
 ```
 
 ### SlmpBlockWrite
@@ -162,13 +162,13 @@ Description for a contiguous block of devices to write.
 ##### Device
 
 ```csharp
-public SlmpDeviceAddress Device { get; set; }
+public SlmpDeviceAddress Device { get; init; }
 ```
 
 ##### Values
 
 ```csharp
-public IReadOnlyList<ushort> Values { get; set; }
+public IReadOnlyList<ushort> Values { get; init; }
 ```
 
 ### SlmpClient
@@ -1490,7 +1490,7 @@ Parameters:
 ##### Target
 
 ```csharp
-public SlmpTargetAddress Target { get; set; }
+public SlmpTargetAddress Target { get; init; }
 ```
 
 Complete destination route.
@@ -1498,46 +1498,46 @@ Complete destination route.
 ##### Host
 
 ```csharp
-public string Host { get; set; }
+public string Host { get; init; }
 ```
 
 ##### PlcProfile
 
 ```csharp
-public SlmpPlcProfile PlcProfile { get; set; }
+public SlmpPlcProfile PlcProfile { get; init; }
 ```
 
-Gets or sets the canonical PLC profile for the high-level API.
+Gets or initializes the canonical PLC profile for the high-level API.
 
 ##### Port
 
 ```csharp
-public int Port { get; set; }
+public int Port { get; init; }
 ```
 
 ##### Transport
 
 ```csharp
-public SlmpTransportMode Transport { get; set; }
+public SlmpTransportMode Transport { get; init; }
 ```
 
 ##### Timeout
 
 ```csharp
-public TimeSpan Timeout { get; set; }
+public TimeSpan Timeout { get; init; }
 ```
 
-Gets or sets the communication timeout for the underlying transport.
+Gets or initializes the deadline used to open the transport and complete each admitted request.
 
-Remarks: This timeout applies to individual request/response exchanges after the session is opened. Values must be from 1 millisecond through `int.MaxValue` milliseconds.
+Remarks: An explicit open uses this value as its connection deadline. Each admitted request uses one absolute deadline from a lazy connection attempt through response receipt and decoding; partial progress does not restart the deadline. FIFO queue wait is excluded. Values must be from 1 millisecond through `int.MaxValue` milliseconds.
 
 ##### MonitoringTimer
 
 ```csharp
-public ushort MonitoringTimer { get; set; }
+public ushort MonitoringTimer { get; init; }
 ```
 
-Gets or sets the SLMP monitoring timer value in 250 ms units.
+Gets or initializes the SLMP monitoring timer value in 250 ms units.
 
 Remarks: The monitoring timer is encoded into the request frame and tells the PLC how long it may spend processing the request before reporting a timeout.
 
@@ -1599,7 +1599,7 @@ Parameters:
 ##### Status
 
 ```csharp
-public SlmpCpuOperationStatus Status { get; set; }
+public SlmpCpuOperationStatus Status { get; init; }
 ```
 
 Decoded PLC operation state.
@@ -1607,7 +1607,7 @@ Decoded PLC operation state.
 ##### RawStatusWord
 
 ```csharp
-public ushort RawStatusWord { get; set; }
+public ushort RawStatusWord { get; init; }
 ```
 
 Full raw word read from `SD203`.
@@ -1615,7 +1615,7 @@ Full raw word read from `SD203`.
 ##### RawCode
 
 ```csharp
-public byte RawCode { get; set; }
+public byte RawCode { get; init; }
 ```
 
 Lower 4-bit masked status code from `SD203`.
@@ -2102,7 +2102,7 @@ Parameters:
 ##### Model
 
 ```csharp
-public string Model { get; set; }
+public string Model { get; init; }
 ```
 
 Synthetic label for the explicitly selected PLC profile.
@@ -2110,7 +2110,7 @@ Synthetic label for the explicitly selected PLC profile.
 ##### ModelCode
 
 ```csharp
-public ushort ModelCode { get; set; }
+public ushort ModelCode { get; init; }
 ```
 
 Always zero because device-range catalogs do not infer profiles from type-name responses.
@@ -2118,7 +2118,7 @@ Always zero because device-range catalogs do not infer profiles from type-name r
 ##### HasModelCode
 
 ```csharp
-public bool HasModelCode { get; set; }
+public bool HasModelCode { get; init; }
 ```
 
 Always false because profile selection is explicit.
@@ -2126,7 +2126,7 @@ Always false because profile selection is explicit.
 ##### PlcProfile
 
 ```csharp
-public SlmpPlcProfile PlcProfile { get; set; }
+public SlmpPlcProfile PlcProfile { get; init; }
 ```
 
 Resolved canonical PLC profile.
@@ -2134,7 +2134,7 @@ Resolved canonical PLC profile.
 ##### Entries
 
 ```csharp
-public IReadOnlyList<SlmpDeviceRangeEntry> Entries { get; set; }
+public IReadOnlyList<SlmpDeviceRangeEntry> Entries { get; init; }
 ```
 
 Device entries for the resolved profile.
@@ -2213,7 +2213,7 @@ Parameters:
 ##### Device
 
 ```csharp
-public string Device { get; set; }
+public string Device { get; init; }
 ```
 
 Device code or address family string such as `D` or `TS`.
@@ -2221,7 +2221,7 @@ Device code or address family string such as `D` or `TS`.
 ##### Category
 
 ```csharp
-public SlmpDeviceRangeCategory Category { get; set; }
+public SlmpDeviceRangeCategory Category { get; init; }
 ```
 
 Logical category for grouping in monitor tools.
@@ -2229,7 +2229,7 @@ Logical category for grouping in monitor tools.
 ##### IsBitDevice
 
 ```csharp
-public bool IsBitDevice { get; set; }
+public bool IsBitDevice { get; init; }
 ```
 
 True when the device is bit-addressable in normal use.
@@ -2237,7 +2237,7 @@ True when the device is bit-addressable in normal use.
 ##### Supported
 
 ```csharp
-public bool Supported { get; set; }
+public bool Supported { get; init; }
 ```
 
 True when the PLC profile supports this device.
@@ -2245,7 +2245,7 @@ True when the PLC profile supports this device.
 ##### LowerBound
 
 ```csharp
-public uint LowerBound { get; set; }
+public uint LowerBound { get; init; }
 ```
 
 Lower bound value. Current rules always use 0.
@@ -2253,7 +2253,7 @@ Lower bound value. Current rules always use 0.
 ##### UpperBound
 
 ```csharp
-public uint? UpperBound { get; set; }
+public uint? UpperBound { get; init; }
 ```
 
 Inclusive last address. For a 0-based range this is `PointCount - 1`. Null means no finite bound is defined by the rule.
@@ -2261,7 +2261,7 @@ Inclusive last address. For a 0-based range this is `PointCount - 1`. Null means
 ##### PointCount
 
 ```csharp
-public uint? PointCount { get; set; }
+public uint? PointCount { get; init; }
 ```
 
 Usable point count read or resolved for the PLC profile. Null means no finite count is defined by the rule.
@@ -2269,7 +2269,7 @@ Usable point count read or resolved for the PLC profile. Null means no finite co
 ##### AddressRange
 
 ```csharp
-public string AddressRange { get; set; }
+public string AddressRange { get; init; }
 ```
 
 Preformatted address range text such as `X000-X1FF` or `D0-D511`.
@@ -2277,7 +2277,7 @@ Preformatted address range text such as `X000-X1FF` or `D0-D511`.
 ##### Notation
 
 ```csharp
-public SlmpDeviceRangeNotation Notation { get; set; }
+public SlmpDeviceRangeNotation Notation { get; init; }
 ```
 
 Recommended public address notation for this library.
@@ -2285,7 +2285,7 @@ Recommended public address notation for this library.
 ##### Source
 
 ```csharp
-public string Source { get; set; }
+public string Source { get; init; }
 ```
 
 Rule source used to build `UpperBound`.
@@ -2293,7 +2293,7 @@ Rule source used to build `UpperBound`.
 ##### Notes
 
 ```csharp
-public string Notes { get; set; }
+public string Notes { get; init; }
 ```
 
 Optional profile-specific caveats.
@@ -2454,7 +2454,7 @@ Parse the required 9-byte SLMP error-information prefix and retain any following
 ##### Network
 
 ```csharp
-public byte Network { get; set; }
+public byte Network { get; init; }
 ```
 
 Network number reported by the PLC.
@@ -2462,7 +2462,7 @@ Network number reported by the PLC.
 ##### Station
 
 ```csharp
-public byte Station { get; set; }
+public byte Station { get; init; }
 ```
 
 Station number reported by the PLC.
@@ -2470,7 +2470,7 @@ Station number reported by the PLC.
 ##### ModuleIo
 
 ```csharp
-public ushort ModuleIo { get; set; }
+public ushort ModuleIo { get; init; }
 ```
 
 Module I/O number reported by the PLC.
@@ -2478,7 +2478,7 @@ Module I/O number reported by the PLC.
 ##### Multidrop
 
 ```csharp
-public byte Multidrop { get; set; }
+public byte Multidrop { get; init; }
 ```
 
 Multidrop station number reported by the PLC.
@@ -2486,7 +2486,7 @@ Multidrop station number reported by the PLC.
 ##### Command
 
 ```csharp
-public ushort Command { get; set; }
+public ushort Command { get; init; }
 ```
 
 Command code associated with the PLC error.
@@ -2494,7 +2494,7 @@ Command code associated with the PLC error.
 ##### Subcommand
 
 ```csharp
-public ushort Subcommand { get; set; }
+public ushort Subcommand { get; init; }
 ```
 
 Subcommand code associated with the PLC error.
@@ -2502,7 +2502,7 @@ Subcommand code associated with the PLC error.
 ##### Raw
 
 ```csharp
-public byte[] Raw { get; set; }
+public byte[] Raw { get; init; }
 ```
 
 Raw required 9-byte error-information prefix.
@@ -2510,7 +2510,7 @@ Raw required 9-byte error-information prefix.
 ##### Extra
 
 ```csharp
-public byte[] Extra { get; set; }
+public byte[] Extra { get; init; }
 ```
 
 Bytes following the required 9-byte error-information prefix.
@@ -2562,19 +2562,19 @@ Describes one array label to read. `UnitSpecification`: 0 = bit, 1 = byte. `Arra
 ##### Label
 
 ```csharp
-public string Label { get; set; }
+public string Label { get; init; }
 ```
 
 ##### UnitSpecification
 
 ```csharp
-public byte UnitSpecification { get; set; }
+public byte UnitSpecification { get; init; }
 ```
 
 ##### ArrayDataLength
 
 ```csharp
-public ushort ArrayDataLength { get; set; }
+public ushort ArrayDataLength { get; init; }
 ```
 
 ### SlmpLabelArrayReadResult
@@ -2598,25 +2598,25 @@ Result item returned by `ReadArrayLabelsAsync`. `Data` contains the protocol's t
 ##### DataTypeId
 
 ```csharp
-public byte DataTypeId { get; set; }
+public byte DataTypeId { get; init; }
 ```
 
 ##### UnitSpecification
 
 ```csharp
-public byte UnitSpecification { get; set; }
+public byte UnitSpecification { get; init; }
 ```
 
 ##### ArrayDataLength
 
 ```csharp
-public ushort ArrayDataLength { get; set; }
+public ushort ArrayDataLength { get; init; }
 ```
 
 ##### Data
 
 ```csharp
-public byte[] Data { get; set; }
+public byte[] Data { get; init; }
 ```
 
 ### SlmpLabelArrayWritePoint
@@ -2650,7 +2650,7 @@ Parameters:
 ##### Label
 
 ```csharp
-public string Label { get; set; }
+public string Label { get; init; }
 ```
 
 Label name.
@@ -2658,7 +2658,7 @@ Label name.
 ##### UnitSpecification
 
 ```csharp
-public byte UnitSpecification { get; set; }
+public byte UnitSpecification { get; init; }
 ```
 
 Logical length unit: 0 for bits or 1 for bytes.
@@ -2666,7 +2666,7 @@ Logical length unit: 0 for bits or 1 for bytes.
 ##### ArrayDataLength
 
 ```csharp
-public ushort ArrayDataLength { get; set; }
+public ushort ArrayDataLength { get; init; }
 ```
 
 Logical length expressed in `UnitSpecification` units.
@@ -2674,7 +2674,7 @@ Logical length expressed in `UnitSpecification` units.
 ##### Data
 
 ```csharp
-public byte[] Data { get; set; }
+public byte[] Data { get; init; }
 ```
 
 Raw data padded to a two-byte boundary. Its length must be exactly `ceil(ArrayDataLength / 16) * 2` for bit units or `ceil(ArrayDataLength / 2) * 2` for byte units.
@@ -2700,25 +2700,25 @@ Result item returned by `ReadRandomLabelsAsync`. `ReadDataLength` is a positive 
 ##### DataTypeId
 
 ```csharp
-public byte DataTypeId { get; set; }
+public byte DataTypeId { get; init; }
 ```
 
 ##### Spare
 
 ```csharp
-public byte Spare { get; set; }
+public byte Spare { get; init; }
 ```
 
 ##### ReadDataLength
 
 ```csharp
-public ushort ReadDataLength { get; set; }
+public ushort ReadDataLength { get; init; }
 ```
 
 ##### Data
 
 ```csharp
-public byte[] Data { get; set; }
+public byte[] Data { get; init; }
 ```
 
 ### SlmpLabelRandomWritePoint
@@ -2742,13 +2742,13 @@ Describes one random label write point. `Data` must contain a positive, even num
 ##### Label
 
 ```csharp
-public string Label { get; set; }
+public string Label { get; init; }
 ```
 
 ##### Data
 
 ```csharp
-public byte[] Data { get; set; }
+public byte[] Data { get; init; }
 ```
 
 ### SlmpLongTimerResult
@@ -2781,7 +2781,7 @@ Parameters:
 ##### Index
 
 ```csharp
-public int Index { get; set; }
+public int Index { get; init; }
 ```
 
 The device number (e.g. 0 for LTN0).
@@ -2789,7 +2789,7 @@ The device number (e.g. 0 for LTN0).
 ##### Device
 
 ```csharp
-public string Device { get; set; }
+public string Device { get; init; }
 ```
 
 The device address string (e.g. "LTN0").
@@ -2797,7 +2797,7 @@ The device address string (e.g. "LTN0").
 ##### CurrentValue
 
 ```csharp
-public uint CurrentValue { get; set; }
+public uint CurrentValue { get; init; }
 ```
 
 32-bit current value (two 16-bit words combined).
@@ -2805,7 +2805,7 @@ public uint CurrentValue { get; set; }
 ##### Contact
 
 ```csharp
-public bool Contact { get; set; }
+public bool Contact { get; init; }
 ```
 
 True when the timer contact is ON.
@@ -2813,7 +2813,7 @@ True when the timer contact is ON.
 ##### Coil
 
 ```csharp
-public bool Coil { get; set; }
+public bool Coil { get; init; }
 ```
 
 True when the timer coil is ON.
@@ -2821,7 +2821,7 @@ True when the timer coil is ON.
 ##### StatusWord
 
 ```csharp
-public ushort StatusWord { get; set; }
+public ushort StatusWord { get; init; }
 ```
 
 Raw status word (word index 2 in the 4-word block).
@@ -2829,7 +2829,7 @@ Raw status word (word index 2 in the 4-word block).
 ##### RawWords
 
 ```csharp
-public ushort[] RawWords { get; set; }
+public ushort[] RawWords { get; init; }
 ```
 
 The four raw 16-bit words that make up this timer entry.
@@ -2975,7 +2975,7 @@ Parameters:
 ##### WordValues
 
 ```csharp
-public ushort[] WordValues { get; set; }
+public ushort[] WordValues { get; init; }
 ```
 
 16-bit word values for the registered word devices (in registration order).
@@ -2983,7 +2983,7 @@ public ushort[] WordValues { get; set; }
 ##### DwordValues
 
 ```csharp
-public uint[] DwordValues { get; set; }
+public uint[] DwordValues { get; init; }
 ```
 
 32-bit values for the registered DWord devices (in registration order).
@@ -3009,13 +3009,13 @@ Represents a target station with a human-readable name.
 ##### Name
 
 ```csharp
-public string Name { get; set; }
+public string Name { get; init; }
 ```
 
 ##### Target
 
 ```csharp
-public SlmpTargetAddress Target { get; set; }
+public SlmpTargetAddress Target { get; init; }
 ```
 
 ### SlmpNotConnectedException
@@ -3237,25 +3237,25 @@ Resolved fixed defaults for one canonical PLC profile.
 ##### FrameType
 
 ```csharp
-public SlmpFrameType FrameType { get; set; }
+public SlmpFrameType FrameType { get; init; }
 ```
 
 ##### CompatibilityMode
 
 ```csharp
-public SlmpCompatibilityMode CompatibilityMode { get; set; }
+public SlmpCompatibilityMode CompatibilityMode { get; init; }
 ```
 
 ##### AddressProfile
 
 ```csharp
-public SlmpPlcProfile AddressProfile { get; set; }
+public SlmpPlcProfile AddressProfile { get; init; }
 ```
 
 ##### RangeProfile
 
 ```csharp
-public SlmpPlcProfile RangeProfile { get; set; }
+public SlmpPlcProfile RangeProfile { get; init; }
 ```
 
 ### SlmpPlcProfileDescriptor
@@ -3279,25 +3279,25 @@ Canonical metadata used to select and describe one PLC profile.
 ##### CanonicalName
 
 ```csharp
-public string CanonicalName { get; set; }
+public string CanonicalName { get; init; }
 ```
 
 ##### DisplayName
 
 ```csharp
-public string DisplayName { get; set; }
+public string DisplayName { get; init; }
 ```
 
 ##### Connectable
 
 ```csharp
-public bool Connectable { get; set; }
+public bool Connectable { get; init; }
 ```
 
 ##### BaseProfile
 
 ```csharp
-public string BaseProfile { get; set; }
+public string BaseProfile { get; init; }
 ```
 
 ### SlmpPlcProfiles
@@ -3569,7 +3569,7 @@ Parameters:
 ##### Network
 
 ```csharp
-public byte Network { get; set; }
+public byte Network { get; init; }
 ```
 
 Network number (0x00 for local network).
@@ -3577,7 +3577,7 @@ Network number (0x00 for local network).
 ##### Station
 
 ```csharp
-public byte Station { get; set; }
+public byte Station { get; init; }
 ```
 
 Station number (0xFF for the connected station).
@@ -3585,7 +3585,7 @@ Station number (0xFF for the connected station).
 ##### ModuleIo
 
 ```csharp
-public ushort ModuleIo { get; set; }
+public ushort ModuleIo { get; init; }
 ```
 
 Module I/O number (0x03FF for own station).
@@ -3593,7 +3593,7 @@ Module I/O number (0x03FF for own station).
 ##### Multidrop
 
 ```csharp
-public byte Multidrop { get; set; }
+public byte Multidrop { get; init; }
 ```
 
 Multidrop station number (0x00 for no multidrop).
@@ -3682,7 +3682,7 @@ Parameters:
 ##### RequestCount
 
 ```csharp
-public ulong RequestCount { get; set; }
+public ulong RequestCount { get; init; }
 ```
 
 Number of complete request frames accepted by the transport.
@@ -3690,7 +3690,7 @@ Number of complete request frames accepted by the transport.
 ##### TxBytes
 
 ```csharp
-public ulong TxBytes { get; set; }
+public ulong TxBytes { get; init; }
 ```
 
 Total bytes in complete request frames accepted by the transport.
@@ -3698,7 +3698,7 @@ Total bytes in complete request frames accepted by the transport.
 ##### RxBytes
 
 ```csharp
-public ulong RxBytes { get; set; }
+public ulong RxBytes { get; init; }
 ```
 
 Total bytes in complete response frames or datagrams received.
@@ -3771,7 +3771,7 @@ Parameters:
 ##### Model
 
 ```csharp
-public string Model { get; set; }
+public string Model { get; init; }
 ```
 
 The model name string.
@@ -3779,7 +3779,7 @@ The model name string.
 ##### ModelCode
 
 ```csharp
-public ushort ModelCode { get; set; }
+public ushort ModelCode { get; init; }
 ```
 
 Internal model code.
@@ -3787,7 +3787,7 @@ Internal model code.
 ##### HasModelCode
 
 ```csharp
-public bool HasModelCode { get; set; }
+public bool HasModelCode { get; init; }
 ```
 
 True if the model code is valid.

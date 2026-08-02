@@ -34,7 +34,7 @@ public sealed record SlmpConnectionOptions(
         init => _host = ValidateHost(value);
     }
 
-    /// <summary>Gets or sets the canonical PLC profile for the high-level API.</summary>
+    /// <summary>Gets or initializes the canonical PLC profile for the high-level API.</summary>
     public SlmpPlcProfile PlcProfile
     {
         get => _plcProfile;
@@ -53,9 +53,11 @@ public sealed record SlmpConnectionOptions(
         init => _transport = ValidateTransport(value);
     }
 
-    /// <summary>Gets or sets the communication timeout for the underlying transport.</summary>
+    /// <summary>Gets or initializes the deadline used to open the transport and complete each admitted request.</summary>
     /// <remarks>
-    /// This timeout applies to individual request/response exchanges after the session is opened.
+    /// An explicit open uses this value as its connection deadline. Each admitted request uses one
+    /// absolute deadline from a lazy connection attempt through response receipt and decoding;
+    /// partial progress does not restart the deadline. FIFO queue wait is excluded.
     /// Values must be from 1 millisecond through <c>int.MaxValue</c> milliseconds.
     /// </remarks>
     public TimeSpan Timeout
@@ -64,7 +66,7 @@ public sealed record SlmpConnectionOptions(
         init => _timeout = SlmpValidation.ValidateTimeout(value, nameof(Timeout));
     }
 
-    /// <summary>Gets or sets the SLMP monitoring timer value in 250 ms units.</summary>
+    /// <summary>Gets or initializes the SLMP monitoring timer value in 250 ms units.</summary>
     /// <remarks>
     /// The monitoring timer is encoded into the request frame and tells the PLC how long
     /// it may spend processing the request before reporting a timeout.
