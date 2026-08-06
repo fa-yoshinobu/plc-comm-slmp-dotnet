@@ -2,6 +2,16 @@
 
 This maintainer record maps the approved workspace decisions to the .NET implementation. Breaking changes are intentional where compatibility conflicts with an explicit, profile-safe, single-request contract.
 
+## SLMP-BIT-RMW-20260807 — Complete-route bit-in-word contract
+
+- Scope: Direct and qualified Extended Device complete-word routes exposed by `SlmpClient`.
+- Target contract: `WriteBitInWordAsync` prevalidates the exact immutable route and both requests, owns one FIFO turn, and uses one absolute post-admission deadline. A successful read always produces one write even when unchanged. The pair is non-PLC-atomic, never retries, and an unconfirmed possibly transmitted write is outcome unknown.
+- Compatibility: the overload accepting `SlmpQualifiedDeviceAddress` adds U module-buffer and J link-direct parity; compound timeout no longer restarts between requests.
+- Acceptance: invalid routes send zero requests; Direct and qualified routes each send one read then one write with the same route.
+- [x] Implementation and targeted route tests completed.
+- [ ] Full repository release gate completed.
+- [x] User, generated API, changelog, and migration sources updated.
+
 ## D-001 / D-002 / D-004 — Explicit endpoint and target
 
 - Scope: constructors, connection options, factory helpers, CLI, JSON and executable samples.

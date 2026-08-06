@@ -819,11 +819,9 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         return new SlmpCpuOperationState(status, statusWord, rawCode);
     }
 
-    public async Task<ushort[]> ReadWordsExtendedAsync(
+    internal void ValidateExtendedWordReadAdmission(
         SlmpQualifiedDeviceAddress device,
-        ushort points,
-        CancellationToken cancellationToken = default
-    )
+        ushort points)
     {
         EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
         ValidateDirectAccessPoints(points, bitUnit: false, "read_words_ext", SlmpProfileLimit.DirectWordRead);
@@ -837,6 +835,33 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             nameof(device),
             effectiveExtension.DirectMemorySpecification == 0xF9 ? 0x00FF_FFFFUL : null,
             longCurrentBlock: true);
+    }
+
+    internal void ValidateExtendedWordWriteAdmission(
+        SlmpQualifiedDeviceAddress device,
+        int points)
+    {
+        EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
+        ValidateDirectAccessPoints(points, bitUnit: false, "write_words_ext", SlmpProfileLimit.DirectWordWrite);
+        ValidateDirectWordWriteDevice(device.Device, allowQualifiedOnlyDevice: true);
+        var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, PlcProfile);
+        EnsureExtendedProfileFeatureAllowed(device, effectiveExtension);
+        ValidateDirectDeviceSpan(
+            device.Device,
+            points,
+            bitUnit: false,
+            nameof(device),
+            effectiveExtension.DirectMemorySpecification == 0xF9 ? 0x00FF_FFFFUL : null);
+    }
+
+    public async Task<ushort[]> ReadWordsExtendedAsync(
+        SlmpQualifiedDeviceAddress device,
+        ushort points,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ValidateExtendedWordReadAdmission(device, points);
+        var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, PlcProfile);
         var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, points, null, effectiveExtension, bitUnit: false, CompatibilityMode);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0080
             : CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;
@@ -856,17 +881,8 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     )
     {
         ArgumentNullException.ThrowIfNull(values);
-        EnsureProfileFeatureAllowed(SlmpProfileFeature.Direct);
-        ValidateDirectAccessPoints(values.Count, bitUnit: false, "write_words_ext", SlmpProfileLimit.DirectWordWrite);
-        ValidateDirectWordWriteDevice(device.Device, allowQualifiedOnlyDevice: true);
+        ValidateExtendedWordWriteAdmission(device, values.Count);
         var effectiveExtension = SlmpPayloads.ResolveEffectiveExtension(device, PlcProfile);
-        EnsureExtendedProfileFeatureAllowed(device, effectiveExtension);
-        ValidateDirectDeviceSpan(
-            device.Device,
-            values.Count,
-            bitUnit: false,
-            nameof(device),
-            effectiveExtension.DirectMemorySpecification == 0xF9 ? 0x00FF_FFFFUL : null);
         var payload = SlmpPayloads.BuildReadWritePayloadExtended(device.Device, checked((ushort)values.Count), values, effectiveExtension, bitUnit: false, CompatibilityMode);
         var sub = effectiveExtension.DirectMemorySpecification == 0xF9 ? (ushort)0x0080
             : CompatibilityMode == SlmpCompatibilityMode.Legacy ? (ushort)0x0080 : (ushort)0x0082;

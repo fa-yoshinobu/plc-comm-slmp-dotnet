@@ -1589,6 +1589,154 @@ public sealed class SlmpClientGuardTests
         Assert.Equal((ushort)SlmpCommand.ClearError, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[2].AsSpan(15, 2)));
     }
 
+    [Theory]
+    [InlineData(@"U1\G0", 0x0082)]
+    [InlineData(@"J2\SW10", 0x0080)]
+    public async Task QualifiedBitInWord_PreservesModuleAndLinkRoutesAndWritesWhenUnchanged(
+        string address,
+        ushort expectedSubcommand)
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, new byte[] { 0x08, 0x00 }),
+            (0x0000, Array.Empty<byte>()),
+        ]);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, server.Port,
+            SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var qualified = SlmpQualifiedDeviceParser.Parse(address, SlmpPlcProfile.IqR);
+
+        await client.WriteBitInWordAsync(qualified, 3, true);
+
+        Assert.Equal(2, server.RequestFrames.Count);
+        Assert.All(server.RequestFrames, frame =>
+            Assert.Equal(expectedSubcommand, BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(17, 2))));
+        Assert.Equal((ushort)SlmpCommand.DeviceRead, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[0].AsSpan(15, 2)));
+        Assert.Equal((ushort)SlmpCommand.DeviceWrite, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[1].AsSpan(15, 2)));
+        Assert.Equal(server.RequestFrames[0].Length + 2, server.RequestFrames[1].Length);
+        Assert.True(server.RequestFrames[0].AsSpan(19).SequenceEqual(
+            server.RequestFrames[1].AsSpan(19, server.RequestFrames[0].Length - 19)));
+        Assert.Equal((ushort)0x0008, BinaryPrimitives.ReadUInt16LittleEndian(
+            server.RequestFrames[1].AsSpan(server.RequestFrames[1].Length - 2)));
+    }
+
+    [Theory]
+    [InlineData(@"U1\G0")]
+    [InlineData(@"J2\SW10")]
+    public async Task QualifiedBitInWord_InvalidPlanSendsNothing(string address)
+    {
+        await using var server = new MultiShotSlmpServer([]);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, server.Port,
+            SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var qualified = SlmpQualifiedDeviceParser.Parse(address, SlmpPlcProfile.IqR);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            client.WriteBitInWordAsync(qualified, 16, true));
+
+        Assert.Empty(server.RequestFrames);
+    }
+
+    [Theory]
+    [InlineData(@"U2\G100", SlmpPlcProfile.QnUDV)]
+    [InlineData(@"J1\W0", SlmpPlcProfile.IqF)]
+    public async Task QualifiedBitInWord_BlockedRoutePreflightSendsNothing(
+        string address,
+        SlmpPlcProfile profile)
+    {
+        await using var server = new MultiShotSlmpServer([]);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1", profile, server.Port,
+            SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        var qualified = SlmpQualifiedDeviceParser.Parse(address, profile);
+
+        await Assert.ThrowsAsync<SlmpProfileFeatureException>(() =>
+            client.WriteBitInWordAsync(qualified, 3, true));
+
+        Assert.Empty(server.RequestFrames);
+    }
+
+    [Theory]
+    [InlineData(@"U1\G0")]
+    [InlineData(@"J2\SW10")]
+    public async Task QualifiedBitInWord_UsesOneAbsoluteDeadline(string address)
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, new byte[] { 0x08, 0x00 }),
+            (0x0000, Array.Empty<byte>()),
+        ], responseDelay: TimeSpan.FromMilliseconds(250));
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, server.Port,
+            SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
+        {
+            Timeout = TimeSpan.FromMilliseconds(400),
+        };
+        var qualified = SlmpQualifiedDeviceParser.Parse(address, SlmpPlcProfile.IqR);
+
+        var error = await Assert.ThrowsAsync<SlmpOperationOutcomeUnknownException>(() =>
+            client.WriteBitInWordAsync(qualified, 3, true));
+
+        Assert.Equal(SlmpOutcomeUnknownReason.Timeout, error.Reason);
+        Assert.Equal(2, server.RequestFrames.Count);
+    }
+
+    [Fact]
+    public async Task OrdinaryClient_CompoundReadModifyWriteUsesOneAbsoluteDeadline()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, new byte[] { 0x08, 0x00 }),
+            (0x0000, Array.Empty<byte>()),
+        ], responseDelay: TimeSpan.FromMilliseconds(250));
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, server.Port,
+            SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
+        {
+            Timeout = TimeSpan.FromMilliseconds(400),
+        };
+
+        var error = await Assert.ThrowsAsync<SlmpOperationOutcomeUnknownException>(() =>
+            client.WriteBitInWordAsync(
+                new SlmpDeviceAddress(SlmpDeviceCode.D, 50, SlmpPlcProfile.IqR),
+                3,
+                true));
+
+        Assert.Equal(SlmpOutcomeUnknownReason.Timeout, error.Reason);
+        Assert.Equal(2, server.RequestFrames.Count);
+        Assert.Equal((ushort)SlmpCommand.DeviceRead, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[0].AsSpan(15, 2)));
+        Assert.Equal((ushort)SlmpCommand.DeviceWrite, BinaryPrimitives.ReadUInt16LittleEndian(server.RequestFrames[1].AsSpan(15, 2)));
+    }
+
+    [Fact]
+    public async Task OrdinaryClient_CompoundCancellationBeforeWriteSendsNoWrite()
+    {
+        await using var server = new MultiShotSlmpServer([
+            (0x0000, new byte[] { 0x00, 0x00 }),
+        ], pauseFirstResponse: true);
+        await server.StartAsync();
+        using var client = new SlmpClient(
+            "127.0.0.1", SlmpPlcProfile.IqR, server.Port,
+            SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
+        {
+            Timeout = TimeSpan.FromSeconds(10),
+        };
+        using var cancellation = new CancellationTokenSource();
+
+        var operation = client.WriteBitInWordAsync(
+            new SlmpDeviceAddress(SlmpDeviceCode.D, 50, SlmpPlcProfile.IqR),
+            3,
+            true,
+            cancellation.Token);
+        await server.WaitForFirstRequestAsync();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => operation);
+        Assert.Single(server.RequestFrames);
+    }
+
     [Fact]
     public async Task OrdinaryClient_QueueWaitDoesNotConsumeTransactionTimeout()
     {
@@ -2094,6 +2242,9 @@ public sealed class SlmpClientGuardTests
             {
             }
             catch (ObjectDisposedException)
+            {
+            }
+            catch (IOException)
             {
             }
         }

@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-08-07
+
 - Library: `PollAsync` now prepares and validates its immutable Random Read payload and compact decode indexes once per stream, then reuses them for every FIFO-controlled cycle without changing timing, cancellation, close, or error behavior.
 - Library: Typed command decoders now parse a private `ReadOnlyMemory<byte>` view over the owned response frame; public raw/trace/error and byte-result surfaces remain owned. Extended Random and Monitor builders now use a validated exact-size two-pass encoder with one final payload allocation and no per-device encoded arrays.
 - Tests: Added allocation/encoding counters and regressions for one-time polling preparation, compact indexed decode, typed/raw response ownership, and exact-size Extended payload construction.
@@ -68,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### BREAKING
 
+- Library: `WriteBitInWordAsync` now covers Direct and qualified U module-buffer / J link-direct complete-word routes, prevalidates the immutable route, owns one FIFO turn, and uses one absolute post-admission deadline for the mandatory read followed by write. The write is sent even when the bit is unchanged; the pair is not PLC-atomic, never retries, and a possibly transmitted unconfirmed write raises `SlmpOperationOutcomeUnknownException`.
 - Library: Deadline expiration is now reported as `SlmpTimeoutException` instead of caller cancellation or a generic transport/protocol error. After a possibly transmitted state-changing request, timeout, cancellation, close, malformed response, or transport loss now throws `SlmpOperationOutcomeUnknownException`; callers must reconcile PLC state instead of automatically retrying.
 - Library: Removed `QueuedSlmpClient`, its constructor, `InnerClient`, and all queued-specific extension overloads. `SlmpClientFactory.OpenAndConnectAsync` and `SlmpClient.OpenAndConnectAsync` now return the ordinary `SlmpClient`; callers replace the wrapper type with `SlmpClient` and call the same operations directly. No compatibility alias remains.
 - Library: Callers using an IPv6 endpoint must migrate to an IPv4 literal or a hostname that resolves to IPv4.

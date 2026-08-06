@@ -9149,6 +9149,66 @@
         "kind": "major",
         "target_major": 5
       }
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitInWordAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.Int32,System.Boolean,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved bit-in-word contract requires the helper to preserve every supported complete-word route; this overload extends the mandatory read-modify-write operation to qualified Extended and link-direct addresses without route fallback.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpQualifiedDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Int32:0:default=<none>:required=:optional=:attrs=;3:System.Boolean:0:default=<none>:required=:optional=:attrs=;4:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "GOAL-BIT-002",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitInWordAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.Int32,System.Boolean,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved bit-in-word contract requires the helper to preserve every supported complete-word route; this overload extends the mandatory read-modify-write operation to qualified Extended and link-direct addresses without route fallback.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpQualifiedDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Int32:0:default=<none>:required=:optional=:attrs=;3:System.Boolean:0:default=<none>:required=:optional=:attrs=;4:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "GOAL-BIT-002",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitInWordAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.Int32,System.Boolean,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved bit-in-word contract requires the helper to preserve every supported complete-word route; this overload extends the mandatory read-modify-write operation to qualified Extended and link-direct addresses without route fallback.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpQualifiedDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Int32:0:default=<none>:required=:optional=:attrs=;3:System.Boolean:0:default=<none>:required=:optional=:attrs=;4:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "GOAL-BIT-002",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
     }
   ]
 }

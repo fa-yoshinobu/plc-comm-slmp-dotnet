@@ -385,7 +385,12 @@ finally
 `WriteBitInWordAsync` holds one FIFO turn on this client, but it remains two
 SLMP requests: one word read and one word write. It is not PLC-atomic against
 PLC logic, another connection, or another controller. Treat a post-send write
-failure as outcome-unknown and reconcile PLC state before retrying.
+failure as outcome-unknown and reconcile PLC state before retrying. FIFO wait
+is outside the operation timeout; one immutable absolute deadline covers both
+requests after admission. A successful read always proceeds to the write even
+when the selected bit is unchanged. Pass a `SlmpQualifiedDeviceAddress` to use
+the same contract for an immutable U-qualified module-buffer or J-qualified
+link-direct route; unsupported profile/route combinations fail before the read.
 
 ## Polling
 

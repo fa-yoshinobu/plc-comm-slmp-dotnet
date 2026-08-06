@@ -1005,7 +1005,7 @@ public static Task WriteBitInWordAsync(SlmpClient client, SlmpDeviceAddress devi
 
 Performs a read-modify-write to set or clear one bit inside a word device.
 
-Remarks: The read and write occupy one FIFO turn on this client, so its other operations cannot interleave. They remain two SLMP requests and are not PLC-atomic: another client, PLC logic, or external writer can change the word between them. Applications that require atomic coordination must implement it in the PLC contract. Bit-device packed-word access is not a bit-in-word operation and is rejected by this helper. Read and write admission both complete before FIFO waiting, so a read-only or wire-unrepresentable target sends neither request.
+Remarks: The read and write occupy one FIFO turn on this client, so its other operations cannot interleave. They remain two SLMP requests and are not PLC-atomic: another client, PLC logic, or external writer can change the word between them. Applications that require atomic coordination must implement it in the PLC contract. Bit-device packed-word access is not a bit-in-word operation and is rejected by this helper. Read and write admission both complete before FIFO waiting, so a read-only or wire-unrepresentable target sends neither request. One absolute deadline starts after FIFO admission and covers both requests. A successful read is always followed by the write, even when the selected bit is unchanged.
 
 Parameters:
 - `client`: Connected SLMP client.
@@ -1013,6 +1013,14 @@ Parameters:
 - `bitIndex`: Bit position within the word, from 0 to 15.
 - `value`: New bit state.
 - `ct`: Cancellation token.
+
+##### WriteBitInWordAsync
+
+```csharp
+public static Task WriteBitInWordAsync(SlmpClient client, SlmpQualifiedDeviceAddress device, int bitIndex, bool value, CancellationToken ct = default)
+```
+
+Performs the same explicit bit-in-word read-modify-write through one immutable qualified Extended Device route, including U module-buffer and J link-direct forms. Both requests use that exact route, occupy one FIFO turn and one absolute post-admission deadline, and the write is always sent after a successful read. The pair is not PLC-atomic and a possibly transmitted unconfirmed write is outcome unknown.
 
 ##### WriteBitInWordAsync
 

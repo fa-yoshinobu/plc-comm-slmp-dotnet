@@ -283,7 +283,9 @@ public static class SlmpClientExtensions
     /// implement it in the PLC contract. Bit-device packed-word access is not a
     /// bit-in-word operation and is rejected by this helper. Read and write
     /// admission both complete before FIFO waiting, so a read-only or
-    /// wire-unrepresentable target sends neither request.
+    /// wire-unrepresentable target sends neither request. One absolute deadline
+    /// starts after FIFO admission and covers both requests. A successful read
+    /// is always followed by the write, even when the selected bit is unchanged.
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="device"/> is not word-addressable.</exception>
     public static Task WriteBitInWordAsync(
@@ -304,7 +306,104 @@ public static class SlmpClientExtensions
         client.ValidateDirectWordReadAdmission(device, 1);
         client.ValidateDirectWordWriteAdmission(device, 1);
         return client.ExecuteExclusiveAsync(
-            token => WriteBitInWordCoreAsync(client, device, bitIndex, value, token),
+            async operationToken =>
+            {
+                using var deadlineCancellation = new CancellationTokenSource();
+                deadlineCancellation.CancelAfter(client.Timeout);
+                using var compoundCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                    operationToken,
+                    deadlineCancellation.Token);
+                try
+                {
+                    await WriteBitInWordCoreAsync(
+                        client,
+                        device,
+                        bitIndex,
+                        value,
+                        compoundCancellation.Token).ConfigureAwait(false);
+                }
+                catch (SlmpOperationOutcomeUnknownException exception) when (
+                    deadlineCancellation.IsCancellationRequested &&
+                    !ct.IsCancellationRequested)
+                {
+                    throw new SlmpOperationOutcomeUnknownException(
+                        SlmpOutcomeUnknownReason.Timeout,
+                        exception.InnerException ?? exception);
+                }
+                catch (Exception exception) when (
+                    deadlineCancellation.IsCancellationRequested &&
+                    !ct.IsCancellationRequested)
+                {
+                    throw new SlmpTimeoutException(
+                        "The SLMP bit-in-word read-modify-write deadline expired.",
+                        exception);
+                }
+            },
+            ct);
+    }
+
+    /// <summary>
+    /// Performs the same explicit bit-in-word read-modify-write through one
+    /// immutable qualified Extended Device route, including U module-buffer
+    /// and J link-direct forms. Both requests use that exact route, occupy one
+    /// FIFO turn and one absolute post-admission deadline, and the write is
+    /// always sent after a successful read. The pair is not PLC-atomic and a
+    /// possibly transmitted unconfirmed write is outcome unknown.
+    /// </summary>
+    public static Task WriteBitInWordAsync(
+        this SlmpClient client,
+        SlmpQualifiedDeviceAddress device,
+        int bitIndex,
+        bool value,
+        CancellationToken ct = default)
+    {
+        if (bitIndex is < 0 or > 15)
+            throw new ArgumentOutOfRangeException(nameof(bitIndex), "bitIndex must be 0-15.");
+        if (!SlmpDeviceUnits.IsWord(device.Device.Code))
+        {
+            throw new ArgumentException(
+                $"WriteBitInWordAsync requires a word-addressable device; {device.Device.Code} is bit-addressable.",
+                nameof(device));
+        }
+        client.ValidateExtendedWordReadAdmission(device, 1);
+        client.ValidateExtendedWordWriteAdmission(device, 1);
+        return client.ExecuteExclusiveAsync(
+            async operationToken =>
+            {
+                using var deadlineCancellation = new CancellationTokenSource();
+                deadlineCancellation.CancelAfter(client.Timeout);
+                using var compoundCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                    operationToken,
+                    deadlineCancellation.Token);
+                try
+                {
+                    var words = await client.ReadWordsExtendedAsync(
+                        device, 1, compoundCancellation.Token).ConfigureAwait(false);
+                    int current = words[0];
+                    if (value)
+                        current |= 1 << bitIndex;
+                    else
+                        current &= ~(1 << bitIndex);
+                    await client.WriteWordsExtendedAsync(
+                        device, [(ushort)(current & 0xFFFF)], compoundCancellation.Token).ConfigureAwait(false);
+                }
+                catch (SlmpOperationOutcomeUnknownException exception) when (
+                    deadlineCancellation.IsCancellationRequested &&
+                    !ct.IsCancellationRequested)
+                {
+                    throw new SlmpOperationOutcomeUnknownException(
+                        SlmpOutcomeUnknownReason.Timeout,
+                        exception.InnerException ?? exception);
+                }
+                catch (Exception exception) when (
+                    deadlineCancellation.IsCancellationRequested &&
+                    !ct.IsCancellationRequested)
+                {
+                    throw new SlmpTimeoutException(
+                        "The SLMP bit-in-word read-modify-write deadline expired.",
+                        exception);
+                }
+            },
             ct);
     }
 
