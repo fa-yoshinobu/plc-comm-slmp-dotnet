@@ -9,8 +9,12 @@ This maintainer record maps the approved workspace decisions to the .NET impleme
 - Compatibility: the overload accepting `SlmpQualifiedDeviceAddress` adds U module-buffer and J link-direct parity; compound timeout no longer restarts between requests.
 - Acceptance: invalid routes send zero requests; Direct and qualified routes each send one read then one write with the same route.
 - [x] Implementation and targeted route tests completed.
-- [ ] Full repository release gate completed.
+- [x] Full repository release gate completed.
 - [x] User, generated API, changelog, and migration sources updated.
+
+Release-gate evidence (2026-08-07): `release_check.bat` passed the three-TFM test,
+static-analysis, generated-document, package-consumer, source-archive, and
+registry-duplicate checks for candidate `5.0.0`.
 
 ## D-001 / D-002 / D-004 — Explicit endpoint and target
 
@@ -987,7 +991,7 @@ Acceptance criteria:
 - [x] Live PLC verification is not required because this is a static package/API contract gate.
 - [x] Documentation, migration notes, changelog, generated API reference, and classifications agree with the final comparison.
 - [x] The release-major gate correctly rejected current version `4.0.1` because documented incompatible changes require major `5`.
-- [ ] Update the actual release version to major `5` or later and record final release acceptance.
+- [x] Update the actual release version to major `5` or later and record final release acceptance.
 
 Current actual-diff disposition: the authorized comparison found 188 distinct API differences with
 the same signatures on all three TFMs, expanded to 564 exact per-TFM classification records. The
@@ -1004,6 +1008,9 @@ unclassified or stale record. The worktree and extracted source archive each pas
 net8.0, net9.0, and net10.0; all six net10.0 samples, generated API freshness, package consumer,
 format, and source-archive validation passed. Candidate-major enforcement rejected `4.0.1` because
 major `5` is required. No version was changed and no package was published.
+
+Final release acceptance (2026-08-07): the actual candidate version is `5.0.0`, and the complete
+repository release gate passed with the approved API classifications. No package was published.
 
 ## GOAL-DOTNET-SAMPLE-TFM-001-SLMP: user samples target .NET 10
 
