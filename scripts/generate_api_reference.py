@@ -415,7 +415,8 @@ var types = candidateTypes
         DocId = MemberDocId(type),
         Members = type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
             .Where(m => (includeEditorHidden || !IsCompilerGenerated(m)) && IsDeclaredPublic(m, includeEditorHidden) && (includeEditorHidden || IsDocumented(m)))
-            .OrderBy(m => m.MetadataToken)
+            .OrderBy(m => MemberDocId(m), StringComparer.Ordinal)
+            .ThenBy(m => MemberContractSignature(m), StringComparer.Ordinal)
             .Select(m => new
             {
                 Kind = m.MemberType.ToString(),

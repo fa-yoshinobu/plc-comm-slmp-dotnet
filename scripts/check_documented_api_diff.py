@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import tempfile
 import urllib.request
@@ -25,6 +26,23 @@ ALLOWED_CATEGORIES = {
     "additive",
     "generated-or-noncontract",
 }
+
+STATE_MACHINE_ATTRIBUTE_RE = re.compile(
+    r"(?P<prefix>System\.Runtime\.CompilerServices\."
+    r"(?:AsyncStateMachine|IteratorStateMachine|AsyncIteratorStateMachine)"
+    r"Attribute\(typeof\()(?P<type>[^)]+)(?P<suffix>\)\))"
+)
+STATE_MACHINE_ORDINAL_RE = re.compile(r"(?<=d__)\d+(?=(?:`\d+)?$)")
+
+
+def normalize_compiler_generated_state_machine_types(signature: str) -> str:
+    """Ignore unstable compiler state-machine ordinals without hiding contract changes."""
+
+    def normalize_attribute(match: re.Match[str]) -> str:
+        state_machine_type = STATE_MACHINE_ORDINAL_RE.sub("*", match.group("type"))
+        return f"{match.group('prefix')}{state_machine_type}{match.group('suffix')}"
+
+    return STATE_MACHINE_ATTRIBUTE_RE.sub(normalize_attribute, signature)
 
 
 def parse_args() -> argparse.Namespace:
@@ -61,12 +79,16 @@ def flatten_api(api: list[dict[str, Any]]) -> dict[str, str]:
         type_id = str(type_entry["DocId"])
         if type_id in flattened:
             raise ValueError(f"duplicate public API identifier: {type_id}")
-        flattened[type_id] = str(type_entry.get("ContractSignature", type_entry["Signature"]))
+        flattened[type_id] = normalize_compiler_generated_state_machine_types(
+            str(type_entry.get("ContractSignature", type_entry["Signature"]))
+        )
         for member in type_entry["Members"]:
             member_id = str(member["DocId"])
             if member_id in flattened:
                 raise ValueError(f"duplicate public API identifier: {member_id}")
-            flattened[member_id] = str(member.get("ContractSignature", member["Signature"]))
+            flattened[member_id] = normalize_compiler_generated_state_machine_types(
+                str(member.get("ContractSignature", member["Signature"]))
+            )
     return flattened
 
 
@@ -124,7 +146,15 @@ def validate_classification(entry: dict[str, Any], change: dict[str, Any], repos
         if not path.is_file():
             raise ValueError(f"{change['key']}: evidence path does not exist: {value}")
     for field in ("before", "after"):
-        if field not in entry or entry[field] != change.get(field):
+        if field not in entry:
+            raise ValueError(f"{change['key']}: classification {field} signature does not match the detected change")
+        classified_signature = entry[field]
+        detected_signature = change.get(field)
+        if isinstance(classified_signature, str):
+            classified_signature = normalize_compiler_generated_state_machine_types(classified_signature)
+        if isinstance(detected_signature, str):
+            detected_signature = normalize_compiler_generated_state_machine_types(detected_signature)
+        if classified_signature != detected_signature:
             raise ValueError(f"{change['key']}: classification {field} signature does not match the detected change")
     if category == "additive" and change["change"] != "added":
         raise ValueError(f"{change['key']}: additive is valid only for added API")

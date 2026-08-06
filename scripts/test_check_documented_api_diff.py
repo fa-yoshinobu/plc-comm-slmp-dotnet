@@ -10,6 +10,7 @@ from pathlib import Path
 from scripts.check_documented_api_diff import (
     api_changes,
     flatten_api,
+    normalize_compiler_generated_state_machine_types,
     validate_baseline_contract_search,
     validate_classification,
     validate_classification_set,
@@ -59,6 +60,70 @@ class ApiDiffPolicyTests(unittest.TestCase):
         self.assertEqual({change["change"] for change in changes}, {"added", "removed", "changed"})
         self.assertTrue(all("before" in change and "after" in change for change in changes))
 
+    def test_state_machine_ordinals_do_not_create_api_changes(self) -> None:
+        baseline = {
+            "M:Example.Widget.RunAsync": (
+                "method|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute("
+                "typeof(Example.Widget+<RunAsync>d__12))]"
+            ),
+            "M:Example.Widget.StreamAsync": (
+                "method|attrs=[System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute("
+                "typeof(Example.Widget+<StreamAsync>d__13))]"
+            ),
+            "M:Example.Widget.Items": (
+                "method|attrs=[System.Runtime.CompilerServices.IteratorStateMachineAttribute("
+                "typeof(Example.Widget+<Items>d__14`1))]"
+            ),
+        }
+        candidate = {
+            "M:Example.Widget.RunAsync": baseline["M:Example.Widget.RunAsync"].replace("d__12", "d__159"),
+            "M:Example.Widget.StreamAsync": baseline["M:Example.Widget.StreamAsync"].replace(
+                "d__13", "d__160"
+            ),
+            "M:Example.Widget.Items": baseline["M:Example.Widget.Items"].replace("d__14", "d__161"),
+        }
+
+        normalize = normalize_compiler_generated_state_machine_types
+        normalized_baseline = {key: normalize(value) for key, value in baseline.items()}
+        normalized_candidate = {key: normalize(value) for key, value in candidate.items()}
+        self.assertEqual(api_changes(normalized_baseline, normalized_candidate, "net10.0"), [])
+
+    def test_state_machine_normalization_preserves_meaningful_attribute_changes(self) -> None:
+        normalize = normalize_compiler_generated_state_machine_types
+        async_signature = (
+            "attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute("
+            "typeof(Example.Widget+<RunAsync>d__12))]"
+        )
+        iterator_signature = async_signature.replace("AsyncStateMachine", "IteratorStateMachine")
+        other_method_signature = async_signature.replace("<RunAsync>", "<OtherAsync>")
+        user_attribute_signature = "attrs=[Example.StateAttribute(typeof(Example.Widget+<RunAsync>d__12))]"
+
+        self.assertNotEqual(normalize(async_signature), normalize(iterator_signature))
+        self.assertNotEqual(normalize(async_signature), normalize(other_method_signature))
+        self.assertEqual(normalize(user_attribute_signature), user_attribute_signature)
+
+    def test_flatten_api_normalizes_state_machine_ordinals(self) -> None:
+        api = [
+            {
+                "DocId": "T:Example.Widget",
+                "ContractSignature": "type",
+                "Signature": "public class Widget",
+                "Members": [
+                    {
+                        "DocId": "M:Example.Widget.RunAsync",
+                        "ContractSignature": (
+                            "method|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute("
+                            "typeof(Example.Widget+<RunAsync>d__321))]"
+                        ),
+                        "Signature": "public Task RunAsync()",
+                    }
+                ],
+            }
+        ]
+
+        flattened = flatten_api(api)
+        self.assertIn("<RunAsync>d__*", flattened["M:Example.Widget.RunAsync"])
+
     def test_all_four_categories_accept_valid_entries(self) -> None:
         additive_change = self.change("added")
         additive = self.entry("additive", additive_change)
@@ -103,6 +168,25 @@ class ApiDiffPolicyTests(unittest.TestCase):
         change = self.change("changed")
         entry = self.entry("generated-or-noncontract", change)
         entry["after"] = "later unreviewed signature"
+        with self.assertRaisesRegex(ValueError, "after signature"):
+            validate_classification(entry, change, self.root)
+
+    def test_classification_signature_accepts_only_state_machine_ordinal_drift(self) -> None:
+        change = self.change("changed")
+        change["before"] = (
+            "old|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute("
+            "typeof(Example.Widget+<RunAsync>d__*))]"
+        )
+        change["after"] = (
+            "new|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute("
+            "typeof(Example.Widget+<RunAsync>d__*))]"
+        )
+        entry = self.entry("generated-or-noncontract", change)
+        entry["before"] = str(change["before"]).replace("d__*", "d__12")
+        entry["after"] = str(change["after"]).replace("d__*", "d__159")
+        validate_classification(entry, change, self.root)
+
+        entry["after"] = str(entry["after"]).replace("<RunAsync>", "<OtherAsync>")
         with self.assertRaisesRegex(ValueError, "after signature"):
             validate_classification(entry, change, self.root)
 

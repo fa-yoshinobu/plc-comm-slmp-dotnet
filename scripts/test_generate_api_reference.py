@@ -84,6 +84,68 @@ class CrefLabelTests(unittest.TestCase):
         self.assertEqual(members["InitOnly"], "public int InitOnly { get; init; }")
         self.assertEqual(members["Mutable"], "public int Mutable { get; set; }")
 
+    def test_member_order_is_semantic_and_signature_changes_remain_visible(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        scratch_root = repo_root / "local_folder"
+        scratch_root.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="api-order-fixture-", dir=scratch_root) as temp_dir:
+            fixture = Path(temp_dir)
+            project = fixture / "OrderFixture.csproj"
+            source = fixture / "OrderFixture.cs"
+            project.write_text(
+                '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup>'
+                "<TargetFramework>net8.0</TargetFramework>"
+                "</PropertyGroup></Project>",
+                encoding="utf-8",
+            )
+
+            def inspect(source_text: str) -> list[tuple[str, str]]:
+                source.write_text(source_text, encoding="utf-8")
+                subprocess.run(
+                    ["dotnet", "build", project, "-c", "Release", "-t:Rebuild", "--nologo"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                )
+                api = run_inspector(fixture / "bin" / "Release" / "net8.0" / "OrderFixture.dll")
+                return [
+                    (member["DocId"], member["ContractSignature"])
+                    for api_type in api
+                    if api_type["Name"] == "OrderFixture"
+                    for member in api_type["Members"]
+                ]
+
+            first = inspect(
+                "namespace GeneratorFixture;\n"
+                "public sealed class OrderFixture\n"
+                "{\n"
+                "    public static void Alpha(int value) { }\n"
+                "    public static void Beta(string value) { }\n"
+                "}\n"
+            )
+            declaration_order_only = inspect(
+                "namespace GeneratorFixture;\n"
+                "public sealed class OrderFixture\n"
+                "{\n"
+                "    public static void Beta(string value) { }\n"
+                "    public static void Alpha(int value) { }\n"
+                "}\n"
+            )
+            meaningful_change = inspect(
+                "namespace GeneratorFixture;\n"
+                "public sealed class OrderFixture\n"
+                "{\n"
+                "    public static void Beta(string value) { }\n"
+                "    public static void Alpha(long value) { }\n"
+                "}\n"
+            )
+
+        self.assertEqual(first, declaration_order_only)
+        self.assertNotEqual(declaration_order_only, meaningful_change)
+        self.assertTrue(any("System.Int64" in doc_id for doc_id, _ in meaningful_change))
+
     def test_contract_mode_tracks_surface_not_rendered_by_user_reference(self) -> None:
         source = __import__("generate_api_reference").CSHARP_INSPECTOR
         for required in (
@@ -99,6 +161,8 @@ class CrefLabelTests(unittest.TestCase):
             "CustomAttributes",
         ):
             self.assertIn(required, source)
+        self.assertIn("OrderBy(m => MemberDocId(m), StringComparer.Ordinal)", source)
+        self.assertNotIn("m.MetadataToken", source)
 
 
 if __name__ == "__main__":

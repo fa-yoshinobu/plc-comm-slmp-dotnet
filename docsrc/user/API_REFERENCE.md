@@ -72,22 +72,6 @@ Remarks: These helpers provide a small, documentation-friendly surface for parse
 
 #### Members
 
-##### Parse
-
-```csharp
-public static SlmpDeviceAddress Parse(string text, SlmpPlcProfile plcProfile)
-```
-
-Parses one SLMP device string using the explicit PLC profile.
-
-##### TryParse
-
-```csharp
-public static bool TryParse(string text, SlmpPlcProfile plcProfile, out SlmpDeviceAddress address)
-```
-
-Attempts to parse one SLMP device string using the explicit PLC profile.
-
 ##### Format
 
 ```csharp
@@ -110,6 +94,22 @@ public static string Normalize(string text, SlmpPlcProfile plcProfile)
 ```
 
 Normalizes one SLMP device string using the explicit PLC profile.
+
+##### Parse
+
+```csharp
+public static SlmpDeviceAddress Parse(string text, SlmpPlcProfile plcProfile)
+```
+
+Parses one SLMP device string using the explicit PLC profile.
+
+##### TryParse
+
+```csharp
+public static bool TryParse(string text, SlmpPlcProfile plcProfile, out SlmpDeviceAddress address)
+```
+
+Attempts to parse one SLMP device string using the explicit PLC profile.
 
 ### SlmpBlockRead
 
@@ -198,26 +198,13 @@ Parameters:
 - `transportMode`: The transport protocol (TCP or UDP).
 - `targetAddress`: The complete destination route.
 
-##### OpenAsync
+##### ClearErrorAsync
 
 ```csharp
-public Task OpenAsync(CancellationToken cancellationToken = default)
+public Task ClearErrorAsync(CancellationToken cancellationToken = default)
 ```
 
-Opens the connection to the PLC asynchronously.
-
-Returns: A task representing the asynchronous operation.
-
-Parameters:
-- `cancellationToken`: A token to cancel the operation.
-
-##### Open
-
-```csharp
-public void Open()
-```
-
-Opens the connection to the PLC synchronously.
+Sends the fixed Clear Error command as exactly one request.
 
 ##### Close
 
@@ -255,433 +242,93 @@ Asynchronously disposes the client and permanently closes the connection.
 
 Remarks: Disposal is terminal and idempotent. Later open and request operations throw `ObjectDisposedException`.
 
-##### OpenAndConnectAsync
+##### ExtendUnitReadBytesAsync
 
 ```csharp
-public static Task<SlmpClient> OpenAndConnectAsync(string host, int port, SlmpPlcProfile plcProfile, SlmpTransportMode transportMode, SlmpTargetAddress targetAddress, CancellationToken cancellationToken = default)
+public Task<byte[]> ExtendUnitReadBytesAsync(uint headAddress, ushort byteLength, ushort moduleNo, CancellationToken cancellationToken = default)
 ```
 
-Opens a connection with explicit stable settings and returns a connected `SlmpClient`.
-
-Remarks: This is the recommended entry point for application code because it combines one explicit PLC profile with the ordinary client's FIFO admission queue, which is safe to share across multiple tasks.
-
-Returns: A connected client ready for high-level helpers such as `ReadTypedAsync`, `ReadNamedAsync`, and `PollAsync`.
+Reads raw bytes from an extend unit (command 0x0601).
 
 Parameters:
-- `host`: PLC IP address or hostname.
-- `port`: SLMP port number such as 1025 for iQ-R/iQ-F or 5007 for Q/L.
-- `plcProfile`: Canonical PLC profile used to derive the standard connection defaults.
-- `transportMode`: Required TCP or UDP transport.
-- `targetAddress`: Required complete destination route.
-- `cancellationToken`: A token to cancel the operation.
-
-##### ReadTypeNameAsync
-
-```csharp
-public Task<SlmpTypeNameInfo> ReadTypeNameAsync(CancellationToken cancellationToken = default)
-```
-
-Reads the PLC model and type name info asynchronously.
-
-Returns: An object containing model name and code.
-
-Parameters:
-- `cancellationToken`: A token to cancel the operation.
-
-##### ReadCpuOperationStateAsync
-
-```csharp
-public Task<SlmpCpuOperationState> ReadCpuOperationStateAsync(CancellationToken cancellationToken = default)
-```
-
-Reads `SD203` and decodes the CPU operation state from the lower 4 bits.
-
-Returns: The decoded CPU operation state and raw masked code.
-
-Parameters:
-- `cancellationToken`: A token to cancel the operation.
-
-##### ReadDeviceRangeCatalogAsync
-
-```csharp
-public Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
-```
-
-Reads the configured profile-specific device upper-bound catalog from one canonical SD-register window.
-
-Remarks: No address probe or error-derived boundary inference is performed. Acquisition errors propagate to the caller.
-
-Returns: A catalog containing the configured profile and device upper-bound entries.
-
-Parameters:
-- `cancellationToken`: A token to cancel the operation.
-
-##### ReadWordsRawAsync
-
-```csharp
-public Task<ushort[]> ReadWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
-```
-
-Reads word device values asynchronously.
-
-Returns: An array of word values (ushort).
-
-Parameters:
-- `device`: The starting device address.
-- `points`: Number of words to read.
-- `cancellationToken`: A token to cancel the operation.
-
-##### WriteWordsAsync
-
-```csharp
-public Task WriteWordsAsync(SlmpDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
-```
-
-##### ReadBitsAsync
-
-```csharp
-public Task<bool[]> ReadBitsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
-```
-
-##### ReadWordsExtendedAsync
-
-```csharp
-public Task<ushort[]> ReadWordsExtendedAsync(SlmpQualifiedDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
-```
-
-##### WriteWordsExtendedAsync
-
-```csharp
-public Task WriteWordsExtendedAsync(SlmpQualifiedDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
-```
-
-##### ReadBitsExtendedAsync
-
-```csharp
-public Task<bool[]> ReadBitsExtendedAsync(SlmpQualifiedDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
-```
-
-##### WriteBitsExtendedAsync
-
-```csharp
-public Task WriteBitsExtendedAsync(SlmpQualifiedDeviceAddress device, IReadOnlyList<bool> values, CancellationToken cancellationToken = default)
-```
-
-##### WriteBitsAsync
-
-```csharp
-public Task WriteBitsAsync(SlmpDeviceAddress device, IReadOnlyList<bool> values, CancellationToken cancellationToken = default)
-```
-
-##### ReadDWordsRawAsync
-
-```csharp
-public Task<uint[]> ReadDWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
-```
-
-Reads contiguous 32-bit values in one Direct Read request.
-
-Parameters:
-- `device`: Starting word-addressable device.
-- `points`: Number of DWord values, in public 32-bit units; maximum 480 for a 960-word profile limit.
+- `headAddress`: Starting address in the extend unit (32-bit).
+- `byteLength`: Number of bytes to read.
+- `moduleNo`: Configured Extend Unit module I/O number.
 - `cancellationToken`: Cancellation token.
 
-##### WriteDWordsAsync
+##### ExtendUnitReadDWordAsync
 
 ```csharp
-public Task WriteDWordsAsync(SlmpDeviceAddress device, IReadOnlyList<uint> values, CancellationToken cancellationToken = default)
+public Task<uint> ExtendUnitReadDWordAsync(uint headAddress, ushort moduleNo, CancellationToken cancellationToken = default)
 ```
 
-Writes contiguous 32-bit values in one Direct Write request.
+Reads a double word (32-bit) from an extend unit.
 
-##### ReadFloat32sAsync
+##### ExtendUnitReadWordAsync
 
 ```csharp
-public Task<float[]> ReadFloat32sAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+public Task<ushort> ExtendUnitReadWordAsync(uint headAddress, ushort moduleNo, CancellationToken cancellationToken = default)
 ```
 
-Reads contiguous float32 values in one Direct Read request.
+Reads a single word from an extend unit.
 
-##### WriteFloat32sAsync
+##### ExtendUnitReadWordsAsync
 
 ```csharp
-public Task WriteFloat32sAsync(SlmpDeviceAddress device, IReadOnlyList<float> values, CancellationToken cancellationToken = default)
+public Task<ushort[]> ExtendUnitReadWordsAsync(uint headAddress, ushort wordLength, ushort moduleNo, CancellationToken cancellationToken = default)
 ```
 
-Writes contiguous float32 values in one Direct Write request.
-
-##### ReadRandomAsync
-
-```csharp
-public Task<ValueTuple<ushort[], uint[]>> ReadRandomAsync(IReadOnlyList<SlmpDeviceAddress> wordDevices, IReadOnlyList<SlmpDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
-```
-
-##### ReadRandomWordsAsync
-
-```csharp
-public Task<ushort[]> ReadRandomWordsAsync(IReadOnlyList<SlmpDeviceAddress> wordDevices, CancellationToken cancellationToken = default)
-```
-
-Reads only word devices in one random-read request.
-
-##### ReadRandomDWordsAsync
-
-```csharp
-public Task<uint[]> ReadRandomDWordsAsync(IReadOnlyList<SlmpDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
-```
-
-Reads only DWord devices in one random-read request.
-
-##### WriteRandomWordsAsync
-
-```csharp
-public Task WriteRandomWordsAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, ushort>> wordEntries, IReadOnlyList<ValueTuple<SlmpDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
-```
-
-##### WriteRandomU16sAsync
-
-```csharp
-public Task WriteRandomU16sAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, ushort>> wordEntries, CancellationToken cancellationToken = default)
-```
-
-Writes only 16-bit entries in one random-write request.
-
-##### WriteRandomU32sAsync
-
-```csharp
-public Task WriteRandomU32sAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
-```
-
-Writes only 32-bit entries in one random-write request.
-
-##### WriteRandomBitsAsync
-
-```csharp
-public Task WriteRandomBitsAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, bool>> bitEntries, CancellationToken cancellationToken = default)
-```
-
-##### ReadRandomExtAsync
-
-```csharp
-public Task<ValueTuple<ushort[], uint[]>> ReadRandomExtAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices, IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
-```
-
-##### ReadRandomWordsExtendedAsync
-
-```csharp
-public Task<ushort[]> ReadRandomWordsExtendedAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices, CancellationToken cancellationToken = default)
-```
-
-Reads only word devices through semantic Extended Device routes.
-
-##### ReadRandomDWordsExtendedAsync
-
-```csharp
-public Task<uint[]> ReadRandomDWordsExtendedAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
-```
-
-Reads only DWord devices through semantic Extended Device routes.
-
-##### WriteRandomWordsExtAsync
-
-```csharp
-public Task WriteRandomWordsExtAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, ushort>> wordEntries, IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
-```
-
-##### WriteRandomU16sExtendedAsync
-
-```csharp
-public Task WriteRandomU16sExtendedAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, ushort>> wordEntries, CancellationToken cancellationToken = default)
-```
-
-Writes only 16-bit entries through semantic Extended Device routes.
-
-##### WriteRandomU32sExtendedAsync
-
-```csharp
-public Task WriteRandomU32sExtendedAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
-```
-
-Writes only 32-bit entries through semantic Extended Device routes.
-
-##### WriteRandomBitsExtAsync
-
-```csharp
-public Task WriteRandomBitsExtAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, bool>> bitEntries, CancellationToken cancellationToken = default)
-```
-
-##### ReadBlockAsync
-
-```csharp
-public Task<ValueTuple<ushort[], ushort[]>> ReadBlockAsync(IReadOnlyList<SlmpBlockRead> wordBlocks, IReadOnlyList<SlmpBlockRead> bitBlocks, CancellationToken cancellationToken = default)
-```
-
-##### ReadWordBlocksAsync
-
-```csharp
-public Task<ushort[]> ReadWordBlocksAsync(IReadOnlyList<SlmpBlockRead> wordBlocks, CancellationToken cancellationToken = default)
-```
-
-Reads only word blocks in one block-read request.
-
-##### ReadBitBlocksAsync
-
-```csharp
-public Task<ushort[]> ReadBitBlocksAsync(IReadOnlyList<SlmpBlockRead> bitBlocks, CancellationToken cancellationToken = default)
-```
-
-Reads only bit blocks in one block-read request.
-
-##### WriteBlockAsync
-
-```csharp
-public Task WriteBlockAsync(IReadOnlyList<SlmpBlockWrite> wordBlocks, IReadOnlyList<SlmpBlockWrite> bitBlocks, CancellationToken cancellationToken = default)
-```
-
-##### WriteWordBlocksAsync
-
-```csharp
-public Task WriteWordBlocksAsync(IReadOnlyList<SlmpBlockWrite> wordBlocks, CancellationToken cancellationToken = default)
-```
-
-Writes only word blocks in one block-write request.
-
-##### WriteBitBlocksAsync
-
-```csharp
-public Task WriteBitBlocksAsync(IReadOnlyList<SlmpBlockWrite> bitBlocks, CancellationToken cancellationToken = default)
-```
-
-Writes only bit blocks in one block-write request.
-
-##### RegisterMonitorDevicesAsync
-
-```csharp
-public Task RegisterMonitorDevicesAsync(IReadOnlyList<SlmpDeviceAddress> wordDevices, IReadOnlyList<SlmpDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
-```
-
-Registers a set of word and DWord devices for monitoring (command 0x0801). Call `RunMonitorCycleAsync` to read the registered devices.
+Reads words from an extend unit (command 0x0601).
 
 Parameters:
-- `wordDevices`: Word devices to monitor.
-- `dwordDevices`: DWord devices to monitor.
+- `headAddress`: Starting address in the extend unit (32-bit).
+- `wordLength`: Number of words to read.
+- `moduleNo`: Extend unit module I/O number.
 - `cancellationToken`: Cancellation token.
 
-##### RegisterMonitorDevicesExtAsync
+##### ExtendUnitWriteBytesAsync
 
 ```csharp
-public Task RegisterMonitorDevicesExtAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices, IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
+public Task ExtendUnitWriteBytesAsync(uint headAddress, ushort moduleNo, ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
 ```
 
-##### RunMonitorCycleAsync
-
-```csharp
-public Task<SlmpMonitorResult> RunMonitorCycleAsync(int wordPoints, int dwordPoints, CancellationToken cancellationToken = default)
-```
-
-Executes one monitor cycle and returns the values of the previously registered devices (command 0x0802).
+Writes raw bytes to an extend unit (command 0x1601).
 
 Parameters:
-- `wordPoints`: Number of registered word devices. The combined count must be nonzero and within the active profile limit.
-- `dwordPoints`: Number of registered DWord devices.
+- `headAddress`: Starting address in the extend unit (32-bit).
+- `moduleNo`: Extend unit module I/O number.
+- `data`: Bytes to write.
 - `cancellationToken`: Cancellation token.
 
-##### RemoteRunAsync
+##### ExtendUnitWriteDWordAsync
 
 ```csharp
-public Task RemoteRunAsync(SlmpRemoteMode mode, SlmpRemoteClearMode clearMode, CancellationToken cancellationToken = default)
+public Task ExtendUnitWriteDWordAsync(uint headAddress, ushort moduleNo, uint value, CancellationToken cancellationToken = default)
 ```
 
-##### RemoteStopAsync
+Writes a double word (32-bit) to an extend unit.
+
+##### ExtendUnitWriteWordAsync
 
 ```csharp
-public Task RemoteStopAsync(CancellationToken cancellationToken = default)
+public Task ExtendUnitWriteWordAsync(uint headAddress, ushort moduleNo, ushort value, CancellationToken cancellationToken = default)
 ```
 
-##### RemotePauseAsync
+Writes a single word to an extend unit.
+
+##### ExtendUnitWriteWordsAsync
 
 ```csharp
-public Task RemotePauseAsync(SlmpRemoteMode mode, CancellationToken cancellationToken = default)
+public Task ExtendUnitWriteWordsAsync(uint headAddress, ushort moduleNo, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
 ```
 
-##### RemoteLatchClearAsync
-
-```csharp
-public Task RemoteLatchClearAsync(CancellationToken cancellationToken = default)
-```
-
-##### RemoteResetAsync
-
-```csharp
-public Task RemoteResetAsync(CancellationToken cancellationToken = default)
-```
-
-Sends the fixed Remote RESET frame without waiting for a success response, then invalidates the transport. Call `OpenAsync` explicitly before another request and verify the PLC state.
-
-##### RemotePasswordUnlockAsync
-
-```csharp
-public Task RemotePasswordUnlockAsync(string password, CancellationToken cancellationToken = default)
-```
-
-##### RemotePasswordLockAsync
-
-```csharp
-public Task RemotePasswordLockAsync(string password, CancellationToken cancellationToken = default)
-```
-
-##### SelfTestLoopbackAsync
-
-```csharp
-public Task<byte[]> SelfTestLoopbackAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
-```
-
-Sends one self-test request and returns the echo only when declared length, actual length, and payload all match the supplied ASCII hexadecimal bytes.
-
-##### ClearErrorAsync
-
-```csharp
-public Task ClearErrorAsync(CancellationToken cancellationToken = default)
-```
-
-Sends the fixed Clear Error command as exactly one request.
-
-##### ReadArrayLabelsAsync
-
-```csharp
-public Task<SlmpLabelArrayReadResult[]> ReadArrayLabelsAsync(IReadOnlyList<SlmpLabelArrayReadPoint> points, IReadOnlyList<string> abbreviationLabels = null, CancellationToken cancellationToken = default)
-```
-
-Reads array labels from the PLC (command 0x041A).
+Writes words to an extend unit (command 0x1601).
 
 Parameters:
-- `points`: Labels to read, each with unit specification and array data length.
-- `abbreviationLabels`: Optional abbreviation label names (sent before regular points).
+- `headAddress`: Starting address in the extend unit (32-bit).
+- `moduleNo`: Extend unit module I/O number.
+- `values`: Word values to write.
 - `cancellationToken`: Cancellation token.
-
-##### WriteArrayLabelsAsync
-
-```csharp
-public Task WriteArrayLabelsAsync(IReadOnlyList<SlmpLabelArrayWritePoint> points, IReadOnlyList<string> abbreviationLabels = null, CancellationToken cancellationToken = default)
-```
-
-Writes array labels to the PLC (command 0x141A).
-
-##### ReadRandomLabelsAsync
-
-```csharp
-public Task<SlmpLabelRandomReadResult[]> ReadRandomLabelsAsync(IReadOnlyList<string> labels, IReadOnlyList<string> abbreviationLabels = null, CancellationToken cancellationToken = default)
-```
-
-Reads random labels from the PLC (command 0x041C).
-
-##### WriteRandomLabelsAsync
-
-```csharp
-public Task WriteRandomLabelsAsync(IReadOnlyList<SlmpLabelRandomWritePoint> points, IReadOnlyList<string> abbreviationLabels = null, CancellationToken cancellationToken = default)
-```
-
-Writes random labels to the PLC (command 0x141B).
 
 ##### MemoryReadWordsAsync
 
@@ -709,106 +356,134 @@ Parameters:
 - `values`: Word values to write.
 - `cancellationToken`: Cancellation token.
 
-##### ExtendUnitReadBytesAsync
+##### Open
 
 ```csharp
-public Task<byte[]> ExtendUnitReadBytesAsync(uint headAddress, ushort byteLength, ushort moduleNo, CancellationToken cancellationToken = default)
+public void Open()
 ```
 
-Reads raw bytes from an extend unit (command 0x0601).
+Opens the connection to the PLC synchronously.
+
+##### OpenAndConnectAsync
+
+```csharp
+public static Task<SlmpClient> OpenAndConnectAsync(string host, int port, SlmpPlcProfile plcProfile, SlmpTransportMode transportMode, SlmpTargetAddress targetAddress, CancellationToken cancellationToken = default)
+```
+
+Opens a connection with explicit stable settings and returns a connected `SlmpClient`.
+
+Remarks: This is the recommended entry point for application code because it combines one explicit PLC profile with the ordinary client's FIFO admission queue, which is safe to share across multiple tasks.
+
+Returns: A connected client ready for high-level helpers such as `ReadTypedAsync`, `ReadNamedAsync`, and `PollAsync`.
 
 Parameters:
-- `headAddress`: Starting address in the extend unit (32-bit).
-- `byteLength`: Number of bytes to read.
-- `moduleNo`: Configured Extend Unit module I/O number.
-- `cancellationToken`: Cancellation token.
+- `host`: PLC IP address or hostname.
+- `port`: SLMP port number such as 1025 for iQ-R/iQ-F or 5007 for Q/L.
+- `plcProfile`: Canonical PLC profile used to derive the standard connection defaults.
+- `transportMode`: Required TCP or UDP transport.
+- `targetAddress`: Required complete destination route.
+- `cancellationToken`: A token to cancel the operation.
 
-##### ExtendUnitReadWordsAsync
+##### OpenAsync
 
 ```csharp
-public Task<ushort[]> ExtendUnitReadWordsAsync(uint headAddress, ushort wordLength, ushort moduleNo, CancellationToken cancellationToken = default)
+public Task OpenAsync(CancellationToken cancellationToken = default)
 ```
 
-Reads words from an extend unit (command 0x0601).
+Opens the connection to the PLC asynchronously.
+
+Returns: A task representing the asynchronous operation.
 
 Parameters:
-- `headAddress`: Starting address in the extend unit (32-bit).
-- `wordLength`: Number of words to read.
-- `moduleNo`: Extend unit module I/O number.
-- `cancellationToken`: Cancellation token.
+- `cancellationToken`: A token to cancel the operation.
 
-##### ExtendUnitReadWordAsync
+##### ReadArrayLabelsAsync
 
 ```csharp
-public Task<ushort> ExtendUnitReadWordAsync(uint headAddress, ushort moduleNo, CancellationToken cancellationToken = default)
+public Task<SlmpLabelArrayReadResult[]> ReadArrayLabelsAsync(IReadOnlyList<SlmpLabelArrayReadPoint> points, IReadOnlyList<string> abbreviationLabels = null, CancellationToken cancellationToken = default)
 ```
 
-Reads a single word from an extend unit.
-
-##### ExtendUnitReadDWordAsync
-
-```csharp
-public Task<uint> ExtendUnitReadDWordAsync(uint headAddress, ushort moduleNo, CancellationToken cancellationToken = default)
-```
-
-Reads a double word (32-bit) from an extend unit.
-
-##### ExtendUnitWriteBytesAsync
-
-```csharp
-public Task ExtendUnitWriteBytesAsync(uint headAddress, ushort moduleNo, ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
-```
-
-Writes raw bytes to an extend unit (command 0x1601).
+Reads array labels from the PLC (command 0x041A).
 
 Parameters:
-- `headAddress`: Starting address in the extend unit (32-bit).
-- `moduleNo`: Extend unit module I/O number.
-- `data`: Bytes to write.
+- `points`: Labels to read, each with unit specification and array data length.
+- `abbreviationLabels`: Optional abbreviation label names (sent before regular points).
 - `cancellationToken`: Cancellation token.
 
-##### ExtendUnitWriteWordsAsync
+##### ReadBitBlocksAsync
 
 ```csharp
-public Task ExtendUnitWriteWordsAsync(uint headAddress, ushort moduleNo, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
+public Task<ushort[]> ReadBitBlocksAsync(IReadOnlyList<SlmpBlockRead> bitBlocks, CancellationToken cancellationToken = default)
 ```
 
-Writes words to an extend unit (command 0x1601).
+Reads only bit blocks in one block-read request.
+
+##### ReadBitsAsync
+
+```csharp
+public Task<bool[]> ReadBitsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+```
+
+##### ReadBitsExtendedAsync
+
+```csharp
+public Task<bool[]> ReadBitsExtendedAsync(SlmpQualifiedDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+```
+
+##### ReadBlockAsync
+
+```csharp
+public Task<ValueTuple<ushort[], ushort[]>> ReadBlockAsync(IReadOnlyList<SlmpBlockRead> wordBlocks, IReadOnlyList<SlmpBlockRead> bitBlocks, CancellationToken cancellationToken = default)
+```
+
+##### ReadCpuOperationStateAsync
+
+```csharp
+public Task<SlmpCpuOperationState> ReadCpuOperationStateAsync(CancellationToken cancellationToken = default)
+```
+
+Reads `SD203` and decodes the CPU operation state from the lower 4 bits.
+
+Returns: The decoded CPU operation state and raw masked code.
 
 Parameters:
-- `headAddress`: Starting address in the extend unit (32-bit).
-- `moduleNo`: Extend unit module I/O number.
-- `values`: Word values to write.
-- `cancellationToken`: Cancellation token.
+- `cancellationToken`: A token to cancel the operation.
 
-##### ExtendUnitWriteWordAsync
+##### ReadDWordsRawAsync
 
 ```csharp
-public Task ExtendUnitWriteWordAsync(uint headAddress, ushort moduleNo, ushort value, CancellationToken cancellationToken = default)
+public Task<uint[]> ReadDWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
 ```
 
-Writes a single word to an extend unit.
-
-##### ExtendUnitWriteDWordAsync
-
-```csharp
-public Task ExtendUnitWriteDWordAsync(uint headAddress, ushort moduleNo, uint value, CancellationToken cancellationToken = default)
-```
-
-Writes a double word (32-bit) to an extend unit.
-
-##### ReadLongTimerAsync
-
-```csharp
-public Task<SlmpLongTimerResult[]> ReadLongTimerAsync(int headNo, int points, CancellationToken cancellationToken = default)
-```
-
-Reads one or more long timers starting at the given device number. Each timer occupies 4 consecutive words: [current_lo, current_hi, status, reserved].
+Reads contiguous 32-bit values in one Direct Read request.
 
 Parameters:
-- `headNo`: Starting LTN device number (e.g. 0 for LTN0).
-- `points`: Number of timers to read.
+- `device`: Starting word-addressable device.
+- `points`: Number of DWord values, in public 32-bit units; maximum 480 for a 960-word profile limit.
 - `cancellationToken`: Cancellation token.
+
+##### ReadDeviceRangeCatalogAsync
+
+```csharp
+public Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
+```
+
+Reads the configured profile-specific device upper-bound catalog from one canonical SD-register window.
+
+Remarks: No address probe or error-derived boundary inference is performed. Acquisition errors propagate to the caller.
+
+Returns: A catalog containing the configured profile and device upper-bound entries.
+
+Parameters:
+- `cancellationToken`: A token to cancel the operation.
+
+##### ReadFloat32sAsync
+
+```csharp
+public Task<float[]> ReadFloat32sAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+```
+
+Reads contiguous float32 values in one Direct Read request.
 
 ##### ReadLongRetentiveTimerAsync
 
@@ -823,21 +498,18 @@ Parameters:
 - `points`: Number of timers to read.
 - `cancellationToken`: Cancellation token.
 
-##### ReadLtcStatesAsync
+##### ReadLongTimerAsync
 
 ```csharp
-public Task<bool[]> ReadLtcStatesAsync(int headNo, int points, CancellationToken cancellationToken = default)
+public Task<SlmpLongTimerResult[]> ReadLongTimerAsync(int headNo, int points, CancellationToken cancellationToken = default)
 ```
 
-Returns the coil state of each long timer in the range.
+Reads one or more long timers starting at the given device number. Each timer occupies 4 consecutive words: [current_lo, current_hi, status, reserved].
 
-##### ReadLtsStatesAsync
-
-```csharp
-public Task<bool[]> ReadLtsStatesAsync(int headNo, int points, CancellationToken cancellationToken = default)
-```
-
-Returns the contact state of each long timer in the range.
+Parameters:
+- `headNo`: Starting LTN device number (e.g. 0 for LTN0).
+- `points`: Number of timers to read.
+- `cancellationToken`: Cancellation token.
 
 ##### ReadLstcStatesAsync
 
@@ -855,13 +527,333 @@ public Task<bool[]> ReadLstsStatesAsync(int headNo, int points, CancellationToke
 
 Returns the contact state of each long retentive timer in the range.
 
-##### FrameType
+##### ReadLtcStatesAsync
 
 ```csharp
-public SlmpFrameType FrameType { get; }
+public Task<bool[]> ReadLtcStatesAsync(int headNo, int points, CancellationToken cancellationToken = default)
 ```
 
-Gets the SLMP frame format derived from `PlcProfile`.
+Returns the coil state of each long timer in the range.
+
+##### ReadLtsStatesAsync
+
+```csharp
+public Task<bool[]> ReadLtsStatesAsync(int headNo, int points, CancellationToken cancellationToken = default)
+```
+
+Returns the contact state of each long timer in the range.
+
+##### ReadRandomAsync
+
+```csharp
+public Task<ValueTuple<ushort[], uint[]>> ReadRandomAsync(IReadOnlyList<SlmpDeviceAddress> wordDevices, IReadOnlyList<SlmpDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
+```
+
+##### ReadRandomDWordsAsync
+
+```csharp
+public Task<uint[]> ReadRandomDWordsAsync(IReadOnlyList<SlmpDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
+```
+
+Reads only DWord devices in one random-read request.
+
+##### ReadRandomDWordsExtendedAsync
+
+```csharp
+public Task<uint[]> ReadRandomDWordsExtendedAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
+```
+
+Reads only DWord devices through semantic Extended Device routes.
+
+##### ReadRandomExtAsync
+
+```csharp
+public Task<ValueTuple<ushort[], uint[]>> ReadRandomExtAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices, IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
+```
+
+##### ReadRandomLabelsAsync
+
+```csharp
+public Task<SlmpLabelRandomReadResult[]> ReadRandomLabelsAsync(IReadOnlyList<string> labels, IReadOnlyList<string> abbreviationLabels = null, CancellationToken cancellationToken = default)
+```
+
+Reads random labels from the PLC (command 0x041C).
+
+##### ReadRandomWordsAsync
+
+```csharp
+public Task<ushort[]> ReadRandomWordsAsync(IReadOnlyList<SlmpDeviceAddress> wordDevices, CancellationToken cancellationToken = default)
+```
+
+Reads only word devices in one random-read request.
+
+##### ReadRandomWordsExtendedAsync
+
+```csharp
+public Task<ushort[]> ReadRandomWordsExtendedAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices, CancellationToken cancellationToken = default)
+```
+
+Reads only word devices through semantic Extended Device routes.
+
+##### ReadTypeNameAsync
+
+```csharp
+public Task<SlmpTypeNameInfo> ReadTypeNameAsync(CancellationToken cancellationToken = default)
+```
+
+Reads the PLC model and type name info asynchronously.
+
+Returns: An object containing model name and code.
+
+Parameters:
+- `cancellationToken`: A token to cancel the operation.
+
+##### ReadWordBlocksAsync
+
+```csharp
+public Task<ushort[]> ReadWordBlocksAsync(IReadOnlyList<SlmpBlockRead> wordBlocks, CancellationToken cancellationToken = default)
+```
+
+Reads only word blocks in one block-read request.
+
+##### ReadWordsExtendedAsync
+
+```csharp
+public Task<ushort[]> ReadWordsExtendedAsync(SlmpQualifiedDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+```
+
+##### ReadWordsRawAsync
+
+```csharp
+public Task<ushort[]> ReadWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+```
+
+Reads word device values asynchronously.
+
+Returns: An array of word values (ushort).
+
+Parameters:
+- `device`: The starting device address.
+- `points`: Number of words to read.
+- `cancellationToken`: A token to cancel the operation.
+
+##### RegisterMonitorDevicesAsync
+
+```csharp
+public Task RegisterMonitorDevicesAsync(IReadOnlyList<SlmpDeviceAddress> wordDevices, IReadOnlyList<SlmpDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
+```
+
+Registers a set of word and DWord devices for monitoring (command 0x0801). Call `RunMonitorCycleAsync` to read the registered devices.
+
+Parameters:
+- `wordDevices`: Word devices to monitor.
+- `dwordDevices`: DWord devices to monitor.
+- `cancellationToken`: Cancellation token.
+
+##### RegisterMonitorDevicesExtAsync
+
+```csharp
+public Task RegisterMonitorDevicesExtAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices, IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
+```
+
+##### RemoteLatchClearAsync
+
+```csharp
+public Task RemoteLatchClearAsync(CancellationToken cancellationToken = default)
+```
+
+##### RemotePasswordLockAsync
+
+```csharp
+public Task RemotePasswordLockAsync(string password, CancellationToken cancellationToken = default)
+```
+
+##### RemotePasswordUnlockAsync
+
+```csharp
+public Task RemotePasswordUnlockAsync(string password, CancellationToken cancellationToken = default)
+```
+
+##### RemotePauseAsync
+
+```csharp
+public Task RemotePauseAsync(SlmpRemoteMode mode, CancellationToken cancellationToken = default)
+```
+
+##### RemoteResetAsync
+
+```csharp
+public Task RemoteResetAsync(CancellationToken cancellationToken = default)
+```
+
+Sends the fixed Remote RESET frame without waiting for a success response, then invalidates the transport. Call `OpenAsync` explicitly before another request and verify the PLC state.
+
+##### RemoteRunAsync
+
+```csharp
+public Task RemoteRunAsync(SlmpRemoteMode mode, SlmpRemoteClearMode clearMode, CancellationToken cancellationToken = default)
+```
+
+##### RemoteStopAsync
+
+```csharp
+public Task RemoteStopAsync(CancellationToken cancellationToken = default)
+```
+
+##### RunMonitorCycleAsync
+
+```csharp
+public Task<SlmpMonitorResult> RunMonitorCycleAsync(int wordPoints, int dwordPoints, CancellationToken cancellationToken = default)
+```
+
+Executes one monitor cycle and returns the values of the previously registered devices (command 0x0802).
+
+Parameters:
+- `wordPoints`: Number of registered word devices. The combined count must be nonzero and within the active profile limit.
+- `dwordPoints`: Number of registered DWord devices.
+- `cancellationToken`: Cancellation token.
+
+##### SelfTestLoopbackAsync
+
+```csharp
+public Task<byte[]> SelfTestLoopbackAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
+```
+
+Sends one self-test request and returns the echo only when declared length, actual length, and payload all match the supplied ASCII hexadecimal bytes.
+
+##### WriteArrayLabelsAsync
+
+```csharp
+public Task WriteArrayLabelsAsync(IReadOnlyList<SlmpLabelArrayWritePoint> points, IReadOnlyList<string> abbreviationLabels = null, CancellationToken cancellationToken = default)
+```
+
+Writes array labels to the PLC (command 0x141A).
+
+##### WriteBitBlocksAsync
+
+```csharp
+public Task WriteBitBlocksAsync(IReadOnlyList<SlmpBlockWrite> bitBlocks, CancellationToken cancellationToken = default)
+```
+
+Writes only bit blocks in one block-write request.
+
+##### WriteBitsAsync
+
+```csharp
+public Task WriteBitsAsync(SlmpDeviceAddress device, IReadOnlyList<bool> values, CancellationToken cancellationToken = default)
+```
+
+##### WriteBitsExtendedAsync
+
+```csharp
+public Task WriteBitsExtendedAsync(SlmpQualifiedDeviceAddress device, IReadOnlyList<bool> values, CancellationToken cancellationToken = default)
+```
+
+##### WriteBlockAsync
+
+```csharp
+public Task WriteBlockAsync(IReadOnlyList<SlmpBlockWrite> wordBlocks, IReadOnlyList<SlmpBlockWrite> bitBlocks, CancellationToken cancellationToken = default)
+```
+
+##### WriteDWordsAsync
+
+```csharp
+public Task WriteDWordsAsync(SlmpDeviceAddress device, IReadOnlyList<uint> values, CancellationToken cancellationToken = default)
+```
+
+Writes contiguous 32-bit values in one Direct Write request.
+
+##### WriteFloat32sAsync
+
+```csharp
+public Task WriteFloat32sAsync(SlmpDeviceAddress device, IReadOnlyList<float> values, CancellationToken cancellationToken = default)
+```
+
+Writes contiguous float32 values in one Direct Write request.
+
+##### WriteRandomBitsAsync
+
+```csharp
+public Task WriteRandomBitsAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, bool>> bitEntries, CancellationToken cancellationToken = default)
+```
+
+##### WriteRandomBitsExtAsync
+
+```csharp
+public Task WriteRandomBitsExtAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, bool>> bitEntries, CancellationToken cancellationToken = default)
+```
+
+##### WriteRandomLabelsAsync
+
+```csharp
+public Task WriteRandomLabelsAsync(IReadOnlyList<SlmpLabelRandomWritePoint> points, IReadOnlyList<string> abbreviationLabels = null, CancellationToken cancellationToken = default)
+```
+
+Writes random labels to the PLC (command 0x141B).
+
+##### WriteRandomU16sAsync
+
+```csharp
+public Task WriteRandomU16sAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, ushort>> wordEntries, CancellationToken cancellationToken = default)
+```
+
+Writes only 16-bit entries in one random-write request.
+
+##### WriteRandomU16sExtendedAsync
+
+```csharp
+public Task WriteRandomU16sExtendedAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, ushort>> wordEntries, CancellationToken cancellationToken = default)
+```
+
+Writes only 16-bit entries through semantic Extended Device routes.
+
+##### WriteRandomU32sAsync
+
+```csharp
+public Task WriteRandomU32sAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
+```
+
+Writes only 32-bit entries in one random-write request.
+
+##### WriteRandomU32sExtendedAsync
+
+```csharp
+public Task WriteRandomU32sExtendedAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
+```
+
+Writes only 32-bit entries through semantic Extended Device routes.
+
+##### WriteRandomWordsAsync
+
+```csharp
+public Task WriteRandomWordsAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, ushort>> wordEntries, IReadOnlyList<ValueTuple<SlmpDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
+```
+
+##### WriteRandomWordsExtAsync
+
+```csharp
+public Task WriteRandomWordsExtAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, ushort>> wordEntries, IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
+```
+
+##### WriteWordBlocksAsync
+
+```csharp
+public Task WriteWordBlocksAsync(IReadOnlyList<SlmpBlockWrite> wordBlocks, CancellationToken cancellationToken = default)
+```
+
+Writes only word blocks in one block-write request.
+
+##### WriteWordsAsync
+
+```csharp
+public Task WriteWordsAsync(SlmpDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
+```
+
+##### WriteWordsExtendedAsync
+
+```csharp
+public Task WriteWordsExtendedAsync(SlmpQualifiedDeviceAddress device, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
+```
 
 ##### CompatibilityMode
 
@@ -870,6 +862,30 @@ public SlmpCompatibilityMode CompatibilityMode { get; }
 ```
 
 Gets the device access compatibility mode derived from `PlcProfile`.
+
+##### FrameType
+
+```csharp
+public SlmpFrameType FrameType { get; }
+```
+
+Gets the SLMP frame format derived from `PlcProfile`.
+
+##### IsOpen
+
+```csharp
+public bool IsOpen { get; }
+```
+
+Gets a value indicating whether the client is currently connected.
+
+##### MonitoringTimer
+
+```csharp
+public ushort MonitoringTimer { get; set; }
+```
+
+Gets or sets the monitoring timer value (multiples of 250ms). Default is 0x0010 (4s).
 
 ##### PlcProfile
 
@@ -887,22 +903,6 @@ public SlmpTargetAddress TargetAddress { get; }
 
 Gets the immutable destination routing information selected at construction.
 
-##### TrafficStats
-
-```csharp
-public SlmpTrafficStats TrafficStats { get; }
-```
-
-Gets a read-only snapshot of cumulative traffic for this client lifetime.
-
-##### MonitoringTimer
-
-```csharp
-public ushort MonitoringTimer { get; set; }
-```
-
-Gets or sets the monitoring timer value (multiples of 250ms). Default is 0x0010 (4s).
-
 ##### Timeout
 
 ```csharp
@@ -911,13 +911,13 @@ public TimeSpan Timeout { get; set; }
 
 Gets or sets the communication timeout. Values must be from 1 millisecond through `int.MaxValue` milliseconds.
 
-##### IsOpen
+##### TrafficStats
 
 ```csharp
-public bool IsOpen { get; }
+public SlmpTrafficStats TrafficStats { get; }
 ```
 
-Gets a value indicating whether the client is currently connected.
+Gets a read-only snapshot of cumulative traffic for this client lifetime.
 
 ### SlmpClientExtensions
 
@@ -930,6 +930,81 @@ Extension methods for `SlmpClient` providing typed read/write helpers, single-re
 Remarks: Typed, block, and named operations use one SLMP request unless the method explicitly documents a read-modify-write sequence. Named operations reject plans that require more than one request; polling performs a separate declared read cycle each interval. Typed, named, polling, long-timer, and bit-in-word helpers complete route, span, profile, and writable-target admission before waiting for the client FIFO.
 
 #### Members
+
+##### PollAsync
+
+```csharp
+public static IAsyncEnumerable<IReadOnlyDictionary<string, object>> PollAsync(SlmpClient client, IEnumerable<string> addresses, TimeSpan interval, CancellationToken ct = default)
+```
+
+Continuously polls the specified logical snapshot at the requested interval.
+
+Remarks: The address list, compact decode indexes, and immutable Random Read payload are validated and prepared once, then reused for every cycle. Each cycle retains the ordinary client FIFO, timeout, cancellation, close, and error contracts. This helper is suitable for periodic monitoring and historian ingestion.
+
+Returns: An async stream of snapshot dictionaries.
+
+Parameters:
+- `client`: Connected SLMP client.
+- `addresses`: Address list in the same format as `ReadNamedAsync`.
+- `interval`: Delay between snapshots.
+- `ct`: Cancellation token.
+
+##### ReadBitsBlockAsync
+
+```csharp
+public static Task<bool[]> ReadBitsBlockAsync(SlmpClient client, SlmpDeviceAddress start, ushort count, CancellationToken ct = default)
+```
+
+Reads a contiguous bit-device range and returns boolean values.
+
+Returns: Boolean values in PLC order.
+
+Parameters:
+- `client`: Connected SLMP client.
+- `start`: First bit device in the range.
+- `count`: Number of points to read.
+- `ct`: Cancellation token.
+
+##### ReadBitsBlockAsync
+
+```csharp
+public static Task<bool[]> ReadBitsBlockAsync(SlmpClient client, string start, ushort count, CancellationToken ct = default)
+```
+
+Reads a contiguous bit-device range using a string address.
+
+##### ReadDWordsSingleRequestAsync
+
+```csharp
+public static Task<uint[]> ReadDWordsSingleRequestAsync(SlmpClient client, SlmpDeviceAddress start, int count, CancellationToken ct = default)
+```
+
+Reads contiguous DWord devices using one SLMP request or returns an error.
+
+##### ReadDWordsSingleRequestAsync
+
+```csharp
+public static Task<uint[]> ReadDWordsSingleRequestAsync(SlmpClient client, string start, int count, CancellationToken ct = default)
+```
+
+Reads contiguous DWord devices using one SLMP request or returns an error.
+
+##### ReadNamedAsync
+
+```csharp
+public static Task<IReadOnlyDictionary<string, object>> ReadNamedAsync(SlmpClient client, IEnumerable<string> addresses, CancellationToken ct = default)
+```
+
+Reads a mixed named value set and returns a dictionary keyed by the original addresses.
+
+Remarks: The complete address list is compiled into exactly one random-read request. Entries that require another command family are rejected before transport. Use `ReadTypedAsync` or an explicit long-timer helper for LTN/LSTN current, contact, and coil routes.
+
+Returns: A dictionary whose keys match the requested address strings.
+
+Parameters:
+- `client`: Connected SLMP client.
+- `addresses`: Address list such as `D100:U`, `D200:F`, `D300:L`, `M1000:BIT`, or `D50.3`.
+- `ct`: Cancellation token.
 
 ##### ReadTypedAsync
 
@@ -965,37 +1040,21 @@ Parameters:
 - `dtype`: Requested application type such as `U`, `F`, or `BIT`.
 - `ct`: Cancellation token.
 
-##### WriteTypedAsync
+##### ReadWordsSingleRequestAsync
 
 ```csharp
-public static Task WriteTypedAsync(SlmpClient client, SlmpDeviceAddress device, string dtype, object value, CancellationToken ct = default)
+public static Task<ushort[]> ReadWordsSingleRequestAsync(SlmpClient client, SlmpDeviceAddress start, int count, CancellationToken ct = default)
 ```
 
-Writes one logical value using strict dtype validation and encoding.
+Reads contiguous word devices using one SLMP request or returns an error.
 
-Remarks: Use this helper when application code wants strict typed writes without manually splitting words or packing float32 values. Values are not parsed from strings or converted between Boolean, floating, and integer types. Device unit, route, and value validation complete before FIFO admission.
-
-Parameters:
-- `client`: Connected SLMP client.
-- `device`: Starting device address.
-- `dtype`: Type code: `U` unsigned 16-bit, `S` signed 16-bit, `D` unsigned 32-bit, `L` signed 32-bit, or `F` float32.
-- `value`: Value to encode and write. BIT requires Boolean; integer dtypes require an integral CLR type in range; F requires a finite numeric value within float32 range.
-- `ct`: Cancellation token.
-
-##### WriteTypedAsync
+##### ReadWordsSingleRequestAsync
 
 ```csharp
-public static Task WriteTypedAsync(SlmpClient client, string device, string dtype, object value, CancellationToken ct = default)
+public static Task<ushort[]> ReadWordsSingleRequestAsync(SlmpClient client, string start, int count, CancellationToken ct = default)
 ```
 
-Writes one device value using a string address.
-
-Parameters:
-- `client`: Connected SLMP client.
-- `device`: Device string such as `D100`, `D200:F`, or `M1000`.
-- `dtype`: Requested application type.
-- `value`: Application value to encode and write.
-- `ct`: Cancellation token.
+Reads contiguous word devices using one SLMP request or returns an error.
 
 ##### WriteBitInWordAsync
 
@@ -1032,30 +1091,6 @@ Performs a read-modify-write using a string address.
 
 Remarks: This overload has the same two-request, locally exclusive, non-PLC-atomic behavior as the typed-address overload.
 
-##### ReadBitsBlockAsync
-
-```csharp
-public static Task<bool[]> ReadBitsBlockAsync(SlmpClient client, SlmpDeviceAddress start, ushort count, CancellationToken ct = default)
-```
-
-Reads a contiguous bit-device range and returns boolean values.
-
-Returns: Boolean values in PLC order.
-
-Parameters:
-- `client`: Connected SLMP client.
-- `start`: First bit device in the range.
-- `count`: Number of points to read.
-- `ct`: Cancellation token.
-
-##### ReadBitsBlockAsync
-
-```csharp
-public static Task<bool[]> ReadBitsBlockAsync(SlmpClient client, string start, ushort count, CancellationToken ct = default)
-```
-
-Reads a contiguous bit-device range using a string address.
-
 ##### WriteBitsBlockAsync
 
 ```csharp
@@ -1077,6 +1112,85 @@ public static Task WriteBitsBlockAsync(SlmpClient client, string start, IReadOnl
 ```
 
 Writes a contiguous bit-device range using a string address.
+
+##### WriteDWordsBlockAsync
+
+```csharp
+public static Task WriteDWordsBlockAsync(SlmpClient client, SlmpDeviceAddress start, IReadOnlyList<uint> values, CancellationToken ct = default)
+```
+
+Writes a contiguous DWord-device range from 32-bit values.
+
+##### WriteDWordsBlockAsync
+
+```csharp
+public static Task WriteDWordsBlockAsync(SlmpClient client, string start, IReadOnlyList<uint> values, CancellationToken ct = default)
+```
+
+Writes a contiguous DWord-device range using a string address.
+
+##### WriteDWordsSingleRequestAsync
+
+```csharp
+public static Task WriteDWordsSingleRequestAsync(SlmpClient client, SlmpDeviceAddress start, IReadOnlyList<uint> values, CancellationToken ct = default)
+```
+
+Writes contiguous DWord devices using one SLMP request or returns an error.
+
+##### WriteDWordsSingleRequestAsync
+
+```csharp
+public static Task WriteDWordsSingleRequestAsync(SlmpClient client, string start, IReadOnlyList<uint> values, CancellationToken ct = default)
+```
+
+Writes contiguous DWord devices using one SLMP request or returns an error.
+
+##### WriteNamedAsync
+
+```csharp
+public static Task WriteNamedAsync(SlmpClient client, IReadOnlyDictionary<string, object> updates, CancellationToken ct = default)
+```
+
+Writes a mixed named value set by address string.
+
+Remarks: The complete update set is sent as exactly one random-write request. Word and DWord entries may share that request; bit entries use one random-bit request. Mixing those command families or requesting bit-in-word read-modify-write is rejected before transport. The complete semantic plan is validated before FIFO admission.
+
+Parameters:
+- `client`: Connected SLMP client.
+- `updates`: Mapping of address string to value, for example `"D100:U"`, `"D200:F"`, `"D50.3"`, or direct bit-device addresses such as `"M1000:BIT"`.
+- `ct`: Cancellation token.
+
+##### WriteTypedAsync
+
+```csharp
+public static Task WriteTypedAsync(SlmpClient client, SlmpDeviceAddress device, string dtype, object value, CancellationToken ct = default)
+```
+
+Writes one logical value using strict dtype validation and encoding.
+
+Remarks: Use this helper when application code wants strict typed writes without manually splitting words or packing float32 values. Values are not parsed from strings or converted between Boolean, floating, and integer types. Device unit, route, and value validation complete before FIFO admission.
+
+Parameters:
+- `client`: Connected SLMP client.
+- `device`: Starting device address.
+- `dtype`: Type code: `U` unsigned 16-bit, `S` signed 16-bit, `D` unsigned 32-bit, `L` signed 32-bit, or `F` float32.
+- `value`: Value to encode and write. BIT requires Boolean; integer dtypes require an integral CLR type in range; F requires a finite numeric value within float32 range.
+- `ct`: Cancellation token.
+
+##### WriteTypedAsync
+
+```csharp
+public static Task WriteTypedAsync(SlmpClient client, string device, string dtype, object value, CancellationToken ct = default)
+```
+
+Writes one device value using a string address.
+
+Parameters:
+- `client`: Connected SLMP client.
+- `device`: Device string such as `D100`, `D200:F`, or `M1000`.
+- `dtype`: Requested application type.
+- `value`: Application value to encode and write.
+- `ct`: Cancellation token.
 
 ##### WriteWordsBlockAsync
 
@@ -1100,54 +1214,6 @@ public static Task WriteWordsBlockAsync(SlmpClient client, string start, IReadOn
 
 Writes a contiguous word-device range using a string address.
 
-##### WriteDWordsBlockAsync
-
-```csharp
-public static Task WriteDWordsBlockAsync(SlmpClient client, SlmpDeviceAddress start, IReadOnlyList<uint> values, CancellationToken ct = default)
-```
-
-Writes a contiguous DWord-device range from 32-bit values.
-
-##### WriteDWordsBlockAsync
-
-```csharp
-public static Task WriteDWordsBlockAsync(SlmpClient client, string start, IReadOnlyList<uint> values, CancellationToken ct = default)
-```
-
-Writes a contiguous DWord-device range using a string address.
-
-##### ReadWordsSingleRequestAsync
-
-```csharp
-public static Task<ushort[]> ReadWordsSingleRequestAsync(SlmpClient client, SlmpDeviceAddress start, int count, CancellationToken ct = default)
-```
-
-Reads contiguous word devices using one SLMP request or returns an error.
-
-##### ReadWordsSingleRequestAsync
-
-```csharp
-public static Task<ushort[]> ReadWordsSingleRequestAsync(SlmpClient client, string start, int count, CancellationToken ct = default)
-```
-
-Reads contiguous word devices using one SLMP request or returns an error.
-
-##### ReadDWordsSingleRequestAsync
-
-```csharp
-public static Task<uint[]> ReadDWordsSingleRequestAsync(SlmpClient client, SlmpDeviceAddress start, int count, CancellationToken ct = default)
-```
-
-Reads contiguous DWord devices using one SLMP request or returns an error.
-
-##### ReadDWordsSingleRequestAsync
-
-```csharp
-public static Task<uint[]> ReadDWordsSingleRequestAsync(SlmpClient client, string start, int count, CancellationToken ct = default)
-```
-
-Reads contiguous DWord devices using one SLMP request or returns an error.
-
 ##### WriteWordsSingleRequestAsync
 
 ```csharp
@@ -1163,72 +1229,6 @@ public static Task WriteWordsSingleRequestAsync(SlmpClient client, string start,
 ```
 
 Writes contiguous word devices using one SLMP request or returns an error.
-
-##### WriteDWordsSingleRequestAsync
-
-```csharp
-public static Task WriteDWordsSingleRequestAsync(SlmpClient client, SlmpDeviceAddress start, IReadOnlyList<uint> values, CancellationToken ct = default)
-```
-
-Writes contiguous DWord devices using one SLMP request or returns an error.
-
-##### WriteDWordsSingleRequestAsync
-
-```csharp
-public static Task WriteDWordsSingleRequestAsync(SlmpClient client, string start, IReadOnlyList<uint> values, CancellationToken ct = default)
-```
-
-Writes contiguous DWord devices using one SLMP request or returns an error.
-
-##### ReadNamedAsync
-
-```csharp
-public static Task<IReadOnlyDictionary<string, object>> ReadNamedAsync(SlmpClient client, IEnumerable<string> addresses, CancellationToken ct = default)
-```
-
-Reads a mixed named value set and returns a dictionary keyed by the original addresses.
-
-Remarks: The complete address list is compiled into exactly one random-read request. Entries that require another command family are rejected before transport. Use `ReadTypedAsync` or an explicit long-timer helper for LTN/LSTN current, contact, and coil routes.
-
-Returns: A dictionary whose keys match the requested address strings.
-
-Parameters:
-- `client`: Connected SLMP client.
-- `addresses`: Address list such as `D100:U`, `D200:F`, `D300:L`, `M1000:BIT`, or `D50.3`.
-- `ct`: Cancellation token.
-
-##### WriteNamedAsync
-
-```csharp
-public static Task WriteNamedAsync(SlmpClient client, IReadOnlyDictionary<string, object> updates, CancellationToken ct = default)
-```
-
-Writes a mixed named value set by address string.
-
-Remarks: The complete update set is sent as exactly one random-write request. Word and DWord entries may share that request; bit entries use one random-bit request. Mixing those command families or requesting bit-in-word read-modify-write is rejected before transport. The complete semantic plan is validated before FIFO admission.
-
-Parameters:
-- `client`: Connected SLMP client.
-- `updates`: Mapping of address string to value, for example `"D100:U"`, `"D200:F"`, `"D50.3"`, or direct bit-device addresses such as `"M1000:BIT"`.
-- `ct`: Cancellation token.
-
-##### PollAsync
-
-```csharp
-public static IAsyncEnumerable<IReadOnlyDictionary<string, object>> PollAsync(SlmpClient client, IEnumerable<string> addresses, TimeSpan interval, CancellationToken ct = default)
-```
-
-Continuously polls the specified logical snapshot at the requested interval.
-
-Remarks: The address list, compact decode indexes, and immutable Random Read payload are validated and prepared once, then reused for every cycle. Each cycle retains the ordinary client FIFO, timeout, cancellation, close, and error contracts. This helper is suitable for periodic monitoring and historian ingestion.
-
-Returns: An async stream of snapshot dictionaries.
-
-Parameters:
-- `client`: Connected SLMP client.
-- `addresses`: Address list in the same format as `ReadNamedAsync`.
-- `interval`: Delay between snapshots.
-- `ct`: Cancellation token.
 
 ### SlmpClientFactory
 
@@ -1268,28 +1268,16 @@ Standard SLMP command codes.
 
 #### Members
 
+##### ClearError
+
+```csharp
+public const SlmpCommand ClearError
+```
+
 ##### DeviceRead
 
 ```csharp
 public const SlmpCommand DeviceRead
-```
-
-##### DeviceWrite
-
-```csharp
-public const SlmpCommand DeviceWrite
-```
-
-##### DeviceReadRandom
-
-```csharp
-public const SlmpCommand DeviceReadRandom
-```
-
-##### DeviceWriteRandom
-
-```csharp
-public const SlmpCommand DeviceWriteRandom
 ```
 
 ##### DeviceReadBlock
@@ -1298,28 +1286,40 @@ public const SlmpCommand DeviceWriteRandom
 public const SlmpCommand DeviceReadBlock
 ```
 
+##### DeviceReadRandom
+
+```csharp
+public const SlmpCommand DeviceReadRandom
+```
+
+##### DeviceWrite
+
+```csharp
+public const SlmpCommand DeviceWrite
+```
+
 ##### DeviceWriteBlock
 
 ```csharp
 public const SlmpCommand DeviceWriteBlock
 ```
 
-##### MonitorRegister
+##### DeviceWriteRandom
 
 ```csharp
-public const SlmpCommand MonitorRegister
+public const SlmpCommand DeviceWriteRandom
 ```
 
-##### Monitor
+##### ExtendUnitRead
 
 ```csharp
-public const SlmpCommand Monitor
+public const SlmpCommand ExtendUnitRead
 ```
 
-##### ReadTypeName
+##### ExtendUnitWrite
 
 ```csharp
-public const SlmpCommand ReadTypeName
+public const SlmpCommand ExtendUnitWrite
 ```
 
 ##### LabelArrayRead
@@ -1358,16 +1358,52 @@ public const SlmpCommand MemoryRead
 public const SlmpCommand MemoryWrite
 ```
 
-##### ExtendUnitRead
+##### Monitor
 
 ```csharp
-public const SlmpCommand ExtendUnitRead
+public const SlmpCommand Monitor
 ```
 
-##### ExtendUnitWrite
+##### MonitorRegister
 
 ```csharp
-public const SlmpCommand ExtendUnitWrite
+public const SlmpCommand MonitorRegister
+```
+
+##### ReadTypeName
+
+```csharp
+public const SlmpCommand ReadTypeName
+```
+
+##### RemoteLatchClear
+
+```csharp
+public const SlmpCommand RemoteLatchClear
+```
+
+##### RemotePasswordLock
+
+```csharp
+public const SlmpCommand RemotePasswordLock
+```
+
+##### RemotePasswordUnlock
+
+```csharp
+public const SlmpCommand RemotePasswordUnlock
+```
+
+##### RemotePause
+
+```csharp
+public const SlmpCommand RemotePause
+```
+
+##### RemoteReset
+
+```csharp
+public const SlmpCommand RemoteReset
 ```
 
 ##### RemoteRun
@@ -1382,46 +1418,10 @@ public const SlmpCommand RemoteRun
 public const SlmpCommand RemoteStop
 ```
 
-##### RemotePause
-
-```csharp
-public const SlmpCommand RemotePause
-```
-
-##### RemoteLatchClear
-
-```csharp
-public const SlmpCommand RemoteLatchClear
-```
-
-##### RemoteReset
-
-```csharp
-public const SlmpCommand RemoteReset
-```
-
-##### RemotePasswordUnlock
-
-```csharp
-public const SlmpCommand RemotePasswordUnlock
-```
-
-##### RemotePasswordLock
-
-```csharp
-public const SlmpCommand RemotePasswordLock
-```
-
 ##### SelfTest
 
 ```csharp
 public const SlmpCommand SelfTest
-```
-
-##### ClearError
-
-```csharp
-public const SlmpCommand ClearError
 ```
 
 ### SlmpCompatibilityMode
@@ -1434,14 +1434,6 @@ Specifies the device access subcommand compatibility mode.
 
 #### Members
 
-##### Legacy
-
-```csharp
-public const SlmpCompatibilityMode Legacy
-```
-
-Legacy Q/L series subcommands (0x0000/0x0001).
-
 ##### Iqr
 
 ```csharp
@@ -1449,6 +1441,14 @@ public const SlmpCompatibilityMode Iqr
 ```
 
 Modern iQ-R series subcommands (0x0002/0x0003).
+
+##### Legacy
+
+```csharp
+public const SlmpCompatibilityMode Legacy
+```
+
+Legacy Q/L series subcommands (0x0000/0x0001).
 
 ### SlmpConnectionClosedException
 
@@ -1495,19 +1495,21 @@ Parameters:
 - `Transport`: Transport protocol.
 - `Target`: Complete destination route.
 
-##### Target
-
-```csharp
-public SlmpTargetAddress Target { get; init; }
-```
-
-Complete destination route.
-
 ##### Host
 
 ```csharp
 public string Host { get; init; }
 ```
+
+##### MonitoringTimer
+
+```csharp
+public ushort MonitoringTimer { get; init; }
+```
+
+Gets or initializes the SLMP monitoring timer value in 250 ms units.
+
+Remarks: The monitoring timer is encoded into the request frame and tells the PLC how long it may spend processing the request before reporting a timeout.
 
 ##### PlcProfile
 
@@ -1523,11 +1525,45 @@ Gets or initializes the canonical PLC profile for the high-level API.
 public int Port { get; init; }
 ```
 
-##### Transport
+##### ResolvedAddressProfile
 
 ```csharp
-public SlmpTransportMode Transport { get; init; }
+public SlmpPlcProfile ResolvedAddressProfile { get; }
 ```
+
+Gets the profile used for string device parsing.
+
+##### ResolvedCompatibilityMode
+
+```csharp
+public SlmpCompatibilityMode ResolvedCompatibilityMode { get; }
+```
+
+Gets the effective compatibility mode after applying `PlcProfile` defaults.
+
+##### ResolvedFrameType
+
+```csharp
+public SlmpFrameType ResolvedFrameType { get; }
+```
+
+Gets the effective frame type after applying `PlcProfile` defaults.
+
+##### ResolvedRangeProfile
+
+```csharp
+public SlmpPlcProfile ResolvedRangeProfile { get; }
+```
+
+Gets the profile used by the high-level device-range helper layer.
+
+##### Target
+
+```csharp
+public SlmpTargetAddress Target { get; init; }
+```
+
+Complete destination route.
 
 ##### Timeout
 
@@ -1539,47 +1575,11 @@ Gets or initializes the deadline used to open the transport and complete each ad
 
 Remarks: An explicit open uses this value as its connection deadline. Each admitted request uses one absolute deadline from a lazy connection attempt through response receipt and decoding; partial progress does not restart the deadline. FIFO queue wait is excluded. Values must be from 1 millisecond through `int.MaxValue` milliseconds.
 
-##### MonitoringTimer
+##### Transport
 
 ```csharp
-public ushort MonitoringTimer { get; init; }
+public SlmpTransportMode Transport { get; init; }
 ```
-
-Gets or initializes the SLMP monitoring timer value in 250 ms units.
-
-Remarks: The monitoring timer is encoded into the request frame and tells the PLC how long it may spend processing the request before reporting a timeout.
-
-##### ResolvedFrameType
-
-```csharp
-public SlmpFrameType ResolvedFrameType { get; }
-```
-
-Gets the effective frame type after applying `PlcProfile` defaults.
-
-##### ResolvedCompatibilityMode
-
-```csharp
-public SlmpCompatibilityMode ResolvedCompatibilityMode { get; }
-```
-
-Gets the effective compatibility mode after applying `PlcProfile` defaults.
-
-##### ResolvedAddressProfile
-
-```csharp
-public SlmpPlcProfile ResolvedAddressProfile { get; }
-```
-
-Gets the profile used for string device parsing.
-
-##### ResolvedRangeProfile
-
-```csharp
-public SlmpPlcProfile ResolvedRangeProfile { get; }
-```
-
-Gets the profile used by the high-level device-range helper layer.
 
 ### SlmpCpuOperationState
 
@@ -1604,13 +1604,13 @@ Parameters:
 - `RawStatusWord`: Full raw word read from `SD203`.
 - `RawCode`: Lower 4-bit masked status code from `SD203`.
 
-##### Status
+##### RawCode
 
 ```csharp
-public SlmpCpuOperationStatus Status { get; init; }
+public byte RawCode { get; init; }
 ```
 
-Decoded PLC operation state.
+Lower 4-bit masked status code from `SD203`.
 
 ##### RawStatusWord
 
@@ -1620,13 +1620,13 @@ public ushort RawStatusWord { get; init; }
 
 Full raw word read from `SD203`.
 
-##### RawCode
+##### Status
 
 ```csharp
-public byte RawCode { get; init; }
+public SlmpCpuOperationStatus Status { get; init; }
 ```
 
-Lower 4-bit masked status code from `SD203`.
+Decoded PLC operation state.
 
 ### SlmpCpuOperationStatus
 
@@ -1638,10 +1638,10 @@ Decoded CPU operation state from the lower 4 bits of `SD203`.
 
 #### Members
 
-##### Unknown
+##### Pause
 
 ```csharp
-public const SlmpCpuOperationStatus Unknown
+public const SlmpCpuOperationStatus Pause
 ```
 
 ##### Run
@@ -1656,10 +1656,10 @@ public const SlmpCpuOperationStatus Run
 public const SlmpCpuOperationStatus Stop
 ```
 
-##### Pause
+##### Unknown
 
 ```csharp
-public const SlmpCpuOperationStatus Pause
+public const SlmpCpuOperationStatus Unknown
 ```
 
 ### SlmpDeviceAddress
@@ -1722,70 +1722,6 @@ Standard SLMP binary device codes.
 
 #### Members
 
-##### SM
-
-```csharp
-public const SlmpDeviceCode SM
-```
-
-Special Relay
-
-##### SD
-
-```csharp
-public const SlmpDeviceCode SD
-```
-
-Special Register
-
-##### X
-
-```csharp
-public const SlmpDeviceCode X
-```
-
-Input
-
-##### Y
-
-```csharp
-public const SlmpDeviceCode Y
-```
-
-Output
-
-##### M
-
-```csharp
-public const SlmpDeviceCode M
-```
-
-Internal Relay
-
-##### L
-
-```csharp
-public const SlmpDeviceCode L
-```
-
-Latch Relay
-
-##### F
-
-```csharp
-public const SlmpDeviceCode F
-```
-
-Annunciator
-
-##### V
-
-```csharp
-public const SlmpDeviceCode V
-```
-
-Edge Relay
-
 ##### B
 
 ```csharp
@@ -1793,158 +1729,6 @@ public const SlmpDeviceCode B
 ```
 
 Link Relay
-
-##### S
-
-```csharp
-public const SlmpDeviceCode S
-```
-
-Step Relay
-
-##### D
-
-```csharp
-public const SlmpDeviceCode D
-```
-
-Data Register
-
-##### W
-
-```csharp
-public const SlmpDeviceCode W
-```
-
-Link Register
-
-##### TS
-
-```csharp
-public const SlmpDeviceCode TS
-```
-
-Timer Contact
-
-##### TC
-
-```csharp
-public const SlmpDeviceCode TC
-```
-
-Timer Coil
-
-##### TN
-
-```csharp
-public const SlmpDeviceCode TN
-```
-
-Timer Current Value
-
-##### LTS
-
-```csharp
-public const SlmpDeviceCode LTS
-```
-
-Long Timer Contact
-
-##### LTC
-
-```csharp
-public const SlmpDeviceCode LTC
-```
-
-Long Timer Coil
-
-##### LTN
-
-```csharp
-public const SlmpDeviceCode LTN
-```
-
-Long Timer Current Value
-
-##### STS
-
-```csharp
-public const SlmpDeviceCode STS
-```
-
-Retentive Timer Contact
-
-##### STC
-
-```csharp
-public const SlmpDeviceCode STC
-```
-
-Retentive Timer Coil
-
-##### STN
-
-```csharp
-public const SlmpDeviceCode STN
-```
-
-Retentive Timer Current Value
-
-##### LSTS
-
-```csharp
-public const SlmpDeviceCode LSTS
-```
-
-Long Retentive Timer Contact
-
-##### LSTC
-
-```csharp
-public const SlmpDeviceCode LSTC
-```
-
-Long Retentive Timer Coil
-
-##### LSTN
-
-```csharp
-public const SlmpDeviceCode LSTN
-```
-
-Long Retentive Timer Current Value
-
-##### LCC
-
-```csharp
-public const SlmpDeviceCode LCC
-```
-
-Long Counter Coil
-
-##### LCS
-
-```csharp
-public const SlmpDeviceCode LCS
-```
-
-Long Counter Contact
-
-##### LCN
-
-```csharp
-public const SlmpDeviceCode LCN
-```
-
-Long Counter Current Value
-
-##### CS
-
-```csharp
-public const SlmpDeviceCode CS
-```
-
-Counter Contact
 
 ##### CC
 
@@ -1962,21 +1746,21 @@ public const SlmpDeviceCode CN
 
 Counter Current Value
 
-##### SB
+##### CS
 
 ```csharp
-public const SlmpDeviceCode SB
+public const SlmpDeviceCode CS
 ```
 
-Link Special Relay
+Counter Contact
 
-##### SW
+##### D
 
 ```csharp
-public const SlmpDeviceCode SW
+public const SlmpDeviceCode D
 ```
 
-Link Special Register
+Data Register
 
 ##### DX
 
@@ -1994,45 +1778,13 @@ public const SlmpDeviceCode DY
 
 Direct Output
 
-##### Z
+##### F
 
 ```csharp
-public const SlmpDeviceCode Z
+public const SlmpDeviceCode F
 ```
 
-Index Register
-
-##### LZ
-
-```csharp
-public const SlmpDeviceCode LZ
-```
-
-Long Index Register
-
-##### R
-
-```csharp
-public const SlmpDeviceCode R
-```
-
-File Register
-
-##### ZR
-
-```csharp
-public const SlmpDeviceCode ZR
-```
-
-File Register (Continuous)
-
-##### RD
-
-```csharp
-public const SlmpDeviceCode RD
-```
-
-Refresh Data Register
+Annunciator
 
 ##### G
 
@@ -2049,6 +1801,254 @@ public const SlmpDeviceCode HG
 ```
 
 Long Buffer Memory
+
+##### L
+
+```csharp
+public const SlmpDeviceCode L
+```
+
+Latch Relay
+
+##### LCC
+
+```csharp
+public const SlmpDeviceCode LCC
+```
+
+Long Counter Coil
+
+##### LCN
+
+```csharp
+public const SlmpDeviceCode LCN
+```
+
+Long Counter Current Value
+
+##### LCS
+
+```csharp
+public const SlmpDeviceCode LCS
+```
+
+Long Counter Contact
+
+##### LSTC
+
+```csharp
+public const SlmpDeviceCode LSTC
+```
+
+Long Retentive Timer Coil
+
+##### LSTN
+
+```csharp
+public const SlmpDeviceCode LSTN
+```
+
+Long Retentive Timer Current Value
+
+##### LSTS
+
+```csharp
+public const SlmpDeviceCode LSTS
+```
+
+Long Retentive Timer Contact
+
+##### LTC
+
+```csharp
+public const SlmpDeviceCode LTC
+```
+
+Long Timer Coil
+
+##### LTN
+
+```csharp
+public const SlmpDeviceCode LTN
+```
+
+Long Timer Current Value
+
+##### LTS
+
+```csharp
+public const SlmpDeviceCode LTS
+```
+
+Long Timer Contact
+
+##### LZ
+
+```csharp
+public const SlmpDeviceCode LZ
+```
+
+Long Index Register
+
+##### M
+
+```csharp
+public const SlmpDeviceCode M
+```
+
+Internal Relay
+
+##### R
+
+```csharp
+public const SlmpDeviceCode R
+```
+
+File Register
+
+##### RD
+
+```csharp
+public const SlmpDeviceCode RD
+```
+
+Refresh Data Register
+
+##### S
+
+```csharp
+public const SlmpDeviceCode S
+```
+
+Step Relay
+
+##### SB
+
+```csharp
+public const SlmpDeviceCode SB
+```
+
+Link Special Relay
+
+##### SD
+
+```csharp
+public const SlmpDeviceCode SD
+```
+
+Special Register
+
+##### SM
+
+```csharp
+public const SlmpDeviceCode SM
+```
+
+Special Relay
+
+##### STC
+
+```csharp
+public const SlmpDeviceCode STC
+```
+
+Retentive Timer Coil
+
+##### STN
+
+```csharp
+public const SlmpDeviceCode STN
+```
+
+Retentive Timer Current Value
+
+##### STS
+
+```csharp
+public const SlmpDeviceCode STS
+```
+
+Retentive Timer Contact
+
+##### SW
+
+```csharp
+public const SlmpDeviceCode SW
+```
+
+Link Special Register
+
+##### TC
+
+```csharp
+public const SlmpDeviceCode TC
+```
+
+Timer Coil
+
+##### TN
+
+```csharp
+public const SlmpDeviceCode TN
+```
+
+Timer Current Value
+
+##### TS
+
+```csharp
+public const SlmpDeviceCode TS
+```
+
+Timer Contact
+
+##### V
+
+```csharp
+public const SlmpDeviceCode V
+```
+
+Edge Relay
+
+##### W
+
+```csharp
+public const SlmpDeviceCode W
+```
+
+Link Register
+
+##### X
+
+```csharp
+public const SlmpDeviceCode X
+```
+
+Input
+
+##### Y
+
+```csharp
+public const SlmpDeviceCode Y
+```
+
+Output
+
+##### Z
+
+```csharp
+public const SlmpDeviceCode Z
+```
+
+Index Register
+
+##### ZR
+
+```csharp
+public const SlmpDeviceCode ZR
+```
+
+File Register (Continuous)
 
 ### SlmpDeviceModification
 
@@ -2107,6 +2107,22 @@ Parameters:
 - `PlcProfile`: Resolved canonical PLC profile.
 - `Entries`: Device entries for the resolved profile.
 
+##### Entries
+
+```csharp
+public IReadOnlyList<SlmpDeviceRangeEntry> Entries { get; init; }
+```
+
+Device entries for the resolved profile.
+
+##### HasModelCode
+
+```csharp
+public bool HasModelCode { get; init; }
+```
+
+Always false because profile selection is explicit.
+
 ##### Model
 
 ```csharp
@@ -2123,14 +2139,6 @@ public ushort ModelCode { get; init; }
 
 Always zero because device-range catalogs do not infer profiles from type-name responses.
 
-##### HasModelCode
-
-```csharp
-public bool HasModelCode { get; init; }
-```
-
-Always false because profile selection is explicit.
-
 ##### PlcProfile
 
 ```csharp
@@ -2138,14 +2146,6 @@ public SlmpPlcProfile PlcProfile { get; init; }
 ```
 
 Resolved canonical PLC profile.
-
-##### Entries
-
-```csharp
-public IReadOnlyList<SlmpDeviceRangeEntry> Entries { get; init; }
-```
-
-Device entries for the resolved profile.
 
 ### SlmpDeviceRangeCategory
 
@@ -2163,16 +2163,10 @@ Logical device category used by the range catalog.
 public const SlmpDeviceRangeCategory Bit
 ```
 
-##### Word
+##### FileRegister
 
 ```csharp
-public const SlmpDeviceRangeCategory Word
-```
-
-##### TimerCounter
-
-```csharp
-public const SlmpDeviceRangeCategory TimerCounter
+public const SlmpDeviceRangeCategory FileRegister
 ```
 
 ##### Index
@@ -2181,10 +2175,16 @@ public const SlmpDeviceRangeCategory TimerCounter
 public const SlmpDeviceRangeCategory Index
 ```
 
-##### FileRegister
+##### TimerCounter
 
 ```csharp
-public const SlmpDeviceRangeCategory FileRegister
+public const SlmpDeviceRangeCategory TimerCounter
+```
+
+##### Word
+
+```csharp
+public const SlmpDeviceRangeCategory Word
 ```
 
 ### SlmpDeviceRangeEntry
@@ -2218,13 +2218,13 @@ Parameters:
 - `Source`: Rule source used to build `UpperBound`.
 - `Notes`: Optional profile-specific caveats.
 
-##### Device
+##### AddressRange
 
 ```csharp
-public string Device { get; init; }
+public string AddressRange { get; init; }
 ```
 
-Device code or address family string such as `D` or `TS`.
+Preformatted address range text such as `X000-X1FF` or `D0-D511`.
 
 ##### Category
 
@@ -2234,6 +2234,14 @@ public SlmpDeviceRangeCategory Category { get; init; }
 
 Logical category for grouping in monitor tools.
 
+##### Device
+
+```csharp
+public string Device { get; init; }
+```
+
+Device code or address family string such as `D` or `TS`.
+
 ##### IsBitDevice
 
 ```csharp
@@ -2241,14 +2249,6 @@ public bool IsBitDevice { get; init; }
 ```
 
 True when the device is bit-addressable in normal use.
-
-##### Supported
-
-```csharp
-public bool Supported { get; init; }
-```
-
-True when the PLC profile supports this device.
 
 ##### LowerBound
 
@@ -2258,13 +2258,21 @@ public uint LowerBound { get; init; }
 
 Lower bound value. Current rules always use 0.
 
-##### UpperBound
+##### Notation
 
 ```csharp
-public uint? UpperBound { get; init; }
+public SlmpDeviceRangeNotation Notation { get; init; }
 ```
 
-Inclusive last address. For a 0-based range this is `PointCount - 1`. Null means no finite bound is defined by the rule.
+Recommended public address notation for this library.
+
+##### Notes
+
+```csharp
+public string Notes { get; init; }
+```
+
+Optional profile-specific caveats.
 
 ##### PointCount
 
@@ -2274,22 +2282,6 @@ public uint? PointCount { get; init; }
 
 Usable point count read or resolved for the PLC profile. Null means no finite count is defined by the rule.
 
-##### AddressRange
-
-```csharp
-public string AddressRange { get; init; }
-```
-
-Preformatted address range text such as `X000-X1FF` or `D0-D511`.
-
-##### Notation
-
-```csharp
-public SlmpDeviceRangeNotation Notation { get; init; }
-```
-
-Recommended public address notation for this library.
-
 ##### Source
 
 ```csharp
@@ -2298,13 +2290,21 @@ public string Source { get; init; }
 
 Rule source used to build `UpperBound`.
 
-##### Notes
+##### Supported
 
 ```csharp
-public string Notes { get; init; }
+public bool Supported { get; init; }
 ```
 
-Optional profile-specific caveats.
+True when the PLC profile supports this device.
+
+##### UpperBound
+
+```csharp
+public uint? UpperBound { get; init; }
+```
+
+Inclusive last address. For a 0-based range this is `PointCount - 1`. Null means no finite bound is defined by the rule.
 
 ### SlmpDeviceRangeNotation
 
@@ -2322,16 +2322,16 @@ Number notation used by the public address text for the device.
 public const SlmpDeviceRangeNotation Base10
 ```
 
-##### Base8
-
-```csharp
-public const SlmpDeviceRangeNotation Base8
-```
-
 ##### Base16
 
 ```csharp
 public const SlmpDeviceRangeNotation Base16
+```
+
+##### Base8
+
+```csharp
+public const SlmpDeviceRangeNotation Base8
 ```
 
 ### SlmpEndCodes
@@ -2376,14 +2376,6 @@ Error thrown when an SLMP protocol error occurs or the PLC returns an error code
 public SlmpError(string message, ushort? endCode = null, SlmpCommand? command = null, ushort? subcommand = null, Exception innerException = null, SlmpErrorInfo errorInfo = null)
 ```
 
-##### EndCode
-
-```csharp
-public ushort? EndCode { get; }
-```
-
-The end code returned by the PLC (0x0000 for success).
-
 ##### Command
 
 ```csharp
@@ -2392,21 +2384,13 @@ public SlmpCommand? Command { get; }
 
 The SLMP command that triggered the error.
 
-##### Subcommand
+##### EndCode
 
 ```csharp
-public ushort? Subcommand { get; }
+public ushort? EndCode { get; }
 ```
 
-The SLMP subcommand that triggered the error.
-
-##### ErrorInfo
-
-```csharp
-public SlmpErrorInfo ErrorInfo { get; }
-```
-
-Structured PLC error information from the response data, when present.
+The end code returned by the PLC (0x0000 for success).
 
 ##### EndCodeName
 
@@ -2416,6 +2400,14 @@ public string EndCodeName { get; }
 
 Compact symbolic name for `EndCode`, or null when no end code is available.
 
+##### ErrorInfo
+
+```csharp
+public SlmpErrorInfo ErrorInfo { get; }
+```
+
+Structured PLC error information from the response data, when present.
+
 ##### IsRemotePasswordError
 
 ```csharp
@@ -2423,6 +2415,14 @@ public bool IsRemotePasswordError { get; }
 ```
 
 True when `EndCode` is a remote-password-related SLMP error.
+
+##### Subcommand
+
+```csharp
+public ushort? Subcommand { get; }
+```
+
+The SLMP subcommand that triggered the error.
 
 ### SlmpErrorInfo
 
@@ -2459,21 +2459,21 @@ public static SlmpErrorInfo Parse(ReadOnlySpan<byte> data)
 
 Parse the required 9-byte SLMP error-information prefix and retain any following bytes, or return null when the complete prefix is not present.
 
-##### Network
+##### Command
 
 ```csharp
-public byte Network { get; init; }
+public ushort Command { get; init; }
 ```
 
-Network number reported by the PLC.
+Command code associated with the PLC error.
 
-##### Station
+##### Extra
 
 ```csharp
-public byte Station { get; init; }
+public byte[] Extra { get; init; }
 ```
 
-Station number reported by the PLC.
+Bytes following the required 9-byte error-information prefix.
 
 ##### ModuleIo
 
@@ -2491,21 +2491,13 @@ public byte Multidrop { get; init; }
 
 Multidrop station number reported by the PLC.
 
-##### Command
+##### Network
 
 ```csharp
-public ushort Command { get; init; }
+public byte Network { get; init; }
 ```
 
-Command code associated with the PLC error.
-
-##### Subcommand
-
-```csharp
-public ushort Subcommand { get; init; }
-```
-
-Subcommand code associated with the PLC error.
+Network number reported by the PLC.
 
 ##### Raw
 
@@ -2515,13 +2507,21 @@ public byte[] Raw { get; init; }
 
 Raw required 9-byte error-information prefix.
 
-##### Extra
+##### Station
 
 ```csharp
-public byte[] Extra { get; init; }
+public byte Station { get; init; }
 ```
 
-Bytes following the required 9-byte error-information prefix.
+Station number reported by the PLC.
+
+##### Subcommand
+
+```csharp
+public ushort Subcommand { get; init; }
+```
+
+Subcommand code associated with the PLC error.
 
 ### SlmpFrameType
 
@@ -2567,6 +2567,12 @@ public SlmpLabelArrayReadPoint(string Label, byte UnitSpecification, ushort Arra
 
 Describes one array label to read. `UnitSpecification`: 0 = bit, 1 = byte. `ArrayDataLength` is in units defined by `UnitSpecification`.
 
+##### ArrayDataLength
+
+```csharp
+public ushort ArrayDataLength { get; init; }
+```
+
 ##### Label
 
 ```csharp
@@ -2577,12 +2583,6 @@ public string Label { get; init; }
 
 ```csharp
 public byte UnitSpecification { get; init; }
-```
-
-##### ArrayDataLength
-
-```csharp
-public ushort ArrayDataLength { get; init; }
 ```
 
 ### SlmpLabelArrayReadResult
@@ -2603,18 +2603,6 @@ public SlmpLabelArrayReadResult(byte DataTypeId, byte UnitSpecification, ushort 
 
 Result item returned by `ReadArrayLabelsAsync`. `Data` contains the protocol's two-byte-padded wire representation: bit units use `ceil(ArrayDataLength / 16) * 2` bytes and byte units use `ceil(ArrayDataLength / 2) * 2` bytes.
 
-##### DataTypeId
-
-```csharp
-public byte DataTypeId { get; init; }
-```
-
-##### UnitSpecification
-
-```csharp
-public byte UnitSpecification { get; init; }
-```
-
 ##### ArrayDataLength
 
 ```csharp
@@ -2625,6 +2613,18 @@ public ushort ArrayDataLength { get; init; }
 
 ```csharp
 public byte[] Data { get; init; }
+```
+
+##### DataTypeId
+
+```csharp
+public byte DataTypeId { get; init; }
+```
+
+##### UnitSpecification
+
+```csharp
+public byte UnitSpecification { get; init; }
 ```
 
 ### SlmpLabelArrayWritePoint
@@ -2655,22 +2655,6 @@ Parameters:
 - `ArrayDataLength`: Logical length expressed in `UnitSpecification` units.
 - `Data`: Raw data padded to a two-byte boundary. Its length must be exactly `ceil(ArrayDataLength / 16) * 2` for bit units or `ceil(ArrayDataLength / 2) * 2` for byte units.
 
-##### Label
-
-```csharp
-public string Label { get; init; }
-```
-
-Label name.
-
-##### UnitSpecification
-
-```csharp
-public byte UnitSpecification { get; init; }
-```
-
-Logical length unit: 0 for bits or 1 for bytes.
-
 ##### ArrayDataLength
 
 ```csharp
@@ -2686,6 +2670,22 @@ public byte[] Data { get; init; }
 ```
 
 Raw data padded to a two-byte boundary. Its length must be exactly `ceil(ArrayDataLength / 16) * 2` for bit units or `ceil(ArrayDataLength / 2) * 2` for byte units.
+
+##### Label
+
+```csharp
+public string Label { get; init; }
+```
+
+Label name.
+
+##### UnitSpecification
+
+```csharp
+public byte UnitSpecification { get; init; }
+```
+
+Logical length unit: 0 for bits or 1 for bytes.
 
 ### SlmpLabelRandomReadResult
 
@@ -2705,16 +2705,16 @@ public SlmpLabelRandomReadResult(byte DataTypeId, byte Spare, ushort ReadDataLen
 
 Result item returned by `ReadRandomLabelsAsync`. `ReadDataLength` is a positive even wire-byte count, and `Spare` is preserved exactly as returned by the PLC.
 
+##### Data
+
+```csharp
+public byte[] Data { get; init; }
+```
+
 ##### DataTypeId
 
 ```csharp
 public byte DataTypeId { get; init; }
-```
-
-##### Spare
-
-```csharp
-public byte Spare { get; init; }
 ```
 
 ##### ReadDataLength
@@ -2723,10 +2723,10 @@ public byte Spare { get; init; }
 public ushort ReadDataLength { get; init; }
 ```
 
-##### Data
+##### Spare
 
 ```csharp
-public byte[] Data { get; init; }
+public byte Spare { get; init; }
 ```
 
 ### SlmpLabelRandomWritePoint
@@ -2747,16 +2747,16 @@ public SlmpLabelRandomWritePoint(string Label, byte[] Data)
 
 Describes one random label write point. `Data` must contain a positive, even number of raw wire bytes, including any required string terminator or padding.
 
-##### Label
-
-```csharp
-public string Label { get; init; }
-```
-
 ##### Data
 
 ```csharp
 public byte[] Data { get; init; }
+```
+
+##### Label
+
+```csharp
+public string Label { get; init; }
 ```
 
 ### SlmpLongTimerResult
@@ -2786,29 +2786,13 @@ Parameters:
 - `StatusWord`: Raw status word (word index 2 in the 4-word block).
 - `RawWords`: The four raw 16-bit words that make up this timer entry.
 
-##### Index
+##### Coil
 
 ```csharp
-public int Index { get; init; }
+public bool Coil { get; init; }
 ```
 
-The device number (e.g. 0 for LTN0).
-
-##### Device
-
-```csharp
-public string Device { get; init; }
-```
-
-The device address string (e.g. "LTN0").
-
-##### CurrentValue
-
-```csharp
-public uint CurrentValue { get; init; }
-```
-
-32-bit current value (two 16-bit words combined).
+True when the timer coil is ON.
 
 ##### Contact
 
@@ -2818,21 +2802,29 @@ public bool Contact { get; init; }
 
 True when the timer contact is ON.
 
-##### Coil
+##### CurrentValue
 
 ```csharp
-public bool Coil { get; init; }
+public uint CurrentValue { get; init; }
 ```
 
-True when the timer coil is ON.
+32-bit current value (two 16-bit words combined).
 
-##### StatusWord
+##### Device
 
 ```csharp
-public ushort StatusWord { get; init; }
+public string Device { get; init; }
 ```
 
-Raw status word (word index 2 in the 4-word block).
+The device address string (e.g. "LTN0").
+
+##### Index
+
+```csharp
+public int Index { get; init; }
+```
+
+The device number (e.g. 0 for LTN0).
 
 ##### RawWords
 
@@ -2841,6 +2833,14 @@ public ushort[] RawWords { get; init; }
 ```
 
 The four raw 16-bit words that make up this timer entry.
+
+##### StatusWord
+
+```csharp
+public ushort StatusWord { get; init; }
+```
+
+Raw status word (word index 2 in the 4-word block).
 
 ### SlmpModuleIo
 
@@ -2862,29 +2862,13 @@ public const ushort ControlSystemCpu
 
 Control system CPU in a redundant CPU system.
 
-##### StandbySystemCpu
+##### ControlSystemRemoteHead
 
 ```csharp
-public const ushort StandbySystemCpu
+public const ushort ControlSystemRemoteHead
 ```
 
-Standby system CPU in a redundant CPU system.
-
-##### SystemACpu
-
-```csharp
-public const ushort SystemACpu
-```
-
-System A CPU in a redundant CPU system.
-
-##### SystemBCpu
-
-```csharp
-public const ushort SystemBCpu
-```
-
-System B CPU in a redundant CPU system.
+Control system remote head route.
 
 ##### MultipleCpu1
 
@@ -2918,6 +2902,14 @@ public const ushort MultipleCpu4
 
 CPU No. 4 in a multi-CPU system.
 
+##### OwnStation
+
+```csharp
+public const ushort OwnStation
+```
+
+Own station route.
+
 ##### RemoteHead1
 
 ```csharp
@@ -2934,13 +2926,13 @@ public const ushort RemoteHead2
 
 Remote head No. 2 route.
 
-##### ControlSystemRemoteHead
+##### StandbySystemCpu
 
 ```csharp
-public const ushort ControlSystemRemoteHead
+public const ushort StandbySystemCpu
 ```
 
-Control system remote head route.
+Standby system CPU in a redundant CPU system.
 
 ##### StandbySystemRemoteHead
 
@@ -2950,13 +2942,21 @@ public const ushort StandbySystemRemoteHead
 
 Standby system remote head route.
 
-##### OwnStation
+##### SystemACpu
 
 ```csharp
-public const ushort OwnStation
+public const ushort SystemACpu
 ```
 
-Own station route.
+System A CPU in a redundant CPU system.
+
+##### SystemBCpu
+
+```csharp
+public const ushort SystemBCpu
+```
+
+System B CPU in a redundant CPU system.
 
 ### SlmpMonitorResult
 
@@ -2980,14 +2980,6 @@ Parameters:
 - `WordValues`: 16-bit word values for the registered word devices (in registration order).
 - `DwordValues`: 32-bit values for the registered DWord devices (in registration order).
 
-##### WordValues
-
-```csharp
-public ushort[] WordValues { get; init; }
-```
-
-16-bit word values for the registered word devices (in registration order).
-
 ##### DwordValues
 
 ```csharp
@@ -2995,6 +2987,14 @@ public uint[] DwordValues { get; init; }
 ```
 
 32-bit values for the registered DWord devices (in registration order).
+
+##### WordValues
+
+```csharp
+public ushort[] WordValues { get; init; }
+```
+
+16-bit word values for the registered word devices (in registration order).
 
 ### SlmpNamedTarget
 
@@ -3076,14 +3076,6 @@ Reason a state-changing request has an unknown PLC outcome.
 
 #### Members
 
-##### Timeout
-
-```csharp
-public const SlmpOutcomeUnknownReason Timeout
-```
-
-The single transaction deadline expired after request bytes may have been sent.
-
 ##### Cancellation
 
 ```csharp
@@ -3100,14 +3092,6 @@ public const SlmpOutcomeUnknownReason Closed
 
 The client was closed after request bytes may have been sent.
 
-##### Transport
-
-```csharp
-public const SlmpOutcomeUnknownReason Transport
-```
-
-A transport failure occurred after request bytes may have been sent.
-
 ##### MalformedResponse
 
 ```csharp
@@ -3115,6 +3099,22 @@ public const SlmpOutcomeUnknownReason MalformedResponse
 ```
 
 A malformed PLC response occurred after request bytes may have been sent.
+
+##### Timeout
+
+```csharp
+public const SlmpOutcomeUnknownReason Timeout
+```
+
+The single transaction deadline expired after request bytes may have been sent.
+
+##### Transport
+
+```csharp
+public const SlmpOutcomeUnknownReason Transport
+```
+
+A transport failure occurred after request bytes may have been sent.
 
 ### SlmpPlcProfile
 
@@ -3126,18 +3126,16 @@ Canonical PLC profile used by the high-level API.
 
 #### Members
 
-##### Unspecified
-
-```csharp
-public const SlmpPlcProfile Unspecified
-```
-
-No PLC profile has been selected.
-
 ##### IqF
 
 ```csharp
 public const SlmpPlcProfile IqF
+```
+
+##### IqL
+
+```csharp
+public const SlmpPlcProfile IqL
 ```
 
 ##### IqR
@@ -3152,10 +3150,16 @@ public const SlmpPlcProfile IqR
 public const SlmpPlcProfile IqRRj71En71
 ```
 
-##### IqL
+##### LCpu
 
 ```csharp
-public const SlmpPlcProfile IqL
+public const SlmpPlcProfile LCpu
+```
+
+##### LCpuLj71E71100
+
+```csharp
+public const SlmpPlcProfile LCpuLj71E71100
 ```
 
 ##### MxF
@@ -3182,10 +3186,10 @@ public const SlmpPlcProfile MxRRj71En71
 public const SlmpPlcProfile QCpu
 ```
 
-##### LCpu
+##### QCpuQj71E71100
 
 ```csharp
-public const SlmpPlcProfile LCpu
+public const SlmpPlcProfile QCpuQj71E71100
 ```
 
 ##### QnU
@@ -3200,16 +3204,10 @@ public const SlmpPlcProfile QnU
 public const SlmpPlcProfile QnUDV
 ```
 
-##### QCpuQj71E71100
+##### QnUDVQj71E71100
 
 ```csharp
-public const SlmpPlcProfile QCpuQj71E71100
-```
-
-##### LCpuLj71E71100
-
-```csharp
-public const SlmpPlcProfile LCpuLj71E71100
+public const SlmpPlcProfile QnUDVQj71E71100
 ```
 
 ##### QnUQj71E71100
@@ -3218,11 +3216,13 @@ public const SlmpPlcProfile LCpuLj71E71100
 public const SlmpPlcProfile QnUQj71E71100
 ```
 
-##### QnUDVQj71E71100
+##### Unspecified
 
 ```csharp
-public const SlmpPlcProfile QnUDVQj71E71100
+public const SlmpPlcProfile Unspecified
 ```
+
+No PLC profile has been selected.
 
 ### SlmpPlcProfileDefaults
 
@@ -3242,10 +3242,10 @@ public SlmpPlcProfileDefaults(SlmpFrameType FrameType, SlmpCompatibilityMode Com
 
 Resolved fixed defaults for one canonical PLC profile.
 
-##### FrameType
+##### AddressProfile
 
 ```csharp
-public SlmpFrameType FrameType { get; init; }
+public SlmpPlcProfile AddressProfile { get; init; }
 ```
 
 ##### CompatibilityMode
@@ -3254,10 +3254,10 @@ public SlmpFrameType FrameType { get; init; }
 public SlmpCompatibilityMode CompatibilityMode { get; init; }
 ```
 
-##### AddressProfile
+##### FrameType
 
 ```csharp
-public SlmpPlcProfile AddressProfile { get; init; }
+public SlmpFrameType FrameType { get; init; }
 ```
 
 ##### RangeProfile
@@ -3284,16 +3284,16 @@ public SlmpPlcProfileDescriptor(string CanonicalName, string DisplayName, bool C
 
 Canonical metadata used to select and describe one PLC profile.
 
+##### BaseProfile
+
+```csharp
+public string BaseProfile { get; init; }
+```
+
 ##### CanonicalName
 
 ```csharp
 public string CanonicalName { get; init; }
-```
-
-##### DisplayName
-
-```csharp
-public string DisplayName { get; init; }
 ```
 
 ##### Connectable
@@ -3302,10 +3302,10 @@ public string DisplayName { get; init; }
 public bool Connectable { get; init; }
 ```
 
-##### BaseProfile
+##### DisplayName
 
 ```csharp
-public string BaseProfile { get; init; }
+public string DisplayName { get; init; }
 ```
 
 ### SlmpPlcProfiles
@@ -3326,6 +3326,14 @@ public static IReadOnlyList<SlmpPlcProfile> AvailableProfiles()
 
 Return the built-in profiles that can be used to open a connection.
 
+##### GetDisplayName
+
+```csharp
+public static string GetDisplayName(SlmpPlcProfile profile)
+```
+
+Return the canonical human-readable display name for a PLC profile.
+
 ##### GetProfileDescriptors
 
 ```csharp
@@ -3344,22 +3352,6 @@ public static SlmpPlcProfile Parse(string text)
 
 Parse a canonical PLC profile string.
 
-##### ToCanonicalString
-
-```csharp
-public static string ToCanonicalString(SlmpPlcProfile profile)
-```
-
-Return the canonical string form used in user-facing configuration.
-
-##### GetDisplayName
-
-```csharp
-public static string GetDisplayName(SlmpPlcProfile profile)
-```
-
-Return the canonical human-readable display name for a PLC profile.
-
 ##### Resolve
 
 ```csharp
@@ -3368,13 +3360,21 @@ public static SlmpPlcProfileDefaults Resolve(SlmpPlcProfile profile)
 
 Resolve the stable defaults for one explicit PLC profile.
 
-##### ValidateConnectionProfile
+##### ToCanonicalString
 
 ```csharp
-public static SlmpPlcProfile ValidateConnectionProfile(SlmpPlcProfile profile)
+public static string ToCanonicalString(SlmpPlcProfile profile)
 ```
 
-Validate that the profile can be used to open an SLMP connection.
+Return the canonical string form used in user-facing configuration.
+
+##### UsesIqFXyOctal
+
+```csharp
+public static bool UsesIqFXyOctal(SlmpPlcProfile profile)
+```
+
+True when `X` and `Y` strings must be parsed as octal.
 
 ##### UsesIqrProtocol
 
@@ -3384,13 +3384,13 @@ public static bool UsesIqrProtocol(SlmpPlcProfile profile)
 
 True when the selected profile uses iQ-R-compatible command subcommands and payloads.
 
-##### UsesIqFXyOctal
+##### ValidateConnectionProfile
 
 ```csharp
-public static bool UsesIqFXyOctal(SlmpPlcProfile profile)
+public static SlmpPlcProfile ValidateConnectionProfile(SlmpPlcProfile profile)
 ```
 
-True when `X` and `Y` strings must be parsed as octal.
+Validate that the profile can be used to open an SLMP connection.
 
 ### SlmpProfileFeatureException
 
@@ -3408,6 +3408,22 @@ Error thrown before sending a high-level request when the selected PLC profile m
 public SlmpProfileFeatureException(SlmpPlcProfile plcProfile, string featureKey, string state, string evidence)
 ```
 
+##### Evidence
+
+```csharp
+public string Evidence { get; }
+```
+
+Evidence source or note that explains why the feature is guarded.
+
+##### FeatureKey
+
+```csharp
+public string FeatureKey { get; }
+```
+
+Canonical feature key from the SLMP profile capability data.
+
 ##### PlcProfile
 
 ```csharp
@@ -3424,14 +3440,6 @@ public string ProfileId { get; }
 
 Canonical profile identifier such as `melsec:qnudv`.
 
-##### FeatureKey
-
-```csharp
-public string FeatureKey { get; }
-```
-
-Canonical feature key from the SLMP profile capability data.
-
 ##### State
 
 ```csharp
@@ -3439,14 +3447,6 @@ public string State { get; }
 ```
 
 Canonical feature state, for example `blocked` or `unverified`.
-
-##### Evidence
-
-```csharp
-public string Evidence { get; }
-```
-
-Evidence source or note that explains why the feature is guarded.
 
 ### SlmpQualifiedDeviceAddress
 
@@ -3510,10 +3510,10 @@ Explicit device-clear policy for remote RUN.
 
 #### Members
 
-##### NoClear
+##### ClearAll
 
 ```csharp
-public const SlmpRemoteClearMode NoClear
+public const SlmpRemoteClearMode ClearAll
 ```
 
 ##### ClearExceptLatch
@@ -3522,10 +3522,10 @@ public const SlmpRemoteClearMode NoClear
 public const SlmpRemoteClearMode ClearExceptLatch
 ```
 
-##### ClearAll
+##### NoClear
 
 ```csharp
-public const SlmpRemoteClearMode ClearAll
+public const SlmpRemoteClearMode NoClear
 ```
 
 ### SlmpRemoteMode
@@ -3538,16 +3538,16 @@ Explicit mode for remote RUN and PAUSE operations.
 
 #### Members
 
-##### Normal
-
-```csharp
-public const SlmpRemoteMode Normal
-```
-
 ##### Force
 
 ```csharp
 public const SlmpRemoteMode Force
+```
+
+##### Normal
+
+```csharp
+public const SlmpRemoteMode Normal
 ```
 
 ### SlmpTargetAddress
@@ -3574,22 +3574,6 @@ Parameters:
 - `ModuleIo`: Module I/O number (0x03FF for own station).
 - `Multidrop`: Multidrop station number (0x00 for no multidrop).
 
-##### Network
-
-```csharp
-public byte Network { get; init; }
-```
-
-Network number (0x00 for local network).
-
-##### Station
-
-```csharp
-public byte Station { get; init; }
-```
-
-Station number (0xFF for the connected station).
-
 ##### ModuleIo
 
 ```csharp
@@ -3606,6 +3590,14 @@ public byte Multidrop { get; init; }
 
 Multidrop station number (0x00 for no multidrop).
 
+##### Network
+
+```csharp
+public byte Network { get; init; }
+```
+
+Network number (0x00 for local network).
+
 ##### OwnStation
 
 ```csharp
@@ -3613,6 +3605,14 @@ public static SlmpTargetAddress OwnStation { get; }
 ```
 
 An explicit directly connected own-station route.
+
+##### Station
+
+```csharp
+public byte Station { get; init; }
+```
+
+Station number (0xFF for the connected station).
 
 ### SlmpTargetParser
 
@@ -3624,13 +3624,13 @@ Utility for parsing target station descriptions into `SlmpNamedTarget`.
 
 #### Members
 
-##### ParseNamed
+##### ParseAutoNumber
 
 ```csharp
-public static SlmpNamedTarget ParseNamed(string text)
+public static int ParseAutoNumber(string text)
 ```
 
-Parses a single target string. Supports "SELF", "SELF-MULTIPLE-CPU-1..4", or "NAME,NETWORK,STATION,MODULE_IO,MULTIDROP".
+Parses a number string, supporting both decimal and "0x" hexadecimal notation.
 
 ##### ParseMany
 
@@ -3640,13 +3640,13 @@ public static IReadOnlyList<SlmpNamedTarget> ParseMany(IReadOnlyList<string> val
 
 Parses a list of target strings.
 
-##### ParseAutoNumber
+##### ParseNamed
 
 ```csharp
-public static int ParseAutoNumber(string text)
+public static SlmpNamedTarget ParseNamed(string text)
 ```
 
-Parses a number string, supporting both decimal and "0x" hexadecimal notation.
+Parses a single target string. Supports "SELF", "SELF-MULTIPLE-CPU-1..4", or "NAME,NETWORK,STATION,MODULE_IO,MULTIDROP".
 
 ### SlmpTimeoutException
 
@@ -3695,14 +3695,6 @@ public ulong RequestCount { get; init; }
 
 Number of complete request frames accepted by the transport.
 
-##### TxBytes
-
-```csharp
-public ulong TxBytes { get; init; }
-```
-
-Total bytes in complete request frames accepted by the transport.
-
 ##### RxBytes
 
 ```csharp
@@ -3710,6 +3702,14 @@ public ulong RxBytes { get; init; }
 ```
 
 Total bytes in complete response frames or datagrams received.
+
+##### TxBytes
+
+```csharp
+public ulong TxBytes { get; init; }
+```
+
+Total bytes in complete request frames accepted by the transport.
 
 ### SlmpTransportException
 
@@ -3776,6 +3776,14 @@ Parameters:
 - `ModelCode`: Internal model code.
 - `HasModelCode`: True if the model code is valid.
 
+##### HasModelCode
+
+```csharp
+public bool HasModelCode { get; init; }
+```
+
+True if the model code is valid.
+
 ##### Model
 
 ```csharp
@@ -3791,11 +3799,3 @@ public ushort ModelCode { get; init; }
 ```
 
 Internal model code.
-
-##### HasModelCode
-
-```csharp
-public bool HasModelCode { get; init; }
-```
-
-True if the model code is valid.

@@ -962,9 +962,14 @@ stable source commit associated with the package baseline. The contract signatur
 editor-hidden and compiler-generated accessible members, protected contract surface, fully-qualified
 types, default values, generic constraints, inheritance/interfaces, operators, indexer parameters,
 property setter/init shape, attributes/modifiers used for nullable/tuple/required/extension/params/in
-semantics, enum underlying types, and public constant/enum values. Generated API-reference freshness
-is checked in the same required job; exception behavior, XML prose semantics, and package-symbol
-content remain explicit Codex self-review responsibilities.
+semantics, enum underlying types, and public constant/enum values. Compiler state-machine attributes
+retain their attribute kind, target method, and generic shape, but the compiler-assigned `d__N`
+ordinal is normalized before comparison because private implementation ordering can renumber it
+without changing a public contract. API members are ordered by their stable DocId and then complete
+contract signature; metadata-token emission order never controls generated documentation or
+comparison input. Generated API-reference freshness is checked in the same required job; exception
+behavior, XML prose semantics, and package-symbol content remain explicit Codex self-review
+responsibilities.
 
 Compatibility impact: none for consumers. The change strengthens release admission. Classification
 does not create a compatibility alias or silently permit a documented contract break.
@@ -982,6 +987,11 @@ Acceptance criteria:
    disposition; release CI enforces the candidate major.
 7. The required CI job checks the policy implementation, generated API freshness, and the actual baseline comparison.
 8. Final self-review covers exception behavior, XML/generated documentation, profile identifiers, package symbols, and every detector limitation.
+9. Changing only a recognized async, iterator, or async-iterator state-machine ordinal produces no
+   API difference, while changing its attribute kind, target method, generic shape, or any other
+   contract field remains detectable.
+10. Reordering otherwise identical member declarations leaves inspector output unchanged, while a
+    meaningful member-signature change remains visible.
 
 - [x] Detector, policy schema, CI gate, policy tests, and release-major enforcement implemented.
 - [x] Exact candidate differences generated and every entry classified against the stable contract.
@@ -993,24 +1003,25 @@ Acceptance criteria:
 - [x] The release-major gate correctly rejected current version `4.0.1` because documented incompatible changes require major `5`.
 - [x] Update the actual release version to major `5` or later and record final release acceptance.
 
-Current actual-diff disposition: the authorized comparison found 188 distinct API differences with
-the same signatures on all three TFMs, expanded to 564 exact per-TFM classification records. The
-101 removed queued-wrapper/type-specific APIs and two factory return-type changes are
-`documented-contract` under `GOAL-SERIAL-DEFER-006` and require candidate major 5. The 17 new
-structured lifecycle/outcome error APIs are `additive`. The remaining 68 differences are
-`generated-or-noncontract`: after removing only the compiler-generated async/iterator state-machine
-attribute, their callable signature, nullability, defaults, modifiers, and public contract are byte-
-for-byte identical. Every record pins its complete before/after signature; no wildcard or blanket
-namespace suppression is used.
+Current actual-diff disposition: the authorized comparison finds 129 distinct API differences with
+the same signatures on all three TFMs, expanded to 387 exact per-TFM classification records. Of
+these, 104 per TFM are `documented-contract`, 18 per TFM are `additive`, and seven per TFM are
+`generated-or-noncontract`. Every retained record pins its normalized complete before/after
+signature; no wildcard or blanket namespace suppression is used. The normalization changes only the
+numeric ordinal inside recognized `AsyncStateMachineAttribute`, `IteratorStateMachineAttribute`, and
+`AsyncIteratorStateMachineAttribute` target types. It preserves attribute presence, kind, target
+method, generic shape, and every other contract field.
 
-Verification evidence (2026-08-01): the exact API gate passed all 564 classifications with no
-unclassified or stale record. The worktree and extracted source archive each passed 451 tests on
-net8.0, net9.0, and net10.0; all six net10.0 samples, generated API freshness, package consumer,
-format, and source-archive validation passed. Candidate-major enforcement rejected `4.0.1` because
-major `5` is required. No version was changed and no package was published.
-
-Final release acceptance (2026-08-07): the actual candidate version is `5.0.0`, and the complete
-repository release gate passed with the approved API classifications. No package was published.
+Verification evidence (2026-08-07): deterministic policy tests cover all three recognized
+state-machine attributes, generic state-machine types, and negative cases proving that attribute
+kind, target method, and unrelated user attributes are not hidden. The immutable baseline comparison
+passed all 387 classifications with zero unclassified or stale records after 183
+state-machine-number-only records were removed. Candidate-major enforcement accepts actual candidate
+version `5.0.0`. A compiled three-variant fixture proves declaration-order independence and detection
+of a changed parameter type. The final worktree passed `release_check.bat`, 594 tests on each of
+`net8.0`, `net9.0`, and `net10.0`, generated-reference freshness, formatting, NuGet package/isolated
+consumer validation, and synthetic worktree source-archive validation. No package was published by
+this verification.
 
 ## GOAL-DOTNET-SAMPLE-TFM-001-SLMP: user samples target .NET 10
 
@@ -1176,6 +1187,11 @@ three TFMs. The API-policy key sets still matched exactly, with zero stale or un
 the 186 exact `after` signatures were synchronized while retaining their existing classifications
 and rationale. Callable signatures, nullability, defaults, and public contract fields were unchanged
 by that synchronization.
+
+This paragraph preserves the 2026-08-01 historical run. The 2026-08-07 release-tooling correction
+supersedes its raw state-machine-ordinal classifications: ordinal-only changes are now normalized,
+the 183 corresponding per-TFM records are removed, and the current 387-record result is stated in
+`GOAL-DOCUMENTED-API-DIFF-001-SLMP` above.
 
 Accepted and corrected self-review findings:
 

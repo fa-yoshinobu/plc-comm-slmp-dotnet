@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.0.0] - 2026-08-07
 
+- CI: Release tooling now normalizes only compiler-generated state-machine ordinals in
+  `AsyncStateMachineAttribute`, `IteratorStateMachineAttribute`, and
+  `AsyncIteratorStateMachineAttribute`. API classifications continue to pin attribute kind,
+  target method, generic shape, and every other contract detail; 183 state-machine-number-only
+  classifications were removed. Generated API members are now ordered by stable DocId and contract
+  signature instead of metadata-token emission order. These corrections do not change the runtime or
+  public API contract.
 - Library: `PollAsync` now prepares and validates its immutable Random Read payload and compact decode indexes once per stream, then reuses them for every FIFO-controlled cycle without changing timing, cancellation, close, or error behavior.
 - Library: Typed command decoders now parse a private `ReadOnlyMemory<byte>` view over the owned response frame; public raw/trace/error and byte-result surfaces remain owned. Extended Random and Monitor builders now use a validated exact-size two-pass encoder with one final payload allocation and no per-device encoded arrays.
 - Tests: Added allocation/encoding counters and regressions for one-time polling preparation, compact indexed decode, typed/raw response ownership, and exact-size Extended payload construction.
