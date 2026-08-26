@@ -1458,3 +1458,48 @@ and 192 random-read limits and the 80/960 random-write pair match the canonical
 table; an unspecified profile returns no value; the result type has only the
 two operational properties; all target frameworks build, test, and produce a
 fresh generated API reference.
+
+## RELEASE-SLMP-5.1.0-20260827 — Additive API release
+
+Stable identifier: `RELEASE-SLMP-5.1.0-20260827`.
+
+Implementation scope: canonical contiguous Bit helpers, public profile request-limit lookup,
+Q-series runtime range probes, package metadata, changelog, generated API reference, tests, and
+the final release gate in this repository.
+
+Target contract: release these backward-compatible additions as `PlcComm.Slmp` `5.1.0`.
+Canonical helpers send exactly one request or reject before transport. Profile limits come from
+the same capability table used by request validation. Q-series runtime probes follow the canonical
+Z/ZR/R rules and propagate non-boundary communication failures.
+
+Compatibility impact: this is a minor release with additive APIs and corrected range discovery.
+The deprecated Block-named compatibility delegates remain callable for this release.
+
+Machine-verifiable acceptance criteria:
+
+1. MSBuild reports package version `5.1.0`, and the changelog has a dated `5.1.0` section.
+2. The exact repository `release_check.bat` passes on the final source state.
+3. The generated NuGet package contains the documented canonical helpers and profile-limit API.
+4. PLC Scope compiles and passes its non-live tests using the candidate package API.
+5. No public registry publication is performed by the agent.
+
+Live disposition: single-request shape and profile-limit lookup are deterministic local contracts.
+Live QCPU/LCPU/QnU/QnUDV range discovery remains `unverified` for this release because no live PLC
+batch was authorized. Release is permitted with that scope unverified: the implementation follows
+the approved canonical runtime-probe rules, performs reads only, and propagates non-boundary errors
+instead of inventing a range.
+
+Final self-review inspected the canonical helper send paths, profile-limit source, Q-series probe
+sequence, error classification, tests, generated API, and package surface. A concern based on the
+older no-probe policy was rejected because `slmp_q_series_device_catalog_goal_20260826.md` explicitly
+supersedes it and approves the current C++-matching PLC-end-code rule; no accepted defect remains.
+The working-tree release gate passed, but the gate and final-acceptance boxes stay open until the
+same command is rerun against the eventual release commit before tagging.
+
+- [x] Implementation and package metadata completed in this repository.
+- [x] Tests cover every deterministic acceptance criterion.
+- [ ] Relevant static, unit, integration, sample, source-archive, API, and package gates passed.
+- [x] Codex final self-review completed against the approved contracts and actual diff.
+- [x] Live verification is passed or carries the item-specific disposition above.
+- [x] Documentation, migration notes, changelog, and generated API reference agree.
+- [ ] Final acceptance criteria verified and this item marked complete.

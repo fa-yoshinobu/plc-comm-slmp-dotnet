@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-08-27
+
+- Release: Bumped .NET package metadata to `5.1.0` for the additive high-level API and profile-limit release.
 - Library: Added `SlmpPlcProfiles.TryGetProfileLimit` with typed keys and operational point/weighted limits from the same canonical capability table used by request validation.
 - Library: Added canonical `ReadBitsSingleRequestAsync` and `WriteBitsSingleRequestAsync` high-level helpers with one-request-or-pre-transport-rejection behavior. `ReadBitsBlockAsync`, `WriteBitsBlockAsync`, and `WriteWordsBlockAsync` remain deprecated one-release delegates to canonical helpers.
 - Library: Restored canonical Q-series device-range runtime probes: QCPU selects 10 or 16
