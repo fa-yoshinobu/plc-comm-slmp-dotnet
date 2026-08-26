@@ -176,7 +176,7 @@ public sealed class SlmpClientGuardTests
         Assert.Equal("value", (await Assert.ThrowsAsync<ArgumentNullException>(() =>
             client.WriteTypedAsync(device, "U", null!))).ParamName);
         Assert.Equal("start", (await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            client.WriteWordsBlockAsync(null!, [1]))).ParamName);
+            client.WriteWordsSingleRequestAsync(null!, [1]))).ParamName);
         Assert.False(client.IsOpen);
         Assert.Equal(default, client.TrafficStats);
     }
@@ -562,10 +562,12 @@ public sealed class SlmpClientGuardTests
     }
 
     [Fact]
-    public async Task DirectAccess_DoesNotUseDeviceRangeUpperBoundsAsSendGuard()
+    public async Task CanonicalSingleRequestHelpers_SendOneRequestEachWithoutCatalogRangeGuard()
     {
         await using var server = new MultiShotSlmpServer([
             (0, new byte[] { 0x34, 0x12 }),
+            (0, Array.Empty<byte>()),
+            (0, new byte[] { 0x10 }),
             (0, Array.Empty<byte>()),
         ]);
         await server.StartAsync();
@@ -578,8 +580,10 @@ public sealed class SlmpClientGuardTests
         var values = await client.ReadWordsSingleRequestAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 999_999, SlmpPlcProfile.IqR), 1);
         Assert.Equal(new ushort[] { 0x1234 }, values);
 
-        await client.WriteWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 999_999, SlmpPlcProfile.IqR), [0x5678]);
-        Assert.Equal(2, server.RequestFrames.Count);
+        await client.WriteWordsSingleRequestAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 999_999, SlmpPlcProfile.IqR), [0x5678]);
+        Assert.Equal(SingleTrue, await client.ReadBitsSingleRequestAsync("M0", 1));
+        await client.WriteBitsSingleRequestAsync("M0", SingleTrue);
+        Assert.Equal(4, server.RequestFrames.Count);
     }
 
     [Theory]

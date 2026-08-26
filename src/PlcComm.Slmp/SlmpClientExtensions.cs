@@ -439,29 +439,50 @@ public static class SlmpClientExtensions
         => client.WriteBitInWordAsync(ParseDeviceForClient(client, device), bitIndex, value, ct);
 
     /// <summary>
-    /// Reads a contiguous bit-device range and returns boolean values.
+    /// Reads a contiguous bit-device range using exactly one SLMP request.
     /// </summary>
     /// <param name="client">Connected SLMP client.</param>
     /// <param name="start">First bit device in the range.</param>
     /// <param name="count">Number of points to read.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Boolean values in PLC order.</returns>
+    public static Task<bool[]> ReadBitsSingleRequestAsync(
+        this SlmpClient client,
+        SlmpDeviceAddress start,
+        int count,
+        CancellationToken ct = default)
+    {
+        ValidateSingleRequestCount(count, start.PlcProfile == SlmpPlcProfile.IqF ? 3584 : 7168, nameof(count));
+        return client.ReadBitsAsync(start, (ushort)count, ct);
+    }
+
+    /// <summary>
+    /// Reads a contiguous bit-device range using a string address.
+    /// </summary>
+    public static Task<bool[]> ReadBitsSingleRequestAsync(
+        this SlmpClient client,
+        string start,
+        int count,
+        CancellationToken ct = default)
+        => client.ReadBitsSingleRequestAsync(ParseDeviceForClient(client, start), count, ct);
+
+    /// <summary>Deprecated compatibility name. Use <see cref="ReadBitsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, int, CancellationToken)"/>.</summary>
+    [Obsolete("Use ReadBitsSingleRequestAsync; ReadBitsBlockAsync will be removed after one compatibility release.")]
     public static Task<bool[]> ReadBitsBlockAsync(
         this SlmpClient client,
         SlmpDeviceAddress start,
         ushort count,
         CancellationToken ct = default)
-        => client.ReadBitsAsync(start, count, ct);
+        => client.ReadBitsSingleRequestAsync(start, count, ct);
 
-    /// <summary>
-    /// Reads a contiguous bit-device range using a string address.
-    /// </summary>
+    /// <summary>Deprecated compatibility name. Use <see cref="ReadBitsSingleRequestAsync(SlmpClient, string, int, CancellationToken)"/>.</summary>
+    [Obsolete("Use ReadBitsSingleRequestAsync; ReadBitsBlockAsync will be removed after one compatibility release.")]
     public static Task<bool[]> ReadBitsBlockAsync(
         this SlmpClient client,
         string start,
         ushort count,
         CancellationToken ct = default)
-        => client.ReadBitsBlockAsync(ParseDeviceForClient(client, start), count, ct);
+        => client.ReadBitsSingleRequestAsync(start, count, ct);
 
     /// <summary>
     /// Writes a contiguous bit-device range from boolean values.
@@ -470,22 +491,43 @@ public static class SlmpClientExtensions
     /// <param name="start">First bit device in the range.</param>
     /// <param name="values">Boolean values in PLC order.</param>
     /// <param name="ct">Cancellation token.</param>
+    public static Task WriteBitsSingleRequestAsync(
+        this SlmpClient client,
+        SlmpDeviceAddress start,
+        IReadOnlyList<bool> values,
+        CancellationToken ct = default)
+    {
+        ValidateSingleRequestValues(values, start.PlcProfile == SlmpPlcProfile.IqF ? 3584 : 7168, nameof(values));
+        return client.WriteBitsAsync(start, values, ct);
+    }
+
+    /// <summary>
+    /// Writes a contiguous bit-device range using a string address.
+    /// </summary>
+    public static Task WriteBitsSingleRequestAsync(
+        this SlmpClient client,
+        string start,
+        IReadOnlyList<bool> values,
+        CancellationToken ct = default)
+        => client.WriteBitsSingleRequestAsync(ParseDeviceForClient(client, start), values, ct);
+
+    /// <summary>Deprecated compatibility name. Use <see cref="WriteBitsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList{bool}, CancellationToken)"/>.</summary>
+    [Obsolete("Use WriteBitsSingleRequestAsync; WriteBitsBlockAsync will be removed after one compatibility release.")]
     public static Task WriteBitsBlockAsync(
         this SlmpClient client,
         SlmpDeviceAddress start,
         IReadOnlyList<bool> values,
         CancellationToken ct = default)
-        => client.WriteBitsAsync(start, values, ct);
+        => client.WriteBitsSingleRequestAsync(start, values, ct);
 
-    /// <summary>
-    /// Writes a contiguous bit-device range using a string address.
-    /// </summary>
+    /// <summary>Deprecated compatibility name. Use <see cref="WriteBitsSingleRequestAsync(SlmpClient, string, IReadOnlyList{bool}, CancellationToken)"/>.</summary>
+    [Obsolete("Use WriteBitsSingleRequestAsync; WriteBitsBlockAsync will be removed after one compatibility release.")]
     public static Task WriteBitsBlockAsync(
         this SlmpClient client,
         string start,
         IReadOnlyList<bool> values,
         CancellationToken ct = default)
-        => client.WriteBitsBlockAsync(ParseDeviceForClient(client, start), values, ct);
+        => client.WriteBitsSingleRequestAsync(start, values, ct);
 
     /// <summary>
     /// Writes a contiguous word-device range from 16-bit values.
@@ -494,22 +536,24 @@ public static class SlmpClientExtensions
     /// <param name="start">First word device in the range.</param>
     /// <param name="values">Word values in PLC order.</param>
     /// <param name="ct">Cancellation token.</param>
+    [Obsolete("Use WriteWordsSingleRequestAsync; WriteWordsBlockAsync will be removed after one compatibility release.")]
     public static Task WriteWordsBlockAsync(
         this SlmpClient client,
         SlmpDeviceAddress start,
         IReadOnlyList<ushort> values,
         CancellationToken ct = default)
-        => client.WriteWordsAsync(start, values, ct);
+        => client.WriteWordsSingleRequestAsync(start, values, ct);
 
     /// <summary>
     /// Writes a contiguous word-device range using a string address.
     /// </summary>
+    [Obsolete("Use WriteWordsSingleRequestAsync; WriteWordsBlockAsync will be removed after one compatibility release.")]
     public static Task WriteWordsBlockAsync(
         this SlmpClient client,
         string start,
         IReadOnlyList<ushort> values,
         CancellationToken ct = default)
-        => client.WriteWordsBlockAsync(ParseDeviceForClient(client, start), values, ct);
+        => client.WriteWordsSingleRequestAsync(start, values, ct);
 
     /// <summary>
     /// Writes a contiguous DWord-device range from 32-bit values.

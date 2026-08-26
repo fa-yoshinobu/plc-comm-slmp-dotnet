@@ -331,12 +331,35 @@ invalidates its send-only transport; its completion confirms transmission, not P
 execution.
 
 Single-request limits are the minimum of the selected profile/command point limit,
-the 16-bit SLMP data-length field, and the IPv4 TCP/UDP frame capacity. The managed
+the 16-bit SLMP data-length field, and the IPv4 TCP/UDP frame capacity. The canonical contiguous helpers are `ReadWordsSingleRequestAsync`,
+`WriteWordsSingleRequestAsync`, `ReadBitsSingleRequestAsync`, and
+`WriteBitsSingleRequestAsync`. They send exactly one request or reject before
+transport and never split, retry, or select a fallback command. The older
+`ReadBitsBlockAsync`, `WriteBitsBlockAsync`, and `WriteWordsBlockAsync` names are
+deprecated one-release delegates. The managed
 client has dynamic receive/result storage and no caller-owned output buffer limit;
 the response length is still bounded by SLMP framing. Maximum-size requests remain
 one request, while maximum-plus-one is rejected before serial allocation, trace,
 counters, connection opening, or send. `ReadNamedAsync` and `WriteNamedAsync` also
 remain single-request APIs and reject plans that need another command/request.
+
+Applications that plan their own request batches can query the selected profile without
+opening a connection:
+
+```csharp
+if (SlmpPlcProfiles.TryGetProfileLimit(
+        SlmpPlcProfile.QnUDV,
+        SlmpProfileLimitKey.RandomReadWord,
+        out var limit))
+{
+    Console.WriteLine(limit.MaxPoints); // 192
+}
+```
+
+`MaxPoints` is the command point-count limit. `WeightedMaxPoints` is non-null only
+for commands, such as random Word/DWord writes, that also enforce an encoded-entry
+weight. The lookup returns `false` when the profile/key pair has no canonical value;
+it does not invent a family fallback and performs no PLC communication.
 
 ## Block reads
 

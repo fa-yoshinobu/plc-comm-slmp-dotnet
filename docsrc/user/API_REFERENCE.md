@@ -955,7 +955,23 @@ Parameters:
 public static Task<bool[]> ReadBitsBlockAsync(SlmpClient client, SlmpDeviceAddress start, ushort count, CancellationToken ct = default)
 ```
 
-Reads a contiguous bit-device range and returns boolean values.
+Deprecated compatibility name. Use `ReadBitsSingleRequestAsync`.
+
+##### ReadBitsBlockAsync
+
+```csharp
+public static Task<bool[]> ReadBitsBlockAsync(SlmpClient client, string start, ushort count, CancellationToken ct = default)
+```
+
+Deprecated compatibility name. Use `ReadBitsSingleRequestAsync`.
+
+##### ReadBitsSingleRequestAsync
+
+```csharp
+public static Task<bool[]> ReadBitsSingleRequestAsync(SlmpClient client, SlmpDeviceAddress start, int count, CancellationToken ct = default)
+```
+
+Reads a contiguous bit-device range using exactly one SLMP request.
 
 Returns: Boolean values in PLC order.
 
@@ -965,10 +981,10 @@ Parameters:
 - `count`: Number of points to read.
 - `ct`: Cancellation token.
 
-##### ReadBitsBlockAsync
+##### ReadBitsSingleRequestAsync
 
 ```csharp
-public static Task<bool[]> ReadBitsBlockAsync(SlmpClient client, string start, ushort count, CancellationToken ct = default)
+public static Task<bool[]> ReadBitsSingleRequestAsync(SlmpClient client, string start, int count, CancellationToken ct = default)
 ```
 
 Reads a contiguous bit-device range using a string address.
@@ -1097,6 +1113,22 @@ Remarks: This overload has the same two-request, locally exclusive, non-PLC-atom
 public static Task WriteBitsBlockAsync(SlmpClient client, SlmpDeviceAddress start, IReadOnlyList<bool> values, CancellationToken ct = default)
 ```
 
+Deprecated compatibility name. Use `WriteBitsSingleRequestAsync`.
+
+##### WriteBitsBlockAsync
+
+```csharp
+public static Task WriteBitsBlockAsync(SlmpClient client, string start, IReadOnlyList<bool> values, CancellationToken ct = default)
+```
+
+Deprecated compatibility name. Use `WriteBitsSingleRequestAsync`.
+
+##### WriteBitsSingleRequestAsync
+
+```csharp
+public static Task WriteBitsSingleRequestAsync(SlmpClient client, SlmpDeviceAddress start, IReadOnlyList<bool> values, CancellationToken ct = default)
+```
+
 Writes a contiguous bit-device range from boolean values.
 
 Parameters:
@@ -1105,10 +1137,10 @@ Parameters:
 - `values`: Boolean values in PLC order.
 - `ct`: Cancellation token.
 
-##### WriteBitsBlockAsync
+##### WriteBitsSingleRequestAsync
 
 ```csharp
-public static Task WriteBitsBlockAsync(SlmpClient client, string start, IReadOnlyList<bool> values, CancellationToken ct = default)
+public static Task WriteBitsSingleRequestAsync(SlmpClient client, string start, IReadOnlyList<bool> values, CancellationToken ct = default)
 ```
 
 Writes a contiguous bit-device range using a string address.
@@ -3368,6 +3400,16 @@ public static string ToCanonicalString(SlmpPlcProfile profile)
 
 Return the canonical string form used in user-facing configuration.
 
+##### TryGetProfileLimit
+
+```csharp
+public static bool TryGetProfileLimit(SlmpPlcProfile profile, SlmpProfileLimitKey key, out SlmpProfileLimit limit)
+```
+
+Try to read one request limit from the canonical table used by validation.
+
+Remarks: This is a synchronous metadata lookup and performs no PLC communication.
+
 ##### UsesIqFXyOctal
 
 ```csharp
@@ -3447,6 +3489,150 @@ public string State { get; }
 ```
 
 Canonical feature state, for example `blocked` or `unverified`.
+
+### SlmpProfileLimit
+
+```csharp
+public struct SlmpProfileLimit
+```
+
+Operational request limits for one PLC profile and limit key.
+
+#### Members
+
+##### SlmpProfileLimit
+
+```csharp
+public SlmpProfileLimit(int MaxPoints, int? WeightedMaxPoints)
+```
+
+Operational request limits for one PLC profile and limit key.
+
+Parameters:
+- `MaxPoints`: Maximum point count accepted by one request.
+- `WeightedMaxPoints`: Optional weighted maximum used by commands whose encoded entries have different sizes.
+
+##### MaxPoints
+
+```csharp
+public int MaxPoints { get; init; }
+```
+
+Maximum point count accepted by one request.
+
+##### WeightedMaxPoints
+
+```csharp
+public int? WeightedMaxPoints { get; init; }
+```
+
+Optional weighted maximum used by commands whose encoded entries have different sizes.
+
+### SlmpProfileLimitKey
+
+```csharp
+public enum SlmpProfileLimitKey
+```
+
+Canonical key for one profile-specific SLMP request limit.
+
+#### Members
+
+##### DirectBitRead
+
+```csharp
+public const SlmpProfileLimitKey DirectBitRead
+```
+
+Direct bit-read points.
+
+##### DirectBitWrite
+
+```csharp
+public const SlmpProfileLimitKey DirectBitWrite
+```
+
+Direct bit-write points.
+
+##### DirectWordRead
+
+```csharp
+public const SlmpProfileLimitKey DirectWordRead
+```
+
+Direct word-read points.
+
+##### DirectWordWrite
+
+```csharp
+public const SlmpProfileLimitKey DirectWordWrite
+```
+
+Direct word-write points.
+
+##### MonitorRegisterWord
+
+```csharp
+public const SlmpProfileLimitKey MonitorRegisterWord
+```
+
+Monitor-registration word/dword point total.
+
+##### MonitorRegisterWordExt
+
+```csharp
+public const SlmpProfileLimitKey MonitorRegisterWordExt
+```
+
+Extended monitor-registration word/dword point total.
+
+##### RandomReadWord
+
+```csharp
+public const SlmpProfileLimitKey RandomReadWord
+```
+
+Random word/dword-read point total.
+
+##### RandomReadWordExt
+
+```csharp
+public const SlmpProfileLimitKey RandomReadWordExt
+```
+
+Extended random word/dword-read point total.
+
+##### RandomWriteBit
+
+```csharp
+public const SlmpProfileLimitKey RandomWriteBit
+```
+
+Random bit-write points.
+
+##### RandomWriteBitExt
+
+```csharp
+public const SlmpProfileLimitKey RandomWriteBitExt
+```
+
+Extended random bit-write points.
+
+##### RandomWriteWord
+
+```csharp
+public const SlmpProfileLimitKey RandomWriteWord
+```
+
+Random word/dword-write point total.
+
+##### RandomWriteWordExt
+
+```csharp
+public const SlmpProfileLimitKey RandomWriteWordExt
+```
+
+Extended random word/dword-write point total.
 
 ### SlmpQualifiedDeviceAddress
 

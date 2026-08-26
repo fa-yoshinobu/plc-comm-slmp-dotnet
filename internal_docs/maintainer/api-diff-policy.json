@@ -7196,6 +7196,1497 @@
         "kind": "major",
         "target_major": 5
       }
+    },
+    {
+      "key": "net8.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.DirectBitRead",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:2|attrs="
+    },
+    {
+      "key": "net8.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.DirectBitWrite",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:3|attrs="
+    },
+    {
+      "key": "net8.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.DirectWordRead",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:0|attrs="
+    },
+    {
+      "key": "net8.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.DirectWordWrite",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:1|attrs="
+    },
+    {
+      "key": "net8.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.MonitorRegisterWord",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:7|attrs="
+    },
+    {
+      "key": "net8.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.MonitorRegisterWordExt",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:11|attrs="
+    },
+    {
+      "key": "net8.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomReadWord",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:4|attrs="
+    },
+    {
+      "key": "net8.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomReadWordExt",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:8|attrs="
+    },
+    {
+      "key": "net8.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomWriteBit",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:6|attrs="
+    },
+    {
+      "key": "net8.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomWriteBitExt",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:10|attrs="
+    },
+    {
+      "key": "net8.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomWriteWord",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:5|attrs="
+    },
+    {
+      "key": "net8.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomWriteWordExt",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:9|attrs="
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpClientExtensions.ReadBitsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "Approved additive canonical single-request helper for direct Bit access with one-send-or-zero-send behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Int32:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpClientExtensions.ReadBitsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Int32,System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "Approved additive canonical single-request helper for direct Bit access with one-send-or-zero-send behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Int32:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.Boolean},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "Approved additive canonical single-request helper for direct Bit access with one-send-or-zero-send behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.Boolean},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "Approved additive canonical single-request helper for direct Bit access with one-send-or-zero-send behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpPlcProfiles.TryGetProfileLimit(PlcComm.Slmp.SlmpPlcProfile,PlcComm.Slmp.SlmpProfileLimitKey,PlcComm.Slmp.SlmpProfileLimit)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpPlcProfile:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpProfileLimitKey:0:default=<none>:required=:optional=:attrs=;2:PlcComm.Slmp.SlmpProfileLimit&:2:default=<none>:required=:optional=:attrs=[System.Runtime.InteropServices.OutAttribute()]|attrs="
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpProfileLimit.#ctor(System.Int32,System.Nullable{System.Int32})",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "constructor|6278|params=0:System.Int32:0:default=<none>:required=:optional=:attrs=;1:System.Nullable`1<System.Int32>:0:default=<none>:required=:optional=:attrs=|attrs="
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpProfileLimit.Deconstruct(System.Int32,System.Nullable{System.Int32})",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Void|returnattrs=|returnrequired=|generic=|params=0:System.Int32&:2:default=<none>:required=:optional=:attrs=[System.Runtime.InteropServices.OutAttribute()];1:System.Nullable`1<System.Int32>&:2:default=<none>:required=:optional=:attrs=[System.Runtime.InteropServices.OutAttribute()]|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpProfileLimit.Equals(PlcComm.Slmp.SlmpProfileLimit)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|486|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpProfileLimit.Equals(System.Object)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|198|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:System.Object:0:default=<none>:required=:optional=:attrs=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpProfileLimit.GetHashCode",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|198|return=System.Int32|returnattrs=|returnrequired=|generic=|params=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpProfileLimit.ToString",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|198|return=System.String|returnattrs=|returnrequired=|generic=|params=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpProfileLimit.op_Equality(PlcComm.Slmp.SlmpProfileLimit,PlcComm.Slmp.SlmpProfileLimit)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|2198|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpProfileLimit.op_Inequality(PlcComm.Slmp.SlmpProfileLimit,PlcComm.Slmp.SlmpProfileLimit)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|2198|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net8.0|added|P:PlcComm.Slmp.SlmpProfileLimit.MaxPoints",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "property|type=System.Int32|get=2182|set=2182|setrequired=System.Runtime.CompilerServices.IsExternalInit|index=|attrs="
+    },
+    {
+      "key": "net8.0|added|P:PlcComm.Slmp.SlmpProfileLimit.WeightedMaxPoints",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "property|type=System.Nullable`1<System.Int32>|get=2182|set=2182|setrequired=System.Runtime.CompilerServices.IsExternalInit|index=|attrs="
+    },
+    {
+      "key": "net8.0|added|T:PlcComm.Slmp.SlmpProfileLimit",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "type|PlcComm.Slmp.SlmpProfileLimit|1048841|byreflike=False|enum=|base=System.ValueType|interfaces=System.IEquatable`1<PlcComm.Slmp.SlmpProfileLimit>|generic=|attrs=[System.Runtime.CompilerServices.IsReadOnlyAttribute()]"
+    },
+    {
+      "key": "net8.0|added|T:PlcComm.Slmp.SlmpProfileLimitKey",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "type|PlcComm.Slmp.SlmpProfileLimitKey|257|byreflike=False|enum=System.Int32|base=System.Enum|interfaces=System.IComparable,System.IConvertible,System.IFormattable,System.ISpanFormattable|generic=|attrs="
+    },
+    {
+      "key": "net8.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.ReadBitsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use ReadBitsSingleRequestAsync; ReadBitsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-BIT-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.ReadBitsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use ReadBitsSingleRequestAsync; ReadBitsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-BIT-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.Boolean},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteBitsSingleRequestAsync; WriteBitsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-BIT-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.Boolean},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteBitsSingleRequestAsync; WriteBitsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-BIT-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteWordsSingleRequestAsync; WriteWordsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-WORD-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteWordsSingleRequestAsync; WriteWordsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-WORD-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.DirectBitRead",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:2|attrs="
+    },
+    {
+      "key": "net9.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.DirectBitWrite",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:3|attrs="
+    },
+    {
+      "key": "net9.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.DirectWordRead",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:0|attrs="
+    },
+    {
+      "key": "net9.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.DirectWordWrite",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:1|attrs="
+    },
+    {
+      "key": "net9.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.MonitorRegisterWord",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:7|attrs="
+    },
+    {
+      "key": "net9.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.MonitorRegisterWordExt",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:11|attrs="
+    },
+    {
+      "key": "net9.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomReadWord",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:4|attrs="
+    },
+    {
+      "key": "net9.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomReadWordExt",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:8|attrs="
+    },
+    {
+      "key": "net9.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomWriteBit",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:6|attrs="
+    },
+    {
+      "key": "net9.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomWriteBitExt",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:10|attrs="
+    },
+    {
+      "key": "net9.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomWriteWord",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:5|attrs="
+    },
+    {
+      "key": "net9.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomWriteWordExt",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:9|attrs="
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpClientExtensions.ReadBitsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "Approved additive canonical single-request helper for direct Bit access with one-send-or-zero-send behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Int32:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpClientExtensions.ReadBitsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Int32,System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "Approved additive canonical single-request helper for direct Bit access with one-send-or-zero-send behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Int32:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.Boolean},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "Approved additive canonical single-request helper for direct Bit access with one-send-or-zero-send behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.Boolean},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "Approved additive canonical single-request helper for direct Bit access with one-send-or-zero-send behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpPlcProfiles.TryGetProfileLimit(PlcComm.Slmp.SlmpPlcProfile,PlcComm.Slmp.SlmpProfileLimitKey,PlcComm.Slmp.SlmpProfileLimit)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpPlcProfile:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpProfileLimitKey:0:default=<none>:required=:optional=:attrs=;2:PlcComm.Slmp.SlmpProfileLimit&:2:default=<none>:required=:optional=:attrs=[System.Runtime.InteropServices.OutAttribute()]|attrs="
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpProfileLimit.#ctor(System.Int32,System.Nullable{System.Int32})",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "constructor|6278|params=0:System.Int32:0:default=<none>:required=:optional=:attrs=;1:System.Nullable`1<System.Int32>:0:default=<none>:required=:optional=:attrs=|attrs="
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpProfileLimit.Deconstruct(System.Int32,System.Nullable{System.Int32})",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Void|returnattrs=|returnrequired=|generic=|params=0:System.Int32&:2:default=<none>:required=:optional=:attrs=[System.Runtime.InteropServices.OutAttribute()];1:System.Nullable`1<System.Int32>&:2:default=<none>:required=:optional=:attrs=[System.Runtime.InteropServices.OutAttribute()]|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpProfileLimit.Equals(PlcComm.Slmp.SlmpProfileLimit)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|486|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpProfileLimit.Equals(System.Object)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|198|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:System.Object:0:default=<none>:required=:optional=:attrs=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpProfileLimit.GetHashCode",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|198|return=System.Int32|returnattrs=|returnrequired=|generic=|params=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpProfileLimit.ToString",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|198|return=System.String|returnattrs=|returnrequired=|generic=|params=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpProfileLimit.op_Equality(PlcComm.Slmp.SlmpProfileLimit,PlcComm.Slmp.SlmpProfileLimit)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|2198|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpProfileLimit.op_Inequality(PlcComm.Slmp.SlmpProfileLimit,PlcComm.Slmp.SlmpProfileLimit)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|2198|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net9.0|added|P:PlcComm.Slmp.SlmpProfileLimit.MaxPoints",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "property|type=System.Int32|get=2182|set=2182|setrequired=System.Runtime.CompilerServices.IsExternalInit|index=|attrs="
+    },
+    {
+      "key": "net9.0|added|P:PlcComm.Slmp.SlmpProfileLimit.WeightedMaxPoints",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "property|type=System.Nullable`1<System.Int32>|get=2182|set=2182|setrequired=System.Runtime.CompilerServices.IsExternalInit|index=|attrs="
+    },
+    {
+      "key": "net9.0|added|T:PlcComm.Slmp.SlmpProfileLimit",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "type|PlcComm.Slmp.SlmpProfileLimit|1048841|byreflike=False|enum=|base=System.ValueType|interfaces=System.IEquatable`1<PlcComm.Slmp.SlmpProfileLimit>|generic=|attrs=[System.Runtime.CompilerServices.IsReadOnlyAttribute()]"
+    },
+    {
+      "key": "net9.0|added|T:PlcComm.Slmp.SlmpProfileLimitKey",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "type|PlcComm.Slmp.SlmpProfileLimitKey|257|byreflike=False|enum=System.Int32|base=System.Enum|interfaces=System.IComparable,System.IConvertible,System.IFormattable,System.ISpanFormattable|generic=|attrs="
+    },
+    {
+      "key": "net9.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.ReadBitsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use ReadBitsSingleRequestAsync; ReadBitsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-BIT-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.ReadBitsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use ReadBitsSingleRequestAsync; ReadBitsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-BIT-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.Boolean},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteBitsSingleRequestAsync; WriteBitsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-BIT-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.Boolean},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteBitsSingleRequestAsync; WriteBitsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-BIT-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteWordsSingleRequestAsync; WriteWordsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-WORD-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteWordsSingleRequestAsync; WriteWordsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-WORD-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.DirectBitRead",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:2|attrs="
+    },
+    {
+      "key": "net10.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.DirectBitWrite",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:3|attrs="
+    },
+    {
+      "key": "net10.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.DirectWordRead",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:0|attrs="
+    },
+    {
+      "key": "net10.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.DirectWordWrite",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:1|attrs="
+    },
+    {
+      "key": "net10.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.MonitorRegisterWord",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:7|attrs="
+    },
+    {
+      "key": "net10.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.MonitorRegisterWordExt",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:11|attrs="
+    },
+    {
+      "key": "net10.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomReadWord",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:4|attrs="
+    },
+    {
+      "key": "net10.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomReadWordExt",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:8|attrs="
+    },
+    {
+      "key": "net10.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomWriteBit",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:6|attrs="
+    },
+    {
+      "key": "net10.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomWriteBitExt",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:10|attrs="
+    },
+    {
+      "key": "net10.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomWriteWord",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:5|attrs="
+    },
+    {
+      "key": "net10.0|added|F:PlcComm.Slmp.SlmpProfileLimitKey.RandomWriteWordExt",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "field|32854|type=PlcComm.Slmp.SlmpProfileLimitKey|value=System.Int32:9|attrs="
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpClientExtensions.ReadBitsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Int32,System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "Approved additive canonical single-request helper for direct Bit access with one-send-or-zero-send behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Int32:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpClientExtensions.ReadBitsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Int32,System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "Approved additive canonical single-request helper for direct Bit access with one-send-or-zero-send behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Int32:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitsSingleRequestAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.Boolean},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "Approved additive canonical single-request helper for direct Bit access with one-send-or-zero-send behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitsSingleRequestAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.Boolean},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "Approved additive canonical single-request helper for direct Bit access with one-send-or-zero-send behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpPlcProfiles.TryGetProfileLimit(PlcComm.Slmp.SlmpPlcProfile,PlcComm.Slmp.SlmpProfileLimitKey,PlcComm.Slmp.SlmpProfileLimit)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpPlcProfile:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpProfileLimitKey:0:default=<none>:required=:optional=:attrs=;2:PlcComm.Slmp.SlmpProfileLimit&:2:default=<none>:required=:optional=:attrs=[System.Runtime.InteropServices.OutAttribute()]|attrs="
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpProfileLimit.#ctor(System.Int32,System.Nullable{System.Int32})",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "constructor|6278|params=0:System.Int32:0:default=<none>:required=:optional=:attrs=;1:System.Nullable`1<System.Int32>:0:default=<none>:required=:optional=:attrs=|attrs="
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpProfileLimit.Deconstruct(System.Int32,System.Nullable{System.Int32})",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Void|returnattrs=|returnrequired=|generic=|params=0:System.Int32&:2:default=<none>:required=:optional=:attrs=[System.Runtime.InteropServices.OutAttribute()];1:System.Nullable`1<System.Int32>&:2:default=<none>:required=:optional=:attrs=[System.Runtime.InteropServices.OutAttribute()]|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpProfileLimit.Equals(PlcComm.Slmp.SlmpProfileLimit)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|486|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpProfileLimit.Equals(System.Object)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|198|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:System.Object:0:default=<none>:required=:optional=:attrs=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpProfileLimit.GetHashCode",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|198|return=System.Int32|returnattrs=|returnrequired=|generic=|params=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpProfileLimit.ToString",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|198|return=System.String|returnattrs=|returnrequired=|generic=|params=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpProfileLimit.op_Equality(PlcComm.Slmp.SlmpProfileLimit,PlcComm.Slmp.SlmpProfileLimit)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|2198|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpProfileLimit.op_Inequality(PlcComm.Slmp.SlmpProfileLimit,PlcComm.Slmp.SlmpProfileLimit)",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "method|2198|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpProfileLimit:0:default=<none>:required=:optional=:attrs=|attrs=[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]"
+    },
+    {
+      "key": "net10.0|added|P:PlcComm.Slmp.SlmpProfileLimit.MaxPoints",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "property|type=System.Int32|get=2182|set=2182|setrequired=System.Runtime.CompilerServices.IsExternalInit|index=|attrs="
+    },
+    {
+      "key": "net10.0|added|P:PlcComm.Slmp.SlmpProfileLimit.WeightedMaxPoints",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "property|type=System.Nullable`1<System.Int32>|get=2182|set=2182|setrequired=System.Runtime.CompilerServices.IsExternalInit|index=|attrs="
+    },
+    {
+      "key": "net10.0|added|T:PlcComm.Slmp.SlmpProfileLimit",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "type|PlcComm.Slmp.SlmpProfileLimit|1048841|byreflike=False|enum=|base=System.ValueType|interfaces=System.IEquatable`1<PlcComm.Slmp.SlmpProfileLimit>|generic=|attrs=[System.Runtime.CompilerServices.IsReadOnlyAttribute()]"
+    },
+    {
+      "key": "net10.0|added|T:PlcComm.Slmp.SlmpProfileLimitKey",
+      "category": "additive",
+      "rationale": "Approved additive profile-limit metadata API exposing only operational values from the canonical validation table.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": null,
+      "after": "type|PlcComm.Slmp.SlmpProfileLimitKey|257|byreflike=False|enum=System.Int32|base=System.Enum|interfaces=System.IComparable,System.IConvertible,System.IFormattable,System.ISpanFormattable|generic=|attrs="
+    },
+    {
+      "key": "net10.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.ReadBitsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use ReadBitsSingleRequestAsync; ReadBitsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-BIT-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.ReadBitsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task`1<System.Boolean[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use ReadBitsSingleRequestAsync; ReadBitsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-BIT-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.Boolean},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteBitsSingleRequestAsync; WriteBitsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-BIT-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteBitsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.Boolean},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.Boolean>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteBitsSingleRequestAsync; WriteBitsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-BIT-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteWordsSingleRequestAsync; WriteWordsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-WORD-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteWordsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved single-request naming migration retains this old high-level name for one compatibility release as an Obsolete delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteWordsSingleRequestAsync; WriteWordsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "DECISION-HL-WORD-SINGLE-REQUEST-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
     }
   ]
 }

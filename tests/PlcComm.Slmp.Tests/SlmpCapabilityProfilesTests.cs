@@ -102,6 +102,41 @@ public sealed class SlmpCapabilityProfilesTests
     }
 
     [Fact]
+    public void PublicProfileLimitLookup_UsesCanonicalOperationalValues()
+    {
+        Assert.Equal(12, Enum.GetValues<SlmpProfileLimitKey>().Length);
+        foreach (var key in Enum.GetValues<SlmpProfileLimitKey>())
+            Assert.True(SlmpPlcProfiles.TryGetProfileLimit(SlmpPlcProfile.IqR, key, out _), key.ToString());
+
+        Assert.True(SlmpPlcProfiles.TryGetProfileLimit(
+            SlmpPlcProfile.IqR,
+            SlmpProfileLimitKey.RandomReadWord,
+            out var iqrRead));
+        Assert.Equal(new SlmpProfileLimit(96, null), iqrRead);
+
+        Assert.True(SlmpPlcProfiles.TryGetProfileLimit(
+            SlmpPlcProfile.QnUDV,
+            SlmpProfileLimitKey.RandomReadWord,
+            out var qnudvRead));
+        Assert.Equal(new SlmpProfileLimit(192, null), qnudvRead);
+
+        Assert.True(SlmpPlcProfiles.TryGetProfileLimit(
+            SlmpPlcProfile.IqR,
+            SlmpProfileLimitKey.RandomWriteWord,
+            out var iqrWrite));
+        Assert.Equal(new SlmpProfileLimit(80, 960), iqrWrite);
+
+        Assert.False(SlmpPlcProfiles.TryGetProfileLimit(
+            SlmpPlcProfile.Unspecified,
+            SlmpProfileLimitKey.RandomReadWord,
+            out _));
+
+        Assert.Equal(
+            new[] { nameof(SlmpProfileLimit.MaxPoints), nameof(SlmpProfileLimit.WeightedMaxPoints) },
+            typeof(SlmpProfileLimit).GetProperties().Select(static property => property.Name).Order().ToArray());
+    }
+
+    [Fact]
     public void MxRRj71En71_ProfileIdAndClientDefaultsAreDirectlyUsable()
     {
         var profile = SlmpPlcProfiles.ParseKnownProfileId("melsec:mx-r:rj71en71");

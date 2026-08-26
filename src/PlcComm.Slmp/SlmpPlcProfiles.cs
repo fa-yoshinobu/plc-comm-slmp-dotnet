@@ -14,6 +14,13 @@ public sealed record SlmpPlcProfileDescriptor(
     bool Connectable,
     string? BaseProfile);
 
+/// <summary>Operational request limits for one PLC profile and limit key.</summary>
+/// <param name="MaxPoints">Maximum point count accepted by one request.</param>
+/// <param name="WeightedMaxPoints">
+/// Optional weighted maximum used by commands whose encoded entries have different sizes.
+/// </param>
+public readonly record struct SlmpProfileLimit(int MaxPoints, int? WeightedMaxPoints);
+
 /// <summary>Fixed high-level defaults driven by <see cref="SlmpPlcProfile"/>.</summary>
 public static class SlmpPlcProfiles
 {
@@ -78,6 +85,23 @@ public static class SlmpPlcProfiles
     /// set to <see langword="false"/> so selectors can explain why it cannot be opened directly.
     /// </remarks>
     public static IReadOnlyList<SlmpPlcProfileDescriptor> GetProfileDescriptors() => ProfileDescriptors;
+
+    /// <summary>Try to read one request limit from the canonical table used by validation.</summary>
+    /// <remarks>This is a synchronous metadata lookup and performs no PLC communication.</remarks>
+    public static bool TryGetProfileLimit(
+        SlmpPlcProfile profile,
+        SlmpProfileLimitKey key,
+        out SlmpProfileLimit limit)
+    {
+        if (SlmpCapabilityProfiles.TryGetLimit(profile, key, out var capabilityLimit))
+        {
+            limit = new SlmpProfileLimit(capabilityLimit.Max, capabilityLimit.WeightedMax);
+            return true;
+        }
+
+        limit = default;
+        return false;
+    }
 
     private static string? GetBaseProfile(SlmpPlcProfile profile)
         => profile switch

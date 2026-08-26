@@ -1409,3 +1409,52 @@ Machine-verifiable acceptance criteria:
   lifecycle behavior are completely observable with deterministic transport
   fixtures, and no PLC/profile compatibility claim changed. No live PLC
   communication was performed.
+
+## DECISION-HL-SINGLE-REQUEST-NAMING-001 — Canonical contiguous helper names
+
+Stable identifiers: `DECISION-HL-BIT-SINGLE-REQUEST-001` and
+`DECISION-HL-WORD-SINGLE-REQUEST-001`.
+
+Implementation scope: public high-level contiguous Word and Bit helpers in
+`SlmpClientExtensions`; low-level command APIs are unchanged.
+
+Target contract: `ReadWordsSingleRequestAsync`, `WriteWordsSingleRequestAsync`,
+`ReadBitsSingleRequestAsync`, and `WriteBitsSingleRequestAsync` either send one
+validated Direct request or reject before transport. The older
+`ReadBitsBlockAsync`, `WriteBitsBlockAsync`, and `WriteWordsBlockAsync` names
+remain deprecated delegates for one compatibility release and do not own a
+second implementation, split, fallback, or retry path.
+
+Compatibility impact: existing callers compile with an obsolescence warning
+and should migrate to the canonical names before the old delegates are removed
+in a later breaking release. Wire bytes, returned values, and error
+classification are unchanged for accepted calls.
+
+Acceptance criteria: the canonical helpers have exact one-send/zero-send tests;
+deprecated methods delegate to the canonical implementation; generated API
+documentation and the changelog name the migration; all supported target
+frameworks build and pass the same tests.
+
+## DECISION-HL-SLMP-PROFILE-LIMIT-001 — Public profile request-limit lookup
+
+Stable identifier: `DECISION-HL-SLMP-PROFILE-LIMIT-001`.
+
+Implementation scope: the public profile metadata surface, the existing
+canonical capability table, request-limit tests, user documentation, and API
+reference.
+
+Target contract: `SlmpPlcProfiles.TryGetProfileLimit(profile, key, out limit)`
+accepts one of the 12 `SlmpProfileLimitKey` values and returns only
+`SlmpProfileLimit.MaxPoints` and optional `WeightedMaxPoints`. It reads the same
+table used by request validation, returns `false` when no value exists, invents
+no profile-family fallback, and performs no PLC communication. Evidence fields
+such as source, end code, and notes remain internal.
+
+Compatibility impact: this is an additive public metadata API. It does not
+change request admission, wire frames, profile selection, or supported PLCs.
+
+Acceptance criteria: all 12 keys are publicly selectable; representative 96
+and 192 random-read limits and the 80/960 random-write pair match the canonical
+table; an unspecified profile returns no value; the result type has only the
+two operational properties; all target frameworks build, test, and produce a
+fresh generated API reference.

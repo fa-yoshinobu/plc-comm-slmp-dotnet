@@ -23,19 +23,32 @@ internal enum SlmpProfileFeature
     Lz32BitPath,
 }
 
-internal enum SlmpProfileLimit
+/// <summary>Canonical key for one profile-specific SLMP request limit.</summary>
+public enum SlmpProfileLimitKey
 {
+    /// <summary>Direct word-read points.</summary>
     DirectWordRead,
+    /// <summary>Direct word-write points.</summary>
     DirectWordWrite,
+    /// <summary>Direct bit-read points.</summary>
     DirectBitRead,
+    /// <summary>Direct bit-write points.</summary>
     DirectBitWrite,
+    /// <summary>Random word/dword-read point total.</summary>
     RandomReadWord,
+    /// <summary>Random word/dword-write point total.</summary>
     RandomWriteWord,
+    /// <summary>Random bit-write points.</summary>
     RandomWriteBit,
+    /// <summary>Monitor-registration word/dword point total.</summary>
     MonitorRegisterWord,
+    /// <summary>Extended random word/dword-read point total.</summary>
     RandomReadWordExt,
+    /// <summary>Extended random word/dword-write point total.</summary>
     RandomWriteWordExt,
+    /// <summary>Extended random bit-write points.</summary>
     RandomWriteBitExt,
+    /// <summary>Extended monitor-registration word/dword point total.</summary>
     MonitorRegisterWordExt,
 }
 
@@ -57,7 +70,7 @@ internal sealed record SlmpCapabilityProfile(
     string Frame,
     string Compat,
     IReadOnlyDictionary<SlmpProfileFeature, SlmpCapabilityFeature> Features,
-    IReadOnlyDictionary<SlmpProfileLimit, SlmpCapabilityLimit> Limits,
+    IReadOnlyDictionary<SlmpProfileLimitKey, SlmpCapabilityLimit> Limits,
     IReadOnlyDictionary<string, string> WritePolicy);
 
 internal static class SlmpCapabilityProfiles
@@ -222,7 +235,7 @@ internal static class SlmpCapabilityProfiles
 
     internal static bool TryGetLimit(
         SlmpPlcProfile profile,
-        SlmpProfileLimit limit,
+        SlmpProfileLimitKey limit,
         out SlmpCapabilityLimit capabilityLimit)
     {
         if (Profiles.TryGetValue(profile, out var capabilityProfile) &&
@@ -256,21 +269,21 @@ internal static class SlmpCapabilityProfiles
             _ => throw new ArgumentOutOfRangeException(nameof(feature), feature, "Unsupported profile feature."),
         };
 
-    internal static string ToCanonicalLimitKey(SlmpProfileLimit limit)
+    internal static string ToCanonicalLimitKey(SlmpProfileLimitKey limit)
         => limit switch
         {
-            SlmpProfileLimit.DirectWordRead => "direct_word_read",
-            SlmpProfileLimit.DirectWordWrite => "direct_word_write",
-            SlmpProfileLimit.DirectBitRead => "direct_bit_read",
-            SlmpProfileLimit.DirectBitWrite => "direct_bit_write",
-            SlmpProfileLimit.RandomReadWord => "random_read_word",
-            SlmpProfileLimit.RandomWriteWord => "random_write_word",
-            SlmpProfileLimit.RandomWriteBit => "random_write_bit",
-            SlmpProfileLimit.MonitorRegisterWord => "monitor_register_word",
-            SlmpProfileLimit.RandomReadWordExt => "random_read_word_ext",
-            SlmpProfileLimit.RandomWriteWordExt => "random_write_word_ext",
-            SlmpProfileLimit.RandomWriteBitExt => "random_write_bit_ext",
-            SlmpProfileLimit.MonitorRegisterWordExt => "monitor_register_word_ext",
+            SlmpProfileLimitKey.DirectWordRead => "direct_word_read",
+            SlmpProfileLimitKey.DirectWordWrite => "direct_word_write",
+            SlmpProfileLimitKey.DirectBitRead => "direct_bit_read",
+            SlmpProfileLimitKey.DirectBitWrite => "direct_bit_write",
+            SlmpProfileLimitKey.RandomReadWord => "random_read_word",
+            SlmpProfileLimitKey.RandomWriteWord => "random_write_word",
+            SlmpProfileLimitKey.RandomWriteBit => "random_write_bit",
+            SlmpProfileLimitKey.MonitorRegisterWord => "monitor_register_word",
+            SlmpProfileLimitKey.RandomReadWordExt => "random_read_word_ext",
+            SlmpProfileLimitKey.RandomWriteWordExt => "random_write_word_ext",
+            SlmpProfileLimitKey.RandomWriteBitExt => "random_write_bit_ext",
+            SlmpProfileLimitKey.MonitorRegisterWordExt => "monitor_register_word_ext",
             _ => throw new ArgumentOutOfRangeException(nameof(limit), limit, "Unsupported profile limit."),
         };
 
@@ -291,7 +304,7 @@ internal static class SlmpCapabilityProfiles
         string frame,
         string compat,
         IReadOnlyDictionary<SlmpProfileFeature, SlmpCapabilityFeature> features,
-        IReadOnlyDictionary<SlmpProfileLimit, SlmpCapabilityLimit> limits,
+        IReadOnlyDictionary<SlmpProfileLimitKey, SlmpCapabilityLimit> limits,
         IReadOnlyDictionary<string, string> writePolicy)
         => new(profile, profileId, frame, compat, features, limits, writePolicy);
 
@@ -343,99 +356,99 @@ internal static class SlmpCapabilityProfiles
             static entry => entry.Feature,
             static entry => new SlmpCapabilityFeature(entry.State, entry.Source, entry.Note));
 
-    private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> IqrLimits(string source = "live")
+    private static Dictionary<SlmpProfileLimitKey, SlmpCapabilityLimit> IqrLimits(string source = "live")
         => Limits(
-            (SlmpProfileLimit.DirectWordRead, 960, "C051", source, null, null),
-            (SlmpProfileLimit.DirectWordWrite, 960, "C051", source, null, null),
-            (SlmpProfileLimit.DirectBitRead, 7168, "C052", source, null, null),
-            (SlmpProfileLimit.DirectBitWrite, 7168, "C052", source, null, null),
-            (SlmpProfileLimit.RandomReadWord, 96, "C054", source, null, null),
-            (SlmpProfileLimit.RandomWriteWord, 80, "C054", source, 960, null),
-            (SlmpProfileLimit.RandomWriteBit, 94, "C053", source, null, null),
-            (SlmpProfileLimit.MonitorRegisterWord, 96, "C054", source, null, null),
-            (SlmpProfileLimit.RandomReadWordExt, 96, "C054", source, null, null),
-            (SlmpProfileLimit.RandomWriteWordExt, 80, "C054", source, 960, null),
-            (SlmpProfileLimit.RandomWriteBitExt, 94, "C053", source, null, null),
-            (SlmpProfileLimit.MonitorRegisterWordExt, 96, "C054", source, null, null));
+            (SlmpProfileLimitKey.DirectWordRead, 960, "C051", source, null, null),
+            (SlmpProfileLimitKey.DirectWordWrite, 960, "C051", source, null, null),
+            (SlmpProfileLimitKey.DirectBitRead, 7168, "C052", source, null, null),
+            (SlmpProfileLimitKey.DirectBitWrite, 7168, "C052", source, null, null),
+            (SlmpProfileLimitKey.RandomReadWord, 96, "C054", source, null, null),
+            (SlmpProfileLimitKey.RandomWriteWord, 80, "C054", source, 960, null),
+            (SlmpProfileLimitKey.RandomWriteBit, 94, "C053", source, null, null),
+            (SlmpProfileLimitKey.MonitorRegisterWord, 96, "C054", source, null, null),
+            (SlmpProfileLimitKey.RandomReadWordExt, 96, "C054", source, null, null),
+            (SlmpProfileLimitKey.RandomWriteWordExt, 80, "C054", source, 960, null),
+            (SlmpProfileLimitKey.RandomWriteBitExt, 94, "C053", source, null, null),
+            (SlmpProfileLimitKey.MonitorRegisterWordExt, 96, "C054", source, null, null));
 
-    private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> IqlMxLimits()
+    private static Dictionary<SlmpProfileLimitKey, SlmpCapabilityLimit> IqlMxLimits()
         => Limits(
-            (SlmpProfileLimit.DirectWordRead, 960, "C051", "live", null, null),
-            (SlmpProfileLimit.DirectWordWrite, 960, "C051", "live", null, null),
-            (SlmpProfileLimit.DirectBitRead, 7168, "C052", "live", null, null),
-            (SlmpProfileLimit.DirectBitWrite, 7168, "C052", "live", null, null),
-            (SlmpProfileLimit.RandomReadWord, 96, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomWriteWord, 80, "C054", "live", 960, null),
-            (SlmpProfileLimit.RandomWriteBit, 94, "C053", "live", null, null),
-            (SlmpProfileLimit.MonitorRegisterWord, 96, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomReadWordExt, 96, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomWriteWordExt, 80, "C054", "live", 960, null),
-            (SlmpProfileLimit.RandomWriteBitExt, 94, "C053", "live", null, null),
-            (SlmpProfileLimit.MonitorRegisterWordExt, 96, "C054", "live", null, null));
+            (SlmpProfileLimitKey.DirectWordRead, 960, "C051", "live", null, null),
+            (SlmpProfileLimitKey.DirectWordWrite, 960, "C051", "live", null, null),
+            (SlmpProfileLimitKey.DirectBitRead, 7168, "C052", "live", null, null),
+            (SlmpProfileLimitKey.DirectBitWrite, 7168, "C052", "live", null, null),
+            (SlmpProfileLimitKey.RandomReadWord, 96, "C054", "live", null, null),
+            (SlmpProfileLimitKey.RandomWriteWord, 80, "C054", "live", 960, null),
+            (SlmpProfileLimitKey.RandomWriteBit, 94, "C053", "live", null, null),
+            (SlmpProfileLimitKey.MonitorRegisterWord, 96, "C054", "live", null, null),
+            (SlmpProfileLimitKey.RandomReadWordExt, 96, "C054", "live", null, null),
+            (SlmpProfileLimitKey.RandomWriteWordExt, 80, "C054", "live", 960, null),
+            (SlmpProfileLimitKey.RandomWriteBitExt, 94, "C053", "live", null, null),
+            (SlmpProfileLimitKey.MonitorRegisterWordExt, 96, "C054", "live", null, null));
 
-    private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> IqFLimits()
+    private static Dictionary<SlmpProfileLimitKey, SlmpCapabilityLimit> IqFLimits()
         => Limits(
-            (SlmpProfileLimit.DirectWordRead, 960, "C052", "live", null, null),
-            (SlmpProfileLimit.DirectWordWrite, 960, "C052", "live", null, null),
-            (SlmpProfileLimit.DirectBitRead, 3584, "C051", "live", null, null),
-            (SlmpProfileLimit.DirectBitWrite, 3584, "C051", "live", null, null),
-            (SlmpProfileLimit.RandomReadWord, 192, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomWriteWord, 160, "C054", "live", 1920, null),
-            (SlmpProfileLimit.RandomWriteBit, 188, "C053", "live", null, null),
-            (SlmpProfileLimit.MonitorRegisterWord, 192, "C054", "not-adopted", null, null),
-            (SlmpProfileLimit.RandomReadWordExt, 96, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomWriteWordExt, 80, "C054", "live", 960, null),
-            (SlmpProfileLimit.RandomWriteBitExt, 94, "C053", "live", null, null),
-            (SlmpProfileLimit.MonitorRegisterWordExt, 96, "C054", "not-adopted", null, null));
+            (SlmpProfileLimitKey.DirectWordRead, 960, "C052", "live", null, null),
+            (SlmpProfileLimitKey.DirectWordWrite, 960, "C052", "live", null, null),
+            (SlmpProfileLimitKey.DirectBitRead, 3584, "C051", "live", null, null),
+            (SlmpProfileLimitKey.DirectBitWrite, 3584, "C051", "live", null, null),
+            (SlmpProfileLimitKey.RandomReadWord, 192, "C054", "live", null, null),
+            (SlmpProfileLimitKey.RandomWriteWord, 160, "C054", "live", 1920, null),
+            (SlmpProfileLimitKey.RandomWriteBit, 188, "C053", "live", null, null),
+            (SlmpProfileLimitKey.MonitorRegisterWord, 192, "C054", "not-adopted", null, null),
+            (SlmpProfileLimitKey.RandomReadWordExt, 96, "C054", "live", null, null),
+            (SlmpProfileLimitKey.RandomWriteWordExt, 80, "C054", "live", 960, null),
+            (SlmpProfileLimitKey.RandomWriteBitExt, 94, "C053", "live", null, null),
+            (SlmpProfileLimitKey.MonitorRegisterWordExt, 96, "C054", "not-adopted", null, null));
 
-    private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> QlLimits(
+    private static Dictionary<SlmpProfileLimitKey, SlmpCapabilityLimit> QlLimits(
         string source,
         int extReadMax = 192,
         string extReadOverEndCode = "C054")
         => Limits(
-            (SlmpProfileLimit.DirectWordRead, 960, "C051", source, null, null),
-            (SlmpProfileLimit.DirectWordWrite, 960, "C051", source, null, null),
-            (SlmpProfileLimit.DirectBitRead, 7168, "C052", source, null, null),
-            (SlmpProfileLimit.DirectBitWrite, 7168, "C052", source, null, null),
-            (SlmpProfileLimit.RandomReadWord, 192, "C054", source, null, null),
-            (SlmpProfileLimit.RandomWriteWord, 160, "C054", source, 1920, null),
-            (SlmpProfileLimit.RandomWriteBit, 188, "C053", source, null, null),
-            (SlmpProfileLimit.MonitorRegisterWord, 192, "C054", source, null, null),
-            (SlmpProfileLimit.RandomReadWordExt, extReadMax, extReadOverEndCode, "inferred", null, null),
-            (SlmpProfileLimit.RandomWriteWordExt, 160, "4080", "inferred", 1920, null),
-            (SlmpProfileLimit.RandomWriteBitExt, 188, "C053", "inferred", null, null),
-            (SlmpProfileLimit.MonitorRegisterWordExt, 192, "C054", "inferred", null, null));
+            (SlmpProfileLimitKey.DirectWordRead, 960, "C051", source, null, null),
+            (SlmpProfileLimitKey.DirectWordWrite, 960, "C051", source, null, null),
+            (SlmpProfileLimitKey.DirectBitRead, 7168, "C052", source, null, null),
+            (SlmpProfileLimitKey.DirectBitWrite, 7168, "C052", source, null, null),
+            (SlmpProfileLimitKey.RandomReadWord, 192, "C054", source, null, null),
+            (SlmpProfileLimitKey.RandomWriteWord, 160, "C054", source, 1920, null),
+            (SlmpProfileLimitKey.RandomWriteBit, 188, "C053", source, null, null),
+            (SlmpProfileLimitKey.MonitorRegisterWord, 192, "C054", source, null, null),
+            (SlmpProfileLimitKey.RandomReadWordExt, extReadMax, extReadOverEndCode, "inferred", null, null),
+            (SlmpProfileLimitKey.RandomWriteWordExt, 160, "4080", "inferred", 1920, null),
+            (SlmpProfileLimitKey.RandomWriteBitExt, 188, "C053", "inferred", null, null),
+            (SlmpProfileLimitKey.MonitorRegisterWordExt, 192, "C054", "inferred", null, null));
 
-    private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> QlUnitLimits(
+    private static Dictionary<SlmpProfileLimitKey, SlmpCapabilityLimit> QlUnitLimits(
         int extReadMax,
         bool includeBitExt,
         string bitExtSource = "live")
     {
-        var entries = new List<(SlmpProfileLimit Limit, int Max, string? OverEndCode, string Source, int? WeightedMax, string? Note)>
+        var entries = new List<(SlmpProfileLimitKey Limit, int Max, string? OverEndCode, string Source, int? WeightedMax, string? Note)>
         {
-            (SlmpProfileLimit.DirectWordRead, 960, "C051", "live", null, null),
-            (SlmpProfileLimit.DirectWordWrite, 960, "C051", "live", null, null),
-            (SlmpProfileLimit.DirectBitRead, 7168, "C052", "live", null, null),
-            (SlmpProfileLimit.DirectBitWrite, 7168, "C052", "live", null, null),
-            (SlmpProfileLimit.RandomReadWord, 192, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomWriteWord, 160, "4080", "live", 1920, null),
-            (SlmpProfileLimit.RandomWriteBit, 188, "C053", "live", null, null),
-            (SlmpProfileLimit.MonitorRegisterWord, 192, "C054", "live", null, null),
-            (SlmpProfileLimit.RandomReadWordExt, extReadMax, extReadMax == 185 ? "4080" : "C054", "live", null, null),
-            (SlmpProfileLimit.RandomWriteWordExt, 160, "4080", "live", 1920, null),
-            (SlmpProfileLimit.MonitorRegisterWordExt, 192, "C054", "live", null, null),
+            (SlmpProfileLimitKey.DirectWordRead, 960, "C051", "live", null, null),
+            (SlmpProfileLimitKey.DirectWordWrite, 960, "C051", "live", null, null),
+            (SlmpProfileLimitKey.DirectBitRead, 7168, "C052", "live", null, null),
+            (SlmpProfileLimitKey.DirectBitWrite, 7168, "C052", "live", null, null),
+            (SlmpProfileLimitKey.RandomReadWord, 192, "C054", "live", null, null),
+            (SlmpProfileLimitKey.RandomWriteWord, 160, "4080", "live", 1920, null),
+            (SlmpProfileLimitKey.RandomWriteBit, 188, "C053", "live", null, null),
+            (SlmpProfileLimitKey.MonitorRegisterWord, 192, "C054", "live", null, null),
+            (SlmpProfileLimitKey.RandomReadWordExt, extReadMax, extReadMax == 185 ? "4080" : "C054", "live", null, null),
+            (SlmpProfileLimitKey.RandomWriteWordExt, 160, "4080", "live", 1920, null),
+            (SlmpProfileLimitKey.MonitorRegisterWordExt, 192, "C054", "live", null, null),
         };
 
         if (includeBitExt)
         {
-            entries.Add((SlmpProfileLimit.RandomWriteBitExt, 188, "C053", bitExtSource, null, null));
+            entries.Add((SlmpProfileLimitKey.RandomWriteBitExt, 188, "C053", bitExtSource, null, null));
         }
 
         return Limits(entries.ToArray());
     }
 
-    private static Dictionary<SlmpProfileLimit, SlmpCapabilityLimit> Limits(
-        params (SlmpProfileLimit Limit, int Max, string? OverEndCode, string Source, int? WeightedMax, string? Note)[] entries)
+    private static Dictionary<SlmpProfileLimitKey, SlmpCapabilityLimit> Limits(
+        params (SlmpProfileLimitKey Limit, int Max, string? OverEndCode, string Source, int? WeightedMax, string? Note)[] entries)
         => entries.ToDictionary(
             static entry => entry.Limit,
             static entry => new SlmpCapabilityLimit(entry.Max, entry.OverEndCode, entry.Source, entry.WeightedMax, entry.Note));

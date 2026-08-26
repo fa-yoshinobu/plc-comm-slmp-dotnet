@@ -5,6 +5,16 @@ namespace PlcComm.Slmp.Tests;
 public sealed class SlmpClientExtensionsTests
 {
     [Fact]
+    public async Task BitSingleRequestHelpers_RejectOversizedRangeBeforeTransport()
+    {
+        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ReadBitsSingleRequestAsync("M0", 7169));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.WriteBitsSingleRequestAsync("M0", new bool[7169]));
+        Assert.False(client.IsOpen);
+        Assert.Equal(0UL, client.TrafficStats.RequestCount);
+    }
+
+    [Fact]
     public async Task ReadWordsSingleRequestAsync_RejectsOversizedRangeBeforeTransport()
     {
         using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
