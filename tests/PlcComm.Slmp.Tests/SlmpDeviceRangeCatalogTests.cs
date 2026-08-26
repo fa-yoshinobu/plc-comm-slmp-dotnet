@@ -306,34 +306,140 @@ public sealed class SlmpDeviceRangeCatalogTests
         Assert.Equal("SD0-SD11999", GetEntry(catalog, "SD").AddressRange);
     }
 
-    [Fact]
-    public async Task ReadDeviceRangeCatalogAsync_QCpuUsesCanonicalRulesWithoutRuntimeProbes()
+    [Theory]
+    [InlineData(SlmpPlcProfile.LCpu)]
+    [InlineData(SlmpPlcProfile.LCpuLj71E71100)]
+    [InlineData(SlmpPlcProfile.QnU)]
+    [InlineData(SlmpPlcProfile.QnUQj71E71100)]
+    [InlineData(SlmpPlcProfile.QnUDV)]
+    [InlineData(SlmpPlcProfile.QnUDVQj71E71100)]
+    public async Task ReadDeviceRangeCatalogAsync_NonQCpuQSeriesProfilesUseCanonicalRequests(SlmpPlcProfile plcProfile)
     {
-        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.QCpuQj71E71100);
-        var sdValues = new ushort[profile.RegisterCount];
-
-        await using var server = new MultiResponseSlmpServer([BuildWordPayload(sdValues)]);
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(plcProfile);
+        await using var server = new MultiResponseSlmpServer(
+        [
+            (BuildWordPayload(new ushort[profile.RegisterCount]), (ushort)0),
+            (Array.Empty<byte>(), (ushort)0xD123),
+        ]);
         await server.StartAsync();
 
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.QCpuQj71E71100, server.Port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
-        {
-            MonitoringTimer = 0x0010,
-        };
-
+        using var client = CreateClient(plcProfile, server.Port);
         var catalog = await client.ReadDeviceRangeCatalogAsync();
 
-        Assert.Single(server.RequestFrames);
-        Assert.Equal(SlmpPlcProfile.QCpuQj71E71100, catalog.PlcProfile);
+        Assert.Equal(plcProfile, catalog.PlcProfile);
+        Assert.Equal(20u, GetEntry(catalog, "Z").PointCount);
+        AssertRuntimePointCount(catalog, "ZR", 0);
+        AssertRuntimePointCount(catalog, "R", 0);
+        Assert.Equal(
+            new[]
+            {
+                (SlmpDeviceCode.SD, (uint)profile.RegisterStart, (ushort)profile.RegisterCount),
+                (SlmpDeviceCode.ZR, 0u, (ushort)1),
+            },
+            server.RequestFrames.Select(DecodeDirectWordRequest)
+                .Select(static request => (request.Device, request.Number, request.Points)));
+        Assert.All(
+            server.RequestFrames.Select(DecodeDirectWordRequest),
+            static request => Assert.Equal((ushort)0, request.Subcommand));
+    }
+
+    [Fact]
+    public async Task ReadDeviceRangeCatalogAsync_QCpuUsesDoublingThenBinarySearchRequestSequence()
+    {
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.QCpuQj71E71100);
+        var probes = new[]
+        {
+            (SlmpDeviceCode.Z, 15u, true),
+            (SlmpDeviceCode.ZR, 0u, true),
+            (SlmpDeviceCode.ZR, 1u, true),
+            (SlmpDeviceCode.ZR, 3u, true),
+            (SlmpDeviceCode.ZR, 7u, true),
+            (SlmpDeviceCode.ZR, 15u, true),
+            (SlmpDeviceCode.ZR, 31u, false),
+            (SlmpDeviceCode.ZR, 23u, false),
+            (SlmpDeviceCode.ZR, 19u, false),
+            (SlmpDeviceCode.ZR, 17u, false),
+            (SlmpDeviceCode.ZR, 16u, false),
+        };
+        var responses = new[] { (BuildWordPayload(new ushort[profile.RegisterCount]), (ushort)0) }
+            .Concat(probes.Select(static probe => probe.Item3
+                ? (BuildWordPayload([0]), (ushort)0)
+                : (Array.Empty<byte>(), (ushort)0xD123)));
+
+        await using var server = new MultiResponseSlmpServer(responses);
+        await server.StartAsync();
+
+        using var client = CreateClient(SlmpPlcProfile.QCpuQj71E71100, server.Port);
+        var catalog = await client.ReadDeviceRangeCatalogAsync();
+
+        Assert.Equal(16u, GetEntry(catalog, "Z").PointCount);
+        Assert.Equal("Z0-Z15", GetEntry(catalog, "Z").AddressRange);
+        Assert.Contains("QCPU Z register count is selected by probing Z15.", GetEntry(catalog, "Z").Notes);
+        Assert.Equal(16u, GetEntry(catalog, "ZR").PointCount);
+        Assert.Equal("ZR0-ZR15", GetEntry(catalog, "ZR").AddressRange);
+        Assert.Contains("ZR register count is selected by probing readable ZR addresses.", GetEntry(catalog, "ZR").Notes);
+        Assert.Equal(16u, GetEntry(catalog, "R").PointCount);
+        Assert.Equal("R0-R15", GetEntry(catalog, "R").AddressRange);
+        Assert.Contains("R register count follows the probed ZR count and is capped at R32767.", GetEntry(catalog, "R").Notes);
+        Assert.Equal(
+            probes.Select(static probe => (probe.Item1, probe.Item2)),
+            server.RequestFrames.Skip(1)
+                .Select(DecodeDirectWordRequest)
+                .Select(static request => (request.Device, request.Number)));
+    }
+
+    [Fact]
+    public async Task ReadDeviceRangeCatalogAsync_ReadableCappedAddressUsesMaximumProbeCountAndCapsR()
+    {
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.QnUDVQj71E71100);
+        var addresses = new List<uint> { 0 };
+        for (var high = 1u; high < 1_048_575u; high = Math.Min(1_048_575u, checked((high * 2) + 1)))
+        {
+            addresses.Add(high);
+        }
+        addresses.Add(1_048_575u);
+
+        var responses = new[] { BuildWordPayload(new ushort[profile.RegisterCount]) }
+            .Concat(addresses.Select(static _ => BuildWordPayload([0])));
+        await using var server = new MultiResponseSlmpServer(responses);
+        await server.StartAsync();
+
+        using var client = CreateClient(SlmpPlcProfile.QnUDVQj71E71100, server.Port);
+        var catalog = await client.ReadDeviceRangeCatalogAsync();
+
+        Assert.Equal(1_048_576u, GetEntry(catalog, "ZR").PointCount);
+        Assert.Equal(1_048_575u, GetEntry(catalog, "ZR").UpperBound);
+        Assert.Equal(32_768u, GetEntry(catalog, "R").PointCount);
+        Assert.Equal(32_767u, GetEntry(catalog, "R").UpperBound);
+        Assert.Equal(
+            addresses,
+            server.RequestFrames.Skip(1).Select(DecodeDirectWordRequest).Select(static request => request.Number));
+    }
+
+    [Theory]
+    [InlineData(0x4031)]
+    [InlineData(0xC061)]
+    [InlineData(0xC200)]
+    [InlineData(0xCEE0)]
+    [InlineData(0xD123)]
+    public async Task ReadDeviceRangeCatalogAsync_AnyPlcEndCodeMeansProbeAddressIsUnreadable(ushort endCode)
+    {
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.QCpuQj71E71100);
+        await using var server = new MultiResponseSlmpServer(
+        [
+            (BuildWordPayload(new ushort[profile.RegisterCount]), (ushort)0),
+            (Array.Empty<byte>(), endCode),
+            (Array.Empty<byte>(), endCode),
+        ]);
+        await server.StartAsync();
+
+        using var client = CreateClient(SlmpPlcProfile.QCpuQj71E71100, server.Port);
+        var catalog = await client.ReadDeviceRangeCatalogAsync();
+
         Assert.Equal(10u, GetEntry(catalog, "Z").PointCount);
-        Assert.Equal(9u, GetEntry(catalog, "Z").UpperBound);
-        Assert.Equal("Z0-Z9", GetEntry(catalog, "Z").AddressRange);
-        Assert.Equal("Fixed family limit", GetEntry(catalog, "Z").Source);
-        Assert.Null(GetEntry(catalog, "ZR").PointCount);
-        Assert.Null(GetEntry(catalog, "ZR").UpperBound);
-        Assert.Null(GetEntry(catalog, "ZR").AddressRange);
-        Assert.Equal(32768u, GetEntry(catalog, "R").PointCount);
-        Assert.Equal(32767u, GetEntry(catalog, "R").UpperBound);
-        Assert.Equal("R0-R32767", GetEntry(catalog, "R").AddressRange);
+        Assert.Equal(0u, GetEntry(catalog, "ZR").PointCount);
+        Assert.Equal(0u, GetEntry(catalog, "R").PointCount);
+        Assert.Equal(3, server.RequestFrames.Count);
     }
 
     [Theory]
@@ -341,7 +447,7 @@ public sealed class SlmpDeviceRangeCatalogTests
     [InlineData(0xC200)] // remote-password error
     [InlineData(0xCEE0)] // PLC busy/error state
     [InlineData(0xD123)] // unclassified PLC end code
-    public async Task ReadDeviceRangeCatalogAsync_PropagatesPlcEndCodeWithoutBoundaryInference(ushort endCode)
+    public async Task ReadDeviceRangeCatalogAsync_PropagatesPlcEndCodeFromSdAcquisition(ushort endCode)
     {
         await using var server = new MultiResponseSlmpServer([(Array.Empty<byte>(), endCode)]);
         await server.StartAsync();
@@ -371,6 +477,24 @@ public sealed class SlmpDeviceRangeCatalogTests
         await Assert.ThrowsAsync<SlmpError>(() => client.ReadDeviceRangeCatalogAsync());
 
         Assert.Single(server.RequestFrames);
+    }
+
+    [Fact]
+    public async Task ReadDeviceRangeCatalogAsync_PropagatesProtocolFailureDuringProbe()
+    {
+        var profile = SlmpDeviceRangeResolver.ResolveProfile(SlmpPlcProfile.QnUDV);
+        await using var server = new MultiResponseSlmpServer(
+        [
+            BuildWordPayload(new ushort[profile.RegisterCount]),
+            new byte[] { 0x12 },
+        ]);
+        await server.StartAsync();
+
+        using var client = CreateClient(SlmpPlcProfile.QnUDV, server.Port);
+        var error = await Assert.ThrowsAsync<SlmpError>(() => client.ReadDeviceRangeCatalogAsync());
+
+        Assert.Null(error.EndCode);
+        Assert.Equal(2, server.RequestFrames.Count);
     }
 
     [Fact]
@@ -544,6 +668,41 @@ public sealed class SlmpDeviceRangeCatalogTests
 
     private static SlmpDeviceRangeEntry GetEntry(SlmpDeviceRangeCatalog catalog, string device)
         => Assert.Single(catalog.Entries, entry => entry.Device == device);
+
+    private static void AssertRuntimePointCount(SlmpDeviceRangeCatalog catalog, string device, uint pointCount)
+    {
+        var entry = GetEntry(catalog, device);
+        Assert.Equal("Runtime access check", entry.Source);
+        Assert.Equal(pointCount, entry.PointCount);
+        Assert.Equal(pointCount == 0 ? null : pointCount - 1, entry.UpperBound);
+    }
+
+    private static SlmpClient CreateClient(SlmpPlcProfile plcProfile, int port)
+        => new("127.0.0.1", plcProfile, port, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation)
+        {
+            MonitoringTimer = 0x0010,
+        };
+
+    private static (SlmpDeviceCode Device, uint Number, ushort Points, ushort Subcommand) DecodeDirectWordRequest(byte[] frame)
+    {
+        var headerLength = frame[0] switch
+        {
+            0x54 => 13,
+            0x50 => 9,
+            _ => throw new InvalidOperationException("Unexpected SLMP request subheader."),
+        };
+        var commandOffset = headerLength + 2;
+        Assert.Equal((ushort)SlmpCommand.DeviceRead, BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(commandOffset, 2)));
+        var subcommand = BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(commandOffset + 2, 2));
+        var payloadOffset = commandOffset + 4;
+        var number = (uint)(
+            frame[payloadOffset] |
+            (frame[payloadOffset + 1] << 8) |
+            (frame[payloadOffset + 2] << 16));
+        var device = (SlmpDeviceCode)frame[payloadOffset + 3];
+        var points = BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(payloadOffset + 4, 2));
+        return (device, number, points, subcommand);
+    }
 
     private static byte[] BuildTypeNamePayload(string model, ushort modelCode)
     {

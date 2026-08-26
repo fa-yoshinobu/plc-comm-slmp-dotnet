@@ -439,7 +439,9 @@ dotnet run --project samples/PlcComm.Slmp.ConfigPollingSample -- --config sample
 
 ## Device range catalog
 
-`ReadDeviceRangeCatalogAsync` reads the canonical profile's required SD-register window after you connect with an explicit PLC profile. It does not auto-discover the profile, probe candidate addresses, or infer a smaller range from a failed PLC request. Any timeout, cancellation, transport, protocol, route, password, busy, or other PLC error is returned to the caller; a range without an authoritative value remains unknown.
+`ReadDeviceRangeCatalogAsync` reads the canonical profile's required SD-register window after you connect with an explicit PLC profile. For QCPU, LCPU, QnU, and QnUDV base/unit profiles, it then performs the canonical runtime range probes: QCPU reads `Z15` to select 10 or 16 `Z` points, and every applicable profile probes `ZR` with doubling followed by binary search, capped at 1,048,576 points. The `R` count is `min(ZR, 32768)`.
+
+A nonzero PLC end-code response means only that the candidate probe address is unreadable; there is no end-code allowlist. Timeout, cancellation, transport, protocol, lifecycle, and local-validation failures abort the operation and propagate to the caller without returning a partial catalog. The method does not auto-discover the PLC profile.
 The source rules for this catalog are maintained in the shared [SLMP device ranges](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/device-ranges/) reference.
 
 ```csharp

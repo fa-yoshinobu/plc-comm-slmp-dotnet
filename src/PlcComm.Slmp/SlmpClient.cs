@@ -59,6 +59,7 @@ internal sealed record SlmpPreparedRandomRead(
 /// </remarks>
 public sealed class SlmpClient : IDisposable, IAsyncDisposable
 {
+    private const uint MaxRuntimeRangeProbeCount = 1_048_576;
     private const int DirectWordPointLimit = 960;
     private const int DirectBitPointLimit = 7168;
     private const int DirectIqFBitPointLimit = 3584;
@@ -669,11 +670,15 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    /// Reads the configured profile-specific device upper-bound catalog from one canonical SD-register window.
+    /// Reads the configured profile-specific device upper-bound catalog from canonical SD registers and required runtime probes.
     /// </summary>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A catalog containing the configured profile and device upper-bound entries.</returns>
-    /// <remarks>No address probe or error-derived boundary inference is performed. Acquisition errors propagate to the caller.</remarks>
+    /// <remarks>
+    /// Q-series profiles probe the configured PLC for conditional <c>Z</c>, <c>ZR</c>, and derived <c>R</c>
+    /// ranges. A nonzero PLC end code means that probe address is unreadable. Timeout, cancellation, transport,
+    /// protocol, lifecycle, and local validation failures propagate to the caller without returning a partial catalog.
+    /// </remarks>
     public async Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
     {
         var rangeProfile = SlmpPlcProfiles.Resolve(PlcProfile).RangeProfile;
@@ -682,9 +687,124 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             async token =>
             {
                 var registers = await SlmpDeviceRangeResolver.ReadRegistersAsync(this, deviceRangeProfile, token).ConfigureAwait(false);
-                return SlmpDeviceRangeResolver.BuildCatalog(rangeProfile, registers);
+                var catalog = SlmpDeviceRangeResolver.BuildCatalog(rangeProfile, registers);
+                return await ResolveDeviceRangeCatalogRuntimeLimitsAsync(catalog, token).ConfigureAwait(false);
             },
             cancellationToken).ConfigureAwait(false);
+    }
+
+    private static bool UsesDeviceRangeRuntimeProbe(SlmpPlcProfile plcProfile)
+    {
+        var addressProfile = SlmpPlcProfiles.Resolve(plcProfile).AddressProfile;
+        return addressProfile is SlmpPlcProfile.QCpu
+            or SlmpPlcProfile.LCpu
+            or SlmpPlcProfile.QnU
+            or SlmpPlcProfile.QnUDV;
+    }
+
+    private async Task<SlmpDeviceRangeCatalog> ResolveDeviceRangeCatalogRuntimeLimitsAsync(
+        SlmpDeviceRangeCatalog catalog,
+        CancellationToken cancellationToken)
+    {
+        if (!UsesDeviceRangeRuntimeProbe(PlcProfile))
+        {
+            return catalog;
+        }
+
+        var addressProfile = SlmpPlcProfiles.Resolve(PlcProfile).AddressProfile;
+        if (addressProfile == SlmpPlcProfile.QCpu)
+        {
+            var zCount = await CanReadWordAddressAsync(SlmpDeviceCode.Z, 15, cancellationToken).ConfigureAwait(false)
+                ? 16u
+                : 10u;
+            catalog = SlmpDeviceRangeResolver.ReplaceFixedPointCount(
+                catalog,
+                "Z",
+                zCount,
+                "Runtime access check",
+                "QCPU Z register count is selected by probing Z15.");
+        }
+
+        var zrCount = await ResolveReadablePointCountAsync(SlmpDeviceCode.ZR, cancellationToken).ConfigureAwait(false);
+        catalog = SlmpDeviceRangeResolver.ReplaceFixedPointCount(
+            catalog,
+            "ZR",
+            zrCount,
+            "Runtime access check",
+            "ZR register count is selected by probing readable ZR addresses.");
+        return SlmpDeviceRangeResolver.ReplaceFixedPointCount(
+            catalog,
+            "R",
+            Math.Min(zrCount, 32_768u),
+            "Runtime access check",
+            "R register count follows the probed ZR count and is capped at R32767.");
+    }
+
+    private async Task<uint> ResolveReadablePointCountAsync(
+        SlmpDeviceCode device,
+        CancellationToken cancellationToken)
+    {
+        if (!await CanReadWordAddressAsync(device, 0, cancellationToken).ConfigureAwait(false))
+        {
+            return 0;
+        }
+
+        var upperLimit = MaxRuntimeRangeProbeCount - 1;
+        var low = 0u;
+        var high = 1u;
+        while (high < upperLimit)
+        {
+            if (!await CanReadWordAddressAsync(device, high, cancellationToken).ConfigureAwait(false))
+            {
+                break;
+            }
+
+            low = high;
+            high = Math.Min(upperLimit, checked((high * 2) + 1));
+        }
+
+        if (high == upperLimit &&
+            await CanReadWordAddressAsync(device, high, cancellationToken).ConfigureAwait(false))
+        {
+            return MaxRuntimeRangeProbeCount;
+        }
+
+        var left = low + 1;
+        var right = high - 1;
+        while (left <= right)
+        {
+            var mid = left + ((right - left) / 2);
+            if (await CanReadWordAddressAsync(device, mid, cancellationToken).ConfigureAwait(false))
+            {
+                low = mid;
+                left = mid + 1;
+            }
+            else
+            {
+                right = mid - 1;
+            }
+        }
+
+        return low + 1;
+    }
+
+    private async Task<bool> CanReadWordAddressAsync(
+        SlmpDeviceCode device,
+        uint number,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            _ = await ReadWordsRawAsync(
+                new SlmpDeviceAddress(device, number, PlcProfile),
+                1,
+                cancellationToken).ConfigureAwait(false);
+            return true;
+        }
+        catch (SlmpError exception) when (exception.EndCode is not null)
+        {
+            return false;
+        }
     }
 
     /// <summary>

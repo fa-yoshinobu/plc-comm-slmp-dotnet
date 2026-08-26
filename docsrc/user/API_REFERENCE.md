@@ -468,9 +468,9 @@ Parameters:
 public Task<SlmpDeviceRangeCatalog> ReadDeviceRangeCatalogAsync(CancellationToken cancellationToken = default)
 ```
 
-Reads the configured profile-specific device upper-bound catalog from one canonical SD-register window.
+Reads the configured profile-specific device upper-bound catalog from canonical SD registers and required runtime probes.
 
-Remarks: No address probe or error-derived boundary inference is performed. Acquisition errors propagate to the caller.
+Remarks: Q-series profiles probe the configured PLC for conditional `Z`, `ZR`, and derived `R` ranges. A nonzero PLC end code means that probe address is unreadable. Timeout, cancellation, transport, protocol, lifecycle, and local validation failures propagate to the caller without returning a partial catalog.
 
 Returns: A catalog containing the configured profile and device upper-bound entries.
 

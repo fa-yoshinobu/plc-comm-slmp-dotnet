@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Library: Restored canonical Q-series device-range runtime probes: QCPU selects 10 or 16
+  `Z` points from `Z15`, QCPU/LCPU/QnU/QnUDV resolve `ZR` by doubling then binary search
+  up to 1,048,576 points, and `R` is `min(ZR, 32768)`. Only PLC end-code responses mean
+  unreadable; timeout, cancellation, transport, protocol, lifecycle, and local failures propagate.
+
 ## [5.0.0] - 2026-08-07
 
 - CI: Release tooling now normalizes only compiler-generated state-machine ordinals in
