@@ -158,7 +158,7 @@ public static class SlmpClientExtensions
                 {
                     var dword = IsRandomDWordAddressedDevice(device.Code)
                         ? await ReadRandomDWordValueAsync(client, device, ct).ConfigureAwait(false)
-                        : (await client.ReadDWordsRawAsync(device, 1, ct).ConfigureAwait(false))[0];
+                        : (await client.ReadDWordsAsync(device, 1, ct).ConfigureAwait(false))[0];
                     return normalizedDType switch
                     {
                         "F" => DecodeFloatDWord(dword),
@@ -168,12 +168,12 @@ public static class SlmpClientExtensions
                 }
             case "S":
                 {
-                    var words = await client.ReadWordsRawAsync(device, 1, ct).ConfigureAwait(false);
+                    var words = await client.ReadWordsAsync(device, 1, ct).ConfigureAwait(false);
                     return DecodeSignedWord(words[0]);
                 }
             default:
                 {
-                    var words = await client.ReadWordsRawAsync(device, 1, ct).ConfigureAwait(false);
+                    var words = await client.ReadWordsAsync(device, 1, ct).ConfigureAwait(false);
                     return words[0];
                 }
         }
@@ -414,7 +414,7 @@ public static class SlmpClientExtensions
         bool value,
         CancellationToken ct)
     {
-        var words = await client.ReadWordsRawAsync(device, 1, ct).ConfigureAwait(false);
+        var words = await client.ReadWordsAsync(device, 1, ct).ConfigureAwait(false);
         int current = words[0];
         if (value)
             current |= 1 << bitIndex;
@@ -555,25 +555,23 @@ public static class SlmpClientExtensions
         CancellationToken ct = default)
         => client.WriteWordsSingleRequestAsync(start, values, ct);
 
-    /// <summary>
-    /// Writes a contiguous DWord-device range from 32-bit values.
-    /// </summary>
+    /// <summary>Deprecated compatibility name. Use <see cref="WriteDWordsSingleRequestAsync(SlmpClient, SlmpDeviceAddress, IReadOnlyList{uint}, CancellationToken)"/>. This overload will be removed after one compatibility release.</summary>
+    [Obsolete("Use WriteDWordsSingleRequestAsync; WriteDWordsBlockAsync will be removed after one compatibility release.")]
     public static Task WriteDWordsBlockAsync(
         this SlmpClient client,
         SlmpDeviceAddress start,
         IReadOnlyList<uint> values,
         CancellationToken ct = default)
-        => client.WriteDWordsAsync(start, values, ct);
+        => client.WriteDWordsSingleRequestAsync(start, values, ct);
 
-    /// <summary>
-    /// Writes a contiguous DWord-device range using a string address.
-    /// </summary>
+    /// <summary>Deprecated compatibility name. Use <see cref="WriteDWordsSingleRequestAsync(SlmpClient, string, IReadOnlyList{uint}, CancellationToken)"/>. This overload will be removed after one compatibility release.</summary>
+    [Obsolete("Use WriteDWordsSingleRequestAsync; WriteDWordsBlockAsync will be removed after one compatibility release.")]
     public static Task WriteDWordsBlockAsync(
         this SlmpClient client,
         string start,
         IReadOnlyList<uint> values,
         CancellationToken ct = default)
-        => client.WriteDWordsBlockAsync(ParseDeviceForClient(client, start), values, ct);
+        => client.WriteDWordsSingleRequestAsync(start, values, ct);
 
     /// <summary>
     /// Reads contiguous word devices using one SLMP request or returns an error.
@@ -585,7 +583,7 @@ public static class SlmpClientExtensions
         CancellationToken ct = default)
     {
         ValidateSingleRequestCount(count, 960, nameof(count));
-        return client.ReadWordsRawAsync(start, (ushort)count, ct);
+        return client.ReadWordsAsync(start, (ushort)count, ct);
     }
 
     /// <summary>
@@ -608,7 +606,7 @@ public static class SlmpClientExtensions
         CancellationToken ct = default)
     {
         ValidateSingleRequestCount(count, 480, nameof(count));
-        return client.ReadDWordsRawAsync(start, (ushort)count, ct);
+        return client.ReadDWordsAsync(start, (ushort)count, ct);
     }
 
     /// <summary>
@@ -1188,7 +1186,7 @@ public static class SlmpClientExtensions
         return dwords[0];
     }
 
-    private static void ValidateBitInWordTarget(string address, SlmpDeviceAddress device)
+    internal static void ValidateBitInWordTarget(string address, SlmpDeviceAddress device)
     {
         if (!SlmpDeviceUnits.IsWord(device.Code))
         {
@@ -1231,7 +1229,7 @@ public static class SlmpClientExtensions
         return normalized;
     }
 
-    private static void ValidateNamedDeviceDType(string address, SlmpDeviceAddress device, string dtype)
+    internal static void ValidateNamedDeviceDType(string address, SlmpDeviceAddress device, string dtype)
     {
         if (dtype == "BIT_IN_WORD")
             return;

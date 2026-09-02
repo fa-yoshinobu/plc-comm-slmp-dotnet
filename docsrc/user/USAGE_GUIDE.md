@@ -13,7 +13,8 @@
 | `ReadWordsSingleRequestAsync` / `ReadDWordsSingleRequestAsync` | Reads one contiguous block in one protocol request. |
 | `WriteBitInWordAsync` | Sets or clears one bit in a word device. |
 | `PollAsync` | Repeats a named value-set read on an async interval. |
-| `SlmpAddress` | Parses, formats, and normalizes SLMP address text. |
+| `SlmpAddress` | Parses, formats, and normalizes direct device text such as `D100` or `X10`. |
+| `SlmpAddressSpec` | Parses, formats, and normalizes typed or bit-selected expressions such as `D100:U` or `D50.A`. |
 | `SlmpQualifiedDeviceParser` | Parses extended device text such as `U3\G100`, `U3E0\HG0`, and `J2\SW10`. |
 | `ReadWordsExtendedAsync` / `WriteWordsExtendedAsync` | Reads or writes routed `U...` / `J...` word devices. |
 | `ReadBitsExtendedAsync` / `WriteBitsExtendedAsync` | Reads or writes routed `U...` / `J...` bit devices. |
@@ -293,7 +294,7 @@ bit request and rejects mixed families and bit-in-word read-modify-write.
 
 Semantic `BIT` operations accept only bit-addressable families such as `M`, `X`,
 and `Y`. Numeric and string scalar types accept only word-addressable families.
-Use `ReadWordsRawAsync` or `WriteWordsAsync` explicitly when packed 16-bit access
+Use `ReadWordsAsync` or `WriteWordsAsync` explicitly when packed 16-bit access
 to a bit-device range is intentional. Use `.0` through `.F` or
 `ReadNamedAsync(["D100.0"])` to read one bit inside a word device, and use
 `WriteBitInWordAsync` for the corresponding explicit non-atomic read-modify-write.
@@ -310,6 +311,17 @@ ranges; F requires a finite numeric value within the float32 range.
 The same Boolean-only contract applies to direct, extended, random, named, and
 bit-in-word writes. There is no numeric or string compatibility overload.
 Packed bit-block words are a distinct wire-level API and remain `ushort` values.
+
+## Latest self-diagnosis error code
+
+```csharp
+ushort errorCode = await client.ReadLatestSelfDiagnosisErrorCodeAsync();
+Console.WriteLine($"SD0 = 0x{errorCode:X4}");
+```
+
+This helper reads exactly one word from `SD0` in one Direct Read request and
+returns the raw unsigned value. It does not classify the value, treat a nonzero
+value as a communication failure, retry, clear an error, or read error history.
 
 Communication timeout values must be at least 1 millisecond. The transaction uses
 one absolute deadline from a lazy connection attempt through send, complete TCP/UDP
@@ -529,6 +541,23 @@ J-direct network fields are decimal `0..255`.
 
 ## Address reference
 
+Direct devices and high-level address expressions have separate public APIs:
+
+```csharp
+var device = SlmpAddress.Parse("D100", SlmpPlcProfile.IqR);
+Console.WriteLine(SlmpAddress.Format(device)); // D100
+
+var spec = SlmpAddressSpec.Parse("d50.a", SlmpPlcProfile.IqR);
+Console.WriteLine(SlmpAddressSpec.Format(spec)); // D50.A
+Console.WriteLine(spec.DeviceAddress);           // D50
+Console.WriteLine(spec.DType);                   // BIT_IN_WORD
+Console.WriteLine(spec.BitIndex);                // 10
+```
+
+`SlmpAddress` does not accept a dtype or bit selection, while `SlmpAddressSpec`
+requires one. Qualified routes such as `J1\X10` and `U0\G100` remain separate
+from both forms and must use `SlmpQualifiedDeviceParser`.
+
 | Form | Example | Meaning |
 | --- | --- | --- |
 | `:U` | `D100:U` | Unsigned 16-bit word. |
@@ -540,6 +569,7 @@ J-direct network fields are decimal `0..255`.
 | `.n` | `D50.3` | Bit `n` inside one word, where `n` is hexadecimal `0` to `F`. |
 
 Named addresses used with `ReadNamedAsync`, `WriteNamedAsync`, and `PollAsync` must include the intended type, for example `D100:U` or `M1000:BIT`.
+
 ## Traffic statistics
 
 Read `client.TrafficStats` for a client-lifetime

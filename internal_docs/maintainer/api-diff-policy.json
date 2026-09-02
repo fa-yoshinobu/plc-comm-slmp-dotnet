@@ -8687,6 +8687,1365 @@
         "kind": "major",
         "target_major": 5
       }
+    },
+    {
+      "key": "net8.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitReadBytesAsync(System.UInt32,System.UInt16,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.Byte[]>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitReadBytesAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitReadDWordAsync(System.UInt32,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.UInt32>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitReadDWordAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitReadWordAsync(System.UInt32,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitReadWordAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitReadWordsAsync(System.UInt32,System.UInt16,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16[]>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitReadWordsAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitWriteBytesAsync(System.UInt32,System.UInt16,System.ReadOnlyMemory{System.Byte},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=[System.Runtime.CompilerServices.NullableAttribute((Byte)1)]|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.ReadOnlyMemory`1<System.Byte>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitWriteBytesAsync>d__*))],[System.Runtime.CompilerServices.NullableContextAttribute((Byte)0)]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitWriteDWordAsync(System.UInt32,System.UInt16,System.UInt32,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.UInt32:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitWriteDWordAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitWriteWordAsync(System.UInt32,System.UInt16,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitWriteWordsAsync(System.UInt32,System.UInt16,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitWriteWordsAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|removed|M:PlcComm.Slmp.SlmpClient.MemoryReadWordsAsync(System.UInt32,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16[]>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<MemoryReadWordsAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|removed|M:PlcComm.Slmp.SlmpClient.MemoryWriteWordsAsync(System.UInt32,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<MemoryWriteWordsAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpClient.ReadDWordsAsync(PlcComm.Slmp.SlmpDeviceAddress,System.UInt16,System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved decoded Word/DWord naming migration adds the canonical non-Raw name while retaining the former name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task`1<System.UInt32[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ReadDWordsAsync>d__*))]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpClient.ReadLatestSelfDiagnosisErrorCodeAsync(System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved SD0 convenience API adds one semantic entry over the existing one-word Direct Read path without changing existing behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16>|returnattrs=|returnrequired=|generic=|params=0:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ReadLatestSelfDiagnosisErrorCodeAsync>d__*))]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpClient.ReadRandomExtendedAsync(System.Collections.Generic.IReadOnlyList{PlcComm.Slmp.SlmpQualifiedDeviceAddress},System.Collections.Generic.IReadOnlyList{PlcComm.Slmp.SlmpQualifiedDeviceAddress},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved Extended Device naming migration adds the full canonical name while retaining the former Ext name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task`1<System.ValueTuple`2<System.UInt16[],System.UInt32[]>>|returnattrs=[System.Runtime.CompilerServices.NullableAttribute(new Byte[4] { 1, 0, 1, 1 })],[System.Runtime.CompilerServices.TupleElementNamesAttribute(new String[2] { \"WordValues\", \"DwordValues\" })]|returnrequired=|generic=|params=0:System.Collections.Generic.IReadOnlyList`1<PlcComm.Slmp.SlmpQualifiedDeviceAddress>:0:default=<none>:required=:optional=:attrs=;1:System.Collections.Generic.IReadOnlyList`1<PlcComm.Slmp.SlmpQualifiedDeviceAddress>:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ReadRandomExtendedAsync>d__*))]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpClient.ReadWordsAsync(PlcComm.Slmp.SlmpDeviceAddress,System.UInt16,System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved decoded Word/DWord naming migration adds the canonical non-Raw name while retaining the former name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ReadWordsAsync>d__*))]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpClient.RegisterMonitorDevicesExtendedAsync(System.Collections.Generic.IReadOnlyList{PlcComm.Slmp.SlmpQualifiedDeviceAddress},System.Collections.Generic.IReadOnlyList{PlcComm.Slmp.SlmpQualifiedDeviceAddress},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved Extended Device naming migration adds the full canonical name while retaining the former Ext name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.Collections.Generic.IReadOnlyList`1<PlcComm.Slmp.SlmpQualifiedDeviceAddress>:0:default=<none>:required=:optional=:attrs=;1:System.Collections.Generic.IReadOnlyList`1<PlcComm.Slmp.SlmpQualifiedDeviceAddress>:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<RegisterMonitorDevicesExtendedAsync>d__*))]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpClient.WriteRandomBitsExtendedAsync(System.Collections.Generic.IReadOnlyList{System.ValueTuple{PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.Boolean}},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved Extended Device naming migration adds the full canonical name while retaining the former Ext name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.Collections.Generic.IReadOnlyList`1<System.ValueTuple`2<PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.Boolean>>:0:default=<none>:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute(new Byte[2] { 1, 0 })],[System.Runtime.CompilerServices.TupleElementNamesAttribute(new String[2] { \"Device\", \"Value\" })];1:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<WriteRandomBitsExtendedAsync>d__*))]"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpClient.WriteRandomWordsExtendedAsync(System.Collections.Generic.IReadOnlyList{System.ValueTuple{PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.UInt16}},System.Collections.Generic.IReadOnlyList{System.ValueTuple{PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.UInt32}},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved Extended Device naming migration adds the full canonical name while retaining the former Ext name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.Collections.Generic.IReadOnlyList`1<System.ValueTuple`2<PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.UInt16>>:0:default=<none>:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute(new Byte[2] { 1, 0 })],[System.Runtime.CompilerServices.TupleElementNamesAttribute(new String[2] { \"Device\", \"Value\" })];1:System.Collections.Generic.IReadOnlyList`1<System.ValueTuple`2<PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.UInt32>>:0:default=<none>:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute(new Byte[2] { 1, 0 })],[System.Runtime.CompilerServices.TupleElementNamesAttribute(new String[2] { \"Device\", \"Value\" })];2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<WriteRandomWordsExtendedAsync>d__*))]"
+    },
+    {
+      "key": "net8.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved DWord single-request naming migration retains this old name for one compatibility release as an Obsolete direct delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt32>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt32>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteDWordsSingleRequestAsync; WriteDWordsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "SL-NAME-008",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved DWord single-request naming migration retains this old name for one compatibility release as an Obsolete direct delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt32>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt32>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteDWordsSingleRequestAsync; WriteDWordsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "SL-NAME-008",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitReadBytesAsync(System.UInt32,System.UInt16,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.Byte[]>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitReadBytesAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitReadDWordAsync(System.UInt32,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.UInt32>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitReadDWordAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitReadWordAsync(System.UInt32,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitReadWordAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitReadWordsAsync(System.UInt32,System.UInt16,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16[]>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitReadWordsAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitWriteBytesAsync(System.UInt32,System.UInt16,System.ReadOnlyMemory{System.Byte},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=[System.Runtime.CompilerServices.NullableAttribute((Byte)1)]|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.ReadOnlyMemory`1<System.Byte>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitWriteBytesAsync>d__*))],[System.Runtime.CompilerServices.NullableContextAttribute((Byte)0)]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitWriteDWordAsync(System.UInt32,System.UInt16,System.UInt32,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.UInt32:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitWriteDWordAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitWriteWordAsync(System.UInt32,System.UInt16,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitWriteWordsAsync(System.UInt32,System.UInt16,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitWriteWordsAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|removed|M:PlcComm.Slmp.SlmpClient.MemoryReadWordsAsync(System.UInt32,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16[]>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<MemoryReadWordsAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|removed|M:PlcComm.Slmp.SlmpClient.MemoryWriteWordsAsync(System.UInt32,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<MemoryWriteWordsAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpClient.ReadDWordsAsync(PlcComm.Slmp.SlmpDeviceAddress,System.UInt16,System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved decoded Word/DWord naming migration adds the canonical non-Raw name while retaining the former name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task`1<System.UInt32[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ReadDWordsAsync>d__*))]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpClient.ReadLatestSelfDiagnosisErrorCodeAsync(System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved SD0 convenience API adds one semantic entry over the existing one-word Direct Read path without changing existing behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16>|returnattrs=|returnrequired=|generic=|params=0:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ReadLatestSelfDiagnosisErrorCodeAsync>d__*))]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpClient.ReadRandomExtendedAsync(System.Collections.Generic.IReadOnlyList{PlcComm.Slmp.SlmpQualifiedDeviceAddress},System.Collections.Generic.IReadOnlyList{PlcComm.Slmp.SlmpQualifiedDeviceAddress},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved Extended Device naming migration adds the full canonical name while retaining the former Ext name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task`1<System.ValueTuple`2<System.UInt16[],System.UInt32[]>>|returnattrs=[System.Runtime.CompilerServices.NullableAttribute(new Byte[4] { 1, 0, 1, 1 })],[System.Runtime.CompilerServices.TupleElementNamesAttribute(new String[2] { \"WordValues\", \"DwordValues\" })]|returnrequired=|generic=|params=0:System.Collections.Generic.IReadOnlyList`1<PlcComm.Slmp.SlmpQualifiedDeviceAddress>:0:default=<none>:required=:optional=:attrs=;1:System.Collections.Generic.IReadOnlyList`1<PlcComm.Slmp.SlmpQualifiedDeviceAddress>:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ReadRandomExtendedAsync>d__*))]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpClient.ReadWordsAsync(PlcComm.Slmp.SlmpDeviceAddress,System.UInt16,System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved decoded Word/DWord naming migration adds the canonical non-Raw name while retaining the former name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ReadWordsAsync>d__*))]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpClient.RegisterMonitorDevicesExtendedAsync(System.Collections.Generic.IReadOnlyList{PlcComm.Slmp.SlmpQualifiedDeviceAddress},System.Collections.Generic.IReadOnlyList{PlcComm.Slmp.SlmpQualifiedDeviceAddress},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved Extended Device naming migration adds the full canonical name while retaining the former Ext name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.Collections.Generic.IReadOnlyList`1<PlcComm.Slmp.SlmpQualifiedDeviceAddress>:0:default=<none>:required=:optional=:attrs=;1:System.Collections.Generic.IReadOnlyList`1<PlcComm.Slmp.SlmpQualifiedDeviceAddress>:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<RegisterMonitorDevicesExtendedAsync>d__*))]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpClient.WriteRandomBitsExtendedAsync(System.Collections.Generic.IReadOnlyList{System.ValueTuple{PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.Boolean}},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved Extended Device naming migration adds the full canonical name while retaining the former Ext name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.Collections.Generic.IReadOnlyList`1<System.ValueTuple`2<PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.Boolean>>:0:default=<none>:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute(new Byte[2] { 1, 0 })],[System.Runtime.CompilerServices.TupleElementNamesAttribute(new String[2] { \"Device\", \"Value\" })];1:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<WriteRandomBitsExtendedAsync>d__*))]"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpClient.WriteRandomWordsExtendedAsync(System.Collections.Generic.IReadOnlyList{System.ValueTuple{PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.UInt16}},System.Collections.Generic.IReadOnlyList{System.ValueTuple{PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.UInt32}},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved Extended Device naming migration adds the full canonical name while retaining the former Ext name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.Collections.Generic.IReadOnlyList`1<System.ValueTuple`2<PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.UInt16>>:0:default=<none>:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute(new Byte[2] { 1, 0 })],[System.Runtime.CompilerServices.TupleElementNamesAttribute(new String[2] { \"Device\", \"Value\" })];1:System.Collections.Generic.IReadOnlyList`1<System.ValueTuple`2<PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.UInt32>>:0:default=<none>:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute(new Byte[2] { 1, 0 })],[System.Runtime.CompilerServices.TupleElementNamesAttribute(new String[2] { \"Device\", \"Value\" })];2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<WriteRandomWordsExtendedAsync>d__*))]"
+    },
+    {
+      "key": "net9.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved DWord single-request naming migration retains this old name for one compatibility release as an Obsolete direct delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt32>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt32>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteDWordsSingleRequestAsync; WriteDWordsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "SL-NAME-008",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net9.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved DWord single-request naming migration retains this old name for one compatibility release as an Obsolete direct delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt32>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt32>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteDWordsSingleRequestAsync; WriteDWordsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "SL-NAME-008",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitReadBytesAsync(System.UInt32,System.UInt16,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.Byte[]>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitReadBytesAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitReadDWordAsync(System.UInt32,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.UInt32>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitReadDWordAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitReadWordAsync(System.UInt32,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitReadWordAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitReadWordsAsync(System.UInt32,System.UInt16,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16[]>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitReadWordsAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitWriteBytesAsync(System.UInt32,System.UInt16,System.ReadOnlyMemory{System.Byte},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=[System.Runtime.CompilerServices.NullableAttribute((Byte)1)]|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.ReadOnlyMemory`1<System.Byte>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitWriteBytesAsync>d__*))],[System.Runtime.CompilerServices.NullableContextAttribute((Byte)0)]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitWriteDWordAsync(System.UInt32,System.UInt16,System.UInt32,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.UInt32:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitWriteDWordAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitWriteWordAsync(System.UInt32,System.UInt16,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.UInt16:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|removed|M:PlcComm.Slmp.SlmpClient.ExtendUnitWriteWordsAsync(System.UInt32,System.UInt16,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ExtendUnitWriteWordsAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|removed|M:PlcComm.Slmp.SlmpClient.MemoryReadWordsAsync(System.UInt32,System.UInt16,System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16[]>|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<MemoryReadWordsAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|removed|M:PlcComm.Slmp.SlmpClient.MemoryWriteWordsAsync(System.UInt32,System.Collections.Generic.IReadOnlyList{System.UInt16},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved public API cleanup removes the ten unused Memory and Extend Unit convenience methods without aliases or replacement high-level APIs.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.UInt32:0:default=<none>:required=:optional=:attrs=;1:System.Collections.Generic.IReadOnlyList`1<System.UInt16>:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<MemoryWriteWordsAsync>d__*))]",
+      "after": null,
+      "decision": "DECISION-SLMP-PUBLIC-API-001",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpClient.ReadDWordsAsync(PlcComm.Slmp.SlmpDeviceAddress,System.UInt16,System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved decoded Word/DWord naming migration adds the canonical non-Raw name while retaining the former name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task`1<System.UInt32[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ReadDWordsAsync>d__*))]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpClient.ReadLatestSelfDiagnosisErrorCodeAsync(System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved SD0 convenience API adds one semantic entry over the existing one-word Direct Read path without changing existing behavior.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16>|returnattrs=|returnrequired=|generic=|params=0:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ReadLatestSelfDiagnosisErrorCodeAsync>d__*))]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpClient.ReadRandomExtendedAsync(System.Collections.Generic.IReadOnlyList{PlcComm.Slmp.SlmpQualifiedDeviceAddress},System.Collections.Generic.IReadOnlyList{PlcComm.Slmp.SlmpQualifiedDeviceAddress},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved Extended Device naming migration adds the full canonical name while retaining the former Ext name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task`1<System.ValueTuple`2<System.UInt16[],System.UInt32[]>>|returnattrs=[System.Runtime.CompilerServices.NullableAttribute(new Byte[4] { 1, 0, 1, 1 })],[System.Runtime.CompilerServices.TupleElementNamesAttribute(new String[2] { \"WordValues\", \"DwordValues\" })]|returnrequired=|generic=|params=0:System.Collections.Generic.IReadOnlyList`1<PlcComm.Slmp.SlmpQualifiedDeviceAddress>:0:default=<none>:required=:optional=:attrs=;1:System.Collections.Generic.IReadOnlyList`1<PlcComm.Slmp.SlmpQualifiedDeviceAddress>:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ReadRandomExtendedAsync>d__*))]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpClient.ReadWordsAsync(PlcComm.Slmp.SlmpDeviceAddress,System.UInt16,System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved decoded Word/DWord naming migration adds the canonical non-Raw name while retaining the former name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task`1<System.UInt16[]>|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;1:System.UInt16:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<ReadWordsAsync>d__*))]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpClient.RegisterMonitorDevicesExtendedAsync(System.Collections.Generic.IReadOnlyList{PlcComm.Slmp.SlmpQualifiedDeviceAddress},System.Collections.Generic.IReadOnlyList{PlcComm.Slmp.SlmpQualifiedDeviceAddress},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved Extended Device naming migration adds the full canonical name while retaining the former Ext name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.Collections.Generic.IReadOnlyList`1<PlcComm.Slmp.SlmpQualifiedDeviceAddress>:0:default=<none>:required=:optional=:attrs=;1:System.Collections.Generic.IReadOnlyList`1<PlcComm.Slmp.SlmpQualifiedDeviceAddress>:0:default=<none>:required=:optional=:attrs=;2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<RegisterMonitorDevicesExtendedAsync>d__*))]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpClient.WriteRandomBitsExtendedAsync(System.Collections.Generic.IReadOnlyList{System.ValueTuple{PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.Boolean}},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved Extended Device naming migration adds the full canonical name while retaining the former Ext name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.Collections.Generic.IReadOnlyList`1<System.ValueTuple`2<PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.Boolean>>:0:default=<none>:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute(new Byte[2] { 1, 0 })],[System.Runtime.CompilerServices.TupleElementNamesAttribute(new String[2] { \"Device\", \"Value\" })];1:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<WriteRandomBitsExtendedAsync>d__*))]"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpClient.WriteRandomWordsExtendedAsync(System.Collections.Generic.IReadOnlyList{System.ValueTuple{PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.UInt16}},System.Collections.Generic.IReadOnlyList{System.ValueTuple{PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.UInt32}},System.Threading.CancellationToken)",
+      "category": "additive",
+      "rationale": "The approved Extended Device naming migration adds the full canonical name while retaining the former Ext name as a direct delegate.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": null,
+      "after": "method|134|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:System.Collections.Generic.IReadOnlyList`1<System.ValueTuple`2<PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.UInt16>>:0:default=<none>:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute(new Byte[2] { 1, 0 })],[System.Runtime.CompilerServices.TupleElementNamesAttribute(new String[2] { \"Device\", \"Value\" })];1:System.Collections.Generic.IReadOnlyList`1<System.ValueTuple`2<PlcComm.Slmp.SlmpQualifiedDeviceAddress,System.UInt32>>:0:default=<none>:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute(new Byte[2] { 1, 0 })],[System.Runtime.CompilerServices.TupleElementNamesAttribute(new String[2] { \"Device\", \"Value\" })];2:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(PlcComm.Slmp.SlmpClient+<WriteRandomWordsExtendedAsync>d__*))]"
+    },
+    {
+      "key": "net10.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient,PlcComm.Slmp.SlmpDeviceAddress,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved DWord single-request naming migration retains this old name for one compatibility release as an Obsolete direct delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt32>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpDeviceAddress:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt32>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteDWordsSingleRequestAsync; WriteDWordsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "SL-NAME-008",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net10.0|changed|M:PlcComm.Slmp.SlmpClientExtensions.WriteDWordsBlockAsync(PlcComm.Slmp.SlmpClient,System.String,System.Collections.Generic.IReadOnlyList{System.UInt32},System.Threading.CancellationToken)",
+      "category": "documented-contract",
+      "rationale": "The approved DWord single-request naming migration retains this old name for one compatibility release as an Obsolete direct delegate to the canonical helper; wire behavior is unchanged.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpApiEvolutionTests.cs"
+      ],
+      "before": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt32>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "after": "method|150|return=System.Threading.Tasks.Task|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpClient:0:default=<none>:required=:optional=:attrs=;1:System.String:0:default=<none>:required=:optional=:attrs=;2:System.Collections.Generic.IReadOnlyList`1<System.UInt32>:0:default=<none>:required=:optional=:attrs=;3:System.Threading.CancellationToken:4112:default=null:required=:optional=:attrs=[System.Runtime.InteropServices.OptionalAttribute()]|attrs=[System.ObsoleteAttribute(\"Use WriteDWordsSingleRequestAsync; WriteDWordsBlockAsync will be removed after one compatibility release.\")],[System.Runtime.CompilerServices.ExtensionAttribute()]",
+      "decision": "SL-NAME-008",
+      "migration": "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+      "changelog": "CHANGELOG.md",
+      "version_disposition": {
+        "kind": "major",
+        "target_major": 5
+      }
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpAddressSpec.Format(PlcComm.Slmp.SlmpAddressSpec)",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "method|150|return=System.String|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpAddressSpec:0:default=<none>:required=:optional=:attrs=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpAddressSpec.Normalize(System.String,PlcComm.Slmp.SlmpPlcProfile)",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "method|150|return=System.String|returnattrs=|returnrequired=|generic=|params=0:System.String:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpPlcProfile:0:default=<none>:required=:optional=:attrs=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpAddressSpec.Parse(System.String,PlcComm.Slmp.SlmpPlcProfile)",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "method|150|return=PlcComm.Slmp.SlmpAddressSpec|returnattrs=|returnrequired=|generic=|params=0:System.String:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpPlcProfile:0:default=<none>:required=:optional=:attrs=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net8.0|added|M:PlcComm.Slmp.SlmpAddressSpec.TryParse(System.String,PlcComm.Slmp.SlmpPlcProfile,PlcComm.Slmp.SlmpAddressSpec)",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:System.String:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpPlcProfile:0:default=<none>:required=:optional=:attrs=;2:PlcComm.Slmp.SlmpAddressSpec&:2:default=<none>:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute((Byte)2)],[System.Runtime.InteropServices.OutAttribute()]|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net8.0|added|P:PlcComm.Slmp.SlmpAddressSpec.BitIndex",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "property|type=System.Nullable`1<System.Int32>|get=2182|set=|setrequired=|index=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net8.0|added|P:PlcComm.Slmp.SlmpAddressSpec.DType",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "property|type=System.String|get=2182|set=|setrequired=|index=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net8.0|added|P:PlcComm.Slmp.SlmpAddressSpec.DeviceAddress",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "property|type=PlcComm.Slmp.SlmpDeviceAddress|get=2182|set=|setrequired=|index=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net8.0|added|T:PlcComm.Slmp.SlmpAddressSpec",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "type|PlcComm.Slmp.SlmpAddressSpec|1048833|byreflike=False|enum=|base=System.Object|interfaces=|generic=|attrs=[System.Runtime.CompilerServices.NullableAttribute((Byte)0)],[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpAddressSpec.Format(PlcComm.Slmp.SlmpAddressSpec)",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "method|150|return=System.String|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpAddressSpec:0:default=<none>:required=:optional=:attrs=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpAddressSpec.Normalize(System.String,PlcComm.Slmp.SlmpPlcProfile)",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "method|150|return=System.String|returnattrs=|returnrequired=|generic=|params=0:System.String:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpPlcProfile:0:default=<none>:required=:optional=:attrs=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpAddressSpec.Parse(System.String,PlcComm.Slmp.SlmpPlcProfile)",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "method|150|return=PlcComm.Slmp.SlmpAddressSpec|returnattrs=|returnrequired=|generic=|params=0:System.String:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpPlcProfile:0:default=<none>:required=:optional=:attrs=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net9.0|added|M:PlcComm.Slmp.SlmpAddressSpec.TryParse(System.String,PlcComm.Slmp.SlmpPlcProfile,PlcComm.Slmp.SlmpAddressSpec)",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:System.String:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpPlcProfile:0:default=<none>:required=:optional=:attrs=;2:PlcComm.Slmp.SlmpAddressSpec&:2:default=<none>:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute((Byte)2)],[System.Runtime.InteropServices.OutAttribute()]|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net9.0|added|P:PlcComm.Slmp.SlmpAddressSpec.BitIndex",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "property|type=System.Nullable`1<System.Int32>|get=2182|set=|setrequired=|index=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net9.0|added|P:PlcComm.Slmp.SlmpAddressSpec.DType",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "property|type=System.String|get=2182|set=|setrequired=|index=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net9.0|added|P:PlcComm.Slmp.SlmpAddressSpec.DeviceAddress",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "property|type=PlcComm.Slmp.SlmpDeviceAddress|get=2182|set=|setrequired=|index=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net9.0|added|T:PlcComm.Slmp.SlmpAddressSpec",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "type|PlcComm.Slmp.SlmpAddressSpec|1048833|byreflike=False|enum=|base=System.Object|interfaces=|generic=|attrs=[System.Runtime.CompilerServices.NullableAttribute((Byte)0)],[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpAddressSpec.Format(PlcComm.Slmp.SlmpAddressSpec)",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "method|150|return=System.String|returnattrs=|returnrequired=|generic=|params=0:PlcComm.Slmp.SlmpAddressSpec:0:default=<none>:required=:optional=:attrs=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpAddressSpec.Normalize(System.String,PlcComm.Slmp.SlmpPlcProfile)",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "method|150|return=System.String|returnattrs=|returnrequired=|generic=|params=0:System.String:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpPlcProfile:0:default=<none>:required=:optional=:attrs=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpAddressSpec.Parse(System.String,PlcComm.Slmp.SlmpPlcProfile)",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "method|150|return=PlcComm.Slmp.SlmpAddressSpec|returnattrs=|returnrequired=|generic=|params=0:System.String:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpPlcProfile:0:default=<none>:required=:optional=:attrs=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net10.0|added|M:PlcComm.Slmp.SlmpAddressSpec.TryParse(System.String,PlcComm.Slmp.SlmpPlcProfile,PlcComm.Slmp.SlmpAddressSpec)",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "method|150|return=System.Boolean|returnattrs=|returnrequired=|generic=|params=0:System.String:0:default=<none>:required=:optional=:attrs=;1:PlcComm.Slmp.SlmpPlcProfile:0:default=<none>:required=:optional=:attrs=;2:PlcComm.Slmp.SlmpAddressSpec&:2:default=<none>:required=:optional=:attrs=[System.Runtime.CompilerServices.NullableAttribute((Byte)2)],[System.Runtime.InteropServices.OutAttribute()]|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net10.0|added|P:PlcComm.Slmp.SlmpAddressSpec.BitIndex",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "property|type=System.Nullable`1<System.Int32>|get=2182|set=|setrequired=|index=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net10.0|added|P:PlcComm.Slmp.SlmpAddressSpec.DType",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "property|type=System.String|get=2182|set=|setrequired=|index=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net10.0|added|P:PlcComm.Slmp.SlmpAddressSpec.DeviceAddress",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "property|type=PlcComm.Slmp.SlmpDeviceAddress|get=2182|set=|setrequired=|index=|attrs=",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
+    },
+    {
+      "key": "net10.0|added|T:PlcComm.Slmp.SlmpAddressSpec",
+      "category": "additive",
+      "rationale": "The approved address-naming decision adds one typed AddressSpec surface while retaining the existing direct-device API unchanged and without synonymous public aliases.",
+      "evidence": [
+        "internal_docs/maintainer/QUALITY_OVERHAUL_MIGRATION.md",
+        "CHANGELOG.md",
+        "docsrc/user/USAGE_GUIDE.md",
+        "docsrc/user/API_REFERENCE.md",
+        "tests/PlcComm.Slmp.Tests/SlmpAddressSpecTests.cs"
+      ],
+      "before": null,
+      "after": "type|PlcComm.Slmp.SlmpAddressSpec|1048833|byreflike=False|enum=|base=System.Object|interfaces=|generic=|attrs=[System.Runtime.CompilerServices.NullableAttribute((Byte)0)],[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]",
+      "decision": "DECISION-SLMP-ADDRESS-NAMING-001"
     }
   ]
 }

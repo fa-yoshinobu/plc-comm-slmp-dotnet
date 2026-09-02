@@ -208,7 +208,7 @@ async Task<int> RunOtherStationCheckAsync(IReadOnlyList<string> args)
         try
         {
             using var client = await CreateClientAsync(args, namedTarget.Target).ConfigureAwait(false);
-            var value = await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000, client.PlcProfile), 1).ConfigureAwait(false);
+            var value = await client.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000, client.PlcProfile), 1).ConfigureAwait(false);
             string typeInfo;
             try
             {
@@ -539,7 +539,7 @@ async Task<int> RunReadSoakAsync(IReadOnlyList<string> args)
         var started = DateTimeOffset.UtcNow;
         try
         {
-            _ = await client.ReadWordsRawAsync(device, points).ConfigureAwait(false);
+            _ = await client.ReadWordsAsync(device, points).ConfigureAwait(false);
         }
         catch
         {
@@ -635,7 +635,7 @@ async Task<int> RunTcpConcurrencyAsync(IReadOnlyList<string> args)
                 try
                 {
                     _ = await client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400, client.PlcProfile), 1).ConfigureAwait(false);
-                    _ = await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000, client.PlcProfile), 1).ConfigureAwait(false);
+                    _ = await client.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000, client.PlcProfile), 1).ConfigureAwait(false);
                 }
                 catch
                 {
@@ -688,7 +688,7 @@ async Task<int> RunSingleConnectionLoadAsync(IReadOnlyList<string> args)
             try
             {
                 _ = await client.ReadBitsAsync(new SlmpDeviceAddress(SlmpDeviceCode.SM, 400, client.PlcProfile), 1).ConfigureAwait(false);
-                _ = await client.ReadWordsRawAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000, client.PlcProfile), 1).ConfigureAwait(false);
+                _ = await client.ReadWordsAsync(new SlmpDeviceAddress(SlmpDeviceCode.D, 1000, client.PlcProfile), 1).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

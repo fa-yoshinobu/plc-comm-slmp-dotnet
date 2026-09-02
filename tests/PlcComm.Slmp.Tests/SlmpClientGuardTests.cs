@@ -38,8 +38,6 @@ public sealed class SlmpClientGuardTests
         await Verify("points", () => client.WriteArrayLabelsAsync(null!));
         await Verify("labels", () => client.ReadRandomLabelsAsync(null!));
         await Verify("points", () => client.WriteRandomLabelsAsync(null!));
-        await Verify("values", () => client.MemoryWriteWordsAsync(0, null!));
-        await Verify("values", () => client.ExtendUnitWriteWordsAsync(0, 0, null!));
 
         Assert.False(client.IsOpen);
         Assert.Equal(default, client.TrafficStats);
@@ -2013,19 +2011,6 @@ public sealed class SlmpClientGuardTests
         await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteBlockAsync(null!, Array.Empty<SlmpBlockWrite>()));
         await Assert.ThrowsAsync<ArgumentNullException>(() => client.WriteBlockAsync(Array.Empty<SlmpBlockWrite>(), null!));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.WriteBlockAsync([], []));
-    }
-
-    [Fact]
-    public async Task MemoryAndExtendUnit_RejectManualPointLimitOverruns()
-    {
-        using var client = new SlmpClient("127.0.0.1", SlmpPlcProfile.IqR, 1025, SlmpTransportMode.Tcp, SlmpTargetAddress.OwnStation);
-
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.MemoryReadWordsAsync(0, 481));
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.MemoryWriteWordsAsync(0, new ushort[481]));
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ExtendUnitReadBytesAsync(0, 1921, 0x03E0));
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ExtendUnitWriteBytesAsync(0, 0x03E0, new byte[1921]));
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ExtendUnitReadWordsAsync(0, 961, 0x03E0));
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ExtendUnitWriteWordsAsync(0, 0x03E0, new ushort[961]));
     }
 
     private static void AssertBlockWriteShape(byte[] request, byte wordBlocks, byte bitBlocks)

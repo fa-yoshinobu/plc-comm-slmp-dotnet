@@ -111,6 +111,74 @@ public static bool TryParse(string text, SlmpPlcProfile plcProfile, out SlmpDevi
 
 Attempts to parse one SLMP device string using the explicit PLC profile.
 
+### SlmpAddressSpec
+
+```csharp
+public sealed class SlmpAddressSpec
+```
+
+Represents one high-level SLMP address expression with an explicit data type or bit selection.
+
+Remarks: Use `SlmpAddress` for direct device text such as `D100` or `X10`. This type accepts only high-level expressions such as `D100:U` or `D50.A`. Qualified routes such as `J1\X10` and `U0\G100` are not direct devices and are rejected.
+
+#### Members
+
+##### Format
+
+```csharp
+public static string Format(SlmpAddressSpec addressSpec)
+```
+
+Formats one parsed high-level address expression as canonical text.
+
+##### Normalize
+
+```csharp
+public static string Normalize(string text, SlmpPlcProfile plcProfile)
+```
+
+Normalizes one high-level address expression using the explicit PLC profile.
+
+##### Parse
+
+```csharp
+public static SlmpAddressSpec Parse(string text, SlmpPlcProfile plcProfile)
+```
+
+Parses one high-level address expression using the explicit PLC profile.
+
+##### TryParse
+
+```csharp
+public static bool TryParse(string text, SlmpPlcProfile plcProfile, out SlmpAddressSpec addressSpec)
+```
+
+Attempts to parse one high-level address expression using the explicit PLC profile.
+
+##### BitIndex
+
+```csharp
+public int? BitIndex { get; }
+```
+
+Gets the selected bit index (0 through 15), or `null` for a typed expression.
+
+##### DType
+
+```csharp
+public string DType { get; }
+```
+
+Gets the canonical data type: `BIT`, `U`, `S`, `D`, `L`, `F`, or `BIT_IN_WORD` when `BitIndex` is present.
+
+##### DeviceAddress
+
+```csharp
+public SlmpDeviceAddress DeviceAddress { get; }
+```
+
+Gets the profile-bound direct device portion of the expression.
+
 ### SlmpBlockRead
 
 ```csharp
@@ -242,120 +310,6 @@ Asynchronously disposes the client and permanently closes the connection.
 
 Remarks: Disposal is terminal and idempotent. Later open and request operations throw `ObjectDisposedException`.
 
-##### ExtendUnitReadBytesAsync
-
-```csharp
-public Task<byte[]> ExtendUnitReadBytesAsync(uint headAddress, ushort byteLength, ushort moduleNo, CancellationToken cancellationToken = default)
-```
-
-Reads raw bytes from an extend unit (command 0x0601).
-
-Parameters:
-- `headAddress`: Starting address in the extend unit (32-bit).
-- `byteLength`: Number of bytes to read.
-- `moduleNo`: Configured Extend Unit module I/O number.
-- `cancellationToken`: Cancellation token.
-
-##### ExtendUnitReadDWordAsync
-
-```csharp
-public Task<uint> ExtendUnitReadDWordAsync(uint headAddress, ushort moduleNo, CancellationToken cancellationToken = default)
-```
-
-Reads a double word (32-bit) from an extend unit.
-
-##### ExtendUnitReadWordAsync
-
-```csharp
-public Task<ushort> ExtendUnitReadWordAsync(uint headAddress, ushort moduleNo, CancellationToken cancellationToken = default)
-```
-
-Reads a single word from an extend unit.
-
-##### ExtendUnitReadWordsAsync
-
-```csharp
-public Task<ushort[]> ExtendUnitReadWordsAsync(uint headAddress, ushort wordLength, ushort moduleNo, CancellationToken cancellationToken = default)
-```
-
-Reads words from an extend unit (command 0x0601).
-
-Parameters:
-- `headAddress`: Starting address in the extend unit (32-bit).
-- `wordLength`: Number of words to read.
-- `moduleNo`: Extend unit module I/O number.
-- `cancellationToken`: Cancellation token.
-
-##### ExtendUnitWriteBytesAsync
-
-```csharp
-public Task ExtendUnitWriteBytesAsync(uint headAddress, ushort moduleNo, ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
-```
-
-Writes raw bytes to an extend unit (command 0x1601).
-
-Parameters:
-- `headAddress`: Starting address in the extend unit (32-bit).
-- `moduleNo`: Extend unit module I/O number.
-- `data`: Bytes to write.
-- `cancellationToken`: Cancellation token.
-
-##### ExtendUnitWriteDWordAsync
-
-```csharp
-public Task ExtendUnitWriteDWordAsync(uint headAddress, ushort moduleNo, uint value, CancellationToken cancellationToken = default)
-```
-
-Writes a double word (32-bit) to an extend unit.
-
-##### ExtendUnitWriteWordAsync
-
-```csharp
-public Task ExtendUnitWriteWordAsync(uint headAddress, ushort moduleNo, ushort value, CancellationToken cancellationToken = default)
-```
-
-Writes a single word to an extend unit.
-
-##### ExtendUnitWriteWordsAsync
-
-```csharp
-public Task ExtendUnitWriteWordsAsync(uint headAddress, ushort moduleNo, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
-```
-
-Writes words to an extend unit (command 0x1601).
-
-Parameters:
-- `headAddress`: Starting address in the extend unit (32-bit).
-- `moduleNo`: Extend unit module I/O number.
-- `values`: Word values to write.
-- `cancellationToken`: Cancellation token.
-
-##### MemoryReadWordsAsync
-
-```csharp
-public Task<ushort[]> MemoryReadWordsAsync(uint headAddress, ushort wordLength, CancellationToken cancellationToken = default)
-```
-
-Reads words from PLC memory (command 0x0613).
-
-Parameters:
-- `headAddress`: Starting memory address (32-bit).
-- `wordLength`: Number of words to read.
-- `cancellationToken`: Cancellation token.
-
-##### MemoryWriteWordsAsync
-
-```csharp
-public Task MemoryWriteWordsAsync(uint headAddress, IReadOnlyList<ushort> values, CancellationToken cancellationToken = default)
-```
-
-Writes words to PLC memory (command 0x1613).
-
-Parameters:
-- `headAddress`: Starting memory address (32-bit).
-- `values`: Word values to write.
-- `cancellationToken`: Cancellation token.
-
 ##### Open
 
 ```csharp
@@ -449,10 +403,10 @@ Returns: The decoded CPU operation state and raw masked code.
 Parameters:
 - `cancellationToken`: A token to cancel the operation.
 
-##### ReadDWordsRawAsync
+##### ReadDWordsAsync
 
 ```csharp
-public Task<uint[]> ReadDWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+public Task<uint[]> ReadDWordsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
 ```
 
 Reads contiguous 32-bit values in one Direct Read request.
@@ -461,6 +415,14 @@ Parameters:
 - `device`: Starting word-addressable device.
 - `points`: Number of DWord values, in public 32-bit units; maximum 480 for a 960-word profile limit.
 - `cancellationToken`: Cancellation token.
+
+##### ReadDWordsRawAsync
+
+```csharp
+public Task<uint[]> ReadDWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+```
+
+Migration alias for `ReadDWordsAsync`.
 
 ##### ReadDeviceRangeCatalogAsync
 
@@ -484,6 +446,19 @@ public Task<float[]> ReadFloat32sAsync(SlmpDeviceAddress device, ushort points, 
 ```
 
 Reads contiguous float32 values in one Direct Read request.
+
+##### ReadLatestSelfDiagnosisErrorCodeAsync
+
+```csharp
+public Task<ushort> ReadLatestSelfDiagnosisErrorCodeAsync(CancellationToken cancellationToken = default)
+```
+
+Reads the latest self-diagnosis error code from SD0 as an unsigned raw value.
+
+Returns: The raw 16-bit value stored in SD0.
+
+Parameters:
+- `cancellationToken`: A token to cancel the operation.
 
 ##### ReadLongRetentiveTimerAsync
 
@@ -571,6 +546,14 @@ Reads only DWord devices through semantic Extended Device routes.
 public Task<ValueTuple<ushort[], uint[]>> ReadRandomExtAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices, IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
 ```
 
+Migration alias for `ReadRandomExtendedAsync`.
+
+##### ReadRandomExtendedAsync
+
+```csharp
+public Task<ValueTuple<ushort[], uint[]>> ReadRandomExtendedAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices, IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
+```
+
 ##### ReadRandomLabelsAsync
 
 ```csharp
@@ -616,6 +599,21 @@ public Task<ushort[]> ReadWordBlocksAsync(IReadOnlyList<SlmpBlockRead> wordBlock
 
 Reads only word blocks in one block-read request.
 
+##### ReadWordsAsync
+
+```csharp
+public Task<ushort[]> ReadWordsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+```
+
+Reads word device values asynchronously.
+
+Returns: An array of word values (ushort).
+
+Parameters:
+- `device`: The starting device address.
+- `points`: Number of words to read.
+- `cancellationToken`: A token to cancel the operation.
+
 ##### ReadWordsExtendedAsync
 
 ```csharp
@@ -628,14 +626,7 @@ public Task<ushort[]> ReadWordsExtendedAsync(SlmpQualifiedDeviceAddress device, 
 public Task<ushort[]> ReadWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
 ```
 
-Reads word device values asynchronously.
-
-Returns: An array of word values (ushort).
-
-Parameters:
-- `device`: The starting device address.
-- `points`: Number of words to read.
-- `cancellationToken`: A token to cancel the operation.
+Migration alias for `ReadWordsAsync`.
 
 ##### RegisterMonitorDevicesAsync
 
@@ -654,6 +645,14 @@ Parameters:
 
 ```csharp
 public Task RegisterMonitorDevicesExtAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices, IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
+```
+
+Migration alias for `RegisterMonitorDevicesExtendedAsync`.
+
+##### RegisterMonitorDevicesExtendedAsync
+
+```csharp
+public Task RegisterMonitorDevicesExtendedAsync(IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices, IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices, CancellationToken cancellationToken = default)
 ```
 
 ##### RemoteLatchClearAsync
@@ -783,6 +782,14 @@ public Task WriteRandomBitsAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, boo
 public Task WriteRandomBitsExtAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, bool>> bitEntries, CancellationToken cancellationToken = default)
 ```
 
+Migration alias for `WriteRandomBitsExtendedAsync`.
+
+##### WriteRandomBitsExtendedAsync
+
+```csharp
+public Task WriteRandomBitsExtendedAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, bool>> bitEntries, CancellationToken cancellationToken = default)
+```
+
 ##### WriteRandomLabelsAsync
 
 ```csharp
@@ -833,6 +840,14 @@ public Task WriteRandomWordsAsync(IReadOnlyList<ValueTuple<SlmpDeviceAddress, us
 
 ```csharp
 public Task WriteRandomWordsExtAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, ushort>> wordEntries, IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
+```
+
+Migration alias for `WriteRandomWordsExtendedAsync`.
+
+##### WriteRandomWordsExtendedAsync
+
+```csharp
+public Task WriteRandomWordsExtendedAsync(IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, ushort>> wordEntries, IReadOnlyList<ValueTuple<SlmpQualifiedDeviceAddress, uint>> dwordEntries, CancellationToken cancellationToken = default)
 ```
 
 ##### WriteWordBlocksAsync
@@ -1151,7 +1166,7 @@ Writes a contiguous bit-device range using a string address.
 public static Task WriteDWordsBlockAsync(SlmpClient client, SlmpDeviceAddress start, IReadOnlyList<uint> values, CancellationToken ct = default)
 ```
 
-Writes a contiguous DWord-device range from 32-bit values.
+Deprecated compatibility name. Use `WriteDWordsSingleRequestAsync`. This overload will be removed after one compatibility release.
 
 ##### WriteDWordsBlockAsync
 
@@ -1159,7 +1174,7 @@ Writes a contiguous DWord-device range from 32-bit values.
 public static Task WriteDWordsBlockAsync(SlmpClient client, string start, IReadOnlyList<uint> values, CancellationToken ct = default)
 ```
 
-Writes a contiguous DWord-device range using a string address.
+Deprecated compatibility name. Use `WriteDWordsSingleRequestAsync`. This overload will be removed after one compatibility release.
 
 ##### WriteDWordsSingleRequestAsync
 

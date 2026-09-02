@@ -419,7 +419,7 @@ internal static class SlmpDeviceRangeResolver
             return new Dictionary<int, ushort>();
         }
 
-        var values = await client.ReadWordsRawAsync(
+        var values = await client.ReadWordsAsync(
             new SlmpDeviceAddress(SlmpDeviceCode.SD, checked((uint)profile.RegisterStart), client.PlcProfile),
             checked((ushort)profile.RegisterCount),
             cancellationToken).ConfigureAwait(false);

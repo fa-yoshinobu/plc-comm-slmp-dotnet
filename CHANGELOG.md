@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.2.0] - 2026-09-03
+
+- Release: Bumped .NET package metadata to `5.2.0` for the approved high-level API overhaul.
+- BREAKING: Removed the ten unused Memory and Extend Unit convenience methods. No compatibility aliases or replacement high-level APIs remain for those methods.
+- Library: Added `SlmpAddressSpec` as the single public parser, formatter, and normalizer for typed or bit-selected high-level expressions such as `D100:U` and `D50.A`; existing `SlmpAddress` remains the direct-device API, and qualified routes remain separate.
+- Library: Added canonical `ReadWordsAsync`, `ReadDWordsAsync`, `ReadRandomExtendedAsync`, `WriteRandomWordsExtendedAsync`, `WriteRandomBitsExtendedAsync`, and `RegisterMonitorDevicesExtendedAsync` names. The former `Raw` and `Ext` names remain direct migration delegates with identical validation, results, errors, and wire behavior.
+- Library: Deprecated both `WriteDWordsBlockAsync` overloads in favor of `WriteDWordsSingleRequestAsync`; they remain direct delegates for this compatibility release and will be removed in the immediately following release.
+- Library: Added `ReadLatestSelfDiagnosisErrorCodeAsync`, which reads one raw unsigned word from `SD0` in exactly one Direct Read request without classification, retry, fallback, or writes.
+
 ## [5.1.0] - 2026-08-27
 
 - Release: Bumped .NET package metadata to `5.1.0` for the additive high-level API and profile-limit release.

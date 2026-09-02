@@ -1503,3 +1503,130 @@ same command is rerun against the eventual release commit before tagging.
 - [x] Live verification is passed or carries the item-specific disposition above.
 - [x] Documentation, migration notes, changelog, and generated API reference agree.
 - [x] Final acceptance criteria verified and this item marked complete.
+
+## DECISION-SLMP-DOTNET-API-EVOLUTION-20260903 — Approved public API cleanup and naming
+
+Stable identifiers: `DECISION-SLMP-PUBLIC-API-001`, `SL-NAME-001`,
+`SL-NAME-003`, `SL-NAME-008`, and `SL-CONVENIENCE-001`.
+
+Implementation scope: the .NET public `SlmpClient` surface, the two DWord Block
+extension overloads, tests, examples, generated API reference, and changelog.
+
+Target contract: remove the ten Memory and Extend Unit methods without aliases;
+make the non-`Raw` Word/DWord names and full `Extended` random/monitor names
+canonical while retaining the former names as direct migration delegates; keep
+both `WriteDWordsBlockAsync` overloads for one compatibility release as obsolete
+direct delegates to `WriteDWordsSingleRequestAsync`; and provide one SD0
+self-diagnosis helper that performs exactly one ordinary word Direct Read and
+returns the raw `ushort` value.
+
+Compatibility impact: callers of the removed Memory and Extend Unit methods must
+remove those calls. Existing `Raw` and `Ext` callers keep identical behavior while
+migrating to the canonical names. `WriteDWordsBlockAsync` callers receive an
+obsolete warning and must migrate before the immediately following release. No
+accepted request changes command, subcommand, payload, result, timeout,
+cancellation, or error behavior.
+
+The migration pairs are `ReadWordsRawAsync` to `ReadWordsAsync`,
+`ReadDWordsRawAsync` to `ReadDWordsAsync`, `ReadRandomExtAsync` to
+`ReadRandomExtendedAsync`, `WriteRandomWordsExtAsync` to
+`WriteRandomWordsExtendedAsync`, `WriteRandomBitsExtAsync` to
+`WriteRandomBitsExtendedAsync`, and `RegisterMonitorDevicesExtAsync` to
+`RegisterMonitorDevicesExtendedAsync`. New code and examples use only the
+canonical names; the former names exist only for source migration.
+
+Machine-verifiable acceptance criteria: exported-surface tests prove that all ten
+removed names are absent; paired UDP vectors prove canonical and migration names
+emit identical requests and results; both DWord Block overloads carry the exact
+one-release warning and match canonical wire bytes; the SD0 vector proves one
+`DeviceRead`, subcommand `0x0002`, device `SD0`, point count one, and an unclassified
+unsigned result. Generated API documentation and the public API difference policy
+must match the built assembly for all supported target frameworks.
+
+Live disposition: no live PLC run is required. The naming and deprecation changes
+reuse the same implementations and are byte-compared in deterministic transport
+tests; the removed methods only reduce the public surface; and the SD0 helper is
+fully defined by the existing Direct Read path and an exact request vector. No live
+PLC communication was performed.
+
+### Verification evidence and self-review disposition (2026-09-03)
+
+- `run_ci.bat`: PASS. Build, version-checker tests, API-generator tests, generated
+  API freshness, all 614 tests on each of `net8.0`, `net9.0`, and `net10.0`, and
+  format verification completed with zero failures, skips, warnings, or errors.
+- Stable-package public API classification: PASS with 549 explicitly classified
+  changes across all three target frameworks. This change contributes 19 entries
+  per framework: ten approved removals, seven additive canonical APIs, and two
+  approved obsolete-signature changes. On 2026-09-03 the maintainer explicitly
+  selected `5.2.0` for this release and approved these ten removals in major 5.
+  Their three-TFM policy entries therefore target major 5; all other classified
+  API differences retain their existing version dispositions. The release workflow's
+  candidate-major enforcement must pass without disabling or weakening the general
+  API-difference check.
+- NuGet package content and isolated `net8.0` consumer: PASS. Worktree source
+  archive validation, including its independent build, test, generated-document,
+  and format checks: PASS.
+- Codex self-review inspected the actual diff, exported API surface, validation
+  order, direct-delegate bodies, command/subcommand and payload vectors, result and
+  error propagation, timeout/cancellation reuse, generated documentation, package
+  contents, and migration policy. Accepted findings: the first draft omitted the
+  one-release deadline from generated API prose and lacked explicit SD0 PLC-error
+  plus DWord invalid-count parity assertions; both were fixed and reverified.
+  Rejected findings: none. Duplicate findings: none. Deferred findings: none.
+
+## DECISION-SLMP-ADDRESS-NAMING-001 — Separate DeviceAddress and AddressSpec
+
+Stable identifier: `DECISION-SLMP-ADDRESS-NAMING-001`.
+
+Implementation scope: the .NET public direct-device and high-level address-expression
+types, parsers, formatters, normalizers, acceptance tests, generated API reference,
+usage guide, migration note, and changelog.
+
+Target contract: existing `SlmpDeviceAddress` and `SlmpAddress.Parse`, `TryParse`,
+`Format`, and `Normalize` remain the only direct-device surface for forms such as
+`D100` and `X10`. `SlmpAddressSpec` is the only public high-level expression surface
+for an explicit dtype such as `D100:U` or a bit selection such as `D50.A`. It exposes
+the parsed profile-bound `DeviceAddress`, canonical `DType`, and optional `BitIndex`.
+Neither surface accepts the other grammar, and qualified `J...` / `U...` routes are
+not reclassified as direct devices.
+
+Compatibility impact: this is additive for .NET. Existing direct-device members keep
+their names and signatures. Existing named read, write, and polling text behavior is
+unchanged; callers that need to validate or normalize that text can now use the typed
+`SlmpAddressSpec` surface. No compatibility alias or synonymous parser is added.
+
+Machine-verifiable acceptance criteria: `D100` and `X10` round-trip only through
+`SlmpAddress`; `D100:U` and `D50.A` round-trip only through `SlmpAddressSpec`; parsed
+device code, numeric address, PLC profile, dtype, and bit index remain exact;
+profile-specific radix remains exact; invalid device-unit combinations and qualified
+routes are rejected; the generated public API contains one AddressSpec operation set.
+
+Live disposition: no live PLC run is required. This change adds local text parsing and
+formatting only, reuses the existing profile-bound direct-device parser, and does not
+change any request construction, command, subcommand, payload, transport, or result path.
+
+Verification evidence and self-review disposition (2026-09-03): the focused
+`SlmpAddressSpecTests` run passed all 11 cases on `net8.0`. `run_ci.bat` passed
+the build, release-version tests, API-generator and documentation-example tests,
+generated API freshness, all 625 tests on each of `net8.0`, `net9.0`, and
+`net10.0`, and format verification with zero failures, skips, warnings, or errors.
+The stable-package comparison passed with 573 explicitly classified changes across
+all three target frameworks; this decision contributes eight additive entries per
+framework and changes no existing direct-device signature.
+
+Codex self-review inspected the actual implementation diff, exported type and method
+set, direct versus AddressSpec grammar separation, profile binding and radix,
+device-unit validation, qualified-route rejection, error paths, generated API,
+documentation, migration classification, and all request-construction call sites.
+The first focused compile found one analyzer-only test allocation warning; it was
+accepted, corrected with a collection expression, and reverified. Rejected findings:
+none. Duplicate findings: none. Deferred findings: none. No runtime or wire path was
+added or changed by this decision.
+
+- [x] Implementation completed in this repository.
+- [x] Tests added or updated for every acceptance criterion.
+- [x] Relevant focused and full CI checks passed.
+- [x] Codex self-review completed against the approved contract and cross-language consistency requirements.
+- [x] Live verification is not required under the wire-unchanged disposition above.
+- [x] Documentation, migration note, changelog, and generated API reference agree.
+- [x] Final acceptance criteria verified and the item marked complete.

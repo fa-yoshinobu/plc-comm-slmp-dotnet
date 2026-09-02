@@ -63,8 +63,6 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     private const int DirectWordPointLimit = 960;
     private const int DirectBitPointLimit = 7168;
     private const int DirectIqFBitPointLimit = 3584;
-    private const int MemoryWordLimit = 480;
-    private const int ExtendUnitByteLimit = 1920;
     private readonly string _host;
     private readonly int _port;
     private readonly SlmpTransportMode _transportMode;
@@ -660,7 +658,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         return await ExecuteExclusiveAsync(
             async token =>
             {
-                var statusWord = (await ReadWordsRawAsync(
+                var statusWord = (await ReadWordsAsync(
                     new SlmpDeviceAddress(SlmpDeviceCode.SD, 203, PlcProfile),
                     1,
                     token).ConfigureAwait(false))[0];
@@ -795,7 +793,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     {
         try
         {
-            _ = await ReadWordsRawAsync(
+            _ = await ReadWordsAsync(
                 new SlmpDeviceAddress(device, number, PlcProfile),
                 1,
                 cancellationToken).ConfigureAwait(false);
@@ -814,11 +812,30 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <param name="points">Number of words to read.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>An array of word values (ushort).</returns>
-    public async Task<ushort[]> ReadWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+    public async Task<ushort[]> ReadWordsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
     {
         ValidateDirectWordReadAdmission(device, points);
         return await ReadWordsRawUncheckedAsync(device, points, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>Migration alias for <see cref="ReadWordsAsync"/>.</summary>
+    public async Task<ushort[]> ReadWordsRawAsync(
+        SlmpDeviceAddress device,
+        ushort points,
+        CancellationToken cancellationToken = default)
+        => await ReadWordsAsync(device, points, cancellationToken).ConfigureAwait(false);
+
+    /// <summary>
+    /// Reads the latest self-diagnosis error code from SD0 as an unsigned raw value.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The raw 16-bit value stored in SD0.</returns>
+    public async Task<ushort> ReadLatestSelfDiagnosisErrorCodeAsync(
+        CancellationToken cancellationToken = default)
+        => (await ReadWordsAsync(
+            new SlmpDeviceAddress(SlmpDeviceCode.SD, 0, PlcProfile),
+            1,
+            cancellationToken).ConfigureAwait(false))[0];
 
     internal void ValidateDirectWordReadAdmission(SlmpDeviceAddress device, ushort points)
     {
@@ -1083,13 +1100,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     /// <param name="points">Number of DWord values, in public 32-bit units; maximum 480 for a 960-word profile limit.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="ArgumentOutOfRangeException">The value count is outside the active profile's DWord limit.</exception>
-    public async Task<uint[]> ReadDWordsRawAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
+    public async Task<uint[]> ReadDWordsAsync(SlmpDeviceAddress device, ushort points, CancellationToken cancellationToken = default)
     {
         ValidateDirectDWordReadAdmission(device, points);
         return await ExecuteExclusiveAsync(
             async token =>
             {
-                var words = await ReadWordsRawAsync(device, (ushort)(points * 2), token).ConfigureAwait(false);
+                var words = await ReadWordsAsync(device, (ushort)(points * 2), token).ConfigureAwait(false);
                 var result = new uint[points];
                 for (var index = 0; index < points; index++)
                     result[index] = (uint)(words[index * 2] | (words[(index * 2) + 1] << 16));
@@ -1097,6 +1114,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             },
             cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>Migration alias for <see cref="ReadDWordsAsync"/>.</summary>
+    public async Task<uint[]> ReadDWordsRawAsync(
+        SlmpDeviceAddress device,
+        ushort points,
+        CancellationToken cancellationToken = default)
+        => await ReadDWordsAsync(device, points, cancellationToken).ConfigureAwait(false);
 
     internal void ValidateDirectDWordReadAdmission(SlmpDeviceAddress device, ushort points)
     {
@@ -1134,7 +1158,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         return await ExecuteExclusiveAsync(
             async token =>
             {
-                var dwords = await ReadDWordsRawAsync(device, points, token).ConfigureAwait(false);
+                var dwords = await ReadDWordsAsync(device, points, token).ConfigureAwait(false);
                 var values = new float[dwords.Length];
                 for (var index = 0; index < dwords.Length; index++)
                     values[index] = BitConverter.Int32BitsToSingle(unchecked((int)dwords[index]));
@@ -1352,7 +1376,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         _ = await RequestCoreAsync(SlmpCommand.DeviceWriteRandom, sub, payload, true, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<(ushort[] WordValues, uint[] DwordValues)> ReadRandomExtAsync(
+    public async Task<(ushort[] WordValues, uint[] DwordValues)> ReadRandomExtendedAsync(
         IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices,
         IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices,
         CancellationToken cancellationToken = default
@@ -1393,19 +1417,26 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
             cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Migration alias for <see cref="ReadRandomExtendedAsync"/>.</summary>
+    public async Task<(ushort[] WordValues, uint[] DwordValues)> ReadRandomExtAsync(
+        IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices,
+        IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices,
+        CancellationToken cancellationToken = default)
+        => await ReadRandomExtendedAsync(wordDevices, dwordDevices, cancellationToken).ConfigureAwait(false);
+
     /// <summary>Reads only word devices through semantic Extended Device routes.</summary>
     public async Task<ushort[]> ReadRandomWordsExtendedAsync(
         IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices,
         CancellationToken cancellationToken = default)
-        => (await ReadRandomExtAsync(wordDevices, Array.Empty<SlmpQualifiedDeviceAddress>(), cancellationToken).ConfigureAwait(false)).WordValues;
+        => (await ReadRandomExtendedAsync(wordDevices, Array.Empty<SlmpQualifiedDeviceAddress>(), cancellationToken).ConfigureAwait(false)).WordValues;
 
     /// <summary>Reads only DWord devices through semantic Extended Device routes.</summary>
     public async Task<uint[]> ReadRandomDWordsExtendedAsync(
         IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices,
         CancellationToken cancellationToken = default)
-        => (await ReadRandomExtAsync(Array.Empty<SlmpQualifiedDeviceAddress>(), dwordDevices, cancellationToken).ConfigureAwait(false)).DwordValues;
+        => (await ReadRandomExtendedAsync(Array.Empty<SlmpQualifiedDeviceAddress>(), dwordDevices, cancellationToken).ConfigureAwait(false)).DwordValues;
 
-    public async Task WriteRandomWordsExtAsync(
+    public async Task WriteRandomWordsExtendedAsync(
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, ushort Value)> wordEntries,
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, uint Value)> dwordEntries,
         CancellationToken cancellationToken = default
@@ -1443,19 +1474,26 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         _ = await RequestCoreAsync(SlmpCommand.DeviceWriteRandom, sub, payload, true, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>Migration alias for <see cref="WriteRandomWordsExtendedAsync"/>.</summary>
+    public async Task WriteRandomWordsExtAsync(
+        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, ushort Value)> wordEntries,
+        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, uint Value)> dwordEntries,
+        CancellationToken cancellationToken = default)
+        => await WriteRandomWordsExtendedAsync(wordEntries, dwordEntries, cancellationToken).ConfigureAwait(false);
+
     /// <summary>Writes only 16-bit entries through semantic Extended Device routes.</summary>
     public Task WriteRandomU16sExtendedAsync(
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, ushort Value)> wordEntries,
         CancellationToken cancellationToken = default)
-        => WriteRandomWordsExtAsync(wordEntries, Array.Empty<(SlmpQualifiedDeviceAddress Device, uint Value)>(), cancellationToken);
+        => WriteRandomWordsExtendedAsync(wordEntries, Array.Empty<(SlmpQualifiedDeviceAddress Device, uint Value)>(), cancellationToken);
 
     /// <summary>Writes only 32-bit entries through semantic Extended Device routes.</summary>
     public Task WriteRandomU32sExtendedAsync(
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, uint Value)> dwordEntries,
         CancellationToken cancellationToken = default)
-        => WriteRandomWordsExtAsync(Array.Empty<(SlmpQualifiedDeviceAddress Device, ushort Value)>(), dwordEntries, cancellationToken);
+        => WriteRandomWordsExtendedAsync(Array.Empty<(SlmpQualifiedDeviceAddress Device, ushort Value)>(), dwordEntries, cancellationToken);
 
-    public async Task WriteRandomBitsExtAsync(
+    public async Task WriteRandomBitsExtendedAsync(
         IReadOnlyList<(SlmpQualifiedDeviceAddress Device, bool Value)> bitEntries,
         CancellationToken cancellationToken = default
     )
@@ -1482,6 +1520,12 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var payload = SlmpPayloads.BuildExtendedRandomBitWritePayload(bitEntries, CompatibilityMode, PlcProfile);
         _ = await RequestCoreAsync(SlmpCommand.DeviceWriteRandom, sub, payload, true, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>Migration alias for <see cref="WriteRandomBitsExtendedAsync"/>.</summary>
+    public async Task WriteRandomBitsExtAsync(
+        IReadOnlyList<(SlmpQualifiedDeviceAddress Device, bool Value)> bitEntries,
+        CancellationToken cancellationToken = default)
+        => await WriteRandomBitsExtendedAsync(bitEntries, cancellationToken).ConfigureAwait(false);
 
     internal byte[] BuildExtendedRandomReadPayload(
         IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices,
@@ -1686,7 +1730,7 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         _ = await RequestCoreAsync(SlmpCommand.MonitorRegister, sub, payload, true, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task RegisterMonitorDevicesExtAsync(
+    public async Task RegisterMonitorDevicesExtendedAsync(
         IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices,
         IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices,
         CancellationToken cancellationToken = default)
@@ -1726,6 +1770,13 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
         var payload = SlmpPayloads.BuildExtendedMonitorRegisterPayload(wordDevices, dwordDevices, CompatibilityMode, PlcProfile);
         _ = await RequestCoreAsync(SlmpCommand.MonitorRegister, sub, payload, true, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>Migration alias for <see cref="RegisterMonitorDevicesExtendedAsync"/>.</summary>
+    public async Task RegisterMonitorDevicesExtAsync(
+        IReadOnlyList<SlmpQualifiedDeviceAddress> wordDevices,
+        IReadOnlyList<SlmpQualifiedDeviceAddress> dwordDevices,
+        CancellationToken cancellationToken = default)
+        => await RegisterMonitorDevicesExtendedAsync(wordDevices, dwordDevices, cancellationToken).ConfigureAwait(false);
 
     /// <summary>
     /// Executes one monitor cycle and returns the values of the previously registered devices (command 0x0802).
@@ -1931,186 +1982,6 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
 
     internal static byte[] BuildLabelRandomWritePayload(IReadOnlyList<SlmpLabelRandomWritePoint> points, IReadOnlyList<string> abbreviationLabels)
         => SlmpPayloads.BuildLabelRandomWritePayload(points, abbreviationLabels);
-
-    // -----------------------------------------------------------------------
-    // Memory read / write (command 0x0613 / 0x1613)
-    // -----------------------------------------------------------------------
-
-    /// <summary>
-    /// Reads words from PLC memory (command 0x0613).
-    /// </summary>
-    /// <param name="headAddress">Starting memory address (32-bit).</param>
-    /// <param name="wordLength">Number of words to read.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    public async Task<ushort[]> MemoryReadWordsAsync(
-        uint headAddress,
-        ushort wordLength,
-        CancellationToken cancellationToken = default)
-    {
-        ValidateMemoryWordLength(wordLength, "memory_read");
-        var payload = new byte[6];
-        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0, 4), headAddress);
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(4, 2), wordLength);
-        return await RequestCoreAsync(
-            SlmpCommand.MemoryRead,
-            0x0000,
-            payload,
-            true,
-            data => DecodeWords(data, wordLength, "memory read"),
-            cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Writes words to PLC memory (command 0x1613).
-    /// </summary>
-    /// <param name="headAddress">Starting memory address (32-bit).</param>
-    /// <param name="values">Word values to write.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    public async Task MemoryWriteWordsAsync(
-        uint headAddress,
-        IReadOnlyList<ushort> values,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(values);
-        ValidateMemoryWordLength(values.Count, "memory_write");
-        var payload = new byte[6 + values.Count * 2];
-        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0, 4), headAddress);
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(4, 2), (ushort)values.Count);
-        for (var i = 0; i < values.Count; i++)
-            BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(6 + i * 2, 2), values[i]);
-        _ = await RequestCoreAsync(SlmpCommand.MemoryWrite, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
-    }
-
-    // -----------------------------------------------------------------------
-    // Extend unit read / write (command 0x0601 / 0x1601)
-    // -----------------------------------------------------------------------
-
-    /// <summary>
-    /// Reads raw bytes from an extend unit (command 0x0601).
-    /// </summary>
-    /// <param name="headAddress">Starting address in the extend unit (32-bit).</param>
-    /// <param name="byteLength">Number of bytes to read.</param>
-    /// <param name="moduleNo">Configured Extend Unit module I/O number.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    public async Task<byte[]> ExtendUnitReadBytesAsync(
-        uint headAddress,
-        ushort byteLength,
-        ushort moduleNo,
-        CancellationToken cancellationToken = default)
-    {
-        ValidateExtendUnitByteLength(byteLength, "extend_unit_read");
-        var payload = new byte[8];
-        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0, 4), headAddress);
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(4, 2), byteLength);
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(6, 2), moduleNo);
-        return await RequestCoreAsync(
-            SlmpCommand.ExtendUnitRead,
-            0x0000,
-            payload,
-            true,
-            data => data.Length == byteLength
-                ? data.ToArray()
-                : throw new SlmpError($"extend unit read size mismatch: expected={byteLength} actual={data.Length}"),
-            cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Reads words from an extend unit (command 0x0601).
-    /// </summary>
-    /// <param name="headAddress">Starting address in the extend unit (32-bit).</param>
-    /// <param name="wordLength">Number of words to read.</param>
-    /// <param name="moduleNo">Extend unit module I/O number.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    public async Task<ushort[]> ExtendUnitReadWordsAsync(
-        uint headAddress,
-        ushort wordLength,
-        ushort moduleNo,
-        CancellationToken cancellationToken = default)
-    {
-        ValidateExtendUnitWordLength(wordLength, "extend_unit_read_words");
-        return await ExecuteExclusiveAsync(
-            async token =>
-            {
-                var data = await ExtendUnitReadBytesAsync(headAddress, (ushort)(wordLength * 2), moduleNo, token).ConfigureAwait(false);
-                return DecodeWords(data, wordLength, "extend unit word read");
-            },
-            cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Reads a single word from an extend unit.
-    /// </summary>
-    public async Task<ushort> ExtendUnitReadWordAsync(uint headAddress, ushort moduleNo, CancellationToken cancellationToken = default)
-        => (await ExtendUnitReadWordsAsync(headAddress, 1, moduleNo, cancellationToken).ConfigureAwait(false))[0];
-
-    /// <summary>
-    /// Reads a double word (32-bit) from an extend unit.
-    /// </summary>
-    public async Task<uint> ExtendUnitReadDWordAsync(uint headAddress, ushort moduleNo, CancellationToken cancellationToken = default)
-    {
-        return await ExecuteExclusiveAsync(
-            async token =>
-            {
-                var data = await ExtendUnitReadBytesAsync(headAddress, 4, moduleNo, token).ConfigureAwait(false);
-                return BinaryPrimitives.ReadUInt32LittleEndian(data);
-            },
-            cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Writes raw bytes to an extend unit (command 0x1601).
-    /// </summary>
-    /// <param name="headAddress">Starting address in the extend unit (32-bit).</param>
-    /// <param name="moduleNo">Extend unit module I/O number.</param>
-    /// <param name="data">Bytes to write.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    public async Task ExtendUnitWriteBytesAsync(
-        uint headAddress,
-        ushort moduleNo,
-        ReadOnlyMemory<byte> data,
-        CancellationToken cancellationToken = default)
-    {
-        ValidateExtendUnitByteLength(data.Length, "extend_unit_write");
-        var payload = new byte[8 + data.Length];
-        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0, 4), headAddress);
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(4, 2), (ushort)data.Length);
-        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(6, 2), moduleNo);
-        data.Span.CopyTo(payload.AsSpan(8));
-        _ = await RequestCoreAsync(SlmpCommand.ExtendUnitWrite, 0x0000, payload, true, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Writes words to an extend unit (command 0x1601).
-    /// </summary>
-    /// <param name="headAddress">Starting address in the extend unit (32-bit).</param>
-    /// <param name="moduleNo">Extend unit module I/O number.</param>
-    /// <param name="values">Word values to write.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    public async Task ExtendUnitWriteWordsAsync(
-        uint headAddress,
-        ushort moduleNo,
-        IReadOnlyList<ushort> values,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(values);
-        ValidateExtendUnitWordLength(values.Count, "extend_unit_write_words");
-        var wordBytes = new byte[values.Count * 2];
-        for (var i = 0; i < values.Count; i++)
-            BinaryPrimitives.WriteUInt16LittleEndian(wordBytes.AsSpan(i * 2, 2), values[i]);
-        await ExtendUnitWriteBytesAsync(headAddress, moduleNo, wordBytes, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>Writes a single word to an extend unit.</summary>
-    public Task ExtendUnitWriteWordAsync(uint headAddress, ushort moduleNo, ushort value, CancellationToken cancellationToken = default)
-        => ExtendUnitWriteWordsAsync(headAddress, moduleNo, [value], cancellationToken);
-
-    /// <summary>Writes a double word (32-bit) to an extend unit.</summary>
-    public async Task ExtendUnitWriteDWordAsync(uint headAddress, ushort moduleNo, uint value, CancellationToken cancellationToken = default)
-    {
-        var data = new byte[4];
-        BinaryPrimitives.WriteUInt32LittleEndian(data, value);
-        await ExtendUnitWriteBytesAsync(headAddress, moduleNo, data, cancellationToken).ConfigureAwait(false);
-    }
 
     // -----------------------------------------------------------------------
     // Long timer / long retentive timer reads
@@ -3120,24 +2991,6 @@ public sealed class SlmpClient : IDisposable, IAsyncDisposable
     private static void ValidateBlockRouteForProfile(string commandLabel)
     {
         _ = commandLabel;
-    }
-
-    private static void ValidateMemoryWordLength(int wordLength, string name)
-    {
-        if (wordLength < 1 || wordLength > MemoryWordLimit)
-            throw new ArgumentOutOfRangeException(name, $"{name} word length out of range (1..480): {wordLength}");
-    }
-
-    private static void ValidateExtendUnitByteLength(int byteLength, string name)
-    {
-        if (byteLength < 2 || byteLength > ExtendUnitByteLimit)
-            throw new ArgumentOutOfRangeException(name, $"{name} byte length out of range (2..1920): {byteLength}");
-    }
-
-    private static void ValidateExtendUnitWordLength(int wordLength, string name)
-    {
-        if (wordLength < 1 || wordLength > DirectWordPointLimit)
-            throw new ArgumentOutOfRangeException(name, $"{name} word length out of range (1..960): {wordLength}");
     }
 
     private static void ValidateDirectBitReadDevice(SlmpDeviceAddress device)
