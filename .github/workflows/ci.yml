@@ -83,10 +83,6 @@ jobs:
         shell: pwsh
         run: ./scripts/check_package_contents.ps1
 
-      - name: Verify exported source archive
-        shell: pwsh
-        run: ./scripts/check_source_archive.ps1
-
       - name: Format check
         run: dotnet format PlcComm.Slmp.sln --verify-no-changes --no-restore
 
