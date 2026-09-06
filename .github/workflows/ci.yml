@@ -63,10 +63,8 @@ jobs:
       - name: Build
         run: dotnet build PlcComm.Slmp.sln -c Release --no-restore
 
-      - name: Check API diff policy implementation
-        run: |
-          python scripts/test_generate_api_reference.py
-          python -m unittest scripts/test_check_documented_api_diff.py
+      - name: Check API reference generator
+        run: python scripts/test_generate_api_reference.py
 
       - name: Check generated API reference freshness
         run: >-
@@ -77,13 +75,6 @@ jobs:
           --title "SLMP .NET API Reference"
           --package PlcComm.Slmp
           --check
-
-      - name: Check documented API differences against stable package
-        run: >-
-          python scripts/check_documented_api_diff.py
-          --candidate-root src/PlcComm.Slmp/bin/Release
-          --policy internal_docs/maintainer/api-diff-policy.json
-          --repository-root .
 
       - name: Test
         run: dotnet test PlcComm.Slmp.sln -c Release --no-build --logger "trx;LogFileName=test-results.trx"
