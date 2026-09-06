@@ -64,7 +64,7 @@ finally
 ```
 
 For `C200`-series password end codes, see the shared
-[SLMP Troubleshooting & Codes](https://fa-yoshinobu.github.io/plc-comm-docs-site/plc-setup/slmp/troubleshooting-codes/)
+[SLMP Troubleshooting & Codes](https://plc-comm-docs-site.fa-labo.com/plc-setup/slmp/troubleshooting-codes/)
 page.
 
 ## Routing / target station
@@ -134,7 +134,7 @@ immutable SLMP request target. Create a client with the destination CPU target
 when a write must be reflected there. A write can return a normal end code
 without changing the intended CPU buffer when the selected request target
 identifies a different CPU or Own Station. Cross-CPU reads remain valid. See the
-shared [iQ-R target guidance](https://fa-yoshinobu.github.io/plc-comm-docs-site/plc-setup/slmp/iq-r/#multi-cpu-cpu-buffer-target).
+shared [iQ-R target guidance](https://plc-comm-docs-site.fa-labo.com/plc-setup/slmp/iq-r/#multi-cpu-cpu-buffer-target).
 
 ## Monitor, self-test, and Clear Error
 
@@ -477,7 +477,7 @@ dotnet run --project samples/PlcComm.Slmp.ConfigPollingSample -- --config sample
 `ReadDeviceRangeCatalogAsync` reads the canonical profile's required SD-register window after you connect with an explicit PLC profile. For QCPU, LCPU, QnU, and QnUDV base/unit profiles, it then performs the canonical runtime range probes: QCPU reads `Z15` to select 10 or 16 `Z` points, and every applicable profile probes `ZR` with doubling followed by binary search, capped at 1,048,576 points. The `R` count is `min(ZR, 32768)`.
 
 A nonzero PLC end-code response means only that the candidate probe address is unreadable; there is no end-code allowlist. Timeout, cancellation, transport, protocol, lifecycle, and local-validation failures abort the operation and propagate to the caller without returning a partial catalog. The method does not auto-discover the PLC profile.
-The source rules for this catalog are maintained in the shared [SLMP device ranges](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/device-ranges/) reference.
+The source rules for this catalog are maintained in the shared [SLMP device ranges](https://plc-comm-docs-site.fa-labo.com/slmp/profile-reference/device-ranges/) reference.
 
 ```csharp
 using System;

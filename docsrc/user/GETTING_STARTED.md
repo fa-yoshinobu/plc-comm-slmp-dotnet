@@ -79,7 +79,7 @@ finally
 
 1. Confirm the PLC is reachable at `192.168.250.100`.
 2. Confirm TCP port `1025` is enabled for SLMP.
-3. Confirm the PLC-side communication data code is Binary and the port/open setting matches your transport; see the [MELSEC SLMP PLC Setup Guide](https://fa-yoshinobu.github.io/plc-comm-docs-site/plc-setup/slmp/).
+3. Confirm the PLC-side communication data code is Binary and the port/open setting matches your transport; see the [MELSEC SLMP PLC Setup Guide](https://plc-comm-docs-site.fa-labo.com/plc-setup/slmp/).
 4. Confirm PLC-side RUN-time write permission before running a write example where the PLC exposes that setting.
 5. Confirm `SlmpPlcProfile.IqR` matches your actual PLC hardware, or change it to the correct profile.
 6. Confirm `D100` is a safe test register in your PLC program and restore the original value after a write.

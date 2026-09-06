@@ -3,9 +3,9 @@
 Use this page only for library-specific caveats.
 
 Shared SLMP setup, profile, point-limit, and end-code symptoms live in the shared
-[SLMP Troubleshooting & Codes](https://fa-yoshinobu.github.io/plc-comm-docs-site/plc-setup/slmp/troubleshooting-codes/)
+[SLMP Troubleshooting & Codes](https://plc-comm-docs-site.fa-labo.com/plc-setup/slmp/troubleshooting-codes/)
 page. For profile limits and device availability, use the shared
-[SLMP Profile Parameters](https://fa-yoshinobu.github.io/plc-comm-docs-site/slmp/profile-reference/parameters/)
+[SLMP Profile Parameters](https://plc-comm-docs-site.fa-labo.com/slmp/profile-reference/parameters/)
 page.
 
 ## Current library-specific caveats
