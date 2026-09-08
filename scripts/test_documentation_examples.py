@@ -6,6 +6,7 @@ from __future__ import annotations
 import re
 import subprocess
 import unittest
+import runpy
 from pathlib import Path
 
 
@@ -18,6 +19,9 @@ API_REFERENCE = (ROOT / "docsrc/user/API_REFERENCE.md").read_text(encoding="utf-
 
 
 class DocumentationExamplesTests(unittest.TestCase):
+    def test_sample_cleanup_outcomes(self) -> None:
+        runpy.run_path(str(ROOT / "scripts/test_sample_cleanup.py"), run_name="__main__")
+
     def test_multiplc_command_supplies_target_and_passes_dry_run(self) -> None:
         command = next(
             line

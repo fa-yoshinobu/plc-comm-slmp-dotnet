@@ -53,6 +53,8 @@ The number depends on your PLC data. A successful run prints a numeric value and
 
 ## First write
 
+These controlled-test examples restore only confirmed writes, in reverse order. An outcome-unknown write stops further writes and propagates its original error; inspect and reconcile the PLC state before proceeding. A readback failure after a confirmed write still attempts restoration. A restoration failure is reported and stops the remaining restoration steps.
+
 Use only a test register that your PLC program allows you to change.
 
 ```csharp
@@ -63,15 +65,29 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var original = await client.ReadTypedAsync("D100", "U");
+bool write1Confirmed = false;
+bool outcomeUnknown1 = false;
 try
 {
     await client.WriteTypedAsync("D100", "U", (ushort)123);
+    write1Confirmed = true;
     var value = await client.ReadTypedAsync("D100", "U");
     Console.WriteLine($"D100 = {value}");
 }
+catch (SlmpOperationOutcomeUnknownException)
+{
+    outcomeUnknown1 = true;
+    throw;
+}
 finally
 {
-    await client.WriteTypedAsync("D100", "U", original);
+    if (!outcomeUnknown1)
+    {
+        if (write1Confirmed)
+        {
+            await client.WriteTypedAsync("D100", "U", original);
+        }
+    }
 }
 ```
 

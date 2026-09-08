@@ -79,19 +79,46 @@ var valF = await client.ReadTypedAsync("D200", "F");
 var valL = await client.ReadTypedAsync("D300", "L");
 Console.WriteLine($"[ReadTypedAsync] D100(U)={valU}  D200(F)={valF}  D300(L)={valL}");
 
+bool write1Confirmed = false;
+bool write2Confirmed = false;
+bool write3Confirmed = false;
+bool outcomeUnknown1 = false;
 try
 {
     await client.WriteTypedAsync("D100", "U", (ushort)42);
+    write1Confirmed = true;
     await client.WriteTypedAsync("D200", "F", 3.14f);
+    write2Confirmed = true;
     await client.WriteTypedAsync("D300", "L", -100);
+    write3Confirmed = true;
     Console.WriteLine("[WriteTypedAsync] Wrote 42->D100, 3.14->D200, -100->D300");
+}
+catch (SlmpOperationOutcomeUnknownException)
+{
+    outcomeUnknown1 = true;
+    throw;
 }
 finally
 {
-    await client.WriteTypedAsync("D100", "U", valU);
-    await client.WriteTypedAsync("D200", "F", valF);
-    await client.WriteTypedAsync("D300", "L", valL);
-    Console.WriteLine("[WriteTypedAsync] Restored D100, D200, D300");
+    if (!outcomeUnknown1)
+    {
+        if (write3Confirmed)
+        {
+            await client.WriteTypedAsync("D300", "L", valL);
+        }
+        if (write2Confirmed)
+        {
+            await client.WriteTypedAsync("D200", "F", valF);
+        }
+        if (write1Confirmed)
+        {
+            await client.WriteTypedAsync("D100", "U", valU);
+        }
+        if (write1Confirmed || write2Confirmed || write3Confirmed)
+        {
+            Console.WriteLine("Restored confirmed test writes.");
+        }
+    }
 }
 
 // -------------------------------------------------------------------------
@@ -128,17 +155,35 @@ Console.WriteLine($"[ReadDWordsSingleRequestAsync] D0-D7 as uint32[4] = [{string
 // -------------------------------------------------------------------------
 var bitSnapshot = await client.ReadNamedAsync(["D50.3"]);
 var originalD50Bit3 = (bool)bitSnapshot["D50.3"];
+bool write4Confirmed = false;
+bool outcomeUnknown2 = false;
 try
 {
     await client.WriteBitInWordAsync("D50", bitIndex: 3, value: true);
+    write4Confirmed = true;
     Console.WriteLine("[WriteBitInWordAsync] Set   bit 3 of D50");
     await client.WriteBitInWordAsync("D50", bitIndex: 3, value: false);
+    write4Confirmed = true;
     Console.WriteLine("[WriteBitInWordAsync] Clear bit 3 of D50");
+}
+catch (SlmpOperationOutcomeUnknownException)
+{
+    outcomeUnknown2 = true;
+    throw;
 }
 finally
 {
-    await client.WriteBitInWordAsync("D50", bitIndex: 3, value: originalD50Bit3);
-    Console.WriteLine("[WriteBitInWordAsync] Restored bit 3 of D50");
+    if (!outcomeUnknown2)
+    {
+        if (write4Confirmed)
+        {
+            await client.WriteBitInWordAsync("D50", bitIndex: 3, value: originalD50Bit3);
+        }
+        if (write4Confirmed)
+        {
+            Console.WriteLine("Restored confirmed test writes.");
+        }
+    }
 }
 
 // -------------------------------------------------------------------------

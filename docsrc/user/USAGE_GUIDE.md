@@ -251,6 +251,8 @@ Console.WriteLine($"D100 = {value}");
 
 ## Write a single value
 
+These controlled-test examples restore only confirmed writes, in reverse order. An outcome-unknown write stops further writes and propagates its original error; inspect and reconcile the PLC state before proceeding. A readback failure after a confirmed write still attempts restoration. A restoration failure is reported and stops the remaining restoration steps.
+
 ```csharp
 using System;
 using PlcComm.Slmp;
@@ -259,14 +261,28 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var original = await client.ReadTypedAsync("D100", "U");
+bool write1Confirmed = false;
+bool outcomeUnknown1 = false;
 try
 {
     await client.WriteTypedAsync("D100", "U", (ushort)123);
+    write1Confirmed = true;
     Console.WriteLine("Wrote D100.");
+}
+catch (SlmpOperationOutcomeUnknownException)
+{
+    outcomeUnknown1 = true;
+    throw;
 }
 finally
 {
-    await client.WriteTypedAsync("D100", "U", original);
+    if (!outcomeUnknown1)
+    {
+        if (write1Confirmed)
+        {
+            await client.WriteTypedAsync("D100", "U", original);
+        }
+    }
 }
 ```
 
@@ -405,15 +421,29 @@ var options = new SlmpConnectionOptions("192.168.250.100", SlmpPlcProfile.IqR, 1
 
 await using var client = await SlmpClientFactory.OpenAndConnectAsync(options);
 var original = await client.ReadNamedAsync(["D50.3"]);
+bool write2Confirmed = false;
+bool outcomeUnknown2 = false;
 try
 {
     await client.WriteBitInWordAsync("D50", bitIndex: 3, value: true);
+    write2Confirmed = true;
     var snapshot = await client.ReadNamedAsync(["D50.3"]);
     Console.WriteLine($"D50.3 = {snapshot["D50.3"]}");
 }
+catch (SlmpOperationOutcomeUnknownException)
+{
+    outcomeUnknown2 = true;
+    throw;
+}
 finally
 {
-    await client.WriteBitInWordAsync("D50", bitIndex: 3, value: (bool)original["D50.3"]);
+    if (!outcomeUnknown2)
+    {
+        if (write2Confirmed)
+        {
+            await client.WriteBitInWordAsync("D50", bitIndex: 3, value: (bool)original["D50.3"]);
+        }
+    }
 }
 ```
 
