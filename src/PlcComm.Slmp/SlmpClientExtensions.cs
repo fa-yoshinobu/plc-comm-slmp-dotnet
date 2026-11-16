@@ -161,9 +161,9 @@ public static class SlmpClientExtensions
                         : (await client.ReadDWordsAsync(device, 1, ct).ConfigureAwait(false))[0];
                     return normalizedDType switch
                     {
-                        "F" => DecodeFloatDWord(dword),
-                        "L" => DecodeSignedDWord(dword),
-                        _ => dword,
+                        "F" => (object)DecodeFloatDWord(dword),
+                        "L" => (object)DecodeSignedDWord(dword),
+                        _ => (object)dword,
                     };
                 }
             case "S":

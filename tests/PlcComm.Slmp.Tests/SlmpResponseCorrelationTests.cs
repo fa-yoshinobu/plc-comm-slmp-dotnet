@@ -9,6 +9,49 @@ namespace PlcComm.Slmp.Tests;
 public sealed class SlmpResponseCorrelationTests
 {
     private static readonly SlmpTargetAddress TestTarget = new(0x12, 0x34, 0x5678, 0x9A);
+    public static TheoryData<string, uint, object> DwordScalarCases
+    {
+        get
+        {
+            var cases = new TheoryData<string, uint, object>();
+            foreach (var value in new[] { 0, -1, 123, 16_777_216, 16_777_217, int.MinValue, int.MinValue + 1, int.MaxValue })
+                cases.Add("L", unchecked((uint)value), value);
+            foreach (var value in new[] { 0u, 123u, 16_777_216u, 16_777_217u, uint.MaxValue })
+                cases.Add("D", value, value);
+            cases.Add("F", unchecked((uint)BitConverter.SingleToInt32Bits(1.5f)), 1.5f);
+            return cases;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DwordScalarCases))]
+    public async Task ReadTypedAsync_PreservesDwordScalarTypeAndValue(string dtype, uint raw, object expected)
+    {
+        foreach (var code in dtype == "F" ? new[] { SlmpDeviceCode.D } : new[] { SlmpDeviceCode.D, SlmpDeviceCode.LZ })
+        {
+            foreach (var useStringAddress in new[] { false, true })
+            {
+                var payload = new byte[4];
+                BinaryPrimitives.WriteUInt32LittleEndian(payload, raw);
+                await using var server = new ScriptedSlmpServer(
+                    SlmpTransportMode.Tcp,
+                    SlmpFrameType.Frame4E,
+                    async (request, send, _) =>
+                        await send(BuildResponse(request, SlmpFrameType.Frame4E, payload: payload)).ConfigureAwait(false));
+                await server.StartAsync();
+                using var client = CreateClient(
+                    server.Port, SlmpTransportMode.Tcp, SlmpFrameType.Frame4E, TimeSpan.FromSeconds(2));
+
+                var actual = useStringAddress
+                    ? await client.ReadTypedAsync($"{code}100", dtype)
+                    : await client.ReadTypedAsync(new SlmpDeviceAddress(code, 100, SlmpPlcProfile.IqR), dtype);
+
+                Assert.IsType(expected.GetType(), actual);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
 
     public static TheoryData<SlmpTransportMode, SlmpFrameType, RouteField> RouteCases
     {

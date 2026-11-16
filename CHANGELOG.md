@@ -17,8 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.2.1] - 2026-11-16
+
+### Compatibility
+
+- Library: L/D reads now return boxed Int32/UInt32 as documented. Callers that cast these results directly to Single must use the requested integer type instead. F reads still return Single. No public APIs were added.
+
 ### Fixed
 
+- Library: Preserve Int32 and UInt32 types and integer precision in ReadTypedAsync instead of converting integer results to Single.
 - Samples: Restore only confirmed test writes in reverse order; preserve outcome-unknown failures without further writes.
 - Tests: Exercise sample cleanup after rejected writes, readback failures, and uncertain write or restoration outcomes.
 
